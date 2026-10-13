@@ -190,3 +190,6 @@ export const REQUIRED_STORY_TYPE_ID = "about_me";
 export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 export const MAX_IMPORTED_LENGTH = 12000;
 export const UPLOAD_EXTENSIONS = [".docx", ".txt", ".md"] as const;
+
+// A LinkedIn profile saved as PDF (Profile > More > Save to PDF) can fill in the answers it covers.
+export const MAX_PROFILE_LENGTH = 30000;

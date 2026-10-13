@@ -17,6 +17,8 @@ export type StepModel = {
 export const STEP_MODELS = {
   // Story builder, call one: assess the user's answers and ask 2–3 follow-ups.
   storyProbe: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Story builder, "Tell me about yourself": fill in the answers a LinkedIn profile already covers.
+  storyPrefill: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Story builder, call two: write the story from the user's own answers.
   storyWrite: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.

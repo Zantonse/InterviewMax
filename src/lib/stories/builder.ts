@@ -3,7 +3,10 @@ import { generateForStep, type Step } from "@/lib/ai";
 import { allAnswerText, type FollowUp, type StoryContent, type StoryDraft } from "./content";
 import { untracedNumbers } from "./numbers";
 import {
+  PREFILL_SYSTEM,
+  parsePrefill,
   parseProbe,
+  prefillMessages,
   parseWrite,
   probeMessages,
   probeSystem,
@@ -24,6 +27,16 @@ export async function probeStory(
     probeMessages(content, storyType),
   );
   return parseProbe(text);
+}
+
+// "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Answers with a
+// number that isn't in the profile are dropped, so the user is asked those questions themselves.
+export async function prefillFromProfile(profileText: string): Promise<Record<string, string>> {
+  const { text } = await call("storyPrefill", PREFILL_SYSTEM, prefillMessages(profileText));
+  const answers = parsePrefill(text);
+  return Object.fromEntries(
+    Object.entries(answers).filter(([, answer]) => untracedNumbers(answer, profileText).length === 0),
+  );
 }
 
 // Call two: write the story from the user's answers. Every number in the draft is checked
