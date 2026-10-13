@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { removeStory } from "@/app/stories/actions";
 
-// Deletes a story after one confirm step. "full" sits under the story builder; "compact" fits a
-// row of the story bank on the home page.
+// Deletes a story after one confirm step. "full" sits in the story page's ⋯ menu; "compact" fits
+// a row of the story bank on the home page.
 export function DeleteStoryButton({
   storyId,
   title,
@@ -72,13 +72,13 @@ export function DeleteStoryButton({
   }
 
   return (
-    <section className="mt-8 rounded-3xl border border-red-200 bg-white p-5 sm:p-6">
+    <div>
       <h2 className="font-semibold text-slate-900">Start this story from scratch</h2>
       <p className="mt-1 text-sm text-slate-600">
         Deleting removes every answer, follow-up and draft for this story.
       </p>
       {confirming ? (
-        <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="delete-confirm">
+        <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="delete-confirm">
           <p className="text-sm font-medium text-slate-900">
             Delete &ldquo;{title}&rdquo; for good? This can&apos;t be undone.
           </p>
@@ -103,7 +103,7 @@ export function DeleteStoryButton({
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="mt-4 rounded-xl px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50"
+          className="mt-3 rounded-xl px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50"
         >
           Delete story
         </button>
@@ -113,6 +113,6 @@ export function DeleteStoryButton({
           {error}
         </p>
       )}
-    </section>
+    </div>
   );
 }

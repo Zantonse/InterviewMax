@@ -19,7 +19,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 xl:max-w-[96rem] px-4 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
         <Link href="/" className="text-sm font-medium text-teal-800 hover:underline">
           ← Back to your prep
         </Link>
@@ -48,17 +48,15 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
       ])
     : [false, [] as TargetJob[]];
   return (
-    <>
-      <StoryBuilder
-        storyId={story.id}
-        storyTypeId={story.storyType}
-        initialTitle={story.title}
-        initialContent={story.content}
-        hasResume={resume}
-      />
-      {intro && <TailorLinks jobs={jobs} content={story.content} />}
-      <DeleteStoryButton storyId={story.id} title={story.title} />
-    </>
+    <StoryBuilder
+      storyId={story.id}
+      storyTypeId={story.storyType}
+      initialTitle={story.title}
+      initialContent={story.content}
+      hasResume={resume}
+      afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
+      menu={<DeleteStoryButton storyId={story.id} title={story.title} />}
+    />
   );
 }
 
@@ -67,16 +65,15 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
 function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryContent }) {
   return (
     <section
-      className="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
       data-testid="tailor-links"
     >
       <h2 className="text-sm font-bold uppercase tracking-wide text-teal-800">
         Make it company-first for each job
       </h2>
-      <p className="mt-2 text-slate-600">
-        This is your general answer. For a real interview, start from the company: say why you want
-        to work there, and I&apos;ll rebuild it around the one proof point that job most needs to
-        hear, in under 90 seconds.
+      <p className="mt-2 text-sm text-slate-600">
+        This is your general answer. For each job, I&apos;ll rebuild it around what that company
+        most needs to hear.
       </p>
       {jobs.length === 0 ? (
         <p className="mt-3 text-sm text-slate-600">
@@ -108,10 +105,9 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
 
 function BuilderSkeleton() {
   return (
-    <div className="mt-4 grid animate-pulse grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="mt-14 grid animate-pulse grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
       <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
-      <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
-      <div className="hidden h-96 rounded-3xl bg-white/80 ring-1 ring-black/5 xl:block" />
+      <div className="h-64 rounded-3xl bg-white/80 ring-1 ring-black/5" />
     </div>
   );
 }
