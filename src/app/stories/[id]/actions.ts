@@ -2,10 +2,10 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
-import { probeStory, writeStory } from "@/lib/stories/builder";
+import { prefillFromProfile, probeStory, writeStory } from "@/lib/stories/builder";
 import { builderStage, type StoryContent } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
-import { readUploadedAnswer } from "@/lib/stories/upload";
+import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
 
 export type BuilderResult =
@@ -78,6 +78,43 @@ export async function importPreparedAnswer(
     const content = {
       ...story.content,
       imported: { fileName: file.name.slice(0, 200), text },
+    };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// "Tell me about yourself" only: read a LinkedIn profile PDF and fill in the scripted questions it
+// answers. Answers the user already gave are kept; the rest are asked as usual.
+export async function importLinkedIn(storyId: string, formData: FormData): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    if (storyType?.format !== "intro") return fail("LinkedIn uploads are for Tell me about yourself.");
+    if (builderStage(story.content, storyType) !== "core") {
+      return fail("This story is already past the questions.");
+    }
+    const file = formData.get("file");
+    if (!(file instanceof File)) return fail("Choose a file first.");
+
+    let text: string;
+    try {
+      text = await readLinkedInPdf(file);
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : "That PDF couldn't be read.");
+    }
+
+    const prefill = await prefillFromProfile(text);
+    const answers = { ...story.content.answers };
+    const prefilled: string[] = [];
+    for (const q of coreQuestions(storyType)) {
+      if (answers[q.id]?.trim() || !prefill[q.id]) continue;
+      answers[q.id] = prefill[q.id];
+      prefilled.push(q.id);
+    }
+    const content = {
+      ...story.content,
+      answers,
+      linkedin: { fileName: file.name.slice(0, 200), text, prefilled },
     };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };

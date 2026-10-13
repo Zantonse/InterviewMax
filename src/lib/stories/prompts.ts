@@ -2,6 +2,8 @@ import type { ChatMessage } from "@/lib/ai/types";
 import type { FollowUp, StoryContent } from "./content";
 import {
   INTRO_PARTS,
+  INTRO_QUESTIONS,
+  MAX_ANSWER_LENGTH,
   STAR_PARTS,
   coreQuestionText,
   coreQuestions,
@@ -97,6 +99,37 @@ Also give it a short title (at most 8 words) for their story bank, e.g. "From su
 Reply with JSON only, no other text:
 {"title": "…", "parts": {${INTRO_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
+// Fills in the "Tell me about yourself" questions a LinkedIn profile already answers.
+export const PREFILL_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They uploaded their LinkedIn profile. Answer each question below from the profile only, written in the first person as notes they could have typed themselves.
+
+The hard rule: use only what the profile says. Copy every number exactly as written in the profile, and never add, round, estimate or combine figures. If the profile doesn't answer a question, return an empty string for it; don't guess. Questions about what they want next or why are usually not in a profile, so leave those empty unless the profile states it.
+
+Questions:
+${INTRO_QUESTIONS.map((q) => `- ${q.id}: ${q.text}`).join("\n")}
+
+Reply with JSON only, no other text:
+{"answers": {${INTRO_QUESTIONS.map((q) => `"${q.id}": "…"`).join(", ")}}}`;
+
+export function prefillMessages(profileText: string): ChatMessage[] {
+  return [{ role: "user", content: `Here is my LinkedIn profile.\n\n${profileText}` }];
+}
+
+// Answers keyed by question id, keeping only known questions with a non-empty answer.
+export function parsePrefill(text: string): Record<string, string> {
+  const json = extractJson(text);
+  if (!isRecord(json) || !isRecord(json.answers)) {
+    throw new Error("The profile answers came back in an unexpected format.");
+  }
+  const raw = json.answers;
+  return Object.fromEntries(
+    INTRO_QUESTIONS.flatMap((q) => {
+      const value = raw[q.id];
+      const answer = typeof value === "string" ? value.trim() : "";
+      return answer ? [[q.id, answer.slice(0, MAX_ANSWER_LENGTH)]] : [];
+    }),
+  );
+}
+
 export function probeSystem(storyType: StoryType | undefined): string {
   return storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
 }
@@ -111,6 +144,13 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
   if (storyType) lines.push(`Story type: ${storyType.label}`, "");
   if (content.imported) {
     lines.push("My prepared answer, uploaded from a file I wrote earlier:", content.imported.text.trim(), "");
+  }
+  if (content.linkedin) {
+    lines.push(
+      "My LinkedIn profile, for background (the facts and figures in it are mine):",
+      content.linkedin.text.trim(),
+      "",
+    );
   }
   for (const q of coreQuestions(storyType)) {
     const answer = content.answers[q.id]?.trim();

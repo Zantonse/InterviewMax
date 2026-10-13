@@ -9,6 +9,7 @@ import {
 import {
   answersTranscript,
   extractJson,
+  parsePrefill,
   parseProbe,
   parseWrite,
   probeSystem,
@@ -187,5 +188,23 @@ describe("uploaded answers", () => {
     expect(answersTranscript(content, aboutMe)).toContain("My prepared answer");
     expect(allAnswerText(content)).toContain("40%");
     expect(parseContent(JSON.parse(JSON.stringify(content))).imported).toEqual(content.imported);
+  });
+});
+
+describe("LinkedIn profile", () => {
+  it("keeps only known, non-empty prefilled answers", () => {
+    expect(
+      parsePrefill('{"answers":{"now":" I run SE for the west. ","next":"","bogus":"x","path":4}}'),
+    ).toEqual({ now: "I run SE for the west." });
+    expect(() => parsePrefill("nope")).toThrow();
+  });
+
+  it("feeds the transcript and the number check", () => {
+    const content = emptyContent();
+    content.linkedin = { fileName: "Profile.pdf", text: "Grew pipeline 35%.", prefilled: ["now"] };
+    expect(answersTranscript(content, aboutMe)).toContain("My LinkedIn profile");
+    expect(allAnswerText(content)).toContain("35%");
+    expect(builderStage(content, aboutMe)).toBe("core");
+    expect(parseContent(JSON.parse(JSON.stringify(content))).linkedin).toEqual(content.linkedin);
   });
 });

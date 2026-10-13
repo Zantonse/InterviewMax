@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { normalize, readUploadedAnswer } = await import("./upload");
+const { normalize, readLinkedInPdf, readUploadedAnswer } = await import("./upload");
 
 function file(name: string, body: BlobPart) {
   return new File([body], name);
@@ -33,6 +33,22 @@ describe("readUploadedAnswer", () => {
     );
     await expect(readUploadedAnswer(file("intro.txt", "a".repeat(12001)))).rejects.toThrow(
       "more than 12,000",
+    );
+  });
+});
+
+describe("readLinkedInPdf", () => {
+  it("reads the text of a profile PDF", async () => {
+    const pdf = await readFile(new URL("./fixtures/linkedin.pdf", import.meta.url));
+    const text = await readLinkedInPdf(file("Profile.pdf", new Uint8Array(pdf)));
+    expect(text).toContain("Solutions Engineering Manager at Acme");
+    expect(text).toContain("Grew pipeline 35% in 2025.");
+  });
+
+  it("refuses files it can't use", async () => {
+    await expect(readLinkedInPdf(file("profile.docx", "x"))).rejects.toThrow("Save to PDF");
+    await expect(readLinkedInPdf(file("profile.pdf", "not a pdf"))).rejects.toThrow(
+      "couldn't be read",
     );
   });
 });

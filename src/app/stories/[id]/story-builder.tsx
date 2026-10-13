@@ -20,6 +20,7 @@ import {
 } from "@/lib/stories/story-types";
 import {
   askFollowUps,
+  importLinkedIn,
   importPreparedAnswer,
   saveAnswer,
   saveFollowUpAnswer,
@@ -27,7 +28,7 @@ import {
   type BuilderResult,
 } from "./actions";
 
-type Busy = null | "saving" | "probing" | "writing";
+type Busy = null | "saving" | "reading" | "probing" | "writing";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
 // Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
@@ -81,9 +82,10 @@ export function StoryBuilder({
         // After the last scripted answer, go straight on to call one; after the last
         // follow-up, straight on to call two.
         const next = builderStage(result.content, storyType);
-        if (step.busy === "saving" && next === "probe") {
+        const saved = step.busy === "saving" || step.busy === "reading";
+        if (saved && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
-        } else if (step.busy === "saving" && next === "write") {
+        } else if (saved && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
         }
       }
@@ -104,6 +106,11 @@ export function StoryBuilder({
   function submitUpload(formData: FormData) {
     setEditing(null);
     run([{ busy: "saving", action: () => importPreparedAnswer(storyId, formData) }]);
+  }
+
+  function submitLinkedIn(formData: FormData) {
+    setEditing(null);
+    run([{ busy: "reading", action: () => importLinkedIn(storyId, formData) }]);
   }
 
   const currentCore = nextCoreQuestion(content, storyType);
@@ -128,7 +135,30 @@ export function StoryBuilder({
           </p>
         </div>
 
-        {canUpload && <UploadPrepared disabled={busy !== null} onUpload={submitUpload} />}
+        {canUpload && (
+          <div className="mt-5 flex flex-col gap-3">
+            {!content.linkedin && (
+              <UploadOption
+                testId="upload-linkedin"
+                lead="Have a LinkedIn profile?"
+                text="On your profile, click More, then Save to PDF, and upload that file here. I'll fill in what it already answers and only ask about the rest."
+                accept=".pdf"
+                button="Upload profile"
+                disabled={busy !== null}
+                onUpload={submitLinkedIn}
+              />
+            )}
+            <UploadOption
+              testId="upload-prepared"
+              lead="Already prepared this answer?"
+              text="Upload it as a Word (.docx) or text file and I'll review it instead of asking these questions."
+              accept={UPLOAD_EXTENSIONS.join(",")}
+              button="Upload and review"
+              disabled={busy !== null}
+              onUpload={submitUpload}
+            />
+          </div>
+        )}
 
         <ol className="mt-5 flex flex-col gap-4">
           {content.imported && (
@@ -145,6 +175,15 @@ export function StoryBuilder({
             </li>
           )}
 
+          {content.linkedin && (
+            <CoachLine>
+              I read your LinkedIn profile
+              {content.linkedin.prefilled.length > 0
+                ? " and filled in what it answers. Edit anything that's off."
+                : ", but it didn't answer these questions directly."}
+            </CoachLine>
+          )}
+
           {askedCore.map((q) => {
             const answer = content.answers[q.id];
             const isEditing = editing?.kind === "core" && editing.id === q.id;
@@ -153,6 +192,9 @@ export function StoryBuilder({
                 key={q.id}
                 question={coreQuestionText(q.id, storyType)}
                 answer={answer}
+                source={
+                  content.linkedin?.prefilled.includes(q.id) ? "From your LinkedIn" : undefined
+                }
                 isCurrent={q.id === currentCore}
                 isEditing={isEditing}
                 disabled={busy !== null}
@@ -187,6 +229,7 @@ export function StoryBuilder({
             );
           })}
 
+          {busy === "reading" && <Thinking>Reading your LinkedIn profile…</Thinking>}
           {busy === "probing" && <Thinking>Reading your answers…</Thinking>}
           {busy === "writing" && <Thinking>Writing your story from your answers…</Thinking>}
 
@@ -265,6 +308,7 @@ function progressLabel(
 function Exchange({
   question,
   answer,
+  source,
   isCurrent,
   isEditing,
   disabled,
@@ -274,6 +318,8 @@ function Exchange({
 }: {
   question: string;
   answer: string | undefined;
+  // Where a prefilled answer came from, e.g. "From your LinkedIn".
+  source?: string;
   isCurrent: boolean;
   isEditing: boolean;
   disabled: boolean;
@@ -298,6 +344,7 @@ function Exchange({
           <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
             {answer}
           </p>
+          {source && <p className="text-xs text-slate-500">{source}</p>}
           <button
             type="button"
             onClick={onEdit}
@@ -388,11 +435,21 @@ function Composer({
   );
 }
 
-// "Tell me about yourself" only: skip the questions by uploading an answer prepared earlier.
-function UploadPrepared({
+// "Tell me about yourself" only: start from a file instead of typing every answer.
+function UploadOption({
+  testId,
+  lead,
+  text,
+  accept,
+  button,
   disabled,
   onUpload,
 }: {
+  testId: string;
+  lead: string;
+  text: string;
+  accept: string;
+  button: string;
   disabled: boolean;
   onUpload: (formData: FormData) => void;
 }) {
@@ -401,7 +458,8 @@ function UploadPrepared({
 
   return (
     <form
-      className="mt-5 flex flex-col gap-3 rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4"
+      data-testid={testId}
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -413,15 +471,14 @@ function UploadPrepared({
       }}
     >
       <label htmlFor={fieldId} className="text-sm text-slate-700">
-        <span className="font-semibold text-slate-900">Already prepared this answer?</span> Upload
-        it as a Word (.docx) or text file and I&apos;ll review it instead of asking these questions.
+        <span className="font-semibold text-slate-900">{lead}</span> {text}
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <input
           id={fieldId}
           name="file"
           type="file"
-          accept={UPLOAD_EXTENSIONS.join(",")}
+          accept={accept}
           disabled={disabled}
           className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-teal-800 file:ring-1 file:ring-teal-800/20"
         />
@@ -430,7 +487,7 @@ function UploadPrepared({
           disabled={disabled}
           className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
         >
-          Upload and review
+          {button}
         </button>
       </div>
       {error && (

@@ -23,11 +23,20 @@ export type ImportedAnswer = {
   text: string;
 };
 
+// A LinkedIn profile the user uploaded as PDF. Its text counts as their own words for the number
+// check; `prefilled` lists the core questions answered from it.
+export type LinkedInProfile = {
+  fileName: string;
+  text: string;
+  prefilled: string[];
+};
+
 export type StoryContent = {
   version: 1;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
+  linkedin?: LinkedInProfile;
   followUps?: FollowUp[];
   draft?: StoryDraft;
 };
@@ -71,6 +80,7 @@ export function builderStage(
 export function allAnswerText(content: StoryContent): string {
   return [
     content.imported?.text ?? "",
+    content.linkedin?.text ?? "",
     ...Object.values(content.answers),
     ...(content.followUps ?? []).map((f) => f.answer ?? ""),
   ]
@@ -92,6 +102,16 @@ export function parseContent(raw: unknown): StoryContent {
     content.imported = {
       fileName: typeof raw.imported.fileName === "string" ? raw.imported.fileName : "",
       text: raw.imported.text,
+    };
+  }
+
+  if (isRecord(raw.linkedin) && typeof raw.linkedin.text === "string" && raw.linkedin.text) {
+    content.linkedin = {
+      fileName: typeof raw.linkedin.fileName === "string" ? raw.linkedin.fileName : "",
+      text: raw.linkedin.text,
+      prefilled: Array.isArray(raw.linkedin.prefilled)
+        ? raw.linkedin.prefilled.filter((id): id is string => typeof id === "string")
+        : [],
     };
   }
 
