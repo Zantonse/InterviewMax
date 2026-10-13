@@ -33,7 +33,7 @@ async function MapLoader({ params }: { params: PageProps<"/stories/[id]/map">["p
     <>
       <Link
         href={`/stories/${story.id}`}
-        className="text-sm font-medium text-teal-800 hover:underline"
+        className="text-sm font-medium text-navy-800 hover:underline"
       >
         ← Back to Tell me about yourself
       </Link>

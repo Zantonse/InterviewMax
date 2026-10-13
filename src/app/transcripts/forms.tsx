@@ -11,11 +11,11 @@ import {
 import { addTranscript, reviewAgain, type FormState } from "./actions";
 
 const INPUT =
-  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-700 focus:outline-none";
+  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-navy-700 focus:outline-none";
 const PRIMARY =
-  "rounded-xl bg-teal-800 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-900 disabled:opacity-60";
+  "rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60";
 const SECONDARY =
-  "rounded-xl px-4 py-2.5 font-semibold text-teal-800 ring-1 ring-teal-800/20 transition hover:bg-teal-50 disabled:opacity-60";
+  "rounded-xl px-4 py-2.5 font-semibold text-navy-800 ring-1 ring-navy-800/20 transition hover:bg-navy-50 disabled:opacity-60";
 
 export function AddTranscriptForm({
   jobs,
@@ -33,7 +33,7 @@ export function AddTranscriptForm({
           type="file"
           name="file"
           accept={TRANSCRIPT_EXTENSIONS.join(",")}
-          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:font-semibold file:text-teal-900"
+          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
         />
         <span className="mt-1 block text-xs font-normal text-slate-500">
           PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export.

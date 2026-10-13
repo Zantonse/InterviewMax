@@ -16,8 +16,8 @@ import type { StoryType } from "@/lib/stories/story-types";
 
 const TIER_STYLES: Record<Tier, string> = {
   not_yet: "bg-amber-100 text-amber-900",
-  good_enough: "bg-teal-100 text-teal-900",
-  strong: "bg-teal-800 text-white",
+  good_enough: "bg-emerald-100 text-emerald-900",
+  strong: "bg-emerald-700 text-white",
 };
 
 // The story's grade, in its own column beside the story. Coaching order: the tier, what works and
@@ -78,7 +78,7 @@ export function EvaluationPanel({
             </span>
           )}
         </span>
-        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-teal-800">
+        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-navy-800">
           {open ? "Hide" : "Show"}
           <svg
             viewBox="0 0 20 20"
@@ -99,7 +99,7 @@ export function EvaluationPanel({
       <div className="mt-3">
         {grading ? (
           <p role="status" className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-teal-600" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-navy-600" />
             Grading your story against each criterion…
           </p>
         ) : !content.draft ? (
@@ -118,7 +118,7 @@ export function EvaluationPanel({
               type="button"
               onClick={onGrade}
               disabled={disabled}
-              className="rounded-xl bg-teal-800 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+              className="rounded-xl bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
             >
               {stale ? "Grade it again" : "Grade my story"}
             </button>
@@ -151,7 +151,7 @@ export function EvaluationPanel({
                   <p className="text-xs text-slate-500">{c.question}</p>
                   {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
                   {scored?.improve && (
-                    <p className="text-sm text-teal-900">
+                    <p className="text-sm text-navy-900">
                       <span className="font-semibold">To raise it: </span>
                       {scored.improve}
                     </p>
@@ -175,7 +175,7 @@ export function EvaluationPanel({
                       !result
                         ? "bg-slate-100 text-slate-400"
                         : result.pass
-                          ? "bg-teal-100 text-teal-800"
+                          ? "bg-emerald-100 text-emerald-800"
                           : "bg-amber-100 text-amber-900"
                     }`}
                   >
@@ -234,7 +234,7 @@ export function EvaluationPanel({
               type="button"
               onClick={onGrade}
               disabled={disabled}
-              className="font-medium text-teal-800 hover:underline disabled:opacity-50"
+              className="font-medium text-navy-800 hover:underline disabled:opacity-50"
             >
               Grade again
             </button>
@@ -259,7 +259,7 @@ function Summary({ grade }: { grade: StoryGrade }) {
                 i === current
                   ? "font-semibold text-slate-900"
                   : i < current
-                    ? "text-teal-700"
+                    ? "text-navy-700"
                     : "text-slate-400"
               }
             >
@@ -275,7 +275,7 @@ function Summary({ grade }: { grade: StoryGrade }) {
           <ul className="mt-1 flex flex-col gap-1 text-slate-800">
             {grade.strengths.map((f, i) => (
               <li key={i} className="flex gap-2">
-                <span aria-hidden="true" className="font-bold text-teal-700">
+                <span aria-hidden="true" className="font-bold text-emerald-700">
                   ✓
                 </span>
                 <span>{f}</span>
@@ -285,8 +285,8 @@ function Summary({ grade }: { grade: StoryGrade }) {
         </div>
       )}
       {grade.fixes.length > 0 ? (
-        <div data-testid="fixes">
-          <p className="text-sm font-semibold text-slate-700">
+        <div data-testid="fixes" className="rounded-xl bg-amber-50 p-3">
+          <p className="text-sm font-semibold text-amber-900">
             {grade.tier === "strong" ? "To polish it further:" : "What to fix next:"}
           </p>
           <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-slate-800">
@@ -312,10 +312,10 @@ function ScoreBar({ score }: { score: number }) {
             className={`h-2 w-5 rounded-full ${
               n <= score
                 ? score <= 1
-                  ? "bg-amber-400"
+                  ? "bg-amber-500"
                   : score === 2
-                    ? "bg-teal-300"
-                    : "bg-teal-700"
+                    ? "bg-amber-300"
+                    : "bg-emerald-600"
                 : "bg-slate-200"
             }`}
           />
@@ -330,8 +330,8 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 const FIT_LABELS: Record<FitLevel, { label: string; style: string }> = {
-  strong: { label: "Strong fit", style: "bg-teal-800 text-white" },
-  partial: { label: "Partial fit", style: "bg-teal-100 text-teal-900" },
+  strong: { label: "Strong fit", style: "bg-emerald-700 text-white" },
+  partial: { label: "Partial fit", style: "bg-emerald-100 text-emerald-900" },
   weak: { label: "Weak fit", style: "bg-amber-100 text-amber-900" },
 };
 
@@ -353,7 +353,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
             ? "Couldn't check this story against your target jobs this time. Grade it again to retry."
             : "Grade it again to see which of your target jobs' needs this story proves and which likely questions it answers."}{" "}
           {!content && (
-            <Link href="/jobs" className="font-medium text-teal-800 hover:underline">
+            <Link href="/jobs" className="font-medium text-navy-800 hover:underline">
               Add or see your target jobs
             </Link>
           )}
@@ -377,7 +377,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
               {FIT_LABELS[job.fit].label}
             </span>
           </div>
-          <FitList title="It proves" mark="✓" markClass="text-teal-700" items={job.proves} />
+          <FitList title="It proves" mark="✓" markClass="text-emerald-700" items={job.proves} />
           <FitList title="It doesn't show" mark="–" markClass="text-amber-700" items={job.misses} />
           <FitList
             title="Good answer to"

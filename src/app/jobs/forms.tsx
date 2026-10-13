@@ -21,11 +21,11 @@ import {
 } from "./actions";
 
 const INPUT =
-  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-700 focus:outline-none";
+  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-navy-700 focus:outline-none";
 const PRIMARY =
-  "rounded-xl bg-teal-800 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-900 disabled:opacity-60";
+  "rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60";
 const SECONDARY =
-  "rounded-xl px-4 py-2.5 font-semibold text-teal-800 ring-1 ring-teal-800/20 transition hover:bg-teal-50 disabled:opacity-60";
+  "rounded-xl px-4 py-2.5 font-semibold text-navy-800 ring-1 ring-navy-800/20 transition hover:bg-navy-50 disabled:opacity-60";
 
 export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
@@ -92,7 +92,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
         </p>
         {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
         {fetched && (
-          <p className="mt-1 text-sm font-medium text-teal-800" role="status">
+          <p className="mt-1 text-sm font-medium text-navy-800" role="status">
             Filled in from the link. Check it over, then add the job.
           </p>
         )}
@@ -158,7 +158,7 @@ export function ResumeForm({ hasResume }: { hasResume: boolean }) {
           type="file"
           name="file"
           accept={RESUME_EXTENSIONS.join(",")}
-          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:font-semibold file:text-teal-900"
+          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
         />
       </label>
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-text`}>
@@ -201,7 +201,7 @@ export function PredictForm({
     <form action={action} className="space-y-3" data-testid="predict-form">
       <input type="hidden" name="jobId" value={jobId} />
       <details open={!predicted && Boolean(reports)}>
-        <summary className="cursor-pointer text-sm font-semibold text-teal-800">
+        <summary className="cursor-pointer text-sm font-semibold text-navy-800">
           {reports ? "Interview reports you added" : "Add interview reports (optional)"}
         </summary>
         <label className="mt-2 block text-sm text-slate-600" htmlFor={id}>

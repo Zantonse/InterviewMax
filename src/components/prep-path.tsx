@@ -35,13 +35,13 @@ export async function PrepPath() {
               aria-current={i === current ? "step" : undefined}
               className={`flex h-full items-center gap-3 rounded-2xl px-4 py-2.5 ring-1 transition ${
                 i === current
-                  ? "bg-white shadow-sm ring-teal-700/50"
+                  ? "bg-white shadow-sm ring-navy-700/50"
                   : "bg-white/60 ring-black/5 hover:bg-white"
               }`}
             >
               <span
                 className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  step.done ? "bg-teal-800 text-white" : "bg-teal-50 text-teal-900"
+                  step.done ? "bg-navy-800 text-white" : "bg-navy-50 text-navy-900"
                 }`}
               >
                 {step.done ? "✓" : i + 1}
@@ -61,7 +61,7 @@ export async function PrepPath() {
 function FirstJob() {
   return (
     <section
-      className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-teal-700/40 sm:p-8"
+      className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
       data-testid="first-job"
     >
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">

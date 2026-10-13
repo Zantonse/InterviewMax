@@ -77,7 +77,7 @@ export function RoleMapper({
             key={id}
             aria-current={step === id ? "step" : undefined}
             className={`rounded-full px-3 py-1 font-medium ${
-              step === id ? "bg-teal-800 text-white" : "bg-white text-slate-500 ring-1 ring-black/5"
+              step === id ? "bg-navy-800 text-white" : "bg-white text-slate-500 ring-1 ring-black/5"
             }`}
           >
             {label}
@@ -132,7 +132,7 @@ export function RoleMapper({
 
       {busy && (
         <p role="status" className="mt-4 flex items-center gap-2 text-sm text-slate-600">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-teal-600" />
+          <span className="h-2 w-2 animate-pulse rounded-full bg-navy-600" />
           {busy}
         </p>
       )}
@@ -203,7 +203,7 @@ function WorkQuestions({
         <button
           type="submit"
           disabled={!ready || Boolean(busy)}
-          className="rounded-xl bg-teal-800 px-5 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+          className="rounded-xl bg-navy-800 px-5 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
         >
           Map my role
         </button>
@@ -233,7 +233,7 @@ function WorkField({
         onChange={(e) => onChange(e.target.value)}
         rows={3}
         maxLength={MAX_ANSWER_LENGTH}
-        className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/20"
+        className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
       />
     </div>
   );
@@ -283,7 +283,7 @@ function MarkFunctions({
                       on
                         ? m.id === "not_mine"
                           ? "bg-slate-600 text-white ring-slate-600"
-                          : "bg-teal-800 text-white ring-teal-800"
+                          : "bg-navy-800 text-white ring-navy-800"
                         : "text-slate-600 ring-slate-200 hover:bg-slate-50"
                     }`}
                   >
@@ -307,7 +307,7 @@ function MarkFunctions({
           type="button"
           disabled={!allMarked || Boolean(busy)}
           onClick={() => onSubmit(marks)}
-          className="rounded-xl bg-teal-800 px-5 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+          className="rounded-xl bg-navy-800 px-5 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
         >
           Next: my role profile
         </button>
@@ -366,7 +366,7 @@ function Profile({
         <Section title="Words interviewers use for it">
           <ul className="flex flex-wrap gap-2">
             {words.map((w) => (
-              <li key={w} className="rounded-full bg-teal-50 px-3 py-1 text-sm text-teal-900">
+              <li key={w} className="rounded-full bg-navy-50 px-3 py-1 text-sm text-navy-900">
                 {w}
               </li>
             ))}
@@ -418,7 +418,7 @@ function Profile({
               type="button"
               disabled={Boolean(busy)}
               onClick={onUse}
-              className="rounded-xl bg-teal-800 px-5 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+              className="rounded-xl bg-navy-800 px-5 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
             >
               Use this for Tell me about yourself
             </button>
@@ -426,7 +426,7 @@ function Profile({
               type="button"
               disabled={Boolean(busy)}
               onClick={onWrite}
-              className="rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50 disabled:opacity-50"
+              className="rounded-xl px-4 py-2 font-semibold text-navy-800 ring-1 ring-navy-800/30 hover:bg-navy-50 disabled:opacity-50"
             >
               Rewrite the profile
             </button>
@@ -442,7 +442,7 @@ function Profile({
             type="button"
             disabled={Boolean(busy)}
             onClick={onWrite}
-            className="rounded-xl bg-teal-800 px-5 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+            className="rounded-xl bg-navy-800 px-5 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
           >
             Write my role profile
           </button>
@@ -453,14 +453,14 @@ function Profile({
         <button
           type="button"
           onClick={onEditAnswers}
-          className="font-medium text-teal-800 hover:underline"
+          className="font-medium text-navy-800 hover:underline"
         >
           Edit my answers
         </button>
         <button
           type="button"
           onClick={onEditMarks}
-          className="font-medium text-teal-800 hover:underline"
+          className="font-medium text-navy-800 hover:underline"
         >
           Change my part
         </button>
@@ -475,7 +475,7 @@ function Profile({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-sm font-bold uppercase tracking-wide text-teal-800">{title}</h3>
+      <h3 className="text-sm font-bold uppercase tracking-wide text-navy-800">{title}</h3>
       <div className="mt-2 leading-relaxed text-slate-800">{children}</div>
     </section>
   );
