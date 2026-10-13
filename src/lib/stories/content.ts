@@ -1,4 +1,4 @@
-import { CORE_QUESTIONS, STORY_PARTS, type CoreQuestionId, type StoryPartId } from "./story-types";
+import { coreQuestions, type StoryType } from "./story-types";
 
 // What the builder keeps in stories.content (jsonb).
 export type FollowUp = {
@@ -9,22 +9,31 @@ export type FollowUp = {
 };
 
 export type StoryDraft = {
-  parts: Record<StoryPartId, string>;
+  // Keyed by the story type's part ids (see storyParts).
+  parts: Record<string, string>;
   // Numbers in the draft that don't appear anywhere in the user's answers. Should be empty.
   untracedNumbers: string[];
   model: string;
   writtenAt: string;
 };
 
+// An answer the user prepared before and uploaded, used in place of the scripted questions.
+export type ImportedAnswer = {
+  fileName: string;
+  text: string;
+};
+
 export type StoryContent = {
   version: 1;
-  answers: Partial<Record<CoreQuestionId, string>>;
+  // Keyed by the story type's core question ids (see coreQuestions).
+  answers: Record<string, string>;
+  imported?: ImportedAnswer;
   followUps?: FollowUp[];
   draft?: StoryDraft;
 };
 
 // Where the user is in the builder, derived from what has been saved.
-//  core:       answering the scripted questions
+//  core:       answering the scripted questions (skipped when a prepared answer was uploaded)
 //  probe:      all scripted questions answered; call one (follow-ups) hasn't run yet
 //  follow_ups: answering the model's follow-up questions
 //  write:      everything answered; call two (write the story) hasn't run yet
@@ -35,8 +44,11 @@ export function emptyContent(): StoryContent {
   return { version: 1, answers: {} };
 }
 
-export function nextCoreQuestion(content: StoryContent): CoreQuestionId | undefined {
-  return CORE_QUESTIONS.find((q) => !content.answers[q.id]?.trim())?.id;
+export function nextCoreQuestion(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+): string | undefined {
+  return coreQuestions(storyType).find((q) => !content.answers[q.id]?.trim())?.id;
 }
 
 export function nextFollowUpIndex(content: StoryContent): number | undefined {
@@ -44,8 +56,11 @@ export function nextFollowUpIndex(content: StoryContent): number | undefined {
   return i >= 0 ? i : undefined;
 }
 
-export function builderStage(content: StoryContent): BuilderStage {
-  if (nextCoreQuestion(content)) return "core";
+export function builderStage(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+): BuilderStage {
+  if (!content.imported && nextCoreQuestion(content, storyType)) return "core";
   if (!content.followUps) return "probe";
   if (nextFollowUpIndex(content) !== undefined) return "follow_ups";
   if (!content.draft) return "write";
@@ -55,23 +70,29 @@ export function builderStage(content: StoryContent): BuilderStage {
 // Every answer the user has typed, as one block of text. Numbers in a draft must trace back to this.
 export function allAnswerText(content: StoryContent): string {
   return [
-    ...CORE_QUESTIONS.map((q) => content.answers[q.id] ?? ""),
+    content.imported?.text ?? "",
+    ...Object.values(content.answers),
     ...(content.followUps ?? []).map((f) => f.answer ?? ""),
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-// Reads stories.content defensively: it is jsonb, so its shape isn't guaranteed.
+// Reads stories.content defensively: it is jsonb, so its shape isn't guaranteed. Answers and draft
+// parts are kept by key whatever the story type; the builder only reads the keys its type uses.
 export function parseContent(raw: unknown): StoryContent {
   const content = emptyContent();
   if (!isRecord(raw)) return content;
 
   if (isRecord(raw.answers)) {
-    for (const q of CORE_QUESTIONS) {
-      const value = raw.answers[q.id];
-      if (typeof value === "string") content.answers[q.id] = value;
-    }
+    content.answers = stringEntries(raw.answers);
+  }
+
+  if (isRecord(raw.imported) && typeof raw.imported.text === "string" && raw.imported.text) {
+    content.imported = {
+      fileName: typeof raw.imported.fileName === "string" ? raw.imported.fileName : "",
+      text: raw.imported.text,
+    };
   }
 
   if (Array.isArray(raw.followUps)) {
@@ -89,12 +110,8 @@ export function parseContent(raw: unknown): StoryContent {
   }
 
   if (isRecord(raw.draft) && isRecord(raw.draft.parts)) {
-    const rawParts = raw.draft.parts;
-    const parts = Object.fromEntries(
-      STORY_PARTS.map((p) => [p.id, typeof rawParts[p.id] === "string" ? rawParts[p.id] : ""]),
-    ) as Record<StoryPartId, string>;
     content.draft = {
-      parts,
+      parts: stringEntries(raw.draft.parts),
       untracedNumbers: Array.isArray(raw.draft.untracedNumbers)
         ? raw.draft.untracedNumbers.filter((n): n is string => typeof n === "string")
         : [],
@@ -104,6 +121,12 @@ export function parseContent(raw: unknown): StoryContent {
   }
 
   return content;
+}
+
+function stringEntries(record: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(record).filter((e): e is [string, string] => typeof e[1] === "string"),
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

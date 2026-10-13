@@ -71,13 +71,14 @@ async function StoryBank() {
       <p className="mt-1 text-teal-100">{stories.length === 1 ? "story" : "stories"} so far</p>
       {stories.length === 0 ? (
         <p className="mt-6 max-w-md text-teal-50">
-          Every story you build is kept here. Start with a major project or customer: it&apos;s the
-          one most interviews ask for.
+          Every story you build is kept here. Everyone starts with &ldquo;Tell me about
+          yourself&rdquo;: it&apos;s how almost every interview opens.
         </p>
       ) : (
         <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
           {stories.map((story) => {
-            const drafted = builderStage(story.content) === "drafted";
+            const drafted =
+              builderStage(story.content, getStoryType(story.storyType)) === "drafted";
             return (
               <li key={story.id}>
                 <Link

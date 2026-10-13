@@ -8,16 +8,19 @@ import {
   type StoryContent,
 } from "@/lib/stories/content";
 import {
-  CORE_QUESTIONS,
   MAX_ANSWER_LENGTH,
-  STORY_PARTS,
+  MAX_UPLOAD_BYTES,
+  UPLOAD_EXTENSIONS,
   coreQuestionText,
+  coreQuestions,
   getStoryType,
-  type CoreQuestionId,
-  type StoryPartId,
+  storyParts,
+  type StoryPart,
+  type StoryType,
 } from "@/lib/stories/story-types";
 import {
   askFollowUps,
+  importPreparedAnswer,
   saveAnswer,
   saveFollowUpAnswer,
   writeDraft,
@@ -25,10 +28,11 @@ import {
 } from "./actions";
 
 type Busy = null | "saving" | "probing" | "writing";
-type Editing = null | { kind: "core"; id: CoreQuestionId } | { kind: "followUp"; index: number };
+type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
-// Where a follow-up's answer shows up in the story panel, by the gap it was aimed at.
-const GAP_TO_PART: Record<string, StoryPartId> = {
+// Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
+// match a part id (every "Tell me about yourself" gap does) land in that part.
+const GAP_TO_PART: Record<string, string> = {
   situation: "situation",
   context: "situation",
   ownership: "role",
@@ -58,7 +62,8 @@ export function StoryBuilder({
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
 
-  const stage = builderStage(content);
+  const questions = coreQuestions(storyType);
+  const stage = builderStage(content, storyType);
 
   // Runs a chain of actions, applying each result. Stops at the first error.
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
@@ -75,7 +80,7 @@ export function StoryBuilder({
         setTitle(result.title);
         // After the last scripted answer, go straight on to call one; after the last
         // follow-up, straight on to call two.
-        const next = builderStage(result.content);
+        const next = builderStage(result.content, storyType);
         if (step.busy === "saving" && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
         } else if (step.busy === "saving" && next === "write") {
@@ -86,7 +91,7 @@ export function StoryBuilder({
     });
   }
 
-  function submitCore(id: CoreQuestionId, answer: string) {
+  function submitCore(id: string, answer: string) {
     setEditing(null);
     run([{ busy: "saving", action: () => saveAnswer(storyId, id, answer) }]);
   }
@@ -96,12 +101,19 @@ export function StoryBuilder({
     run([{ busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) }]);
   }
 
-  const currentCore = nextCoreQuestion(content);
+  function submitUpload(formData: FormData) {
+    setEditing(null);
+    run([{ busy: "saving", action: () => importPreparedAnswer(storyId, formData) }]);
+  }
+
+  const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
-  const coreAnswered = CORE_QUESTIONS.filter((q) => content.answers[q.id]?.trim()).length;
-  const askedCore = CORE_QUESTIONS.filter(
-    (q) => content.answers[q.id]?.trim() || q.id === currentCore,
+  const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
+  // With an uploaded answer the remaining scripted questions are skipped.
+  const askedCore = questions.filter(
+    (q) => content.answers[q.id]?.trim() || (!content.imported && q.id === currentCore),
   );
+  const canUpload = storyType?.format === "intro" && stage === "core";
 
   return (
     <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
@@ -112,11 +124,27 @@ export function StoryBuilder({
             {storyType?.label ?? "Your story"}
           </h1>
           <p className="shrink-0 whitespace-nowrap text-sm text-slate-500" data-testid="progress">
-            {progressLabel(stage, coreAnswered, content)}
+            {progressLabel(stage, coreAnswered, questions.length, content)}
           </p>
         </div>
 
+        {canUpload && <UploadPrepared disabled={busy !== null} onUpload={submitUpload} />}
+
         <ol className="mt-5 flex flex-col gap-4">
+          {content.imported && (
+            <li className="flex flex-col gap-2">
+              <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
+              <div className="flex flex-col items-end gap-1" data-testid="imported-answer">
+                <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
+                  {content.imported.text}
+                </p>
+                {content.imported.fileName && (
+                  <p className="text-xs text-slate-500">From {content.imported.fileName}</p>
+                )}
+              </div>
+            </li>
+          )}
+
           {askedCore.map((q) => {
             const answer = content.answers[q.id];
             const isEditing = editing?.kind === "core" && editing.id === q.id;
@@ -164,7 +192,11 @@ export function StoryBuilder({
 
           {!busy && stage === "probe" && (
             <ActionLine
-              text="All eight answered. Next I'll look for gaps and ask two or three follow-ups."
+              text={
+                content.imported
+                  ? "Your prepared answer is in. Next I'll review it and ask two or three follow-ups."
+                  : "That's every question. Next I'll look for gaps and ask two or three follow-ups."
+              }
               button="Get follow-up questions"
               onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
             />
@@ -201,17 +233,22 @@ export function StoryBuilder({
       <StoryPanel
         title={title}
         content={content}
-        storyTypeLabel={storyType?.label}
+        storyType={storyType}
         writing={busy === "writing"}
       />
     </div>
   );
 }
 
-function progressLabel(stage: ReturnType<typeof builderStage>, coreAnswered: number, content: StoryContent) {
+function progressLabel(
+  stage: ReturnType<typeof builderStage>,
+  coreAnswered: number,
+  coreTotal: number,
+  content: StoryContent,
+) {
   switch (stage) {
     case "core":
-      return `Question ${coreAnswered + 1} of ${CORE_QUESTIONS.length}`;
+      return `Question ${coreAnswered + 1} of ${coreTotal}`;
     case "probe":
       return "Questions done";
     case "follow_ups": {
@@ -351,6 +388,60 @@ function Composer({
   );
 }
 
+// "Tell me about yourself" only: skip the questions by uploading an answer prepared earlier.
+function UploadPrepared({
+  disabled,
+  onUpload,
+}: {
+  disabled: boolean;
+  onUpload: (formData: FormData) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const fieldId = useId();
+
+  return (
+    <form
+      className="mt-5 flex flex-col gap-3 rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const file = formData.get("file");
+        if (!(file instanceof File) || !file.name) return setError("Choose a file first.");
+        if (file.size > MAX_UPLOAD_BYTES) return setError("Keep the file under 3 MB.");
+        setError(null);
+        onUpload(formData);
+      }}
+    >
+      <label htmlFor={fieldId} className="text-sm text-slate-700">
+        <span className="font-semibold text-slate-900">Already prepared this answer?</span> Upload
+        it as a Word (.docx) or text file and I&apos;ll review it instead of asking these questions.
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={fieldId}
+          name="file"
+          type="file"
+          accept={UPLOAD_EXTENSIONS.join(",")}
+          disabled={disabled}
+          className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-teal-800 file:ring-1 file:ring-teal-800/20"
+        />
+        <button
+          type="submit"
+          disabled={disabled}
+          className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+        >
+          Upload and review
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="text-sm text-red-800">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
 function CoachBubble({ children }: { children: React.ReactNode }) {
   return (
     <p className="max-w-[90%] rounded-2xl rounded-bl-md bg-teal-50 px-4 py-3 text-slate-800">
@@ -404,20 +495,25 @@ function ActionLine({
 function StoryPanel({
   title,
   content,
-  storyTypeLabel,
+  storyType,
   writing,
 }: {
   title: string;
   content: StoryContent;
-  storyTypeLabel: string | undefined;
+  storyType: StoryType | undefined;
   writing: boolean;
 }) {
   const draft = content.draft;
+  const parts = storyParts(storyType);
+  const storyTypeLabel = storyType?.label;
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     if (!draft) return;
-    const text = STORY_PARTS.map((p) => draft.parts[p.id]).filter(Boolean).join("\n\n");
+    const text = parts
+      .map((p) => draft.parts[p.id])
+      .filter(Boolean)
+      .join("\n\n");
     try {
       await navigator.clipboard.writeText(`${title}\n\n${text}`);
       setCopied(true);
@@ -437,7 +533,10 @@ function StoryPanel({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-bold uppercase tracking-wide text-slate-500">Your story</p>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900" data-testid="story-title">
+          <h2
+            className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900"
+            data-testid="story-title"
+          >
             {draft ? title : (storyTypeLabel ?? title)}
           </h2>
         </div>
@@ -453,8 +552,8 @@ function StoryPanel({
       </div>
 
       <div className="mt-5 flex flex-col gap-4">
-        {STORY_PARTS.map((part) => {
-          const notes = notesForPart(content, part.id);
+        {parts.map((part) => {
+          const notes = notesForPart(content, storyType, parts, part);
           const written = draft?.parts[part.id];
           return (
             <div key={part.id} data-testid={`part-${part.id}`}>
@@ -483,7 +582,9 @@ function StoryPanel({
                   Empty
                 </p>
               )}
-              {part.id === "result" && draft && <NumberCheck untraced={draft.untracedNumbers} />}
+              {NUMBER_PARTS.has(part.id) && draft && (
+                <NumberCheck untraced={draft.untracedNumbers} />
+              )}
             </div>
           );
         })}
@@ -492,11 +593,25 @@ function StoryPanel({
   );
 }
 
-function notesForPart(content: StoryContent, part: StoryPartId): string[] {
+// The part that carries the story's number, where the number check is shown.
+const NUMBER_PARTS = new Set(["result", "highlight"]);
+
+function notesForPart(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+  parts: readonly StoryPart[],
+  part: StoryPart,
+): string[] {
+  const partFor = (gap: string) =>
+    parts.find((p) => p.id === gap)?.id ?? GAP_TO_PART[gap] ?? parts[0].id;
   return [
-    ...CORE_QUESTIONS.filter((q) => q.part === part).map((q) => content.answers[q.id] ?? ""),
+    // An uploaded answer isn't split by part until the story is written; show it at the top.
+    part.id === parts[0].id ? (content.imported?.text ?? "") : "",
+    ...coreQuestions(storyType)
+      .filter((q) => q.part === part.id)
+      .map((q) => content.answers[q.id] ?? ""),
     ...(content.followUps ?? [])
-      .filter((f) => (GAP_TO_PART[f.gap] ?? "situation") === part)
+      .filter((f) => partFor(f.gap) === part.id)
       .map((f) => f.answer ?? ""),
   ].filter((n) => n.trim());
 }
@@ -510,7 +625,10 @@ function NumberCheck({ untraced }: { untraced: string[] }) {
     );
   }
   return (
-    <p className="mt-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" data-testid="number-check">
+    <p
+      className="mt-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+      data-testid="number-check"
+    >
       These figures aren&apos;t in your answers: <strong>{untraced.join(", ")}</strong>. If
       they&apos;re real, add them to an answer and rewrite. If not, rewrite to drop them.
     </p>
