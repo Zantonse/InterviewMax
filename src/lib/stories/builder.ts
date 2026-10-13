@@ -7,9 +7,11 @@ import {
   type StoryDraft,
   type TailoredDraft,
 } from "./content";
+import { FIT_SYSTEM, fitMessages, parseFit, type ContentCheck, type FitJob } from "./fit";
 import {
   combineGrade,
   countWords,
+  draftText as gradedText,
   gradeMessages,
   gradeSystem,
   parseGrade,
@@ -119,17 +121,20 @@ export async function writeStory(
 
 // Grading: the quick checks in code, plus a separate model call (a different vendor from the
 // writer) that scores each criterion. The tier is worked out in code from both.
+//
+// With target jobs, a second call runs alongside it: the content check (fit.ts), which reads the
+// story against the jobs and the user's answers. If only that call fails, the grade still saves.
 export async function gradeStory(
   title: string,
   draft: StoryDraft,
   storyType: StoryType | undefined,
+  fit?: { answers: string; jobs: FitJob[] },
 ): Promise<StoryGrade> {
   const checks = quickChecks(draft, storyType);
-  const result = await call(
-    "storyGrade",
-    gradeSystem(storyType),
-    gradeMessages(title, draft, storyType),
-  );
+  const [result, content] = await Promise.all([
+    call("storyGrade", gradeSystem(storyType), gradeMessages(title, draft, storyType)),
+    fit?.jobs.length ? checkContent(draft, storyType, fit) : undefined,
+  ]);
   const graded = parseGrade(result.text, storyType);
   return combineGrade({
     criteria: graded.criteria,
@@ -138,10 +143,34 @@ export async function gradeStory(
     summary: graded.summary,
     strengths: graded.strengths,
     bankRole: graded.bankRole,
+    content,
     storyType,
     model: result.model,
     draftWrittenAt: draft.writtenAt,
   });
+}
+
+async function checkContent(
+  draft: StoryDraft,
+  storyType: StoryType | undefined,
+  fit: { answers: string; jobs: FitJob[] },
+): Promise<ContentCheck | undefined> {
+  try {
+    const result = await call(
+      "storyGrade",
+      FIT_SYSTEM,
+      fitMessages({
+        storyText: gradedText(draft.parts, storyType),
+        answers: fit.answers,
+        jobs: fit.jobs,
+        storyType,
+      }),
+    );
+    return parseFit(result.text, fit.jobs, result.model);
+  } catch (err) {
+    console.error("Content check failed", err);
+    return undefined;
+  }
 }
 
 // "Tell me about yourself" for one target job, written company first from the user's answers, why

@@ -1,5 +1,6 @@
 import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryDraft } from "./content";
+import { parseStoredFit, type ContentCheck } from "./fit";
 import { findNumbers } from "./numbers";
 import { extractJson } from "./prompts";
 import { INTRO_LENGTH, STAR_LENGTH, storyParts, type StoryType } from "./story-types";
@@ -140,6 +141,9 @@ export type StoryGrade = {
   bankRole?: { role: string; note: string };
   // Where a quick check and the grader's score disagree.
   flags: string[];
+  // How the story fits the user's target jobs (see fit.ts). Missing with no target jobs, or when
+  // the content check failed.
+  content?: ContentCheck;
   model: string;
   // The draft this grade is for; a rewritten draft makes it stale.
   draftWrittenAt: string;
@@ -412,6 +416,7 @@ export function combineGrade(input: {
   summary?: string;
   strengths?: string[];
   bankRole?: { role: string; note: string };
+  content?: ContentCheck;
   storyType: StoryType | undefined;
   model: string;
   draftWrittenAt: string;
@@ -428,6 +433,7 @@ export function combineGrade(input: {
     checks,
     ...(input.bankRole && storyType?.format !== "intro" ? { bankRole: input.bankRole } : {}),
     flags: disagreements(criteria, checks, storyType),
+    ...(input.content ? { content: input.content } : {}),
     model: input.model,
     draftWrittenAt: input.draftWrittenAt,
     gradedAt: new Date().toISOString(),
@@ -580,6 +586,7 @@ export function parseStoredGrade(raw: unknown): StoryGrade | undefined {
       ? { bankRole: { role: raw.bankRole.role, note: str(raw.bankRole.note) } }
       : {}),
     flags: strings(raw.flags),
+    ...(parseStoredFit(raw.content) ? { content: parseStoredFit(raw.content) } : {}),
     model: str(raw.model),
     draftWrittenAt: str(raw.draftWrittenAt),
     gradedAt: str(raw.gradedAt),
