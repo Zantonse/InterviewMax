@@ -1,6 +1,14 @@
 import "server-only";
 import { generateForStep, type Step } from "@/lib/ai";
 import { allAnswerText, type FollowUp, type StoryContent, type StoryDraft } from "./content";
+import {
+  combineGrade,
+  gradeMessages,
+  gradeSystem,
+  parseGrade,
+  quickChecks,
+  type StoryGrade,
+} from "./grading";
 import { untracedNumbers } from "./numbers";
 import {
   PREFILL_SYSTEM,
@@ -74,6 +82,31 @@ export async function writeStory(
       writtenAt: new Date().toISOString(),
     },
   };
+}
+
+// Grading: the quick checks in code, plus a separate model call (a different vendor from the
+// writer) that scores each criterion. The tier is worked out in code from both.
+export async function gradeStory(
+  title: string,
+  draft: StoryDraft,
+  storyType: StoryType | undefined,
+): Promise<StoryGrade> {
+  const checks = quickChecks(draft, storyType);
+  const result = await call(
+    "storyGrade",
+    gradeSystem(storyType),
+    gradeMessages(title, draft, storyType),
+  );
+  const graded = parseGrade(result.text, storyType);
+  return combineGrade({
+    criteria: graded.criteria,
+    checks,
+    modelFixes: graded.fixes,
+    bankRole: graded.bankRole,
+    storyType,
+    model: result.model,
+    draftWrittenAt: draft.writtenAt,
+  });
 }
 
 function draftText(parts: StoryDraft["parts"], storyType: StoryType | undefined) {

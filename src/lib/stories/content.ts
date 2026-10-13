@@ -1,3 +1,4 @@
+import { parseStoredGrade, type StoryGrade } from "./grading";
 import { coreQuestions, type StoryType } from "./story-types";
 
 // What the builder keeps in stories.content (jsonb).
@@ -53,6 +54,8 @@ export type StoryContent = {
   // Set when the last round asked for found nothing more to ask; cleared when an answer changes.
   nothingMoreToAsk?: boolean;
   draft?: StoryDraft;
+  // The latest grade of the draft (see grading.ts). Stale once the draft is rewritten.
+  grade?: StoryGrade;
 };
 
 // Where the user is in the builder, derived from what has been saved.
@@ -173,7 +176,15 @@ export function parseContent(raw: unknown): StoryContent {
     };
   }
 
+  const grade = parseStoredGrade(raw.grade);
+  if (grade) content.grade = grade;
+
   return content;
+}
+
+// Whether the saved grade is for the current draft.
+export function gradeIsCurrent(content: StoryContent): boolean {
+  return Boolean(content.draft && content.grade?.draftWrittenAt === content.draft.writtenAt);
 }
 
 function stringEntries(record: Record<string, unknown>): Record<string, string> {

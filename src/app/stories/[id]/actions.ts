@@ -2,7 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
-import { prefillFromProfile, probeStory, writeStory } from "@/lib/stories/builder";
+import { gradeStory, prefillFromProfile, probeStory, writeStory } from "@/lib/stories/builder";
 import {
   MAX_PROBE_ROUNDS,
   builderStage,
@@ -165,6 +165,18 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
     return { ok: true, content, title: newTitle };
+  });
+}
+
+// Grades the current draft. Runs right after each write, and again on request.
+export async function gradeDraft(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const draft = story.content.draft;
+    if (!draft) return fail("Write the story first, then I'll grade it.");
+    const grade = await gradeStory(story.title, draft, getStoryType(story.storyType));
+    const content = { ...story.content, grade };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
   });
 }
 

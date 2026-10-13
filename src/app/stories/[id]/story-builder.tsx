@@ -21,6 +21,7 @@ import {
 } from "@/lib/stories/story-types";
 import {
   askFollowUps,
+  gradeDraft,
   importLinkedIn,
   importPreparedAnswer,
   saveAnswer,
@@ -28,8 +29,9 @@ import {
   writeDraft,
   type BuilderResult,
 } from "./actions";
+import { EvaluationPanel } from "./evaluation-panel";
 
-type Busy = null | "saving" | "reading" | "probing" | "writing";
+type Busy = null | "saving" | "reading" | "probing" | "writing" | "grading";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
 // Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
@@ -88,6 +90,9 @@ export function StoryBuilder({
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
         } else if ((saved || step.busy === "probing") && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
+        } else if (step.busy === "writing") {
+          // Every new or rewritten draft is graded straight away.
+          steps.push({ busy: "grading", action: () => gradeDraft(storyId) });
         }
       }
       setBusy(null);
@@ -297,13 +302,22 @@ export function StoryBuilder({
         )}
       </section>
 
-      {/* The story assembling */}
-      <StoryPanel
-        title={title}
-        content={content}
-        storyType={storyType}
-        writing={busy === "writing"}
-      />
+      {/* The story assembling, and how it grades */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+        <StoryPanel
+          title={title}
+          content={content}
+          storyType={storyType}
+          writing={busy === "writing"}
+        />
+        <EvaluationPanel
+          content={content}
+          storyType={storyType}
+          grading={busy === "grading"}
+          disabled={busy !== null}
+          onGrade={() => run([{ busy: "grading", action: () => gradeDraft(storyId) }])}
+        />
+      </div>
     </div>
   );
 }
@@ -623,7 +637,7 @@ function StoryPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 lg:sticky lg:top-6 ${
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
         writing ? "opacity-60" : ""
       }`}
       aria-label="Your story"
