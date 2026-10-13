@@ -1,35 +1,39 @@
+import Link from "next/link";
 import { Suspense } from "react";
-import { getCurrentUser } from "@/lib/auth";
+import { AppHeader } from "@/components/app-header";
+import { builderStage } from "@/lib/stories/content";
+import { listStories } from "@/lib/stories/data";
+import { getStoryType } from "@/lib/stories/story-types";
 
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-slate-200/80 bg-white/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <span className="text-lg font-extrabold tracking-tight text-teal-900">InterviewMax</span>
-          <Suspense fallback={<span className="h-5 w-32 animate-pulse rounded bg-slate-200" />}>
-            <AccountMenu />
-          </Suspense>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-          Your interview prep
-        </h1>
-        <p className="mt-2 max-w-2xl text-slate-600">
-          Nothing here yet. Your target jobs, stories and practice will show up on this page as you
-          build them.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Your interview prep
+            </h1>
+            <p className="mt-2 max-w-2xl text-slate-600">
+              Build one story at a time. Each one is drawn from your own answers, with your own
+              numbers.
+            </p>
+          </div>
+          <Link
+            href="/stories/new"
+            className="rounded-xl bg-teal-800 px-4 py-3 font-semibold text-white transition hover:bg-teal-900"
+          >
+            Build a story
+          </Link>
+        </div>
 
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-2">
           <Card className="bg-teal-800 text-white md:col-span-2 md:row-span-2" title="Story bank">
-            <p className="text-5xl font-extrabold">0</p>
-            <p className="mt-1 text-teal-100">stories so far</p>
-            <p className="mt-6 max-w-md text-teal-50">
-              Every story you build is kept here, checked against the rubric and tagged to the
-              themes interviewers ask about.
-            </p>
+            <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
+              <StoryBank />
+            </Suspense>
           </Card>
           <Card title="Target jobs">
             <EmptyLine>No target jobs added yet.</EmptyLine>
@@ -43,22 +47,49 @@ export default function HomePage() {
   );
 }
 
-async function AccountMenu() {
-  const user = await getCurrentUser();
+async function StoryBank() {
+  const stories = await listStories();
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <span className="hidden text-slate-600 sm:inline" data-testid="user-email">
-        {user.email}
-      </span>
-      <form action="/auth/signout" method="post">
-        <button
-          type="submit"
-          className="rounded-full px-3 py-1.5 font-medium text-teal-800 ring-1 ring-teal-800/20 hover:bg-teal-50"
-        >
-          Sign out
-        </button>
-      </form>
-    </div>
+    <>
+      <p className="text-5xl font-extrabold" data-testid="story-count">
+        {stories.length}
+      </p>
+      <p className="mt-1 text-teal-100">{stories.length === 1 ? "story" : "stories"} so far</p>
+      {stories.length === 0 ? (
+        <p className="mt-6 max-w-md text-teal-50">
+          Every story you build is kept here. Start with a major project or customer: it&apos;s the
+          one most interviews ask for.
+        </p>
+      ) : (
+        <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
+          {stories.map((story) => {
+            const drafted = builderStage(story.content) === "drafted";
+            return (
+              <li key={story.id}>
+                <Link
+                  href={`/stories/${story.id}`}
+                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{story.title}</span>
+                    <span className="block truncate text-sm text-teal-100">
+                      {getStoryType(story.storyType)?.label ?? "Story"}
+                    </span>
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      drafted ? "bg-white text-teal-900" : "bg-teal-900/60 text-teal-50"
+                    }`}
+                  >
+                    {drafted ? "Draft written" : "In progress"}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
   );
 }
 

@@ -31,7 +31,11 @@ export function createOpenAICompatibleProvider(
         response = await client.chat.completions.create({
           model: req.model,
           messages,
-          max_completion_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
+          // OpenRouter passes max_tokens to every upstream provider; not all of them accept
+          // max_completion_tokens. The OpenAI API itself wants max_completion_tokens.
+          ...(id === "openrouter"
+            ? { max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS }
+            : { max_completion_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS }),
           ...(req.effort ? { reasoning_effort: req.effort } : {}),
         });
       } catch (err) {

@@ -95,6 +95,24 @@ describe("OpenAI-compatible provider", () => {
     expect(result.usage).toEqual({ inputTokens: 9, outputTokens: 4 });
   });
 
+  it("sends max_tokens to OpenRouter", async () => {
+    const create = vi.fn().mockResolvedValue({
+      model: "anthropic/claude-opus-5.5",
+      choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
+    });
+    const provider = createOpenAICompatibleProvider("openrouter", {
+      chat: { completions: { create } },
+    } as never);
+
+    await provider.generate({ model: "anthropic/claude-opus-5.5", maxTokens: 500, messages: [] });
+
+    expect(create).toHaveBeenCalledWith({
+      model: "anthropic/claude-opus-5.5",
+      messages: [],
+      max_tokens: 500,
+    });
+  });
+
   it("labels OpenRouter errors with the provider id", async () => {
     const provider = createOpenAICompatibleProvider("openrouter", {
       chat: { completions: { create: vi.fn().mockRejectedValue(new Error("nope")) } },
