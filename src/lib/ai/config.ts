@@ -25,6 +25,10 @@ export const STEP_MODELS = {
   roleProfile: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Story builder, call two: write the story from the user's own answers.
   storyWrite: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
+  // "Tell me about yourself" for one target job: company first, three beats, under 90 seconds.
+  storyTailor: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
+  // "Tell me about yourself": read the career path from a resume or LinkedIn profile to confirm.
+  careerPath: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
   // Target jobs: read the resume and every job posting together (what they share, how each differs).
