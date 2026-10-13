@@ -15,11 +15,17 @@ import {
   extractJson,
   parsePrefill,
   parseProbe,
+  parsePath,
+  parseTailor,
   parseWrite,
+  probeMessages,
   probeSystem,
+  retryMessages,
+  tailorMessages,
   writeMessages,
   writeSystem,
 } from "./prompts";
+import { tailoredChecks, tailoredText } from "./tailored";
 import {
   STORY_TYPES,
   coreQuestions,
@@ -167,7 +173,7 @@ describe("prompts", () => {
   });
 
   it("tells the review which round it is and to push for numbers", () => {
-    expect(probeSystem(aboutMe, 1)).toContain("Ask 3 to 5 questions");
+    expect(probeSystem(aboutMe, 1)).toContain("Ask 3 or 4 questions, the lightest first");
     expect(probeSystem(aboutMe, 2)).toContain("return an empty list");
     expect(probeSystem(stakeholder)).toContain("Push for numbers");
   });
@@ -271,5 +277,136 @@ describe("review rounds", () => {
     content.followUps.push({ question: "Q?", gap: "x", answer: "A", round: MAX_STRENGTHEN_ROUNDS });
     expect(canStrengthen(content)).toBe(false);
     expect(parseContent({ nothingMoreToAsk: true }).nothingMoreToAsk).toBe(true);
+  });
+});
+
+describe("autobiographer, not interrogator", () => {
+  it("asks light, history-based questions first and never for a list of career moves", () => {
+    const system = probeSystem(aboutMe, 1);
+    expect(system).toContain("autobiographer, not an interrogator");
+    expect(system).toContain("under a minute");
+    expect(system).toContain("Never ask for a list");
+    expect(system).not.toContain("demanding");
+  });
+
+  it("asks a light path question, not for two or three career moves", () => {
+    const path = coreQuestions(aboutMe).find((q) => q.id === "path");
+    expect(path?.text).not.toMatch(/two or three/i);
+  });
+
+  it("gives the review the resume as background, but not the writer", () => {
+    const content = answeredContent(aboutMe);
+    const probe = probeMessages(content, aboutMe, undefined, "Sales engineer, TikTok, 2019-2022");
+    expect(probe[0].content).toContain("My resume, for background");
+    expect(probe[0].content).toContain("TikTok");
+    expect(writeMessages(content, aboutMe)[0].content).not.toContain("TikTok");
+  });
+
+  it("shows an inferred path back as a question to confirm", () => {
+    const content = answeredContent(aboutMe);
+    content.inferredPath = { text: "SE at TikTok, then PM", source: "resume" };
+    const transcript = answersTranscript(content, aboutMe);
+    expect(transcript).toContain("Here's how your path reads from your resume");
+    const round = parseContent(JSON.parse(JSON.stringify(content)));
+    expect(round.inferredPath).toEqual(content.inferredPath);
+    expect(
+      parseContent({ inferredPath: { text: "x", source: "email" } }).inferredPath,
+    ).toBeUndefined();
+  });
+
+  it("reads the inferred path", () => {
+    expect(parsePath('{"path": " SE at TikTok\\nPM at Netflix "}')).toBe(
+      "SE at TikTok\nPM at Netflix",
+    );
+    expect(() => parsePath("nope")).toThrow();
+  });
+});
+
+describe("cut the fluff", () => {
+  it("gives every writer a hard length limit and the no-hedging rules", () => {
+    expect(writeSystem(aboutMe)).toContain("Never go over 225 words");
+    expect(writeSystem(stakeholder)).toContain("Never go over 300 words");
+    expect(writeSystem(stakeholder)).toContain("maybe 100 accounts");
+  });
+
+  it("asks the writer to cut a draft over the limit and drop untraced figures", () => {
+    const [previous, ask] = retryMessages({
+      previous: "{}",
+      untraced: ["40%"],
+      words: { count: 260, max: 225 },
+    });
+    expect(previous).toEqual({ role: "assistant", content: "{}" });
+    expect(ask.content).toContain("40%");
+    expect(ask.content).toContain("260 words");
+    expect(ask.content).toContain("at most 205 words");
+    expect(retryMessages({ previous: "{}", untraced: [] })[1].content).not.toContain("words");
+  });
+});
+
+describe("Tell me about yourself for one job", () => {
+  const job = {
+    title: "Product Manager",
+    company: "Sierra",
+    description: "Own the agent platform roadmap. Work with customers.",
+    focus: ["Customer-facing product sense"],
+  };
+
+  it("puts the company and why-here first, then the user's answers", () => {
+    const content = answeredContent(aboutMe);
+    const [message] = tailorMessages(content, aboutMe, job, "I want SE and PM together.");
+    const text = message.content;
+    expect(text.indexOf("Sierra")).toBeLessThan(text.indexOf("My answers about my career"));
+    expect(text).toContain("Why I want to work at Sierra");
+    expect(text).toContain("I want SE and PM together.");
+    expect(text).toContain("Customer-facing product sense");
+  });
+
+  it("reads the three beats and the angle", () => {
+    const parsed = parseTailor(
+      '{"angle":"Led with SE plus PM.","parts":{"who":"I build sales products.","proof":"Took activation from 6 weeks to instant.","why_here":"Sierra needs both."}}',
+    );
+    expect(parsed.angle).toBe("Led with SE plus PM.");
+    expect(tailoredText(parsed.parts).split("\n\n")).toHaveLength(3);
+    expect(() => parseTailor('{"parts":{}}')).toThrow();
+  });
+
+  it("checks length, numbers and hedges like any story", () => {
+    const checks = tailoredChecks({
+      parts: {
+        who: "I build sales products.",
+        proof: "It reached maybe 100 accounts.",
+        why_here: "Sierra.",
+      },
+      angle: "",
+      untracedNumbers: [],
+      model: "test",
+      writtenAt: "",
+    });
+    expect(checks.find((c) => c.id === "length")?.pass).toBe(false);
+    expect(checks.find((c) => c.id === "hedged")?.pass).toBe(false);
+    expect(checks.find((c) => c.id === "number")?.pass).toBe(true);
+  });
+
+  it("keeps a version per job in the story", () => {
+    const content = parseContent({
+      answers: {},
+      tailored: {
+        job1: {
+          whyCompany: "Because.",
+          draft: {
+            parts: { who: "W" },
+            angle: "A",
+            untracedNumbers: [],
+            model: "m",
+            writtenAt: "t",
+          },
+        },
+        job2: { whyCompany: "Only the reason so far." },
+        bad: { draft: {} },
+      },
+    });
+    expect(Object.keys(content.tailored ?? {})).toEqual(["job1", "job2"]);
+    expect(content.tailored?.job1.draft?.parts.who).toBe("W");
+    expect(content.tailored?.job2.draft).toBeUndefined();
   });
 });
