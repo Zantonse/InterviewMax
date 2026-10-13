@@ -57,6 +57,8 @@ export function StoryBuilder({
   initialTitle,
   initialContent,
   hasResume = false,
+  afterStory,
+  menu,
 }: {
   storyId: string;
   storyTypeId: string | null;
@@ -65,6 +67,10 @@ export function StoryBuilder({
   // Whether the user added a resume on the target jobs page; "Tell me about yourself" reads their
   // career path from it.
   hasResume?: boolean;
+  // Shown under the story on the Story & score view.
+  afterStory?: React.ReactNode;
+  // Story-level actions, such as delete, in the ⋯ menu.
+  menu?: React.ReactNode;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -73,6 +79,10 @@ export function StoryBuilder({
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
+  // Build is the chat; Story & score is the written story beside its evaluation.
+  const [view, setView] = useState<View>(
+    initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
+  );
 
   const questions = coreQuestions(storyType);
   const stage = builderStage(content, storyType);
@@ -90,6 +100,11 @@ export function StoryBuilder({
         }
         setContent(result.content);
         setTitle(result.title);
+        // A new draft is shown with its score; new questions are answered in the chat.
+        if (step.busy === "writing") setView("story");
+        if (step.busy === "probing" && nextFollowUpIndex(result.content) !== undefined) {
+          setView("build");
+        }
         // After the last scripted answer, go straight on to call one; after the last
         // follow-up, to the next round or straight on to call two.
         const next = builderStage(result.content, storyType);
@@ -138,6 +153,10 @@ export function StoryBuilder({
     ]);
   }
 
+  function strengthen() {
+    run([{ busy: "probing", action: () => askFollowUps(storyId) }]);
+  }
+
   function submitUpload(formData: FormData) {
     setEditing(null);
     run([{ busy: "saving", action: () => importPreparedAnswer(storyId, formData) }]);
@@ -156,238 +175,432 @@ export function StoryBuilder({
     (q) => content.answers[q.id]?.trim() || (!content.imported && q.id === currentCore),
   );
   const canUpload = storyType?.format === "intro" && stage === "core";
+  const inferredNow = currentCore === "path" ? content.inferredPath : undefined;
+
+  // The chat keeps its newest message in view, unless an earlier answer is open for editing.
+  const listRef = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    if (editing || view !== "build") return;
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [content, busy, editing, view]);
 
   return (
-    <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,26rem)]">
-      {/* The conversation */}
-      <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-sm font-bold uppercase tracking-wide text-teal-800">
-            {storyType?.label ?? "Your story"}
-          </h1>
-          <p className="shrink-0 whitespace-nowrap text-sm text-slate-500" data-testid="progress">
-            {progressLabel(stage, coreAnswered, questions.length, content)}
-          </p>
-        </div>
-
-        {storyType?.format === "intro" && (
-          <RoleMapCard
-            storyId={storyId}
-            content={content}
-            prominent={
-              canUpload && suggestRoleMap(content.answers[questions[0]?.id], content.roleMap)
-            }
-          />
-        )}
-
-        {canUpload && (
-          <details className="group mt-4" data-testid="start-from-file">
-            <summary className="cursor-pointer text-sm text-slate-600">
-              Have a LinkedIn PDF or an answer you prepared?{" "}
-              <span className="font-medium text-teal-800 group-open:hidden">Start from a file</span>
-            </summary>
-            <div className="mt-3 flex flex-col gap-3">
-              {!content.linkedin && (
-                <UploadOption
-                  testId="upload-linkedin"
-                  lead="Have a LinkedIn profile?"
-                  text="On your profile, click More, then Save to PDF, and upload that file here. I'll fill in what it already answers and only ask about the rest."
-                  accept=".pdf"
-                  button="Upload profile"
-                  disabled={busy !== null}
-                  onUpload={submitLinkedIn}
-                />
-              )}
-              <UploadOption
-                testId="upload-prepared"
-                lead="Already prepared this answer?"
-                text="Upload it as a Word (.docx) or text file and I'll review it instead of asking these questions."
-                accept={UPLOAD_EXTENSIONS.join(",")}
-                button="Upload and review"
-                disabled={busy !== null}
-                onUpload={submitUpload}
-              />
-            </div>
-          </details>
-        )}
-
-        <ol className="mt-5 flex flex-col gap-4">
-          {content.imported && (
-            <li className="flex flex-col gap-2">
-              <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
-              <div className="flex flex-col items-end gap-1" data-testid="imported-answer">
-                <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
-                  {content.imported.text}
-                </p>
-                {content.imported.fileName && (
-                  <p className="text-xs text-slate-500">From {content.imported.fileName}</p>
-                )}
-              </div>
-            </li>
-          )}
-
-          {content.linkedin && (
-            <CoachLine>
-              I read your LinkedIn profile
-              {content.linkedin.prefilled.length > 0
-                ? " and filled in what it answers. Edit anything that's off."
-                : ", but it didn't answer these questions directly."}
-            </CoachLine>
-          )}
-
-          {askedCore.map((q) => {
-            const answer = content.answers[q.id];
-            const isEditing = editing?.kind === "core" && editing.id === q.id;
-            const inferred = q.id === "path" ? content.inferredPath : undefined;
-            return (
-              <Exchange
-                key={q.id}
-                question={
-                  inferred
-                    ? inferredPathQuestion(inferred.source)
-                    : coreQuestionText(q.id, storyType)
-                }
-                answer={answer}
-                suggested={inferred?.text}
-                source={
-                  content.roleMap?.seeded?.includes(q.id)
-                    ? "From your role map"
-                    : content.linkedin?.prefilled.includes(q.id)
-                      ? "From your LinkedIn"
-                      : inferred
-                        ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
-                        : undefined
-                }
-                isCurrent={q.id === currentCore}
-                isEditing={isEditing}
-                disabled={busy !== null}
-                onEdit={() => setEditing({ kind: "core", id: q.id })}
-                onCancel={() => setEditing(null)}
-                onSubmit={(text) => submitCore(q.id, text)}
-              />
-            );
-          })}
-
-          {content.followUps?.map((f, index) => {
-            if (index > (currentFollowUp ?? Infinity)) return null;
-            const isEditing = editing?.kind === "followUp" && editing.index === index;
-            const round = f.round ?? 1;
-            const opensRound = index === 0 || round !== (content.followUps?.[index - 1].round ?? 1);
-            return (
-              <Fragment key={index}>
-                {opensRound && (
-                  <CoachLine>
-                    {round === 1
-                      ? "Thanks. A few quick follow-ups before I write it up, easiest first:"
-                      : "Good. A few more, so the numbers and examples carry it:"}
-                  </CoachLine>
-                )}
-                <Exchange
-                  question={f.question}
-                  answer={f.answer}
-                  isCurrent={index === currentFollowUp}
-                  isEditing={isEditing}
-                  disabled={busy !== null}
-                  onEdit={() => setEditing({ kind: "followUp", index })}
-                  onCancel={() => setEditing(null)}
-                  onSubmit={(text) => submitFollowUp(index, text)}
-                />
-              </Fragment>
-            );
-          })}
-
-          {busy === "reading" && <Thinking>Reading your LinkedIn profile…</Thinking>}
-          {busy === "inferring" && (
-            <Thinking>
-              Reading your path from your {hasResume ? "resume" : "LinkedIn profile"}…
-            </Thinking>
-          )}
-          {!busy && canInferPath(content) && (
-            <li>
+    <>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          {storyType?.label ?? "Your story"}
+        </h1>
+        <p className="whitespace-nowrap text-sm text-slate-500" data-testid="progress">
+          {progressLabel(stage, coreAnswered, questions.length, content)}
+        </p>
+        <div className="ml-auto flex items-center gap-2">
+          <div
+            role="tablist"
+            aria-label="Story views"
+            className="flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
+          >
+            {VIEWS.map((v, i) => (
               <button
+                key={v.id}
                 type="button"
-                onClick={() => run([{ busy: "inferring", action: () => inferPath(storyId) }])}
-                className="text-sm font-medium text-teal-800 hover:underline"
-                data-testid="infer-path"
+                role="tab"
+                aria-selected={view === v.id}
+                onClick={() => setView(v.id)}
+                className={`rounded-full px-3.5 py-1.5 transition ${
+                  view === v.id
+                    ? "bg-white text-teal-800 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                data-testid={`tab-${v.id}`}
               >
-                Read it from my {hasResume ? "resume" : "LinkedIn profile"} instead
+                {i + 1} · {v.label}
               </button>
-            </li>
+            ))}
+          </div>
+          {menu && (
+            <details className="relative" data-testid="story-menu">
+              <summary
+                aria-label="More options"
+                className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl text-lg leading-none text-slate-600 ring-1 ring-slate-300 hover:bg-white [&::-webkit-details-marker]:hidden"
+              >
+                ⋯
+              </summary>
+              <div className="absolute right-0 z-10 mt-2 w-72 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/10">
+                {menu}
+              </div>
+            </details>
           )}
-          {busy === "probing" && <Thinking>Reading your answers…</Thinking>}
-          {busy === "writing" && <Thinking>Writing your story from your answers…</Thinking>}
-
-          {!busy && stage === "probe" && (
-            <ActionLine
-              text={
-                content.followUps
-                  ? "Thanks. Next I'll check whether anything is still thin and ask a few more if so."
-                  : content.imported
-                    ? "Your prepared answer is in. Next I'll review it and ask a few follow-ups."
-                    : "That's every question. Next I'll look for gaps and ask a few follow-ups."
-              }
-              button="Get follow-up questions"
-              onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
-            />
-          )}
-          {!busy && stage === "write" && (
-            <ActionLine
-              text="That's everything I need."
-              button="Write my story"
-              onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
-            />
-          )}
-          {!busy && stage === "drafted" && (
-            <ActionLine
-              text={
-                content.draft?.untracedNumbers.length
-                  ? "Your draft is ready, but check the highlighted figures: they aren't in your answers. Fix an answer or rewrite the story."
-                  : content.nothingMoreToAsk
-                    ? "I couldn't find anything more to ask: the answers behind this draft are already strong. Change an answer and I'll look again."
-                    : "Your draft is ready, built only from what you told me. Ask me more to make it stronger, as many times as you like, or rewrite it after changing an answer."
-              }
-              button="Rewrite the story"
-              secondary
-              onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
-              extra={
-                canStrengthen(content) && !content.nothingMoreToAsk
-                  ? {
-                      button: "Ask me more to make it stronger",
-                      onClick: () =>
-                        run([{ busy: "probing", action: () => askFollowUps(storyId) }]),
-                    }
-                  : undefined
-              }
-            />
-          )}
-        </ol>
-
-        {error && (
-          <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </p>
-        )}
-      </section>
-
-      {/* The story assembling, and how it grades: stacked in one column on a laptop, side by side
-          on a wide screen, where the wrapper steps aside so each is its own sticky column. */}
-      <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto xl:contents">
-        <StoryPanel
-          title={title}
-          content={content}
-          storyType={storyType}
-          writing={busy === "writing"}
-        />
-        <EvaluationPanel
-          className="xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto"
-          content={content}
-          storyType={storyType}
-          grading={busy === "grading"}
-          disabled={busy !== null}
-          onGrade={() => run([{ busy: "grading", action: () => gradeDraft(storyId) }])}
-        />
+        </div>
       </div>
-    </div>
+
+      {view === "build" ? (
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          {/* The conversation: its own scrolling pane, with the answer box pinned under it. */}
+          <section
+            className="flex h-[calc(100dvh-12rem)] min-h-[26rem] flex-col rounded-3xl bg-white shadow-sm ring-1 ring-black/5"
+            aria-label="Conversation"
+          >
+            <ol
+              ref={listRef}
+              className="flex flex-1 flex-col gap-4 overflow-y-scroll overscroll-contain p-5 sm:p-6"
+              data-testid="chat"
+            >
+              {content.imported && (
+                <li className="flex flex-col gap-2">
+                  <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
+                  <div className="flex flex-col items-end gap-1" data-testid="imported-answer">
+                    <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
+                      {content.imported.text}
+                    </p>
+                    {content.imported.fileName && (
+                      <p className="text-xs text-slate-500">From {content.imported.fileName}</p>
+                    )}
+                  </div>
+                </li>
+              )}
+
+              {content.linkedin && (
+                <CoachLine>
+                  I read your LinkedIn profile
+                  {content.linkedin.prefilled.length > 0
+                    ? " and filled in what it answers. Edit anything that's off."
+                    : ", but it didn't answer these questions directly."}
+                </CoachLine>
+              )}
+
+              {askedCore.map((q) => {
+                const inferred = q.id === "path" ? content.inferredPath : undefined;
+                return (
+                  <Exchange
+                    key={q.id}
+                    question={
+                      inferred
+                        ? inferredPathQuestion(inferred.source)
+                        : coreQuestionText(q.id, storyType)
+                    }
+                    answer={content.answers[q.id]}
+                    source={
+                      content.roleMap?.seeded?.includes(q.id)
+                        ? "From your role map"
+                        : content.linkedin?.prefilled.includes(q.id)
+                          ? "From your LinkedIn"
+                          : inferred
+                            ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
+                            : undefined
+                    }
+                    isEditing={editing?.kind === "core" && editing.id === q.id}
+                    disabled={busy !== null}
+                    onEdit={() => setEditing({ kind: "core", id: q.id })}
+                    onCancel={() => setEditing(null)}
+                    onSubmit={(text) => submitCore(q.id, text)}
+                  />
+                );
+              })}
+
+              {content.followUps?.map((f, index) => {
+                if (index > (currentFollowUp ?? Infinity)) return null;
+                const round = f.round ?? 1;
+                const opensRound =
+                  index === 0 || round !== (content.followUps?.[index - 1].round ?? 1);
+                return (
+                  <Fragment key={index}>
+                    {opensRound && (
+                      <CoachLine>
+                        {round === 1
+                          ? "Thanks. A few quick follow-ups, easiest first:"
+                          : "Good. A few more, so the numbers and examples carry it:"}
+                      </CoachLine>
+                    )}
+                    <Exchange
+                      question={f.question}
+                      answer={f.answer}
+                      isEditing={editing?.kind === "followUp" && editing.index === index}
+                      disabled={busy !== null}
+                      onEdit={() => setEditing({ kind: "followUp", index })}
+                      onCancel={() => setEditing(null)}
+                      onSubmit={(text) => submitFollowUp(index, text)}
+                    />
+                  </Fragment>
+                );
+              })}
+
+              {busy === "reading" && <Thinking>Reading your LinkedIn profile…</Thinking>}
+              {busy === "inferring" && (
+                <Thinking>
+                  Reading your path from your {hasResume ? "resume" : "LinkedIn profile"}…
+                </Thinking>
+              )}
+              {busy === "probing" && <Thinking>Reading your answers…</Thinking>}
+              {busy === "writing" && <Thinking>Writing your story from your answers…</Thinking>}
+              {busy === "grading" && <Thinking>Grading your story…</Thinking>}
+            </ol>
+
+            <div className="border-t border-slate-100 p-4">
+              {error && (
+                <p role="alert" className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+                  {error}
+                </p>
+              )}
+              {currentCore && !content.imported ? (
+                <>
+                  {!busy && canInferPath(content) && (
+                    <button
+                      type="button"
+                      onClick={() => run([{ busy: "inferring", action: () => inferPath(storyId) }])}
+                      className="mb-2 text-sm font-medium text-teal-800 hover:underline"
+                      data-testid="infer-path"
+                    >
+                      Read it from my {hasResume ? "resume" : "LinkedIn profile"} instead
+                    </button>
+                  )}
+                  <Composer
+                    key={`core-${currentCore}-${inferredNow ? "inferred" : "blank"}`}
+                    initial={inferredNow?.text ?? ""}
+                    disabled={busy !== null}
+                    submitLabel={inferredNow ? "That's right" : "Next"}
+                    onSubmit={(text) => submitCore(currentCore, text)}
+                  />
+                </>
+              ) : currentFollowUp !== undefined ? (
+                <Composer
+                  key={`follow-up-${currentFollowUp}`}
+                  initial=""
+                  disabled={busy !== null}
+                  submitLabel="Next"
+                  onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
+                />
+              ) : busy ? null : stage === "probe" ? (
+                <ActionLine
+                  text={
+                    content.followUps
+                      ? "Next I'll check whether anything is still thin."
+                      : content.imported
+                        ? "Your prepared answer is in. Next I'll look for gaps."
+                        : "That's every question. Next I'll look for gaps."
+                  }
+                  button="Get follow-up questions"
+                  onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
+                />
+              ) : stage === "write" ? (
+                <ActionLine
+                  text="That's everything I need."
+                  button="Write my story"
+                  onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+                />
+              ) : stage === "drafted" ? (
+                <ActionLine
+                  text="Your story is written."
+                  button="See story & score"
+                  onClick={() => setView("story")}
+                  extra={
+                    canStrengthen(content) && !content.nothingMoreToAsk
+                      ? { button: "Ask me more to make it stronger", onClick: strengthen }
+                      : undefined
+                  }
+                  secondary
+                />
+              ) : null}
+            </div>
+          </section>
+
+          <aside className="flex flex-col gap-4">
+            <AnswerChecklist
+              content={content}
+              storyType={storyType}
+              currentCore={currentCore}
+              onShowStory={() => setView("story")}
+            />
+            {storyType?.format === "intro" && (canUpload || content.roleMap) && (
+              <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <RoleMapCard
+                  storyId={storyId}
+                  content={content}
+                  prominent={
+                    canUpload && suggestRoleMap(content.answers[questions[0]?.id], content.roleMap)
+                  }
+                />
+                {canUpload && (
+                  <details className="group mt-3" data-testid="start-from-file">
+                    <summary className="cursor-pointer text-sm text-slate-600">
+                      Have a LinkedIn PDF or a prepared answer?{" "}
+                      <span className="font-medium text-teal-800 group-open:hidden">
+                        Start from a file
+                      </span>
+                    </summary>
+                    <div className="mt-3 flex flex-col gap-3">
+                      {!content.linkedin && (
+                        <UploadOption
+                          testId="upload-linkedin"
+                          lead="LinkedIn profile:"
+                          text="click More, then Save to PDF. I'll fill in what it answers."
+                          accept=".pdf"
+                          button="Upload profile"
+                          disabled={busy !== null}
+                          onUpload={submitLinkedIn}
+                        />
+                      )}
+                      <UploadOption
+                        testId="upload-prepared"
+                        lead="Prepared answer:"
+                        text="a Word (.docx) or text file. I'll review it instead of asking."
+                        accept={UPLOAD_EXTENSIONS.join(",")}
+                        button="Upload and review"
+                        disabled={busy !== null}
+                        onUpload={submitUpload}
+                      />
+                    </div>
+                  </details>
+                )}
+              </section>
+            )}
+          </aside>
+        </div>
+      ) : (
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <StoryPanel
+              title={title}
+              content={content}
+              storyType={storyType}
+              writing={busy === "writing"}
+            >
+              {error && (
+                <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+                  {error}
+                </p>
+              )}
+              {content.draft ? (
+                <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5">
+                  {content.nothingMoreToAsk && (
+                    <p className="text-sm text-slate-600">
+                      I couldn&apos;t find anything more to ask. Change an answer and I&apos;ll look
+                      again.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {canStrengthen(content) && !content.nothingMoreToAsk && (
+                      <button
+                        type="button"
+                        onClick={strengthen}
+                        disabled={busy !== null}
+                        className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+                      >
+                        Ask me more to make it stronger
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+                      disabled={busy !== null}
+                      className="rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50 disabled:opacity-50"
+                    >
+                      {busy === "writing" ? "Rewriting…" : "Rewrite"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 border-t border-slate-100 pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setView("build")}
+                    className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+                  >
+                    Answer the questions
+                  </button>
+                </div>
+              )}
+            </StoryPanel>
+            {afterStory}
+          </div>
+          <EvaluationPanel
+            className="lg:sticky lg:top-6"
+            content={content}
+            storyType={storyType}
+            grading={busy === "grading"}
+            disabled={busy !== null}
+            onGrade={() => run([{ busy: "grading", action: () => gradeDraft(storyId) }])}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+const VIEWS = [
+  { id: "build", label: "Build" },
+  { id: "story", label: "Story & score" },
+] as const;
+
+type View = (typeof VIEWS)[number]["id"];
+
+// Beside the chat: which parts of the story have answers so far.
+function AnswerChecklist({
+  content,
+  storyType,
+  currentCore,
+  onShowStory,
+}: {
+  content: StoryContent;
+  storyType: StoryType | undefined;
+  currentCore: string | undefined;
+  onShowStory: () => void;
+}) {
+  const questions = coreQuestions(storyType);
+  const followUps = content.followUps ?? [];
+  const followUpsAnswered = followUps.filter((f) => f.answer?.trim()).length;
+  return (
+    <section
+      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+      data-testid="answer-checklist"
+    >
+      <h2 className="text-xs font-bold uppercase tracking-wide text-teal-800">
+        Your answers so far
+      </h2>
+      <ul className="mt-3 flex flex-col gap-2 text-sm">
+        {storyParts(storyType).map((part) => {
+          const asked = questions.filter((q) => q.part === part.id);
+          if (asked.length === 0) return null;
+          const done =
+            Boolean(content.imported) || asked.every((q) => content.answers[q.id]?.trim());
+          const current = asked.some((q) => q.id === currentCore);
+          return (
+            <li key={part.id} className="flex items-center gap-2">
+              <span
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                  done
+                    ? "border-teal-800 bg-teal-800"
+                    : current
+                      ? "border-teal-800"
+                      : "border-slate-300"
+                }`}
+              />
+              <span className={done || current ? "text-slate-900" : "text-slate-500"}>
+                {part.label}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {followUps.length > 0 && (
+        <p className="mt-3 text-sm text-slate-600">
+          Follow-ups: {followUpsAnswered} of {followUps.length} answered
+        </p>
+      )}
+      <p className="mt-4 text-sm text-slate-500">
+        {content.draft ? (
+          <button
+            type="button"
+            onClick={onShowStory}
+            className="font-medium text-teal-800 hover:underline"
+          >
+            See your story and its score →
+          </button>
+        ) : (
+          "When the questions are done, I'll write your story and show it with its score."
+        )}
+      </p>
+    </section>
   );
 }
 
@@ -416,9 +629,7 @@ function progressLabel(
 function Exchange({
   question,
   answer,
-  suggested,
   source,
-  isCurrent,
   isEditing,
   disabled,
   onEdit,
@@ -427,11 +638,8 @@ function Exchange({
 }: {
   question: string;
   answer: string | undefined;
-  // A proposed answer to confirm or correct, e.g. a career path read from a resume.
-  suggested?: string;
   // Where a prefilled answer came from, e.g. "From your LinkedIn".
   source?: string;
-  isCurrent: boolean;
   isEditing: boolean;
   disabled: boolean;
   onEdit: () => void;
@@ -441,14 +649,13 @@ function Exchange({
   return (
     <li className="flex flex-col gap-2">
       <CoachBubble>{question}</CoachBubble>
-      {isCurrent || isEditing ? (
+      {isEditing ? (
         <Composer
-          key={isEditing ? "edit" : "new"}
-          initial={isEditing ? (answer ?? "") : (suggested ?? "")}
+          initial={answer ?? ""}
           disabled={disabled}
-          submitLabel={isEditing ? "Save" : suggested ? "That's right" : "Next"}
+          submitLabel="Save"
           onSubmit={onSubmit}
-          onCancel={isEditing ? onCancel : undefined}
+          onCancel={onCancel}
         />
       ) : answer ? (
         <div className="flex flex-col items-end gap-1">
@@ -516,7 +723,7 @@ function Composer({
             onSubmit(text);
           }
         }}
-        rows={4}
+        rows={3}
         maxLength={MAX_ANSWER_LENGTH}
         placeholder="Type your answer. Plain notes are fine."
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/20"
@@ -560,7 +767,7 @@ function RoleMapCard({
   const href = `/stories/${storyId}/map`;
   if (content.roleMap?.profile) {
     return (
-      <p className="mt-4 text-sm text-slate-600" data-testid="role-map-link">
+      <p className="text-sm text-slate-600" data-testid="role-map-link">
         Built on your role map.{" "}
         <Link href={href} className="font-medium text-teal-800 hover:underline">
           See your role profile
@@ -570,7 +777,7 @@ function RoleMapCard({
   }
   if (!prominent) {
     return (
-      <p className="mt-4 text-sm text-slate-600" data-testid="role-map-link">
+      <p className="text-sm text-slate-600" data-testid="role-map-link">
         Want words for what you did?{" "}
         <Link href={href} className="font-medium text-teal-800 hover:underline">
           Map my role
@@ -580,13 +787,12 @@ function RoleMapCard({
   }
   return (
     <div
-      className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-teal-800 p-4 text-white"
+      className="flex flex-col items-start gap-3 rounded-2xl bg-teal-800 p-4 text-white"
       data-testid="role-map-card"
     >
       <p>
-        <span className="font-semibold">Not sure how to describe your role?</span> Map it first.
-        I&apos;ll ask about the work itself, show you the whole function so you can mark your part,
-        and hand back a one-page profile that fills in these answers.
+        <span className="font-semibold">Not sure how to describe your role?</span> Map it first, and
+        I&apos;ll fill in these answers from it.
       </p>
       <Link
         href={href}
@@ -698,7 +904,7 @@ function ActionLine({
   extra?: { button: string; onClick: () => void };
 }) {
   return (
-    <li className="flex flex-col items-start gap-3 rounded-2xl bg-slate-50 p-4">
+    <div className="flex flex-col items-start gap-3">
       <p className="text-slate-700">{text}</p>
       <div className="flex flex-wrap gap-2">
         {extra && (
@@ -722,7 +928,7 @@ function ActionLine({
           {button}
         </button>
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -731,11 +937,14 @@ function StoryPanel({
   content,
   storyType,
   writing,
+  children,
 }: {
   title: string;
   content: StoryContent;
   storyType: StoryType | undefined;
   writing: boolean;
+  // Actions under the story.
+  children?: React.ReactNode;
 }) {
   const draft = content.draft;
   const parts = storyParts(storyType);
@@ -761,7 +970,7 @@ function StoryPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto ${
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
         writing ? "opacity-60" : ""
       }`}
       aria-label="Your story"
@@ -854,6 +1063,7 @@ function StoryPanel({
           })}
         </div>
       )}
+      {children}
     </section>
   );
 }
