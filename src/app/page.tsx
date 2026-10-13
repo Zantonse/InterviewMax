@@ -35,6 +35,8 @@ export default function HomePage() {
           </Link>
         </div>
 
+        <WhyInterviewMax className="mt-8" />
+
         <Suspense fallback={<div className="mt-8 h-24 animate-pulse rounded-3xl bg-white/80" />}>
           <PrepPath />
         </Suspense>
@@ -56,8 +58,6 @@ export default function HomePage() {
             </Suspense>
           </Card>
         </div>
-
-        <WhyInterviewMax className="mt-8" />
       </main>
     </div>
   );
