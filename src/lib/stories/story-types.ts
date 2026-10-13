@@ -204,7 +204,7 @@ export const STAR_LENGTH = { min: 180, max: 300 };
 
 export const MAX_ANSWER_LENGTH = 4000;
 
-// Every user builds "Tell me about yourself" first; the other types unlock once it has a draft.
+// Each user keeps one "Tell me about yourself"; it's suggested first but doesn't gate the others.
 export const REQUIRED_STORY_TYPE_ID = "about_me";
 
 // A prepared "Tell me about yourself" answer can be uploaded instead of answering the questions.

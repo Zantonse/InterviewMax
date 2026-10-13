@@ -92,3 +92,19 @@ export function untracedNumbers(draft: string, answers: string): string[] {
 function round(n: number) {
   return Math.round(n * 1e6) / 1e6;
 }
+
+// Keeps the sentences of `text` whose numbers all trace to `source`, and drops the rest. Used where
+// one stray figure shouldn't cost a whole answer, e.g. answers filled in from a LinkedIn profile.
+export function keepTracedSentences(text: string, source: string): string {
+  return text
+    .split("\n")
+    .map((line) =>
+      line
+        .split(/(?<=[.!?])\s+/)
+        .filter((sentence) => untracedNumbers(sentence, source).length === 0)
+        .join(" "),
+    )
+    .filter((line) => line.trim())
+    .join("\n")
+    .trim();
+}

@@ -57,11 +57,7 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
         hasResume={resume}
       />
       {intro && <TailorLinks jobs={jobs} content={story.content} />}
-      <DeleteStoryButton
-        storyId={story.id}
-        title={story.title}
-        required={story.storyType === REQUIRED_STORY_TYPE_ID}
-      />
+      <DeleteStoryButton storyId={story.id} title={story.title} />
     </>
   );
 }

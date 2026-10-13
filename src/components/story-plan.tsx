@@ -3,7 +3,7 @@ import { startStory } from "@/app/stories/new/actions";
 import type { StoryPriority } from "@/lib/jobs/content";
 import { builderStage } from "@/lib/stories/content";
 import type { StoryRecord } from "@/lib/stories/data";
-import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
+import { getStoryType } from "@/lib/stories/story-types";
 
 // The stories the user's target jobs need, most needed first, each with where the user is on it.
 export function StoryPlan({
@@ -15,11 +15,6 @@ export function StoryPlan({
   stories: StoryRecord[];
   limit?: number;
 }) {
-  const aboutMeDrafted = stories.some(
-    (s) =>
-      s.storyType === REQUIRED_STORY_TYPE_ID &&
-      builderStage(s.content, getStoryType(s.storyType)) === "drafted",
-  );
   return (
     <ol className="space-y-2" data-testid="story-plan">
       {order.slice(0, limit).map((p, i) => {
@@ -30,7 +25,6 @@ export function StoryPlan({
         const story =
           mine.find((s) => builderStage(s.content, type) === "drafted") ?? mine[0] ?? undefined;
         const drafted = story && builderStage(story.content, type) === "drafted";
-        const locked = !story && type.id !== REQUIRED_STORY_TYPE_ID && !aboutMeDrafted;
         return (
           <li
             key={type.id}
@@ -52,8 +46,6 @@ export function StoryPlan({
               >
                 {drafted ? "Draft written" : "In progress"}
               </Link>
-            ) : locked ? (
-              <span className="shrink-0 text-xs text-slate-500">After &ldquo;Tell me about yourself&rdquo;</span>
             ) : (
               <form action={startStory} className="shrink-0">
                 <button

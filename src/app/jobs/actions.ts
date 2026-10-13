@@ -45,8 +45,9 @@ export async function fetchJobPosting(
   }
 }
 
-// Adds a job from its pasted posting, then reads all the jobs again. If the read fails the job is
-// still kept, and the jobs page offers to read again.
+// Adds a job from its pasted posting, then reads all the jobs again and predicts its likely
+// questions, so the user lands on them with nothing else to set up. If either model call fails the
+// job is still kept, and its page offers to try again.
 export async function addJob(_prev: FormState, formData: FormData): Promise<FormState> {
   const title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
   const company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
@@ -72,8 +73,18 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
     console.error("Target jobs: adding a job failed", err);
     return { error: err instanceof Error ? err.message : "The job couldn't be added. Try again." };
   }
-  await readAfterChange();
+  // Both are model calls; run side by side to keep the wait to one.
+  await Promise.all([readAfterChange(), predictAfterAdd(id)]);
   redirect(`/jobs/${id}`);
+}
+
+async function predictAfterAdd(jobId: string): Promise<void> {
+  try {
+    await predictQuestions(jobId);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Likely questions: predicting after adding a job failed", err);
+  }
 }
 
 export async function removeJob(formData: FormData): Promise<void> {

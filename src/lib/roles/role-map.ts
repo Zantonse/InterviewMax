@@ -164,3 +164,14 @@ function stringEntries(record: Record<string, unknown>): Record<string, string> 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+// An answer about their current role shorter than this suggests they can't put the job into words.
+export const THIN_ROLE_ANSWER_WORDS = 12;
+
+// Map my role is optional, so About me offers it up front only when it would help: they've already
+// started a map, or their answer about their current role came back thin.
+export function suggestRoleMap(roleAnswer: string | undefined, map: RoleMap | undefined): boolean {
+  if (map) return true;
+  const answer = roleAnswer?.trim();
+  return Boolean(answer) && answer!.split(/\s+/).length < THIN_ROLE_ANSWER_WORDS;
+}

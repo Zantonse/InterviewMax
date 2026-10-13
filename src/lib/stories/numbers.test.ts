@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findNumbers, untracedNumbers } from "./numbers";
+import { findNumbers, keepTracedSentences, untracedNumbers } from "./numbers";
 
 describe("findNumbers", () => {
   it("reads money, percentages, scales and multiples", () => {
@@ -35,5 +35,26 @@ describe("untracedNumbers", () => {
 
   it("doesn't flag 'one' or 'half' in ordinary prose", () => {
     expect(untracedNumbers("One of the accounts was half-built.", "no numbers here")).toEqual([]);
+  });
+});
+
+describe("keepTracedSentences", () => {
+  const profile = "Senior Manager, Product at Netflix. Jan 2022 - Present. Own the sales CRM: 500 users, $3B in revenue.";
+
+  it("drops only the sentences with a number the source doesn't have", () => {
+    const answer =
+      "I'm a senior manager of product at Netflix. I own the sales CRM for 500 users and $3B in revenue. I've spent 12 years in sales tech.";
+    expect(keepTracedSentences(answer, profile)).toBe(
+      "I'm a senior manager of product at Netflix. I own the sales CRM for 500 users and $3B in revenue.",
+    );
+  });
+
+  it("keeps decimals and line breaks intact", () => {
+    expect(keepTracedSentences("Grew to $2.4M.\nLed three teams.", "ARR $2.4M")).toBe("Grew to $2.4M.");
+    expect(keepTracedSentences("First line.\nSecond line.", "")).toBe("First line.\nSecond line.");
+  });
+
+  it("returns nothing when every sentence has an untraced number", () => {
+    expect(keepTracedSentences("Two moves. 40% growth.", profile)).toBe("");
   });
 });

@@ -3,8 +3,7 @@ import { builderStage } from "./content";
 import { listStories } from "./data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "./story-types";
 
-// Where the signed-in user is with the required "Tell me about yourself" story. They keep one; the
-// other story types unlock once it has a draft.
+// Where the signed-in user is with their "Tell me about yourself" story. They keep one.
 export async function requiredStoryStatus(): Promise<{
   storyId: string | undefined;
   drafted: boolean;

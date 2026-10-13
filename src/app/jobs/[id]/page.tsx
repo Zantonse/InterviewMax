@@ -35,7 +35,7 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
 async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const [job, { overview }, stories] = await Promise.all([
+  const [job, { overview, resume }, stories] = await Promise.all([
     getJob(id),
     getJobsPrep(),
     listStories(),
@@ -163,6 +163,26 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             </p>
             <LevelForm jobId={job.id} level={job.level} confirmed={job.levelConfirmed} />
           </section>
+          {!resume && job.likelyQuestions && (
+            <section
+              className="rounded-3xl bg-teal-50 p-6 ring-1 ring-teal-800/10"
+              data-testid="offer-resume"
+            >
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-teal-800">
+                Optional: add your resume
+              </h2>
+              <p className="text-sm text-slate-700">
+                I&apos;ll check it against this job: what your history already shows, and what your
+                stories need to cover.
+              </p>
+              <Link
+                href="/jobs"
+                className="mt-3 inline-block text-sm font-semibold text-teal-800 hover:underline"
+              >
+                Add your resume →
+              </Link>
+            </section>
+          )}
           <form action={removeJob}>
             <input type="hidden" name="jobId" value={job.id} />
             <PendingButton

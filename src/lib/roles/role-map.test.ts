@@ -11,6 +11,7 @@ import {
   roleLabel,
   roleMapStage,
   roleVocabulary,
+  suggestRoleMap,
 } from "./role-map";
 
 const governance = getRoleFamily("data_governance")!;
@@ -122,5 +123,23 @@ describe("role prompts", () => {
     expect(message.content).toContain("40 finance tables");
     expect(message.content).toContain("Owned it: Data quality");
     expect(message.content).toContain("Contributed: Data stewardship");
+  });
+});
+
+describe("suggestRoleMap", () => {
+  it("stays quiet until an answer comes back thin", () => {
+    expect(suggestRoleMap(undefined, undefined)).toBe(false);
+    expect(suggestRoleMap("  ", undefined)).toBe(false);
+    expect(
+      suggestRoleMap(
+        "I lead solutions engineering for the west region at Acme, a team of six covering 40 accounts.",
+        undefined,
+      ),
+    ).toBe(false);
+  });
+
+  it("offers it for a thin answer or a map already started", () => {
+    expect(suggestRoleMap("Data stuff at a bank", undefined)).toBe(true);
+    expect(suggestRoleMap(undefined, map())).toBe(true);
   });
 });

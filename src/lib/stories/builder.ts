@@ -18,7 +18,7 @@ import {
   type CheckResult,
   type StoryGrade,
 } from "./grading";
-import { untracedNumbers } from "./numbers";
+import { keepTracedSentences, untracedNumbers } from "./numbers";
 import {
   PATH_SYSTEM,
   PREFILL_SYSTEM,
@@ -62,13 +62,17 @@ export async function probeStory(
   return parseProbe(text, round);
 }
 
-// "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Answers with a
-// number that isn't in the profile are dropped, so the user is asked those questions themselves.
+// "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Sentences with
+// a number that isn't in the profile are dropped (not the whole answer: a tenure the model added up
+// shouldn't cost the rest), and a question left with nothing is asked as usual.
 export async function prefillFromProfile(profileText: string): Promise<Record<string, string>> {
   const { text } = await call("storyPrefill", PREFILL_SYSTEM, prefillMessages(profileText));
   const answers = parsePrefill(text);
   return Object.fromEntries(
-    Object.entries(answers).filter(([, answer]) => untracedNumbers(answer, profileText).length === 0),
+    Object.entries(answers).flatMap(([id, answer]) => {
+      const kept = keepTracedSentences(answer, profileText);
+      return kept ? [[id, kept]] : [];
+    }),
   );
 }
 

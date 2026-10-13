@@ -10,12 +10,10 @@ export async function startStory(formData: FormData) {
   const storyType = getStoryType(String(formData.get("storyType") ?? ""));
   if (!storyType) redirect("/stories/new");
 
-  // "Tell me about yourself" comes first, and there's one of it.
-  const required = await requiredStoryStatus();
+  // There's one "Tell me about yourself"; the other stories can be started in any order.
   if (storyType.id === REQUIRED_STORY_TYPE_ID) {
-    if (required.storyId) redirect(`/stories/${required.storyId}`);
-  } else if (!required.drafted) {
-    redirect(required.storyId ? `/stories/${required.storyId}` : "/stories/new");
+    const aboutMe = await requiredStoryStatus();
+    if (aboutMe.storyId) redirect(`/stories/${aboutMe.storyId}`);
   }
 
   const id = await insertStory({
