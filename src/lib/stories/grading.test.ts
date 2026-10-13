@@ -1,0 +1,215 @@
+import { describe, expect, it } from "vitest";
+import { gradeIsCurrent, parseContent, type StoryDraft } from "./content";
+import {
+  STAR_CRITERIA,
+  INTRO_CRITERIA,
+  combineGrade,
+  fillerPhrases,
+  gradeSystem,
+  parseGrade,
+  pronounCounts,
+  quickChecks,
+  tierFor,
+  type CheckResult,
+  type CriterionScore,
+} from "./grading";
+import { getStoryType } from "./story-types";
+
+const stakeholder = getStoryType("difficult_stakeholder");
+const aboutMe = getStoryType("about_me");
+
+const words = (n: number) => Array.from({ length: n }, () => "word").join(" ");
+
+function draft(parts: Record<string, string>, untracedNumbers: string[] = []): StoryDraft {
+  return { parts, untracedNumbers, model: "test", writtenAt: "2026-10-13T00:00:00Z" };
+}
+
+const goodStar = draft({
+  situation: `I was the lead engineer when the renewal was at risk. ${words(60)}`,
+  role: `I owned the technical plan. ${words(30)}`,
+  actions: `I met the CTO and I rebuilt the demo. We shipped it together. ${words(80)}`,
+  result: "We renewed the $2.4M contract, 20% above plan.",
+  reflection: `I learned to bring the skeptic in early. ${words(20)}`,
+});
+
+function scores(ids: readonly { id: string }[], score: number): CriterionScore[] {
+  return ids.map((c) => ({ id: c.id, score, note: "" }));
+}
+
+function checks(overrides: Partial<Record<CheckResult["id"], boolean>> = {}): CheckResult[] {
+  return (["number", "traced", "i_we", "length", "filler"] as const).map((id) => ({
+    id,
+    pass: overrides[id] ?? true,
+    detail: "",
+  }));
+}
+
+describe("quick checks", () => {
+  it("passes a story with a traced number in the result, mostly I, at a spoken length", () => {
+    const result = quickChecks(goodStar, stakeholder);
+    expect(result.map((c) => [c.id, c.pass])).toEqual([
+      ["number", true],
+      ["traced", true],
+      ["i_we", true],
+      ["length", true],
+      ["filler", true],
+    ]);
+    expect(result[0].detail).toContain("$2.4M");
+  });
+
+  it("flags a result with no number and figures that aren't in the answers", () => {
+    const d = draft({ ...goodStar.parts, result: "The customer renewed." }, ["40%"]);
+    const result = quickChecks(d, stakeholder);
+    expect(result.find((c) => c.id === "number")?.pass).toBe(false);
+    expect(result.find((c) => c.id === "traced")?.detail).toContain("40%");
+  });
+
+  it("looks for the number in the proof point of Tell me about yourself", () => {
+    const d = draft({
+      present: "I lead solutions engineering.",
+      highlight: "I closed 140% of quota.",
+    });
+    expect(quickChecks(d, aboutMe).find((c) => c.id === "number")?.pass).toBe(true);
+    const short = quickChecks(d, aboutMe).find((c) => c.id === "length");
+    expect(short?.pass).toBe(false);
+    expect(short?.detail).toContain("aim for 120 to 260 words");
+  });
+
+  it("counts I against we, including contractions", () => {
+    expect(pronounCounts("I'm sure we did it. My team and I. We've shipped. Me too.")).toEqual({
+      i: 4,
+      we: 2,
+    });
+    const weStory = draft({
+      ...goodStar.parts,
+      actions: "We did it. We did more. We won. We, we, we.",
+    });
+    expect(quickChecks(weStory, stakeholder).find((c) => c.id === "i_we")?.pass).toBe(false);
+  });
+
+  it("finds filler and vague phrases as whole words", () => {
+    expect(fillerPhrases("I basically helped with a lot of   stuff. Variously stuffed.")).toEqual([
+      "basically",
+      "helped with",
+      "a lot of",
+      "stuff",
+    ]);
+  });
+});
+
+describe("tierFor", () => {
+  it("is strong only when every criterion is solid and every check passes", () => {
+    expect(tierFor(scores(STAR_CRITERIA, 4), checks())).toBe("strong");
+    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ filler: false }))).toBe("good_enough");
+    const oneThree = [...scores(STAR_CRITERIA.slice(1), 4), { id: "context", score: 3, note: "" }];
+    expect(tierFor(oneThree, checks())).toBe("strong");
+    const oneTwo = [...scores(STAR_CRITERIA.slice(1), 4), { id: "context", score: 2, note: "" }];
+    expect(tierFor(oneTwo, checks())).toBe("good_enough");
+  });
+
+  it("is not yet with a missing criterion, a low average, no number or an untraced number", () => {
+    const oneMissing = [
+      ...scores(STAR_CRITERIA.slice(1), 4),
+      { id: "context", score: 1, note: "" },
+    ];
+    expect(tierFor(oneMissing, checks())).toBe("not_yet");
+    expect(tierFor(scores(STAR_CRITERIA, 2), checks())).toBe("not_yet");
+    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ number: false }))).toBe("not_yet");
+    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ traced: false }))).toBe("not_yet");
+    expect(tierFor([], checks())).toBe("not_yet");
+  });
+});
+
+describe("combineGrade", () => {
+  it("puts the quick-check fixes first, keeps two, and flags disagreements", () => {
+    const grade = combineGrade({
+      criteria: scores(STAR_CRITERIA, 3),
+      checks: checks({ number: false, i_we: false }),
+      modelFixes: ["Say what the CTO objected to.", "Cut the second paragraph."],
+      bankRole: { role: "team-level impact", note: "Led one team." },
+      storyType: stakeholder,
+      model: "openai/gpt-5.5",
+      draftWrittenAt: "2026-10-13T00:00:00Z",
+    });
+    expect(grade.tier).toBe("not_yet");
+    expect(grade.fixes).toHaveLength(2);
+    expect(grade.fixes[0]).toMatch(/Give the result a number/);
+    expect(grade.fixes[1]).toBe("Say what the CTO objected to.");
+    expect(grade.flags).toHaveLength(2);
+    expect(grade.bankRole?.role).toBe("team-level impact");
+  });
+
+  it("leaves out the bank role for Tell me about yourself", () => {
+    const grade = combineGrade({
+      criteria: scores(INTRO_CRITERIA, 3),
+      checks: checks(),
+      modelFixes: [],
+      bankRole: { role: "hands-on proof", note: "" },
+      storyType: aboutMe,
+      model: "m",
+      draftWrittenAt: "t",
+    });
+    expect(grade.bankRole).toBeUndefined();
+    expect(grade.tier).toBe("good_enough");
+  });
+});
+
+describe("the grader's prompt and reply", () => {
+  it("asks for every criterion, and a bank role only for behavioral stories", () => {
+    const star = gradeSystem(stakeholder);
+    for (const c of STAR_CRITERIA) expect(star).toContain(`- ${c.id} (${c.label})`);
+    expect(star).toContain("bankRole");
+    expect(star).toMatch(/Never suggest a specific number/);
+    const intro = gradeSystem(aboutMe);
+    for (const c of INTRO_CRITERIA) expect(intro).toContain(`- ${c.id} (${c.label})`);
+    expect(intro).not.toContain("bankRole");
+  });
+
+  it("parses scores, fixes and bank role, rounding and dropping bad values", () => {
+    const reply = `Here you go:\n\`\`\`json\n${JSON.stringify({
+      criteria: {
+        context: { score: 3, note: "Clear stakes." },
+        ownership: { score: "4", note: "Mostly I." },
+        actions: { score: 2.4, note: "Vague." },
+        result: { score: 4, note: "$2.4M." },
+        reflection: { score: 1, note: "None." },
+      },
+      fixes: ["Add the lesson.", "", "Name the choice.", "Third."],
+      bankRole: { role: "Team-level impact", note: "One team." },
+    })}\n\`\`\``;
+    const parsed = parseGrade(reply, stakeholder);
+    expect(parsed.criteria.map((c) => c.score)).toEqual([3, 4, 2, 4, 1]);
+    expect(parsed.fixes).toEqual(["Add the lesson.", "Name the choice."]);
+    expect(parsed.bankRole).toEqual({ role: "team-level impact", note: "One team." });
+  });
+
+  it("rejects a reply missing a criterion or out of range", () => {
+    expect(() => parseGrade('{"criteria": {"context": {"score": 3}}}', stakeholder)).toThrow(
+      /left out/,
+    );
+    const bad = Object.fromEntries(STAR_CRITERIA.map((c) => [c.id, { score: 9 }]));
+    expect(() => parseGrade(JSON.stringify({ criteria: bad }), stakeholder)).toThrow();
+    expect(() => parseGrade("no json", stakeholder)).toThrow(/unexpected format/);
+  });
+});
+
+describe("saved grades", () => {
+  it("round-trips through stories.content and goes stale when the draft is rewritten", () => {
+    const grade = combineGrade({
+      criteria: scores(STAR_CRITERIA, 3),
+      checks: checks(),
+      modelFixes: ["Add the lesson."],
+      storyType: stakeholder,
+      model: "m",
+      draftWrittenAt: goodStar.writtenAt,
+    });
+    const content = parseContent(
+      JSON.parse(JSON.stringify({ answers: {}, draft: goodStar, grade })),
+    );
+    expect(content.grade).toEqual(grade);
+    expect(gradeIsCurrent(content)).toBe(true);
+    content.draft = { ...goodStar, writtenAt: "2026-10-14T00:00:00Z" };
+    expect(gradeIsCurrent(content)).toBe(false);
+    expect(parseContent({ grade: { tier: "excellent" } }).grade).toBeUndefined();
+  });
+});
