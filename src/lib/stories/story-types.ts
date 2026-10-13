@@ -147,7 +147,9 @@ export const INTRO_QUESTIONS = [
   {
     id: "path",
     part: "path",
-    text: "How did you get here? Walk me through the two or three career moves that matter most, and why you made each one.",
+    // Light on purpose: the whole path is a prep exercise, so ask about one move. When there's a
+    // resume or LinkedIn profile, the path is read from it instead and shown back to confirm.
+    text: "What were you doing before this role, and what made you move?",
   },
   {
     id: "highlight",
@@ -166,6 +168,18 @@ export const INTRO_QUESTIONS = [
   },
 ] as const satisfies readonly CoreQuestion[];
 
+// The question shown instead of "path" when the path was read from a resume or LinkedIn profile.
+export function inferredPathQuestion(source: "resume" | "linkedin"): string {
+  return `Here's how your path reads from your ${source === "resume" ? "resume" : "LinkedIn profile"}. Is that right? Fix anything that's off, and if you like, add what made you take the move that mattered most.`;
+}
+
+// "Tell me about yourself" for one target job: three beats, company first.
+export const TAILORED_PARTS = [
+  { id: "who", label: "Who I am" },
+  { id: "proof", label: "One proof point" },
+  { id: "why_here", label: "Why here" },
+] as const satisfies readonly StoryPart[];
+
 export function storyParts(storyType: StoryType | undefined): readonly StoryPart[] {
   return storyType?.format === "intro" ? INTRO_PARTS : STAR_PARTS;
 }
@@ -180,6 +194,13 @@ export function coreQuestionText(questionId: string, storyType: StoryType | unde
   }
   return coreQuestions(storyType).find((q) => q.id === questionId)?.text ?? "";
 }
+
+// Spoken length that suits each format, in words (at about 150 words a minute). The max is a hard
+// limit: the writer is told it, and a draft over it is sent back to be cut (see builder.ts).
+//   "Tell me about yourself", general or for one job: 60 to 90 seconds
+//   a behavioral story: about two minutes
+export const INTRO_LENGTH = { min: 150, max: 225 };
+export const STAR_LENGTH = { min: 180, max: 300 };
 
 export const MAX_ANSWER_LENGTH = 4000;
 

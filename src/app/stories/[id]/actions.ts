@@ -2,11 +2,19 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
-import { gradeStory, prefillFromProfile, probeStory, writeStory } from "@/lib/stories/builder";
+import { getJobsPrep } from "@/lib/jobs/data";
+import {
+  gradeStory,
+  inferCareerPath,
+  prefillFromProfile,
+  probeStory,
+  writeStory,
+} from "@/lib/stories/builder";
 import {
   MAX_PROBE_ROUNDS,
   builderStage,
   canStrengthen,
+  nextCoreQuestion,
   probeRounds,
   type StoryContent,
 } from "@/lib/stories/content";
@@ -132,6 +140,44 @@ export async function importLinkedIn(storyId: string, formData: FormData): Promi
   });
 }
 
+// "Tell me about yourself" only: when the next question is how they got here, read the path from
+// their resume or LinkedIn profile and show it back to confirm, instead of asking them to list
+// their career moves cold. Does nothing when there's no document to read or it shows no path.
+export async function inferPath(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    const unchanged: BuilderResult = { ok: true, content: story.content, title: story.title };
+    if (storyType?.format !== "intro" || story.content.imported || story.content.inferredPath) {
+      return unchanged;
+    }
+    if (nextCoreQuestion(story.content, storyType) !== "path") return unchanged;
+
+    const resume = await resumeText();
+    const source = resume
+      ? { text: resume, kind: "resume" as const }
+      : story.content.linkedin
+        ? { text: story.content.linkedin.text, kind: "linkedin" as const }
+        : undefined;
+    if (!source) return unchanged;
+
+    const text = await inferCareerPath(source.text);
+    if (!text) return unchanged;
+    const content = { ...story.content, inferredPath: { text, source: source.kind } };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// The user's resume, when they've added one on the target jobs page. Background only.
+async function resumeText(): Promise<string | undefined> {
+  try {
+    return (await getJobsPrep()).resume?.text || undefined;
+  } catch (err) {
+    console.error("Story builder: couldn't load the resume", err);
+    return undefined;
+  }
+}
+
 // Call one. Runs after the last scripted answer, once more after the first follow-ups, and again
 // whenever the user asks to make a drafted story stronger.
 export async function askFollowUps(storyId: string): Promise<BuilderResult> {
@@ -147,7 +193,7 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const past = storyType
       ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
       : undefined;
-    const asked = await probeStory(story.content, storyType, round, past);
+    const asked = await probeStory(story.content, storyType, round, past, await resumeText());
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],

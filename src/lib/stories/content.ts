@@ -43,6 +43,30 @@ export type LinkedInProfile = {
   prefilled: string[];
 };
 
+// "Tell me about yourself" only: the career path read from a resume or LinkedIn profile, shown back
+// for the user to confirm as their answer to "path" instead of asking them to list their moves.
+export type InferredPath = {
+  text: string;
+  source: "resume" | "linkedin";
+};
+
+// "Tell me about yourself" for one target job: why this company, in the user's words, and the
+// three-beat answer written from it.
+export type TailoredIntro = {
+  whyCompany: string;
+  draft?: TailoredDraft;
+};
+
+export type TailoredDraft = {
+  // Keyed by TAILORED_PARTS ids.
+  parts: Record<string, string>;
+  // One line on the angle the writer chose for this job.
+  angle: string;
+  untracedNumbers: string[];
+  model: string;
+  writtenAt: string;
+};
+
 export type StoryContent = {
   version: 1;
   // Keyed by the story type's core question ids (see coreQuestions).
@@ -51,6 +75,9 @@ export type StoryContent = {
   linkedin?: LinkedInProfile;
   // "Tell me about yourself" only: the user's map of their role (see src/lib/roles).
   roleMap?: RoleMap;
+  inferredPath?: InferredPath;
+  // "Tell me about yourself" only: versions for each target job, keyed by job id.
+  tailored?: Record<string, TailoredIntro>;
   followUps?: FollowUp[];
   // Set when the review has nothing more to ask, or ran out of rounds.
   probeDone?: boolean;
@@ -164,6 +191,34 @@ export function parseContent(raw: unknown): StoryContent {
           ]
         : [],
     );
+  }
+
+  if (
+    isRecord(raw.inferredPath) &&
+    typeof raw.inferredPath.text === "string" &&
+    (raw.inferredPath.source === "resume" || raw.inferredPath.source === "linkedin")
+  ) {
+    content.inferredPath = { text: raw.inferredPath.text, source: raw.inferredPath.source };
+  }
+
+  if (isRecord(raw.tailored)) {
+    const tailored: Record<string, TailoredIntro> = {};
+    for (const [jobId, t] of Object.entries(raw.tailored)) {
+      if (!isRecord(t) || typeof t.whyCompany !== "string") continue;
+      tailored[jobId] = { whyCompany: t.whyCompany };
+      if (isRecord(t.draft) && isRecord(t.draft.parts)) {
+        tailored[jobId].draft = {
+          parts: stringEntries(t.draft.parts),
+          angle: typeof t.draft.angle === "string" ? t.draft.angle : "",
+          untracedNumbers: Array.isArray(t.draft.untracedNumbers)
+            ? t.draft.untracedNumbers.filter((n): n is string => typeof n === "string")
+            : [],
+          model: typeof t.draft.model === "string" ? t.draft.model : "",
+          writtenAt: typeof t.draft.writtenAt === "string" ? t.draft.writtenAt : "",
+        };
+      }
+    }
+    if (Object.keys(tailored).length > 0) content.tailored = tailored;
   }
 
   const roleMap = parseRoleMap(raw.roleMap);

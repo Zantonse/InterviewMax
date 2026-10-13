@@ -2,11 +2,11 @@ import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryDraft } from "./content";
 import { findNumbers } from "./numbers";
 import { extractJson } from "./prompts";
-import { storyParts, type StoryType } from "./story-types";
+import { INTRO_LENGTH, STAR_LENGTH, storyParts, type StoryType } from "./story-types";
 
 // Grading a written story (PRD, quality gate). Two halves that run side by side:
 //   quick checks: plain code, no judgment (a number in the result, every number traced, "I" against
-//                 "we", spoken length, filler and vague phrases)
+//                 "we", spoken length, filler and vague phrases, unsure figures)
 //   the grade:    a separate model call (storyGrade) scores each criterion 1 to 4
 // The tier comes from both, in code. Where the quick checks and the grade disagree the story is
 // flagged, which is a cheap built-in check on the grader.
@@ -95,6 +95,7 @@ export const CHECKS = [
   { id: "i_we", label: "“I” for what you did, not only “we”" },
   { id: "length", label: "Spoken length" },
   { id: "filler", label: "No filler or vague phrases" },
+  { id: "hedged", label: "No unsure figures" },
 ] as const;
 
 export type CheckId = (typeof CHECKS)[number]["id"];
@@ -139,9 +140,9 @@ function numberPart(storyType: StoryType | undefined) {
   return storyType?.format === "intro" ? "highlight" : "result";
 }
 
-// Spoken length that suits each format, in words (at about 150 words a minute).
+// Spoken length that suits each format (see INTRO_LENGTH and STAR_LENGTH).
 export function lengthRange(storyType: StoryType | undefined): { min: number; max: number } {
-  return storyType?.format === "intro" ? { min: 120, max: 260 } : { min: 180, max: 380 };
+  return storyType?.format === "intro" ? INTRO_LENGTH : STAR_LENGTH;
 }
 
 // Phrases that blur a spoken answer. Matched as whole words, case-insensitively.
@@ -168,7 +169,47 @@ export const FILLER_PHRASES = [
   "to be honest",
   "at the end of the day",
   "you know",
+  "really",
+  "truly",
+  "incredibly",
+  "passionate about",
+  "the kind of",
+  "a wide range of",
+  "in terms of",
+  "it's worth noting",
+  "world-class",
+  "best-in-class",
+  "cutting-edge",
+  "game-changer",
+  "game-changing",
 ] as const;
+
+// Words that make a figure sound unsure ("maybe 100 accounts"). A labelled estimate ("about",
+// "roughly", "an estimated") is fine; these aren't, so the user firms the figure up or drops it.
+const HEDGE_WORDS = [
+  "maybe",
+  "probably",
+  "perhaps",
+  "possibly",
+  "potentially",
+  "i think",
+  "i believe",
+  "i guess",
+  "i'd say",
+  "something like",
+  "somewhere around",
+];
+const FIGURE = String.raw`[$€£]?\d[\d,.]*(?:%|x|k|mm|m|bn|b)?(?:\s+(?:thousand|million|billion))?`;
+// The noun after a figure, e.g. "accounts" in "maybe 100 accounts", but not "of" or "in".
+const UNIT = String.raw`(?:\s+(?!(?:of|in|on|at|to|for|and|or|but|with|the|a|an)\b)[a-z]+)?`;
+const HEDGE_BEFORE_RE = new RegExp(
+  String.raw`\b(?:${HEDGE_WORDS.map((w) => w.replace(/ /g, String.raw`\s+`)).join("|")})(?:\s+(?:at|of|around|about|like|over|under|nearly|almost|just|the|a|an))*\s+${FIGURE}${UNIT}`,
+  "gi",
+);
+const HEDGE_AFTER_RE = new RegExp(
+  String.raw`${FIGURE}${UNIT}\s+(?:or\s+so|give\s+or\s+take|if\s+that)\b`,
+  "gi",
+);
 
 const FILLER_RE = new RegExp(
   `\\b(${FILLER_PHRASES.map((p) => p.replace(/ /g, "\\s+")).join("|")})\\b`,
@@ -200,18 +241,43 @@ export function fillerPhrases(text: string): string[] {
   return [...found];
 }
 
+// Figures said with an unsure hedge, as written, e.g. "maybe 100 accounts".
+export function hedgedFigures(text: string): string[] {
+  const found = new Set<string>();
+  for (const re of [HEDGE_BEFORE_RE, HEDGE_AFTER_RE]) {
+    for (const m of text.matchAll(re)) found.add(m[0].replace(/\s+/g, " ").replace(/[.,]$/, ""));
+  }
+  return [...found];
+}
+
 // The quick checks on a written draft. Plain code, no model call.
 export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined): CheckResult[] {
-  const text = draftText(draft.parts, storyType);
-  const numbers = findNumbers(draft.parts[numberPart(storyType)] ?? "", {
-    includeCommonWords: false,
+  return checkScript({
+    text: draftText(draft.parts, storyType),
+    numberText: draft.parts[numberPart(storyType)] ?? "",
+    untraced: draft.untracedNumbers,
+    range: lengthRange(storyType),
+    where: storyType?.format === "intro" ? "your proof point" : "the result",
   });
+}
+
+// The same checks on any spoken script, e.g. "Tell me about yourself" for one target job.
+export function checkScript(input: {
+  text: string;
+  // The part that should carry a number.
+  numberText: string;
+  untraced: string[];
+  range: { min: number; max: number };
+  where: string;
+}): CheckResult[] {
+  const { text, untraced, where } = input;
+  const numbers = findNumbers(input.numberText, { includeCommonWords: false });
   const { i, we } = pronounCounts(text);
   const words = countWords(text);
-  const { min, max } = lengthRange(storyType);
+  const { min, max } = input.range;
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
   const filler = fillerPhrases(text);
-  const where = storyType?.format === "intro" ? "your proof point" : "the result";
+  const hedged = hedgedFigures(text);
 
   return [
     {
@@ -223,9 +289,9 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     },
     {
       id: "traced",
-      pass: draft.untracedNumbers.length === 0,
-      detail: draft.untracedNumbers.length
-        ? `Not in your answers: ${draft.untracedNumbers.join(", ")}.`
+      pass: untraced.length === 0,
+      detail: untraced.length
+        ? `Not in your answers: ${untraced.join(", ")}.`
         : "Nothing invented.",
     },
     {
@@ -242,6 +308,13 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
       id: "filler",
       pass: filler.length === 0,
       detail: filler.length ? `Found: ${filler.map((f) => `“${f}”`).join(", ")}.` : "None found.",
+    },
+    {
+      id: "hedged",
+      pass: hedged.length === 0,
+      detail: hedged.length
+        ? `${hedged.map((h) => `“${h}”`).join(", ")}: give the real figure, or drop it.`
+        : "Every figure is said with confidence.",
     },
   ];
 }
@@ -306,6 +379,11 @@ function checkFixes(checks: CheckResult[], storyType: StoryType | undefined): st
       "Check the highlighted figures: add them to an answer if they're real, or rewrite to drop them.",
     );
   }
+  if (failed("hedged")) {
+    fixes.push(
+      "Firm up the unsure figures: check the real number in your records and add it to an answer, or drop it.",
+    );
+  }
   if (failed("number")) {
     fixes.push(
       storyType?.format === "intro"
@@ -349,7 +427,7 @@ export function gradeSystem(storyType: StoryType | undefined): string {
     intro
       ? `an experienced professional's answer to "Tell me about yourself"`
       : "an experienced professional's behavioral interview story"
-  } as an interviewer would hear it. Grade the story as written; don't give credit for what it might mean.
+  } as an interviewer would hear it. Grade the story as written; don't give credit for what it might mean. Padding, filler and unsure figures ("maybe 100 accounts") weaken an answer: score them down where they appear.
 
 Score each criterion from 1 to 4:
 1 = missing: an interviewer wouldn't find it.

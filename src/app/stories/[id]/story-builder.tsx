@@ -17,6 +17,7 @@ import {
   coreQuestionText,
   coreQuestions,
   getStoryType,
+  inferredPathQuestion,
   storyParts,
   type StoryPart,
   type StoryType,
@@ -26,6 +27,7 @@ import {
   gradeDraft,
   importLinkedIn,
   importPreparedAnswer,
+  inferPath,
   saveAnswer,
   saveFollowUpAnswer,
   writeDraft,
@@ -33,7 +35,7 @@ import {
 } from "./actions";
 import { EvaluationPanel } from "./evaluation-panel";
 
-type Busy = null | "saving" | "reading" | "probing" | "writing" | "grading";
+type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
 // Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
@@ -54,11 +56,15 @@ export function StoryBuilder({
   storyTypeId,
   initialTitle,
   initialContent,
+  hasResume = false,
 }: {
   storyId: string;
   storyTypeId: string | null;
   initialTitle: string;
   initialContent: StoryContent;
+  // Whether the user added a resume on the target jobs page; "Tell me about yourself" reads their
+  // career path from it.
+  hasResume?: boolean;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -88,7 +94,10 @@ export function StoryBuilder({
         // follow-up, to the next round or straight on to call two.
         const next = builderStage(result.content, storyType);
         const saved = step.busy === "saving" || step.busy === "reading";
-        if (saved && next === "probe") {
+        if (saved && canInferPath(result.content)) {
+          // Next up is how they got here: read it from their resume or LinkedIn to confirm.
+          steps.push({ busy: "inferring", action: () => inferPath(storyId) });
+        } else if (saved && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
         } else if ((saved || step.busy === "probing") && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
@@ -99,6 +108,17 @@ export function StoryBuilder({
       }
       setBusy(null);
     });
+  }
+
+  // "Tell me about yourself": whether the path question can be read from a document instead.
+  function canInferPath(c: StoryContent) {
+    return (
+      storyType?.format === "intro" &&
+      !c.imported &&
+      !c.inferredPath &&
+      nextCoreQuestion(c, storyType) === "path" &&
+      (hasResume || Boolean(c.linkedin))
+    );
   }
 
   function submitCore(id: string, answer: string) {
@@ -218,17 +238,25 @@ export function StoryBuilder({
           {askedCore.map((q) => {
             const answer = content.answers[q.id];
             const isEditing = editing?.kind === "core" && editing.id === q.id;
+            const inferred = q.id === "path" ? content.inferredPath : undefined;
             return (
               <Exchange
                 key={q.id}
-                question={coreQuestionText(q.id, storyType)}
+                question={
+                  inferred
+                    ? inferredPathQuestion(inferred.source)
+                    : coreQuestionText(q.id, storyType)
+                }
                 answer={answer}
+                suggested={inferred?.text}
                 source={
                   content.roleMap?.seeded?.includes(q.id)
                     ? "From your role map"
                     : content.linkedin?.prefilled.includes(q.id)
                       ? "From your LinkedIn"
-                      : undefined
+                      : inferred
+                        ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
+                        : undefined
                 }
                 isCurrent={q.id === currentCore}
                 isEditing={isEditing}
@@ -250,7 +278,7 @@ export function StoryBuilder({
                 {opensRound && (
                   <CoachLine>
                     {round === 1
-                      ? "Thanks. A few follow-ups to make it stronger before I write it up:"
+                      ? "Thanks. A few quick follow-ups before I write it up, easiest first:"
                       : "Good. A few more, so the numbers and examples carry it:"}
                   </CoachLine>
                 )}
@@ -269,6 +297,23 @@ export function StoryBuilder({
           })}
 
           {busy === "reading" && <Thinking>Reading your LinkedIn profile…</Thinking>}
+          {busy === "inferring" && (
+            <Thinking>
+              Reading your path from your {hasResume ? "resume" : "LinkedIn profile"}…
+            </Thinking>
+          )}
+          {!busy && canInferPath(content) && (
+            <li>
+              <button
+                type="button"
+                onClick={() => run([{ busy: "inferring", action: () => inferPath(storyId) }])}
+                className="text-sm font-medium text-teal-800 hover:underline"
+                data-testid="infer-path"
+              >
+                Read it from my {hasResume ? "resume" : "LinkedIn profile"} instead
+              </button>
+            </li>
+          )}
           {busy === "probing" && <Thinking>Reading your answers…</Thinking>}
           {busy === "writing" && <Thinking>Writing your story from your answers…</Thinking>}
 
@@ -369,6 +414,7 @@ function progressLabel(
 function Exchange({
   question,
   answer,
+  suggested,
   source,
   isCurrent,
   isEditing,
@@ -379,6 +425,8 @@ function Exchange({
 }: {
   question: string;
   answer: string | undefined;
+  // A proposed answer to confirm or correct, e.g. a career path read from a resume.
+  suggested?: string;
   // Where a prefilled answer came from, e.g. "From your LinkedIn".
   source?: string;
   isCurrent: boolean;
@@ -394,9 +442,9 @@ function Exchange({
       {isCurrent || isEditing ? (
         <Composer
           key={isEditing ? "edit" : "new"}
-          initial={isEditing ? (answer ?? "") : ""}
+          initial={isEditing ? (answer ?? "") : (suggested ?? "")}
           disabled={disabled}
-          submitLabel={isEditing ? "Save" : "Next"}
+          submitLabel={isEditing ? "Save" : suggested ? "That's right" : "Next"}
           onSubmit={onSubmit}
           onCancel={isEditing ? onCancel : undefined}
         />
