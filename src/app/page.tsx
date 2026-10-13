@@ -2,6 +2,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { DeleteStoryButton } from "@/components/delete-story-button";
 import { PrepPath } from "@/components/prep-path";
 import { QuestionList } from "@/components/question-list";
 import { WhyInterviewMax } from "@/components/why-interviewmax";
@@ -95,10 +96,10 @@ async function StoryBank() {
             const drafted =
               builderStage(story.content, getStoryType(story.storyType)) === "drafted";
             return (
-              <li key={story.id}>
+              <li key={story.id} className="flex items-center gap-1 pr-2">
                 <Link
                   href={`/stories/${story.id}`}
-                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
+                  className="flex min-w-0 flex-1 items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{story.title}</span>
@@ -114,6 +115,7 @@ async function StoryBank() {
                     {drafted ? "Draft written" : "In progress"}
                   </span>
                 </Link>
+                <DeleteStoryButton storyId={story.id} title={story.title} variant="compact" />
               </li>
             );
           })}
@@ -161,7 +163,10 @@ async function TargetJobs() {
           </li>
         ))}
       </ul>
-      <Link href="/jobs" className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline">
+      <Link
+        href="/jobs"
+        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+      >
         See what to build first →
       </Link>
     </>
