@@ -1,3 +1,4 @@
+import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map";
 import { coreQuestions, type StoryType } from "./story-types";
 
 // What the builder keeps in stories.content (jsonb).
@@ -47,6 +48,8 @@ export type StoryContent = {
   answers: Record<string, string>;
   imported?: ImportedAnswer;
   linkedin?: LinkedInProfile;
+  // "Tell me about yourself" only: the user's map of their role (see src/lib/roles).
+  roleMap?: RoleMap;
   followUps?: FollowUp[];
   // Set when the review has nothing more to ask, or ran out of rounds.
   probeDone?: boolean;
@@ -110,6 +113,7 @@ export function allAnswerText(content: StoryContent): string {
   return [
     content.imported?.text ?? "",
     content.linkedin?.text ?? "",
+    roleAnswerText(content.roleMap),
     ...Object.values(content.answers),
     ...(content.followUps ?? []).map((f) => f.answer ?? ""),
   ]
@@ -158,6 +162,9 @@ export function parseContent(raw: unknown): StoryContent {
         : [],
     );
   }
+
+  const roleMap = parseRoleMap(raw.roleMap);
+  if (roleMap) content.roleMap = roleMap;
 
   if (raw.probeDone === true) content.probeDone = true;
   if (raw.nothingMoreToAsk === true) content.nothingMoreToAsk = true;
