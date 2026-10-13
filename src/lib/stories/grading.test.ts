@@ -171,16 +171,27 @@ describe("the grader's prompt and reply", () => {
   it("parses scores, fixes and bank role, rounding and dropping bad values", () => {
     const reply = `Here you go:\n\`\`\`json\n${JSON.stringify({
       criteria: {
-        context: { score: 3, note: "Clear stakes." },
+        context: { score: 3, note: "Clear stakes.", improve: "Say what losing it would cost." },
         ownership: { score: "4", note: "Mostly I." },
         actions: { score: 2.4, note: "Vague." },
-        result: { score: 4, note: "$2.4M." },
+        result: { score: 4, note: "$2.4M.", improve: "Nothing." },
         reflection: { score: 1, note: "None." },
       },
+      summary: "A clear save story with a strong number.",
+      strengths: ["The $2.4M renewal lands.", "", "Clear stakes.", "Owns the plan.", "Fourth."],
       fixes: ["Add the lesson.", "", "Name the choice.", "Third."],
       bankRole: { role: "Team-level impact", note: "One team." },
     })}\n\`\`\``;
     const parsed = parseGrade(reply, stakeholder);
+    expect(parsed.summary).toBe("A clear save story with a strong number.");
+    expect(parsed.strengths).toEqual([
+      "The $2.4M renewal lands.",
+      "Clear stakes.",
+      "Owns the plan.",
+    ]);
+    expect(parsed.criteria[0].improve).toBe("Say what losing it would cost.");
+    // A top score has nothing to raise.
+    expect(parsed.criteria[3].improve).toBeUndefined();
     expect(parsed.criteria.map((c) => c.score)).toEqual([3, 4, 2, 4, 1]);
     expect(parsed.fixes).toEqual(["Add the lesson.", "Name the choice."]);
     expect(parsed.bankRole).toEqual({ role: "team-level impact", note: "One team." });
