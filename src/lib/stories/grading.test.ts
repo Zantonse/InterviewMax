@@ -6,6 +6,8 @@ import {
   combineGrade,
   fillerPhrases,
   gradeSystem,
+  hedgedFigures,
+  lengthRange,
   parseGrade,
   pronounCounts,
   quickChecks,
@@ -37,7 +39,7 @@ function scores(ids: readonly { id: string }[], score: number): CriterionScore[]
 }
 
 function checks(overrides: Partial<Record<CheckResult["id"], boolean>> = {}): CheckResult[] {
-  return (["number", "traced", "i_we", "length", "filler"] as const).map((id) => ({
+  return (["number", "traced", "i_we", "length", "filler", "hedged"] as const).map((id) => ({
     id,
     pass: overrides[id] ?? true,
     detail: "",
@@ -53,6 +55,7 @@ describe("quick checks", () => {
       ["i_we", true],
       ["length", true],
       ["filler", true],
+      ["hedged", true],
     ]);
     expect(result[0].detail).toContain("$2.4M");
   });
@@ -72,7 +75,7 @@ describe("quick checks", () => {
     expect(quickChecks(d, aboutMe).find((c) => c.id === "number")?.pass).toBe(true);
     const short = quickChecks(d, aboutMe).find((c) => c.id === "length");
     expect(short?.pass).toBe(false);
-    expect(short?.detail).toContain("aim for 120 to 260 words");
+    expect(short?.detail).toContain("aim for 150 to 225 words");
   });
 
   it("counts I against we, including contractions", () => {
@@ -222,5 +225,52 @@ describe("saved grades", () => {
     content.draft = { ...goodStar, writtenAt: "2026-10-14T00:00:00Z" };
     expect(gradeIsCurrent(content)).toBe(false);
     expect(parseContent({ grade: { tier: "excellent" } }).grade).toBeUndefined();
+  });
+});
+
+describe("cutting the fluff", () => {
+  it("flags figures said with an unsure hedge, but not labelled estimates", () => {
+    expect(
+      hedgedFigures(
+        "It's still experimental, at maybe 100 accounts and 2 sellers, but I think 20% of reps use it.",
+      ),
+    ).toEqual(["maybe 100 accounts", "I think 20%"]);
+    expect(hedgedFigures("We closed 40 deals or so last year.")).toEqual(["40 deals or so"]);
+    expect(hedgedFigures("Probably around $2.4M in pipeline.")).toEqual(["Probably around $2.4M"]);
+    expect(hedgedFigures("About 100 accounts, an estimated 20% lift, roughly $3B.")).toEqual([]);
+    expect(hedgedFigures("Maybe that's why I moved.")).toEqual([]);
+  });
+
+  it("fails the hedged check and asks the user to firm the figure up", () => {
+    const d = draft({ ...goodStar.parts, result: "We renewed it, maybe 100 accounts in all." });
+    const grade = combineGrade({
+      criteria: scores(STAR_CRITERIA, 4),
+      checks: quickChecks(d, stakeholder),
+      modelFixes: [],
+      storyType: stakeholder,
+      model: "test",
+      draftWrittenAt: d.writtenAt,
+    });
+    expect(grade.checks.find((c) => c.id === "hedged")).toMatchObject({ pass: false });
+    expect(grade.checks.find((c) => c.id === "hedged")?.detail).toContain("maybe 100 accounts");
+    expect(grade.tier).not.toBe("strong");
+    expect(grade.fixes[0]).toContain("Firm up");
+  });
+
+  it("holds Tell me about yourself to 60 to 90 seconds and a story to about two minutes", () => {
+    expect(lengthRange(aboutMe)).toEqual({ min: 150, max: 225 });
+    expect(lengthRange(stakeholder)).toEqual({ min: 180, max: 300 });
+  });
+
+  it("catches puffery as filler", () => {
+    expect(fillerPhrases("I'm really passionate about the kind of work that matters.")).toEqual([
+      "really",
+      "passionate about",
+      "the kind of",
+    ]);
+  });
+
+  it("tells the grader to mark padding and unsure figures down", () => {
+    expect(gradeSystem(aboutMe)).toContain("maybe 100 accounts");
   });
 });

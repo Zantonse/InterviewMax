@@ -23,3 +23,8 @@ test("Map my role needs a signed-in user", async ({ page }) => {
   await page.goto("/stories/00000000-0000-0000-0000-000000000000/map");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("target jobs need a signed-in user", async ({ page }) => {
+  await page.goto("/jobs");
+  await expect(page).toHaveURL(/\/login$/);
+});

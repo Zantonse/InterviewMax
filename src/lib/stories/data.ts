@@ -93,3 +93,12 @@ export async function updateStory(
   if (error) throw new Error(`Couldn't save the story: ${error.message}`);
   if (!data?.length) throw new Error("Story not found.");
 }
+
+export async function deleteStory(id: string): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Story not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("stories").delete().eq("id", id).select("id");
+  if (error) throw new Error(`Couldn't delete the story: ${error.message}`);
+  if (!data?.length) throw new Error("Story not found.");
+}
