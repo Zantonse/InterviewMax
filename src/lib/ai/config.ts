@@ -23,6 +23,8 @@ export const STEP_MODELS = {
   storyWrite: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
+  // Target jobs: read the resume and every job posting together (what they share, how each differs).
+  jobsRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
 } as const satisfies Record<string, StepModel>;
 
 export type Step = keyof typeof STEP_MODELS;

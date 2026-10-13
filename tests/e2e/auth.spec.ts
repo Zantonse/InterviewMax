@@ -18,3 +18,8 @@ test("the story builder needs a signed-in user", async ({ page }) => {
   await page.goto("/stories/new");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("target jobs need a signed-in user", async ({ page }) => {
+  await page.goto("/jobs");
+  await expect(page).toHaveURL(/\/login$/);
+});
