@@ -601,15 +601,17 @@ function StoryPanel({
   const parts = storyParts(storyType);
   const storyTypeLabel = storyType?.label;
   const [copied, setCopied] = useState(false);
+  // A written story reads as one script to say aloud; the parts view is for checking what went where.
+  const [showParts, setShowParts] = useState(false);
+  const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
+  const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
+  // At an interview pace of about 150 words a minute.
+  const seconds = Math.round(((words / 150) * 60) / 5) * 5;
 
   async function copy() {
     if (!draft) return;
-    const text = parts
-      .map((p) => draft.parts[p.id])
-      .filter(Boolean)
-      .join("\n\n");
     try {
-      await navigator.clipboard.writeText(`${title}\n\n${text}`);
+      await navigator.clipboard.writeText(paragraphs.join("\n\n"));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -645,46 +647,81 @@ function StoryPanel({
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-4">
-        {parts.map((part) => {
-          const notes = notesForPart(content, storyType, parts, part);
-          const written = draft?.parts[part.id];
-          return (
-            <div key={part.id} data-testid={`part-${part.id}`}>
-              <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    written ? "bg-teal-600" : notes.length ? "bg-teal-300" : "bg-slate-200"
-                  }`}
-                />
-                {part.label}
-              </h3>
-              {written ? (
-                <p className="mt-1 leading-relaxed text-slate-800">
-                  <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
-                </p>
-              ) : notes.length ? (
-                <ul className="mt-1 flex flex-col gap-1 border-l-2 border-teal-100 pl-3 text-sm text-slate-500">
-                  {notes.map((n, i) => (
-                    <li key={i} className="line-clamp-3 whitespace-pre-wrap">
-                      {n}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
-                  Empty
-                </p>
-              )}
-              {NUMBER_PARTS.has(part.id) && draft && (
-                <NumberCheck untraced={draft.untracedNumbers} />
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {draft && (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <span data-testid="script-length">
+            {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
+            spoken
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowParts((v) => !v)}
+            className="font-medium text-teal-800 hover:underline"
+          >
+            {showParts ? "Show as a script" : "Show by part"}
+          </button>
+        </div>
+      )}
+
+      {draft && !showParts ? (
+        <div className="mt-5" data-testid="story-script">
+          <div className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800">
+            {paragraphs.map((text, i) => (
+              <p key={i}>
+                <Highlighted text={text} marks={draft.untracedNumbers} />
+              </p>
+            ))}
+          </div>
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </div>
+      ) : (
+        <div className="mt-5 flex flex-col gap-4">
+          {parts.map((part) => {
+            const notes = notesForPart(content, storyType, parts, part);
+            const written = draft?.parts[part.id];
+            return (
+              <div key={part.id} data-testid={`part-${part.id}`}>
+                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      written ? "bg-teal-600" : notes.length ? "bg-teal-300" : "bg-slate-200"
+                    }`}
+                  />
+                  {part.label}
+                </h3>
+                {written ? (
+                  <p className="mt-1 leading-relaxed text-slate-800">
+                    <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
+                  </p>
+                ) : notes.length ? (
+                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-teal-100 pl-3 text-sm text-slate-500">
+                    {notes.map((n, i) => (
+                      <li key={i} className="line-clamp-3 whitespace-pre-wrap">
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
+                    Empty
+                  </p>
+                )}
+                {NUMBER_PARTS.has(part.id) && draft && (
+                  <NumberCheck untraced={draft.untracedNumbers} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
+}
+
+function formatMinutes(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s ? `${m} min ${s} sec` : `${m} min`;
 }
 
 // The part that carries the story's number, where the number check is shown.

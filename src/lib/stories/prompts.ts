@@ -66,6 +66,8 @@ Write these parts:
 - result: 1 to 2 sentences on the outcome, with their number.
 - reflection: 1 to 2 sentences on what they learned or would do differently.
 
+The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
+
 Also give the story a short title (at most 8 words) for their story bank, e.g. "Saving the Acme renewal".
 
 Reply with JSON only, no other text:
@@ -111,6 +113,8 @@ Write these parts:
 - highlight: 1 to 2 sentences on the result they're proudest of, with their number.
 - strengths: 1 to 2 sentences on what they're known for, proved with their most concrete example.
 - next: 1 to 2 sentences on why they want this next role, which closes the answer and hands back to the interviewer.
+
+The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
 
 Also give it a short title (at most 8 words) for their story bank, e.g. "From support lead to solutions architect".
 
