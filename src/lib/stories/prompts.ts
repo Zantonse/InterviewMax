@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { FollowUp, StoryContent } from "./content";
 import {
   INTRO_PARTS,
@@ -168,6 +169,7 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
   if (content.imported) {
     lines.push("My prepared answer, uploaded from a file I wrote earlier:", content.imported.text.trim(), "");
   }
+  if (content.roleMap) lines.push(roleMapTranscript(content.roleMap), "");
   if (content.linkedin) {
     lines.push(
       "My LinkedIn profile, for background (the facts and figures in it are mine):",
