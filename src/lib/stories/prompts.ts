@@ -1,10 +1,11 @@
 import type { ChatMessage } from "@/lib/ai/types";
 import type { FollowUp, StoryContent } from "./content";
 import {
-  CORE_QUESTIONS,
-  STORY_PARTS,
+  INTRO_PARTS,
+  STAR_PARTS,
   coreQuestionText,
-  type StoryPartId,
+  coreQuestions,
+  storyParts,
   type StoryType,
 } from "./story-types";
 
@@ -51,13 +52,67 @@ Write these parts:
 Also give the story a short title (at most 8 words) for their story bank, e.g. "Saving the Acme renewal".
 
 Reply with JSON only, no other text:
-{"title": "…", "parts": {${STORY_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
+{"title": "…", "parts": {${STAR_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
+
+// "Tell me about yourself" is a career introduction, not a story about one experience.
+const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope (team, territory, budget) are clear.
+- Path: the career moves that matter are there, with why they made them, not a list of every job.
+- Highlight: at least one result in real terms with a concrete number, or an estimate labelled as one.
+- Strengths: something specific they are known for, ideally with who relies on them for it.
+- Next: why they want this kind of role next, tied to what came before, not just "a new challenge".`;
+
+const INTRO_GAPS = INTRO_PARTS.map((p) => p.id);
+
+export const INTRO_PROBE_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They have answered a fixed set of questions about their career. Your job is to find the biggest gaps in their answers and ask follow-up questions that fill them. Sometimes they upload an answer they prepared earlier instead of answering the questions; review it against the same checklist.
+
+Check the answers against this checklist:
+${INTRO_CHECKLIST}
+
+Rules:
+- Ask 2 or 3 follow-up questions, aimed at the most important gaps first.
+- If the highlight has no concrete number, one question must ask for one and suggest where they could find it (a dashboard, CRM, a performance review, a manager, an old email). Never suggest or guess a number yourself.
+- Ask one thing per question. Keep each question short and conversational, and refer to their specifics so it's clear you read their answers.
+- Don't repeat a question they already answered well.
+
+Reply with JSON only, no other text:
+{"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}"}]}`;
+
+export const INTRO_WRITE_SYSTEM = `You are an interview coach writing an experienced professional's answer to "Tell me about yourself", from their own answers.
+
+The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
+
+If they uploaded a prepared answer, rework it into the parts below, keeping their wording where it already works and adding what their follow-up answers gave.
+
+Write in the first person, in plain spoken English the user could say aloud at the start of an interview. It is a short career pitch, not a life story: present, then past, then where they're heading. Aim for about 150 to 220 words in total, 60 to 90 seconds spoken.
+
+Write these parts:
+- present: 1 to 2 sentences on who they are today: role, company or industry, and scope.
+- path: 2 to 3 sentences on the career moves that led here and why, skipping anything that doesn't support the story.
+- highlight: 1 to 2 sentences on the result they're proudest of, with their number.
+- strengths: 1 sentence on what they're known for.
+- next: 1 to 2 sentences on why they want this next role, which closes the answer and hands back to the interviewer.
+
+Also give it a short title (at most 8 words) for their story bank, e.g. "From support lead to solutions architect".
+
+Reply with JSON only, no other text:
+{"title": "…", "parts": {${INTRO_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
+
+export function probeSystem(storyType: StoryType | undefined): string {
+  return storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
+}
+
+export function writeSystem(storyType: StoryType | undefined): string {
+  return storyType?.format === "intro" ? INTRO_WRITE_SYSTEM : WRITE_SYSTEM;
+}
 
 // The user's answers as an interview transcript, for both calls.
 export function answersTranscript(content: StoryContent, storyType: StoryType | undefined): string {
   const lines: string[] = [];
   if (storyType) lines.push(`Story type: ${storyType.label}`, "");
-  for (const q of CORE_QUESTIONS) {
+  if (content.imported) {
+    lines.push("My prepared answer, uploaded from a file I wrote earlier:", content.imported.text.trim(), "");
+  }
+  for (const q of coreQuestions(storyType)) {
     const answer = content.answers[q.id]?.trim();
     if (!answer) continue;
     lines.push(`Q: ${coreQuestionText(q.id, storyType)}`, `A: ${answer}`, "");
@@ -70,7 +125,10 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
   return lines.join("\n").trim();
 }
 
-export function probeMessages(content: StoryContent, storyType: StoryType | undefined): ChatMessage[] {
+export function probeMessages(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+): ChatMessage[] {
   return [
     {
       role: "user",
@@ -119,19 +177,23 @@ export function parseProbe(text: string): FollowUp[] {
   return followUps;
 }
 
-export function parseWrite(text: string): { title: string; parts: Record<StoryPartId, string> } {
+export function parseWrite(
+  text: string,
+  storyType: StoryType | undefined,
+): { title: string; parts: Record<string, string> } {
   const json = extractJson(text);
   if (!isRecord(json) || !isRecord(json.parts)) {
     throw new Error("The story came back in an unexpected format.");
   }
   const rawParts = json.parts;
+  const expected = storyParts(storyType);
   const parts = Object.fromEntries(
-    STORY_PARTS.map((p) => {
+    expected.map((p) => {
       const value = rawParts[p.id];
       return [p.id, typeof value === "string" ? value.trim() : ""];
     }),
-  ) as Record<StoryPartId, string>;
-  if (STORY_PARTS.every((p) => !parts[p.id])) throw new Error("The story came back empty.");
+  );
+  if (expected.every((p) => !parts[p.id])) throw new Error("The story came back empty.");
   const title = typeof json.title === "string" ? json.title.trim().slice(0, 120) : "";
   return { title, parts };
 }

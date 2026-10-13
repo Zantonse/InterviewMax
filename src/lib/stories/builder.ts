@@ -3,14 +3,14 @@ import { generateForStep, type Step } from "@/lib/ai";
 import { allAnswerText, type FollowUp, type StoryContent, type StoryDraft } from "./content";
 import { untracedNumbers } from "./numbers";
 import {
-  PROBE_SYSTEM,
-  WRITE_SYSTEM,
   parseProbe,
   parseWrite,
   probeMessages,
+  probeSystem,
   writeMessages,
+  writeSystem,
 } from "./prompts";
-import { STORY_PARTS, type StoryType } from "./story-types";
+import { storyParts, type StoryType } from "./story-types";
 import type { ChatMessage } from "@/lib/ai/types";
 
 // Call one: assess the scripted answers and return 2–3 follow-up questions aimed at the gaps.
@@ -18,7 +18,11 @@ export async function probeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
 ): Promise<FollowUp[]> {
-  const { text } = await call("storyProbe", PROBE_SYSTEM, probeMessages(content, storyType));
+  const { text } = await call(
+    "storyProbe",
+    probeSystem(storyType),
+    probeMessages(content, storyType),
+  );
   return parseProbe(text);
 }
 
@@ -30,19 +34,20 @@ export async function writeStory(
   storyType: StoryType | undefined,
 ): Promise<{ title: string; draft: StoryDraft }> {
   const answers = allAnswerText(content);
+  const system = writeSystem(storyType);
 
-  let result = await call("storyWrite", WRITE_SYSTEM, writeMessages(content, storyType));
-  let story = parseWrite(result.text);
-  let untraced = untracedNumbers(draftText(story.parts), answers);
+  let result = await call("storyWrite", system, writeMessages(content, storyType));
+  let story = parseWrite(result.text, storyType);
+  let untraced = untracedNumbers(draftText(story.parts, storyType), answers);
 
   if (untraced.length > 0) {
     result = await call(
       "storyWrite",
-      WRITE_SYSTEM,
+      system,
       writeMessages(content, storyType, { previous: result.text, untraced }),
     );
-    story = parseWrite(result.text);
-    untraced = untracedNumbers(draftText(story.parts), answers);
+    story = parseWrite(result.text, storyType);
+    untraced = untracedNumbers(draftText(story.parts, storyType), answers);
   }
 
   return {
@@ -56,8 +61,10 @@ export async function writeStory(
   };
 }
 
-function draftText(parts: StoryDraft["parts"]) {
-  return STORY_PARTS.map((p) => parts[p.id]).join("\n");
+function draftText(parts: StoryDraft["parts"], storyType: StoryType | undefined) {
+  return storyParts(storyType)
+    .map((p) => parts[p.id] ?? "")
+    .join("\n");
 }
 
 async function call(step: Step, system: string, messages: ChatMessage[]) {

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { STORY_TYPES } from "@/lib/stories/story-types";
+import { requiredStoryStatus } from "@/lib/stories/required";
+import { REQUIRED_STORY_TYPE_ID, STORY_TYPES } from "@/lib/stories/story-types";
 import { startStory } from "./actions";
 import { TypeButton } from "./type-button";
 
@@ -19,16 +21,58 @@ export default function NewStoryPage() {
           Which story do you want to build?
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Pick one experience. I&apos;ll ask you eight short questions about it, then two or three
-          follow-ups, and write the story from your answers.
+          Pick one. I&apos;ll ask you a few short questions about it, then two or three follow-ups,
+          and write it from your answers. Everyone starts with &ldquo;Tell me about yourself&rdquo;;
+          the other stories open once that one is written.
         </p>
 
-        <form action={startStory} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {STORY_TYPES.map((type) => (
-            <TypeButton key={type.id} id={type.id} label={type.label} blurb={type.blurb} />
-          ))}
-        </form>
+        <Suspense fallback={<PickerSkeleton />}>
+          <Picker />
+        </Suspense>
       </main>
+    </div>
+  );
+}
+
+async function Picker() {
+  const required = await requiredStoryStatus();
+  return (
+    <form action={startStory} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {STORY_TYPES.map((type) => {
+        if (type.id === REQUIRED_STORY_TYPE_ID) {
+          return (
+            <TypeButton
+              key={type.id}
+              id={type.id}
+              label={type.label}
+              blurb={type.blurb}
+              badge={required.drafted ? "Written" : "Start here"}
+              href={required.storyId ? `/stories/${required.storyId}` : undefined}
+            />
+          );
+        }
+        return (
+          <TypeButton
+            key={type.id}
+            id={type.id}
+            label={type.label}
+            blurb={
+              required.drafted ? type.blurb : "Opens once your Tell me about yourself is written."
+            }
+            locked={!required.drafted}
+          />
+        );
+      })}
+    </form>
+  );
+}
+
+function PickerSkeleton() {
+  return (
+    <div className="mt-8 grid animate-pulse grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {STORY_TYPES.map((type) => (
+        <div key={type.id} className="h-32 rounded-3xl bg-white/80 ring-1 ring-black/5" />
+      ))}
     </div>
   );
 }
