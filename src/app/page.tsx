@@ -23,15 +23,14 @@ export default function HomePage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
               Your interview prep
             </h1>
-            <p className="mt-2 max-w-2xl text-slate-600">
-              Build one story at a time. Each one is drawn from your own answers, with your own
-              numbers.
+            <p className="mt-1 max-w-2xl text-slate-600">
+              Build one story at a time, from your own answers and your own numbers.
             </p>
           </div>
           <Link
@@ -42,9 +41,9 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <WhyInterviewMax className="mt-8" />
+        <WhyInterviewMax compact className="mt-5" />
 
-        <Suspense fallback={<div className="mt-8 h-24 animate-pulse rounded-3xl bg-white/80" />}>
+        <Suspense fallback={<div className="mt-4 h-16 animate-pulse rounded-3xl bg-white/80" />}>
           <PrepPath />
         </Suspense>
 
