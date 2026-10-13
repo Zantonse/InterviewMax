@@ -20,7 +20,43 @@ const REASONS = [
   },
 ];
 
-export function WhyInterviewMax({ className = "" }: { className?: string }) {
+const PROBLEM =
+  "Behavioral interviews are the first gate in almost every hiring loop. Most people know roughly which questions are coming, and still walk in with rambling stories that have no numbers.";
+
+const TEASER = "Most people walk into behavioral interviews with rambling stories and no numbers.";
+
+// compact: a one-line strip that opens to the full reasons, so the home page gets to the stories fast.
+export function WhyInterviewMax({
+  className = "",
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <details
+        className={`group rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 ${className}`}
+        data-testid="why-interviewmax"
+      >
+        <summary className="flex cursor-pointer list-none items-baseline gap-3 [&::-webkit-details-marker]:hidden">
+          <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-teal-700">
+            Why InterviewMax
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-600 group-open:hidden">
+            {TEASER}
+          </span>
+          <span className="ml-auto shrink-0 text-sm font-semibold text-teal-800">
+            <span className="group-open:hidden">More</span>
+            <span className="hidden group-open:inline">Less</span>
+          </span>
+        </summary>
+        <div className="pb-1 pt-3">
+          <WhyBody />
+        </div>
+      </details>
+    );
+  }
   return (
     <section
       aria-labelledby="why-interviewmax"
@@ -32,11 +68,17 @@ export function WhyInterviewMax({ className = "" }: { className?: string }) {
       >
         Why InterviewMax
       </h2>
-      <p className="mt-3 max-w-3xl text-lg text-slate-800">
-        Behavioral interviews are the first gate in almost every hiring loop. Most people know
-        roughly which questions are coming, and still walk in with rambling stories that have no
-        numbers.
-      </p>
+      <div className="mt-3">
+        <WhyBody />
+      </div>
+    </section>
+  );
+}
+
+function WhyBody() {
+  return (
+    <>
+      <p className="max-w-3xl text-lg text-slate-800">{PROBLEM}</p>
 
       <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {REASONS.map((reason) => (
@@ -53,6 +95,6 @@ export function WhyInterviewMax({ className = "" }: { className?: string }) {
         story at a time, drawn from your own answers and your own numbers, aimed at the jobs
         you&apos;re going for, so you can see where you stand and what to do next.
       </p>
-    </section>
+    </>
   );
 }

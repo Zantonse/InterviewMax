@@ -26,14 +26,14 @@ export async function PrepPath() {
   if (!steps) return <FirstJob />;
   const current = steps.findIndex((s) => !s.done);
   return (
-    <nav aria-label="Your prep path" className="mt-8" data-testid="prep-path">
+    <nav aria-label="Your prep path" className="mt-4" data-testid="prep-path">
       <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {steps.map((step, i) => (
           <li key={step.label}>
             <Link
               href={step.href}
               aria-current={i === current ? "step" : undefined}
-              className={`flex h-full items-start gap-3 rounded-2xl p-4 ring-1 transition ${
+              className={`flex h-full items-center gap-3 rounded-2xl px-4 py-2.5 ring-1 transition ${
                 i === current
                   ? "bg-white shadow-sm ring-teal-700/50"
                   : "bg-white/60 ring-black/5 hover:bg-white"
@@ -47,8 +47,8 @@ export async function PrepPath() {
                 {step.done ? "✓" : i + 1}
               </span>
               <span>
-                <span className="block font-semibold text-slate-900">{step.label}</span>
-                <span className="block text-sm text-slate-600">{step.detail}</span>
+                <span className="block text-sm font-semibold text-slate-900">{step.label}</span>
+                <span className="block text-xs text-slate-600">{step.detail}</span>
               </span>
             </Link>
           </li>
@@ -61,7 +61,7 @@ export async function PrepPath() {
 function FirstJob() {
   return (
     <section
-      className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-teal-700/40 sm:p-8"
+      className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-teal-700/40 sm:p-8"
       data-testid="first-job"
     >
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
