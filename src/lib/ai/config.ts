@@ -2,8 +2,9 @@ import type { Effort, ProviderId } from "./types";
 
 // Which provider and model each step of the app uses.
 // Switching a step to another model is a change here, not in code.
-// Claude and OpenAI are the defaults while the direct-API credits last;
-// any OpenRouter model can be named with provider "openrouter" and its slug (e.g. "google/…").
+// For now every step runs through OpenRouter (decided Oct 13), so only OPENROUTER_API_KEY is needed.
+// To move a step to the direct Claude or OpenAI API, change its provider to "anthropic" or "openai"
+// and use that API's model id (e.g. "claude-opus-5-5"). OpenRouter slugs look like "vendor/model".
 // These are starting points: the grader's eval harness will settle the final picks.
 
 export type StepModel = {
@@ -15,11 +16,11 @@ export type StepModel = {
 
 export const STEP_MODELS = {
   // Story builder, call one: assess the user's answers and ask 2–3 follow-ups.
-  storyProbe: { provider: "anthropic", model: "claude-opus-5-5", effort: "medium" },
+  storyProbe: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Story builder, call two: write the story from the user's own answers.
-  storyWrite: { provider: "anthropic", model: "claude-opus-5-5", effort: "medium" },
+  storyWrite: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
-  storyGrade: { provider: "openai", model: "gpt-5.5", effort: "medium" },
+  storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
 } as const satisfies Record<string, StepModel>;
 
 export type Step = keyof typeof STEP_MODELS;

@@ -22,7 +22,8 @@ npm run dev                  # http://localhost:3000
 
 ## Project layout
 
-- `src/app` – pages: `/login` (magic link), `/auth/confirm` (email link lands here), `/` (home)
+- `src/app` – pages: `/login` (magic link), `/auth/confirm` (email link lands here), `/` (home and story bank), `/stories/new` (pick a story type), `/stories/[id]` (the story builder)
+- `src/lib/stories` – story types, the scripted questions, the two model prompts and the number check
 - `src/proxy.ts` – refreshes the Supabase session and sends signed-out visitors to `/login`
 - `src/lib/supabase` – Supabase clients for server code and the proxy
 - `src/lib/ai` – the model layer (see below)
@@ -34,9 +35,9 @@ Code calls `generateForStep("storyWrite", { system, messages })` from `src/lib/a
 
 | Provider | Key | Notes |
 | --- | --- | --- |
-| Claude API | `ANTHROPIC_API_KEY` | Default for story steps |
-| OpenAI API | `OPENAI_API_KEY` | Default for the grader |
-| OpenRouter | `OPENROUTER_API_KEY` | Any other model by slug, e.g. `google/…`; fallback when credits run out |
+| OpenRouter | `OPENROUTER_API_KEY` | Every step for now: Claude and GPT by OpenRouter slug, e.g. `anthropic/claude-opus-5.5` |
+| Claude API | `ANTHROPIC_API_KEY` | Optional; switch a step's provider to `anthropic` to use it |
+| OpenAI API | `OPENAI_API_KEY` | Optional; switch a step's provider to `openai` to use it |
 
 Keys are read from server environment variables only and never reach the browser. The `server-only` import in `src/lib/ai/index.ts` makes the build fail if client code imports it.
 

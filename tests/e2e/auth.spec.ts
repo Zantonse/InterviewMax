@@ -13,3 +13,8 @@ test("an expired email link shows a clear message", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?error=link$/);
   await expect(page.getByText("That sign-in link didn't work or has expired")).toBeVisible();
 });
+
+test("the story builder needs a signed-in user", async ({ page }) => {
+  await page.goto("/stories/new");
+  await expect(page).toHaveURL(/\/login$/);
+});
