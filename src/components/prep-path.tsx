@@ -23,7 +23,7 @@ export async function PrepPath() {
   const current = steps.findIndex((s) => !s.done);
   return (
     <nav aria-label="Your prep path" className="mt-8" data-testid="prep-path">
-      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((step, i) => (
           <li key={step.label}>
             <Link
@@ -70,6 +70,7 @@ async function pathSteps(): Promise<PathStep[]> {
     .map((p) => p.storyType)
     .filter((t) => t !== REQUIRED_STORY_TYPE_ID)
     .slice(0, PLAN_SIZE);
+  const predicted = jobs.find((j) => j.likelyQuestions);
   const planDone = plan.filter((t) => drafted.has(t)).length;
 
   return [
@@ -81,6 +82,14 @@ async function pathSteps(): Promise<PathStep[]> {
           : "Paste in the jobs you're going for",
       href: "/jobs",
       done: jobs.length > 0,
+    },
+    {
+      label: "See your likely questions",
+      detail: predicted
+        ? `Ready for ${predicted.title}`
+        : "What each job is most likely to ask",
+      href: predicted ? `/jobs/${predicted.id}` : jobs[0] ? `/jobs/${jobs[0].id}` : "/jobs",
+      done: Boolean(predicted),
     },
     {
       label: "Tell me about yourself",

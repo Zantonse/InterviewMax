@@ -22,13 +22,14 @@ npm run dev                  # http://localhost:3000
 
 ## Project layout
 
-- `src/app` – pages: `/login` (magic link), `/auth/confirm` (email link lands here), `/` (home and story bank), `/stories/new` (pick a story type), `/stories/[id]` (the story builder), `/jobs` and `/jobs/[id]` (target jobs and resume)
+- `src/app` – pages: `/login` (magic link), `/auth/confirm` (email link lands here), `/` (home and story bank), `/stories/new` (pick a story type), `/stories/[id]` (the story builder), `/jobs` and `/jobs/[id]` (target jobs, resume and likely questions)
 - `src/lib/jobs` – target jobs, the resume, role levels from titles, and the one call that reads them together
+- `src/lib/questions` – the ten question themes and templates, the likely-questions call, and which story answers each question
 - `src/lib/stories` – story types, the scripted questions, the two model prompts and the number check
 - `src/proxy.ts` – refreshes the Supabase session and sends signed-out visitors to `/login`
 - `src/lib/supabase` – Supabase clients for server code and the proxy
 - `src/lib/ai` – the model layer (see below)
-- `supabase/migrations` – database schema: `profiles` (with the resume and the read of the target jobs), `target_jobs`, `stories`, all owner-only via RLS
+- `supabase/migrations` – database schema: `profiles` (with the resume and the read of the target jobs), `target_jobs` (with likely questions and pasted interview reports), `stories`, all owner-only via RLS
 
 ## Model layer
 

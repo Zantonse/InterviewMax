@@ -8,7 +8,15 @@ import {
   MAX_TITLE_LENGTH,
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
-import { addJob, confirmLevel, rereadJobs, saveResume, type FormState } from "./actions";
+import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
+import {
+  addJob,
+  confirmLevel,
+  predictLikelyQuestions,
+  rereadJobs,
+  saveResume,
+  type FormState,
+} from "./actions";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-700 focus:outline-none";
@@ -100,6 +108,50 @@ export function RereadButton() {
         {pending ? "Reading your jobs…" : "Read my jobs again"}
       </button>
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
+    </form>
+  );
+}
+
+// Predicts a job's likely questions. Pasted interview reports are optional and saved with the job.
+export function PredictForm({
+  jobId,
+  reports,
+  predicted,
+}: {
+  jobId: string;
+  reports: string;
+  predicted: boolean;
+}) {
+  const [state, action, pending] = useActionState<FormState, FormData>(predictLikelyQuestions, null);
+  const id = useId();
+  return (
+    <form action={action} className="space-y-3" data-testid="predict-form">
+      <input type="hidden" name="jobId" value={jobId} />
+      <details open={!predicted && Boolean(reports)}>
+        <summary className="cursor-pointer text-sm font-semibold text-teal-800">
+          {reports ? "Interview reports you added" : "Add interview reports (optional)"}
+        </summary>
+        <label className="mt-2 block text-sm text-slate-600" htmlFor={id}>
+          Paste what people say they were asked at this company or for this role, from Glassdoor,
+          Blind, Reddit or a friend. I&apos;ll put the behavioral questions they mention on the list.
+          <textarea
+            id={id}
+            name="reports"
+            rows={6}
+            defaultValue={reports}
+            maxLength={MAX_REPORTS_LENGTH}
+            className={INPUT}
+          />
+        </label>
+      </details>
+      {state?.error && <ErrorLine>{state.error}</ErrorLine>}
+      <button type="submit" disabled={pending} className={predicted ? SECONDARY : PRIMARY}>
+        {pending
+          ? "Predicting your questions…"
+          : predicted
+            ? "Predict again"
+            : "Predict my likely questions"}
+      </button>
     </form>
   );
 }

@@ -3,6 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PrepPath } from "@/components/prep-path";
+import { QuestionList } from "@/components/question-list";
 import { WhyInterviewMax } from "@/components/why-interviewmax";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
@@ -50,7 +51,9 @@ export default function HomePage() {
             </Suspense>
           </Card>
           <Card title="Likely questions">
-            <EmptyLine>Questions appear once you add a target job.</EmptyLine>
+            <Suspense fallback={<EmptyLine>…</EmptyLine>}>
+              <LikelyQuestions />
+            </Suspense>
           </Card>
         </div>
 
@@ -160,6 +163,45 @@ async function TargetJobs() {
       </ul>
       <Link href="/jobs" className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline">
         See what to build first →
+      </Link>
+    </>
+  );
+}
+
+async function LikelyQuestions() {
+  let jobs: TargetJob[];
+  let stories: StoryRecord[];
+  try {
+    [jobs, stories] = await Promise.all([listJobs(), listStories()]);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Home: loading likely questions failed", err);
+    return <EmptyLine>Your questions couldn&apos;t be loaded right now.</EmptyLine>;
+  }
+  if (jobs.length === 0) return <EmptyLine>Questions appear once you add a target job.</EmptyLine>;
+  const job = jobs.find((j) => j.likelyQuestions);
+  if (!job?.likelyQuestions) {
+    return (
+      <>
+        <EmptyLine>See the questions {jobs[0].title} is most likely to ask.</EmptyLine>
+        <Link
+          href={`/jobs/${jobs[0].id}`}
+          className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+        >
+          Predict them →
+        </Link>
+      </>
+    );
+  }
+  return (
+    <>
+      <p className="mb-3 text-sm text-slate-500">For {job.title}</p>
+      <QuestionList questions={job.likelyQuestions.questions} stories={stories} limit={3} compact />
+      <Link
+        href={`/jobs/${job.id}`}
+        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+      >
+        All {job.likelyQuestions.questions.length} questions →
       </Link>
     </>
   );

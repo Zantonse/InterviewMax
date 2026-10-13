@@ -1,6 +1,7 @@
 import "server-only";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import {
   parseOverview,
   parseResume,
@@ -19,6 +20,8 @@ export type TargetJob = {
   level: string | null;
   levelConfirmed: boolean;
   description: string;
+  likelyQuestions: LikelyQuestions | null;
+  interviewReports: string;
   createdAt: string;
 };
 
@@ -31,10 +34,13 @@ type Row = {
   level: string | null;
   level_confirmed: boolean;
   job_description: string | null;
+  likely_questions: unknown;
+  interview_reports: string | null;
   created_at: string;
 };
 
-const COLUMNS = "id, title, company, level, level_confirmed, job_description, created_at";
+const COLUMNS =
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -44,6 +50,8 @@ function toJob(row: Row): TargetJob {
     level: row.level,
     levelConfirmed: row.level_confirmed,
     description: row.job_description ?? "",
+    likelyQuestions: parseLikelyQuestions(row.likely_questions),
+    interviewReports: row.interview_reports ?? "",
     createdAt: row.created_at,
   };
 }
@@ -112,6 +120,25 @@ export async function setJobLevel(id: string, level: LevelId): Promise<void> {
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the level: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+export async function saveJobQuestions(
+  id: string,
+  patch: { likelyQuestions?: LikelyQuestions | null; interviewReports?: string },
+): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({
+      ...("likelyQuestions" in patch ? { likely_questions: patch.likelyQuestions } : {}),
+      ...("interviewReports" in patch ? { interview_reports: patch.interviewReports } : {}),
+    })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the questions: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

@@ -12,9 +12,18 @@ import {
   isLevel,
   suggestLevel,
 } from "@/lib/jobs/content";
-import { deleteJob, insertJob, listJobs, saveJobsPrep, setJobLevel } from "@/lib/jobs/data";
+import {
+  deleteJob,
+  insertJob,
+  listJobs,
+  saveJobQuestions,
+  saveJobsPrep,
+  setJobLevel,
+} from "@/lib/jobs/data";
 import { readJobs } from "@/lib/jobs/read";
 import { readResumeFile } from "@/lib/jobs/resume";
+import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
+import { predictQuestions } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
 
 export type FormState = { error?: string; notice?: string } | null;
@@ -99,6 +108,40 @@ export async function rereadJobs(): Promise<FormState> {
   const read = await readAfterChange();
   refresh();
   return read;
+}
+
+// Saves the interview reports the user pasted for a job (if any), then predicts its questions.
+export async function predictLikelyQuestions(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const jobId = String(formData.get("jobId") ?? "");
+  const reports = formData.get("reports");
+  try {
+    if (typeof reports === "string") {
+      const text = normalize(reports);
+      if (text.length > MAX_REPORTS_LENGTH) {
+        return {
+          error: `Keep the reports under ${MAX_REPORTS_LENGTH.toLocaleString("en-US")} characters.`,
+        };
+      }
+      await saveJobQuestions(jobId, { interviewReports: text });
+    }
+    await predictQuestions(jobId);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Likely questions: predicting failed", err);
+    return {
+      error:
+        err instanceof ModelError
+          ? "The assistant didn't respond. Try again in a moment."
+          : err instanceof Error
+            ? err.message
+            : "The questions couldn't be predicted. Try again.",
+    };
+  }
+  refresh();
+  return null;
 }
 
 // The read is a model call, so it can fail; the change the user made is kept either way.
