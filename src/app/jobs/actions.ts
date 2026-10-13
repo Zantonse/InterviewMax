@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
+import { getCurrentUser } from "@/lib/auth";
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_JOBS,
@@ -20,6 +21,8 @@ import {
   saveJobsPrep,
   setJobLevel,
 } from "@/lib/jobs/data";
+import { fetchPosting } from "@/lib/jobs/fetch-posting";
+import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
 import { readResumeFile } from "@/lib/jobs/resume";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
@@ -27,6 +30,20 @@ import { predictQuestions } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
 
 export type FormState = { error?: string; notice?: string } | null;
+
+// Reads a posting from a link so the add-job form can fill itself in. Nothing is saved yet.
+export async function fetchJobPosting(
+  link: string,
+): Promise<{ ok: true; posting: FetchedPosting } | { ok: false; error: string }> {
+  try {
+    await getCurrentUser();
+    return { ok: true, posting: await fetchPosting(String(link)) };
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Target jobs: fetching a posting failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "That posting couldn't be read." };
+  }
+}
 
 // Adds a job from its pasted posting, then reads all the jobs again. If the read fails the job is
 // still kept, and the jobs page offers to read again.
