@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
   LEVELS,
@@ -8,10 +8,12 @@ import {
   MAX_TITLE_LENGTH,
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
+import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import {
   addJob,
   confirmLevel,
+  fetchJobPosting,
   predictLikelyQuestions,
   rereadJobs,
   saveResume,
@@ -27,9 +29,74 @@ const SECONDARY =
 
 export function AddJobForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
+  const [link, setLink] = useState("");
+  const [title, setTitle] = useState("");
+  const [company, setCompany] = useState("");
+  const [description, setDescription] = useState("");
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetched, setFetched] = useState(false);
+  const [fetching, startFetch] = useTransition();
   const id = useId();
+
+  function fetchLink() {
+    if (!link.trim()) return;
+    setFetchError(null);
+    setFetched(false);
+    startFetch(async () => {
+      const result = await fetchJobPosting(link);
+      if (!result.ok) {
+        setFetchError(result.error);
+        return;
+      }
+      setTitle(result.posting.title);
+      setCompany(result.posting.company);
+      setDescription(result.posting.description);
+      setFetched(true);
+    });
+  }
+
   return (
     <form action={action} className="space-y-4" data-testid="add-job-form">
+      <div>
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-link`}>
+          Link to the posting <span className="font-normal text-slate-500">(optional)</span>
+        </label>
+        <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+          <input
+            id={`${id}-link`}
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                fetchLink();
+              }
+            }}
+            placeholder="https://jobs.lever.co/…"
+            className={INPUT.replace("mt-1 ", "")}
+          />
+          <button
+            type="button"
+            onClick={fetchLink}
+            disabled={fetching || !link.trim()}
+            className={`${SECONDARY} shrink-0`}
+          >
+            {fetching ? "Fetching…" : "Fetch posting"}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn,
+          Indeed and Glassdoor block this: use their &ldquo;Apply on company site&rdquo; link,
+          or paste the text.
+        </p>
+        {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
+        {fetched && (
+          <p className="mt-1 text-sm font-medium text-teal-800" role="status">
+            Filled in from the link. Check it over, then add the job.
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
           Job title
@@ -38,6 +105,8 @@ export function AddJobForm() {
             name="title"
             required
             maxLength={MAX_TITLE_LENGTH}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Senior Solutions Engineer"
             className={INPUT}
           />
@@ -48,6 +117,8 @@ export function AddJobForm() {
             id={`${id}-company`}
             name="company"
             maxLength={MAX_TITLE_LENGTH}
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
             placeholder="e.g. Acme"
             className={INPUT}
           />
@@ -61,12 +132,14 @@ export function AddJobForm() {
           required
           rows={10}
           maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder="Paste the whole posting: the responsibilities and requirements are what I read."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Paste the whole posting, or fetch it from a link above: the responsibilities and requirements are what I read."
           className={INPUT}
         />
       </label>
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
-      <button type="submit" disabled={pending} className={PRIMARY}>
+      <button type="submit" disabled={pending || fetching} className={PRIMARY}>
         {pending ? "Reading the posting…" : "Add this job"}
       </button>
     </form>
