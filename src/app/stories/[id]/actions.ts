@@ -3,7 +3,13 @@
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
 import { prefillFromProfile, probeStory, writeStory } from "@/lib/stories/builder";
-import { builderStage, type StoryContent } from "@/lib/stories/content";
+import {
+  MAX_PROBE_ROUNDS,
+  builderStage,
+  canStrengthen,
+  probeRounds,
+  type StoryContent,
+} from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
 import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
@@ -26,6 +32,7 @@ export async function saveAnswer(
     const content = {
       ...story.content,
       answers: { ...story.content.answers, [questionId]: text },
+      nothingMoreToAsk: false,
     };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
@@ -48,6 +55,7 @@ export async function saveFollowUpAnswer(
     const content = {
       ...story.content,
       followUps: followUps.map((f, i) => (i === index ? { ...f, answer: text } : f)),
+      nothingMoreToAsk: false,
     };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
@@ -89,7 +97,8 @@ export async function importPreparedAnswer(
 export async function importLinkedIn(storyId: string, formData: FormData): Promise<BuilderResult> {
   return withStory(storyId, async (story) => {
     const storyType = getStoryType(story.storyType);
-    if (storyType?.format !== "intro") return fail("LinkedIn uploads are for Tell me about yourself.");
+    if (storyType?.format !== "intro")
+      return fail("LinkedIn uploads are for Tell me about yourself.");
     if (builderStage(story.content, storyType) !== "core") {
       return fail("This story is already past the questions.");
     }
@@ -121,15 +130,24 @@ export async function importLinkedIn(storyId: string, formData: FormData): Promi
   });
 }
 
-// Call one. Runs once, after the last scripted answer.
+// Call one. Runs after the last scripted answer, once more after the first follow-ups, and again
+// whenever the user asks to make a drafted story stronger.
 export async function askFollowUps(storyId: string): Promise<BuilderResult> {
   return withStory(storyId, async (story) => {
     const stage = builderStage(story.content, getStoryType(story.storyType));
     if (stage === "core") return fail("Answer the remaining questions first.");
-    if (stage !== "probe") return { ok: true, content: story.content, title: story.title };
+    const again = stage === "drafted" && canStrengthen(story.content);
+    if (stage !== "probe" && !again)
+      return { ok: true, content: story.content, title: story.title };
 
-    const followUps = await probeStory(story.content, getStoryType(story.storyType));
-    const content = { ...story.content, followUps };
+    const round = probeRounds(story.content) + 1;
+    const asked = await probeStory(story.content, getStoryType(story.storyType), round);
+    const content = {
+      ...story.content,
+      followUps: [...(story.content.followUps ?? []), ...asked],
+      probeDone: asked.length === 0 || round >= MAX_PROBE_ROUNDS,
+      nothingMoreToAsk: asked.length === 0,
+    };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });

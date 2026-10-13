@@ -16,17 +16,19 @@ import {
 import { storyParts, type StoryType } from "./story-types";
 import type { ChatMessage } from "@/lib/ai/types";
 
-// Call one: assess the scripted answers and return 2–3 follow-up questions aimed at the gaps.
+// Call one: assess the answers so far and return follow-up questions aimed at the gaps. Round 1
+// returns 3–5; round 2 returns up to 3, or none when the answers are already strong.
 export async function probeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
+  round: number,
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    probeSystem(storyType),
+    probeSystem(storyType, round),
     probeMessages(content, storyType),
   );
-  return parseProbe(text);
+  return parseProbe(text, round);
 }
 
 // "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Answers with a

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   builderStage,
+  canStrengthen,
   nextCoreQuestion,
   nextFollowUpIndex,
   type StoryContent,
@@ -80,12 +81,12 @@ export function StoryBuilder({
         setContent(result.content);
         setTitle(result.title);
         // After the last scripted answer, go straight on to call one; after the last
-        // follow-up, straight on to call two.
+        // follow-up, to the next round or straight on to call two.
         const next = builderStage(result.content, storyType);
         const saved = step.busy === "saving" || step.busy === "reading";
         if (saved && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
-        } else if (saved && next === "write") {
+        } else if ((saved || step.busy === "probing") && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
         }
       }
@@ -100,7 +101,14 @@ export function StoryBuilder({
 
   function submitFollowUp(index: number, answer: string) {
     setEditing(null);
-    run([{ busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) }]);
+    // Answering the last of the extra questions on a drafted story rewrites it to use them.
+    const unanswered = (content.followUps ?? []).filter((f) => !f.answer?.trim()).length;
+    const rewrite =
+      Boolean(content.draft) && unanswered === 1 && !content.followUps?.[index]?.answer;
+    run([
+      { busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) },
+      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+    ]);
   }
 
   function submitUpload(formData: FormData) {
@@ -205,27 +213,31 @@ export function StoryBuilder({
             );
           })}
 
-          {content.followUps && content.followUps.length > 0 && (
-            <CoachLine>
-              Thanks. A few follow-ups to fill the gaps before I write it up:
-            </CoachLine>
-          )}
-
           {content.followUps?.map((f, index) => {
             if (index > (currentFollowUp ?? Infinity)) return null;
             const isEditing = editing?.kind === "followUp" && editing.index === index;
+            const round = f.round ?? 1;
+            const opensRound = index === 0 || round !== (content.followUps?.[index - 1].round ?? 1);
             return (
-              <Exchange
-                key={index}
-                question={f.question}
-                answer={f.answer}
-                isCurrent={index === currentFollowUp}
-                isEditing={isEditing}
-                disabled={busy !== null}
-                onEdit={() => setEditing({ kind: "followUp", index })}
-                onCancel={() => setEditing(null)}
-                onSubmit={(text) => submitFollowUp(index, text)}
-              />
+              <Fragment key={index}>
+                {opensRound && (
+                  <CoachLine>
+                    {round === 1
+                      ? "Thanks. A few follow-ups to make it stronger before I write it up:"
+                      : "Good. A few more, so the numbers and examples carry it:"}
+                  </CoachLine>
+                )}
+                <Exchange
+                  question={f.question}
+                  answer={f.answer}
+                  isCurrent={index === currentFollowUp}
+                  isEditing={isEditing}
+                  disabled={busy !== null}
+                  onEdit={() => setEditing({ kind: "followUp", index })}
+                  onCancel={() => setEditing(null)}
+                  onSubmit={(text) => submitFollowUp(index, text)}
+                />
+              </Fragment>
             );
           })}
 
@@ -236,9 +248,11 @@ export function StoryBuilder({
           {!busy && stage === "probe" && (
             <ActionLine
               text={
-                content.imported
-                  ? "Your prepared answer is in. Next I'll review it and ask two or three follow-ups."
-                  : "That's every question. Next I'll look for gaps and ask two or three follow-ups."
+                content.followUps
+                  ? "Thanks. Next I'll check whether anything is still thin and ask a few more if so."
+                  : content.imported
+                    ? "Your prepared answer is in. Next I'll review it and ask a few follow-ups."
+                    : "That's every question. Next I'll look for gaps and ask a few follow-ups."
               }
               button="Get follow-up questions"
               onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
@@ -256,11 +270,22 @@ export function StoryBuilder({
               text={
                 content.draft?.untracedNumbers.length
                   ? "Your draft is ready, but check the highlighted figures: they aren't in your answers. Fix an answer or rewrite the story."
-                  : "Your draft is ready, built only from what you told me. If you change an answer, rewrite it to pick up the change."
+                  : content.nothingMoreToAsk
+                    ? "I couldn't find anything more to ask: the answers behind this draft are already strong. Change an answer and I'll look again."
+                    : "Your draft is ready, built only from what you told me. Ask me more to make it stronger, as many times as you like, or rewrite it after changing an answer."
               }
               button="Rewrite the story"
               secondary
               onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+              extra={
+                canStrengthen(content) && !content.nothingMoreToAsk
+                  ? {
+                      button: "Ask me more to make it stronger",
+                      onClick: () =>
+                        run([{ busy: "probing", action: () => askFollowUps(storyId) }]),
+                    }
+                  : undefined
+              }
             />
           )}
         </ol>
@@ -525,26 +550,40 @@ function ActionLine({
   button,
   secondary,
   onClick,
+  extra,
 }: {
   text: string;
   button: string;
   secondary?: boolean;
   onClick: () => void;
+  // A second, primary action shown first, e.g. another round of questions on a drafted story.
+  extra?: { button: string; onClick: () => void };
 }) {
   return (
     <li className="flex flex-col items-start gap-3 rounded-2xl bg-slate-50 p-4">
       <p className="text-slate-700">{text}</p>
-      <button
-        type="button"
-        onClick={onClick}
-        className={
-          secondary
-            ? "rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50"
-            : "rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
-        }
-      >
-        {button}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {extra && (
+          <button
+            type="button"
+            onClick={extra.onClick}
+            className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+          >
+            {extra.button}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onClick}
+          className={
+            secondary
+              ? "rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50"
+              : "rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+          }
+        >
+          {button}
+        </button>
+      </div>
     </li>
   );
 }
@@ -564,15 +603,17 @@ function StoryPanel({
   const parts = storyParts(storyType);
   const storyTypeLabel = storyType?.label;
   const [copied, setCopied] = useState(false);
+  // A written story reads as one script to say aloud; the parts view is for checking what went where.
+  const [showParts, setShowParts] = useState(false);
+  const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
+  const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
+  // At an interview pace of about 150 words a minute.
+  const seconds = Math.round(((words / 150) * 60) / 5) * 5;
 
   async function copy() {
     if (!draft) return;
-    const text = parts
-      .map((p) => draft.parts[p.id])
-      .filter(Boolean)
-      .join("\n\n");
     try {
-      await navigator.clipboard.writeText(`${title}\n\n${text}`);
+      await navigator.clipboard.writeText(paragraphs.join("\n\n"));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -608,46 +649,81 @@ function StoryPanel({
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-4">
-        {parts.map((part) => {
-          const notes = notesForPart(content, storyType, parts, part);
-          const written = draft?.parts[part.id];
-          return (
-            <div key={part.id} data-testid={`part-${part.id}`}>
-              <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    written ? "bg-teal-600" : notes.length ? "bg-teal-300" : "bg-slate-200"
-                  }`}
-                />
-                {part.label}
-              </h3>
-              {written ? (
-                <p className="mt-1 leading-relaxed text-slate-800">
-                  <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
-                </p>
-              ) : notes.length ? (
-                <ul className="mt-1 flex flex-col gap-1 border-l-2 border-teal-100 pl-3 text-sm text-slate-500">
-                  {notes.map((n, i) => (
-                    <li key={i} className="line-clamp-3 whitespace-pre-wrap">
-                      {n}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
-                  Empty
-                </p>
-              )}
-              {NUMBER_PARTS.has(part.id) && draft && (
-                <NumberCheck untraced={draft.untracedNumbers} />
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {draft && (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <span data-testid="script-length">
+            {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
+            spoken
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowParts((v) => !v)}
+            className="font-medium text-teal-800 hover:underline"
+          >
+            {showParts ? "Show as a script" : "Show by part"}
+          </button>
+        </div>
+      )}
+
+      {draft && !showParts ? (
+        <div className="mt-5" data-testid="story-script">
+          <div className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800">
+            {paragraphs.map((text, i) => (
+              <p key={i}>
+                <Highlighted text={text} marks={draft.untracedNumbers} />
+              </p>
+            ))}
+          </div>
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </div>
+      ) : (
+        <div className="mt-5 flex flex-col gap-4">
+          {parts.map((part) => {
+            const notes = notesForPart(content, storyType, parts, part);
+            const written = draft?.parts[part.id];
+            return (
+              <div key={part.id} data-testid={`part-${part.id}`}>
+                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      written ? "bg-teal-600" : notes.length ? "bg-teal-300" : "bg-slate-200"
+                    }`}
+                  />
+                  {part.label}
+                </h3>
+                {written ? (
+                  <p className="mt-1 leading-relaxed text-slate-800">
+                    <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
+                  </p>
+                ) : notes.length ? (
+                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-teal-100 pl-3 text-sm text-slate-500">
+                    {notes.map((n, i) => (
+                      <li key={i} className="line-clamp-3 whitespace-pre-wrap">
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
+                    Empty
+                  </p>
+                )}
+                {NUMBER_PARTS.has(part.id) && draft && (
+                  <NumberCheck untraced={draft.untracedNumbers} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
+}
+
+function formatMinutes(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s ? `${m} min ${s} sec` : `${m} min`;
 }
 
 // The part that carries the story's number, where the number check is shown.
