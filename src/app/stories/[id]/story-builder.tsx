@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   builderStage,
@@ -143,6 +144,10 @@ export function StoryBuilder({
           </p>
         </div>
 
+        {storyType?.format === "intro" && (
+          <RoleMapCard storyId={storyId} content={content} prominent={canUpload} />
+        )}
+
         {canUpload && (
           <div className="mt-5 flex flex-col gap-3">
             {!content.linkedin && (
@@ -201,7 +206,11 @@ export function StoryBuilder({
                 question={coreQuestionText(q.id, storyType)}
                 answer={answer}
                 source={
-                  content.linkedin?.prefilled.includes(q.id) ? "From your LinkedIn" : undefined
+                  content.roleMap?.seeded?.includes(q.id)
+                    ? "From your role map"
+                    : content.linkedin?.prefilled.includes(q.id)
+                      ? "From your LinkedIn"
+                      : undefined
                 }
                 isCurrent={q.id === currentCore}
                 isEditing={isEditing}
@@ -457,6 +466,58 @@ function Composer({
         </button>
       </div>
     </form>
+  );
+}
+
+// "Tell me about yourself" only: Map my role, for people who find it hard to put their work into
+// words. Offered up front while the questions are open; afterwards, a link back to the profile.
+function RoleMapCard({
+  storyId,
+  content,
+  prominent,
+}: {
+  storyId: string;
+  content: StoryContent;
+  prominent: boolean;
+}) {
+  const href = `/stories/${storyId}/map`;
+  if (content.roleMap?.profile) {
+    return (
+      <p className="mt-4 text-sm text-slate-600" data-testid="role-map-link">
+        Built on your role map.{" "}
+        <Link href={href} className="font-medium text-teal-800 hover:underline">
+          See your role profile
+        </Link>
+      </p>
+    );
+  }
+  if (!prominent) {
+    return (
+      <p className="mt-4 text-sm text-slate-600" data-testid="role-map-link">
+        Want words for what you did?{" "}
+        <Link href={href} className="font-medium text-teal-800 hover:underline">
+          Map my role
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <div
+      className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-teal-800 p-4 text-white"
+      data-testid="role-map-card"
+    >
+      <p>
+        <span className="font-semibold">Not sure how to describe your role?</span> Map it first.
+        I&apos;ll ask about the work itself, show you the whole function so you can mark your part,
+        and hand back a one-page profile that fills in these answers.
+      </p>
+      <Link
+        href={href}
+        className="rounded-xl bg-white px-4 py-2 font-semibold text-teal-900 hover:bg-teal-50"
+      >
+        {content.roleMap ? "Continue mapping my role" : "Map my role"}
+      </Link>
+    </div>
   );
 }
 

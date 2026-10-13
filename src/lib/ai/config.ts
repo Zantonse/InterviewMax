@@ -19,6 +19,10 @@ export const STEP_MODELS = {
   storyProbe: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Story builder, "Tell me about yourself": fill in the answers a LinkedIn profile already covers.
   storyPrefill: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Map my role: list the usual parts of a job function that has no hand-written map.
+  roleMap: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Map my role: write the one-page role profile from the user's answers.
+  roleProfile: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Story builder, call two: write the story from the user's own answers.
   storyWrite: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
