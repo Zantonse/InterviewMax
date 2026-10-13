@@ -109,7 +109,14 @@ export const SCORE_LABELS: Record<number, string> = {
   4: "Strong",
 };
 
-export type CriterionScore = { id: string; score: number; note: string };
+export type CriterionScore = {
+  id: string;
+  score: number;
+  // Why it got that score.
+  note: string;
+  // What would raise it, as what to do next. Empty when the score is 4.
+  improve?: string;
+};
 
 // What a story does in the bank (PRD, level is judged across the bank, not as a pass or fail).
 export const BANK_ROLES = [
@@ -122,6 +129,10 @@ export type StoryGrade = {
   tier: Tier;
   // The one or two things to do next, most important first.
   fixes: string[];
+  // One sentence on how the story lands overall.
+  summary?: string;
+  // What already works, so the user knows what to keep.
+  strengths: string[];
   criteria: CriterionScore[];
   checks: CheckResult[];
   // Behavioral stories only.
@@ -320,6 +331,8 @@ export function combineGrade(input: {
   criteria: CriterionScore[];
   checks: CheckResult[];
   modelFixes: string[];
+  summary?: string;
+  strengths?: string[];
   bankRole?: { role: string; note: string };
   storyType: StoryType | undefined;
   model: string;
@@ -331,6 +344,8 @@ export function combineGrade(input: {
   return {
     tier,
     fixes,
+    ...(input.summary ? { summary: input.summary } : {}),
+    strengths: input.strengths ?? [],
     criteria,
     checks,
     ...(input.bankRole && storyType?.format !== "intro" ? { bankRole: input.bankRole } : {}),
@@ -360,7 +375,13 @@ Score each criterion from 1 to 4:
 Criteria:
 ${criteria.map((c) => `- ${c.id} (${c.label}): ${c.question}`).join("\n")}
 
-For each criterion, write one short sentence (at most 25 words) saying why it got that score, quoting or naming the specific part of the story.
+For each criterion:
+- note: one or two sentences (at most 40 words) on why it got that score, quoting or naming the specific part of the story. Say what works as well as what doesn't.
+- improve: when the score is below 4, one sentence on the specific change that would raise it, addressed to the user. Leave it empty for a 4.
+
+Write a one-sentence summary of how the story lands for an interviewer overall.
+
+List the two or three things that already work best, so the user knows what to keep. Be specific: quote or name the line, number or example.
 
 Then give the one or two changes that would most improve the story, most important first. Phrase each as what to do next, addressed to the user ("Say what…", "Add…"). Never suggest a specific number or invent a fact: when a number is missing, tell them to add the real one from their own records, or a labelled estimate.${
     intro
@@ -371,7 +392,7 @@ Also say which job this story does in a story bank: one of ${BANK_ROLES.map((r) 
   }
 
 Reply with JSON only, no other text:
-{"criteria": {${criteria.map((c) => `"${c.id}": {"score": 1, "note": "…"}`).join(", ")}}, "fixes": ["…"]${
+{"summary": "…", "strengths": ["…"], "criteria": {${criteria.map((c) => `"${c.id}": {"score": 1, "note": "…", "improve": "…"}`).join(", ")}}, "fixes": ["…"]${
     intro ? "" : `, "bankRole": {"role": "…", "note": "…"}`
   }}`;
 }
@@ -392,7 +413,13 @@ export function gradeMessages(
 export function parseGrade(
   text: string,
   storyType: StoryType | undefined,
-): { criteria: CriterionScore[]; fixes: string[]; bankRole?: { role: string; note: string } } {
+): {
+  criteria: CriterionScore[];
+  fixes: string[];
+  summary?: string;
+  strengths: string[];
+  bankRole?: { role: string; note: string };
+} {
   const json = extractJson(text);
   if (!isRecord(json) || !isRecord(json.criteria)) {
     throw new Error("The grade came back in an unexpected format.");
@@ -403,18 +430,17 @@ export function parseGrade(
     if (!isRecord(entry)) return [];
     const score = Math.round(Number(entry.score));
     if (!Number.isFinite(score) || score < 1 || score > 4) return [];
-    const note = typeof entry.note === "string" ? entry.note.trim().slice(0, 300) : "";
-    return [{ id: c.id, score, note }];
+    const note = typeof entry.note === "string" ? entry.note.trim().slice(0, 400) : "";
+    const improve =
+      score < 4 && typeof entry.improve === "string" ? entry.improve.trim().slice(0, 300) : "";
+    return [{ id: c.id, score, note, ...(improve ? { improve } : {}) }];
   });
   if (criteria.length !== gradingCriteria(storyType).length) {
     throw new Error("The grade left out some of the criteria.");
   }
-  const fixes = Array.isArray(json.fixes)
-    ? json.fixes
-        .filter((f): f is string => typeof f === "string" && f.trim().length > 0)
-        .map((f) => f.trim().slice(0, 300))
-        .slice(0, 2)
-    : [];
+  const fixes = stringList(json.fixes, 2);
+  const strengths = stringList(json.strengths, 3);
+  const summary = typeof json.summary === "string" ? json.summary.trim().slice(0, 300) : "";
   let bankRole: { role: string; note: string } | undefined;
   if (storyType?.format !== "intro" && isRecord(json.bankRole)) {
     const role =
@@ -425,7 +451,22 @@ export function parseGrade(
       bankRole = { role, note };
     }
   }
-  return { criteria, fixes, ...(bankRole ? { bankRole } : {}) };
+  return {
+    criteria,
+    fixes,
+    ...(summary ? { summary } : {}),
+    strengths,
+    ...(bankRole ? { bankRole } : {}),
+  };
+}
+
+function stringList(value: unknown, max: number): string[] {
+  return Array.isArray(value)
+    ? value
+        .filter((f): f is string => typeof f === "string" && f.trim().length > 0)
+        .map((f) => f.trim().slice(0, 300))
+        .slice(0, max)
+    : [];
 }
 
 // Reads a saved grade defensively: stories.content is jsonb.
@@ -439,13 +480,20 @@ export function parseStoredGrade(raw: unknown): StoryGrade | undefined {
   return {
     tier,
     fixes: strings(raw.fixes),
-    criteria: raw.criteria
-      .filter(isRecord)
-      .flatMap((c) =>
-        typeof c.id === "string" && typeof c.score === "number"
-          ? [{ id: c.id, score: c.score, note: str(c.note) }]
-          : [],
-      ),
+    ...(typeof raw.summary === "string" && raw.summary ? { summary: raw.summary } : {}),
+    strengths: strings(raw.strengths),
+    criteria: raw.criteria.filter(isRecord).flatMap((c) =>
+      typeof c.id === "string" && typeof c.score === "number"
+        ? [
+            {
+              id: c.id,
+              score: c.score,
+              note: str(c.note),
+              ...(typeof c.improve === "string" && c.improve ? { improve: c.improve } : {}),
+            },
+          ]
+        : [],
+    ),
     checks: raw.checks.filter(isRecord).flatMap((c) => {
       const id = CHECKS.find((k) => k.id === c.id)?.id;
       return id && typeof c.pass === "boolean" ? [{ id, pass: c.pass, detail: str(c.detail) }] : [];

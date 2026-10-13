@@ -102,6 +102,8 @@ export async function gradeStory(
     criteria: graded.criteria,
     checks,
     modelFixes: graded.fixes,
+    summary: graded.summary,
+    strengths: graded.strengths,
     bankRole: graded.bankRole,
     storyType,
     model: result.model,

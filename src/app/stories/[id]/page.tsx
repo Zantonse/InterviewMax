@@ -15,7 +15,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 xl:max-w-[96rem] px-4 py-6 sm:px-6 sm:py-10">
         <Link href="/" className="text-sm font-medium text-teal-800 hover:underline">
           ← Back to your prep
         </Link>
@@ -43,9 +43,10 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
 
 function BuilderSkeleton() {
   return (
-    <div className="mt-4 grid animate-pulse grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="mt-4 grid animate-pulse grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,26rem)]">
       <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
       <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
+      <div className="hidden h-96 rounded-3xl bg-white/80 ring-1 ring-black/5 xl:block" />
     </div>
   );
 }

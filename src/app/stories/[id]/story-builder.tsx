@@ -137,7 +137,7 @@ export function StoryBuilder({
   const canUpload = storyType?.format === "intro" && stage === "core";
 
   return (
-    <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+    <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,26rem)]">
       {/* The conversation */}
       <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
         <div className="flex items-baseline justify-between gap-3">
@@ -311,8 +311,9 @@ export function StoryBuilder({
         )}
       </section>
 
-      {/* The story assembling, and how it grades */}
-      <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+      {/* The story assembling, and how it grades: stacked in one column on a laptop, side by side
+          on a wide screen, where the wrapper steps aside so each is its own sticky column. */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto xl:contents">
         <StoryPanel
           title={title}
           content={content}
@@ -320,6 +321,7 @@ export function StoryBuilder({
           writing={busy === "writing"}
         />
         <EvaluationPanel
+          className="xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto"
           content={content}
           storyType={storyType}
           grading={busy === "grading"}
@@ -698,7 +700,7 @@ function StoryPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto ${
         writing ? "opacity-60" : ""
       }`}
       aria-label="Your story"

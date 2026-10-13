@@ -18,30 +18,36 @@ const TIER_STYLES: Record<Tier, string> = {
   strong: "bg-teal-800 text-white",
 };
 
-// The story's grade, in coaching order: the tier and the next fix first, then the score on each
-// criterion and the quick checks, which fold away.
+// The story's grade, in its own column beside the story. Coaching order: the tier, what works and
+// the next fix first, then the score and reasoning on each criterion and the quick checks, which
+// are open by default and fold away.
 export function EvaluationPanel({
+  className = "",
   content,
   storyType,
   grading,
   disabled,
   onGrade,
 }: {
+  className?: string;
   content: StoryContent;
   storyType: StoryType | undefined;
   grading: boolean;
   disabled: boolean;
   onGrade: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const bodyId = useId();
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
+  const average = grade?.criteria.length
+    ? grade.criteria.reduce((sum, c) => sum + c.score, 0) / grade.criteria.length
+    : undefined;
 
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6 ${className}`}
       aria-label="Evaluation criteria"
       data-testid="evaluation"
     >
@@ -54,7 +60,7 @@ export function EvaluationPanel({
       >
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
-            Evaluation criteria
+            Evaluation
           </span>
           {grade && (
             <span
@@ -62,6 +68,11 @@ export function EvaluationPanel({
               data-testid="tier"
             >
               {TIERS.find((t) => t.id === grade.tier)?.label}
+            </span>
+          )}
+          {average !== undefined && (
+            <span className="text-sm text-slate-500" data-testid="average">
+              {average.toFixed(1)} / 4
             </span>
           )}
         </span>
@@ -117,18 +128,30 @@ export function EvaluationPanel({
 
       <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
         <div>
-          <h3 className="text-sm font-bold text-slate-700">How it scores</h3>
+          <h3 className="text-sm font-bold text-slate-700">
+            How it scores, criterion by criterion
+          </h3>
           <ul className="mt-2 flex flex-col gap-3" data-testid="criteria">
             {criteria.map((c) => {
               const scored = grade?.criteria.find((s) => s.id === c.id);
               return (
-                <li key={c.id} className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between gap-3">
+                <li
+                  key={c.id}
+                  className="flex flex-col gap-1.5 rounded-2xl bg-slate-50 p-3"
+                  data-testid={`criterion-${c.id}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <span className="font-semibold text-slate-800">{c.label}</span>
                     {scored && <ScoreBar score={scored.score} />}
                   </div>
-                  <p className="text-sm text-slate-500">{c.question}</p>
+                  <p className="text-xs text-slate-500">{c.question}</p>
                   {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
+                  {scored?.improve && (
+                    <p className="text-sm text-teal-900">
+                      <span className="font-semibold">To raise it: </span>
+                      {scored.improve}
+                    </p>
+                  )}
                 </li>
               );
             })}
@@ -241,6 +264,22 @@ function Summary({ grade }: { grade: StoryGrade }) {
           </li>
         ))}
       </ol>
+      {grade.summary && <p className="text-slate-800">{grade.summary}</p>}
+      {grade.strengths.length > 0 && (
+        <div data-testid="strengths">
+          <p className="text-sm font-semibold text-slate-700">What&apos;s working:</p>
+          <ul className="mt-1 flex flex-col gap-1 text-slate-800">
+            {grade.strengths.map((f, i) => (
+              <li key={i} className="flex gap-2">
+                <span aria-hidden="true" className="font-bold text-teal-700">
+                  ✓
+                </span>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {grade.fixes.length > 0 ? (
         <div data-testid="fixes">
           <p className="text-sm font-semibold text-slate-700">
