@@ -2,6 +2,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { WhyInterviewMax } from "@/components/why-interviewmax";
 import { builderStage } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
@@ -43,6 +44,8 @@ export default function HomePage() {
             <EmptyLine>Questions appear once you add a target job.</EmptyLine>
           </Card>
         </div>
+
+        <WhyInterviewMax className="mt-8" />
       </main>
     </div>
   );
