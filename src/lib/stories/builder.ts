@@ -23,18 +23,22 @@ import {
 } from "./prompts";
 import { storyParts, type StoryType } from "./story-types";
 import type { ChatMessage } from "@/lib/ai/types";
+import type { PastInterviewNotes } from "@/lib/transcripts/content";
 
 // Call one: assess the answers so far and return follow-up questions aimed at the gaps. Round 1
 // returns 3–5; round 2 returns up to 3, or none when the answers are already strong.
+// Notes from the user's past interview transcripts, when there are any, steer the questions toward
+// what real interviewers probed for and what the user's answers kept missing.
 export async function probeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
   round: number,
+  past?: PastInterviewNotes,
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
     probeSystem(storyType, round),
-    probeMessages(content, storyType),
+    probeMessages(content, storyType, past),
   );
   return parseProbe(text, round);
 }

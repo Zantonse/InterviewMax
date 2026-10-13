@@ -1,5 +1,6 @@
 import type { ChatMessage } from "@/lib/ai/types";
 import { roleMapTranscript } from "@/lib/roles/role-map";
+import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import type { FollowUp, StoryContent } from "./content";
 import {
   INTRO_PARTS,
@@ -193,13 +194,36 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
 export function probeMessages(
   content: StoryContent,
   storyType: StoryType | undefined,
+  past?: PastInterviewNotes,
 ): ChatMessage[] {
+  const notes = past ? pastInterviewText(past) : "";
   return [
     {
       role: "user",
-      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}`,
+      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}${notes ? `\n\n${notes}` : ""}`,
     },
   ];
+}
+
+// What the user's real interviews showed, from their uploaded transcripts.
+export function pastInterviewText(past: PastInterviewNotes): string {
+  const lines = ["## From transcripts of my real interviews"];
+  if (past.probes.length > 0) {
+    lines.push(
+      "Follow-ups real interviewers asked me on questions like this one:",
+      ...past.probes.map((p) => `- ${p}`),
+    );
+  }
+  if (past.gaps.length > 0) {
+    lines.push(
+      "What my answers kept missing:",
+      ...past.gaps.map((g) => `- ${g.label} (${g.count} answers)`),
+    );
+  }
+  lines.push(
+    "Where my answers above have the same gaps, or don't yet cover what those interviewers probed for, ask about that first. Don't repeat their questions word for word, and skip anything my answers already cover.",
+  );
+  return lines.join("\n");
 }
 
 export function writeMessages(

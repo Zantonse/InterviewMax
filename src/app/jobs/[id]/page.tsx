@@ -68,6 +68,13 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 posting and any interview reports you paste, and match each to your stories.
               </p>
             )}
+            <p className="mt-4 text-sm text-slate-500">
+              Had an earlier round for this job?{" "}
+              <Link href="/transcripts" className="font-semibold text-teal-800 underline">
+                Add its transcript
+              </Link>{" "}
+              and predict again: questions they asked you before go to the top.
+            </p>
             <div className="mt-4">
               <PredictForm
                 jobId={job.id}

@@ -13,6 +13,8 @@ import {
 import { getStory, updateStory } from "@/lib/stories/data";
 import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
+import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
+import { listTranscriptsForPrep } from "@/lib/transcripts/data";
 
 export type BuilderResult =
   | { ok: true; content: StoryContent; title: string }
@@ -141,7 +143,11 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
       return { ok: true, content: story.content, title: story.title };
 
     const round = probeRounds(story.content) + 1;
-    const asked = await probeStory(story.content, getStoryType(story.storyType), round);
+    const storyType = getStoryType(story.storyType);
+    const past = storyType
+      ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
+      : undefined;
+    const asked = await probeStory(story.content, storyType, round, past);
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
