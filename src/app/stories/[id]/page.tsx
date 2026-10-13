@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { DeleteStoryButton } from "@/components/delete-story-button";
 import { getStory } from "@/lib/stories/data";
+import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 import { StoryBuilder } from "./story-builder";
 
 export const metadata: Metadata = { title: "Story builder · InterviewMax" };
@@ -32,12 +34,19 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
   const story = await getStory(id);
   if (!story) notFound();
   return (
-    <StoryBuilder
-      storyId={story.id}
-      storyTypeId={story.storyType}
-      initialTitle={story.title}
-      initialContent={story.content}
-    />
+    <>
+      <StoryBuilder
+        storyId={story.id}
+        storyTypeId={story.storyType}
+        initialTitle={story.title}
+        initialContent={story.content}
+      />
+      <DeleteStoryButton
+        storyId={story.id}
+        title={story.title}
+        required={story.storyType === REQUIRED_STORY_TYPE_ID}
+      />
+    </>
   );
 }
 
