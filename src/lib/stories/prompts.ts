@@ -38,7 +38,7 @@ const PROBE_RULES = `Rules:
 function roundInstructions(round: number): string {
   return round <= 1
     ? "This is the first round of follow-ups. Ask 3 to 5 questions."
-    : `This is round ${round}, after they answered your first follow-ups. Ask up to 3 more questions only where a missing number, example or reason would still clearly weaken the answer. If the answer is already strong, return an empty list: {"followUps": []}.`;
+    : `This is round ${round}, after they answered your earlier follow-ups. Ask up to 3 more questions only where a missing number, example or reason would still clearly weaken the answer. If the answer is already strong, return an empty list: {"followUps": []}.`;
 }
 
 export const PROBE_SYSTEM = `You are a demanding interview coach helping an experienced professional prepare one behavioral interview story. They have answered a fixed set of questions about one experience. Your job is to find what would make this story stronger and ask follow-up questions that get it.

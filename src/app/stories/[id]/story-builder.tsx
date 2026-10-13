@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   builderStage,
-  canProbeAgain,
+  canStrengthen,
   nextCoreQuestion,
   nextFollowUpIndex,
   type StoryContent,
@@ -270,13 +270,15 @@ export function StoryBuilder({
               text={
                 content.draft?.untracedNumbers.length
                   ? "Your draft is ready, but check the highlighted figures: they aren't in your answers. Fix an answer or rewrite the story."
-                  : "Your draft is ready, built only from what you told me. If you change an answer, rewrite it to pick up the change."
+                  : content.nothingMoreToAsk
+                    ? "I couldn't find anything more to ask: the answers behind this draft are already strong. Change an answer and I'll look again."
+                    : "Your draft is ready, built only from what you told me. Ask me more to make it stronger, as many times as you like, or rewrite it after changing an answer."
               }
               button="Rewrite the story"
               secondary
               onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
               extra={
-                canProbeAgain(content)
+                canStrengthen(content) && !content.nothingMoreToAsk
                   ? {
                       button: "Ask me more to make it stronger",
                       onClick: () =>

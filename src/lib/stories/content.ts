@@ -14,6 +14,10 @@ export type FollowUp = {
 // answers are still thin.
 export const MAX_PROBE_ROUNDS = 2;
 
+// Once a story is drafted, "Ask me more to make it stronger" runs further rounds on request, up to
+// this many rounds in all (a backstop, not a target).
+export const MAX_STRENGTHEN_ROUNDS = 10;
+
 export type StoryDraft = {
   // Keyed by the story type's part ids (see storyParts).
   parts: Record<string, string>;
@@ -46,6 +50,8 @@ export type StoryContent = {
   followUps?: FollowUp[];
   // Set when the review has nothing more to ask, or ran out of rounds.
   probeDone?: boolean;
+  // Set when the last round asked for found nothing more to ask; cleared when an answer changes.
+  nothingMoreToAsk?: boolean;
   draft?: StoryDraft;
 };
 
@@ -80,6 +86,11 @@ export function probeRounds(content: StoryContent): number {
 // Whether the review can run another round of follow-ups.
 export function canProbeAgain(content: StoryContent): boolean {
   return !content.probeDone && probeRounds(content) < MAX_PROBE_ROUNDS;
+}
+
+// Whether a drafted story can be sent back for another round of questions.
+export function canStrengthen(content: StoryContent): boolean {
+  return Boolean(content.draft) && probeRounds(content) < MAX_STRENGTHEN_ROUNDS;
 }
 
 export function builderStage(
@@ -149,6 +160,7 @@ export function parseContent(raw: unknown): StoryContent {
   }
 
   if (raw.probeDone === true) content.probeDone = true;
+  if (raw.nothingMoreToAsk === true) content.nothingMoreToAsk = true;
 
   if (isRecord(raw.draft) && isRecord(raw.draft.parts)) {
     content.draft = {

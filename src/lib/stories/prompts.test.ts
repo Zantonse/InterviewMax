@@ -3,6 +3,8 @@ import {
   allAnswerText,
   builderStage,
   canProbeAgain,
+  canStrengthen,
+  MAX_STRENGTHEN_ROUNDS,
   emptyContent,
   probeRounds,
   parseContent,
@@ -252,5 +254,22 @@ describe("review rounds", () => {
     expect(saved.probeDone).toBe(true);
     expect(saved.followUps?.[0].round).toBe(2);
     expect(canProbeAgain(saved)).toBe(false);
+  });
+
+  it("lets a drafted story be made stronger again and again, up to a backstop", () => {
+    const content = answeredContent(aboutMe);
+    expect(canStrengthen(content)).toBe(false); // nothing written yet
+    content.draft = { parts: { present: "P" }, untracedNumbers: [], model: "m", writtenAt: "" };
+    content.probeDone = true;
+    content.followUps = [1, 2, 3].map((round) => ({
+      question: "Q?",
+      gap: "x",
+      answer: "A",
+      round,
+    }));
+    expect(canStrengthen(content)).toBe(true);
+    content.followUps.push({ question: "Q?", gap: "x", answer: "A", round: MAX_STRENGTHEN_ROUNDS });
+    expect(canStrengthen(content)).toBe(false);
+    expect(parseContent({ nothingMoreToAsk: true }).nothingMoreToAsk).toBe(true);
   });
 });
