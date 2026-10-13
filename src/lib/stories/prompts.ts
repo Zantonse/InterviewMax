@@ -12,7 +12,7 @@ import {
 } from "./story-types";
 
 // The two model calls in the story builder (PRD, step 4):
-//   call one (storyProbe): read the scripted answers, ask 2–3 follow-ups aimed at the gaps
+//   call one (storyProbe): read the answers and ask follow-ups aimed at the gaps, in up to two rounds
 //   call two (storyWrite): write the story from the user's own answers, inventing nothing
 
 const CHECKLIST = `- Situation: where they were, their role, and what was at stake are clear.
@@ -24,16 +24,29 @@ const CHECKLIST = `- Situation: where they were, their role, and what was at sta
 
 const GAPS = ["situation", "ownership", "actions", "decision", "result", "reflection"] as const;
 
-export const PROBE_SYSTEM = `You are an interview coach helping an experienced professional prepare one behavioral interview story. They have answered a fixed set of questions about one experience. Your job is to find the biggest gaps in their answers and ask follow-up questions that fill them.
+// How hard both reviews push. Interviewers remember numbers and specifics, so the coach asks for
+// them wherever an answer makes a claim without one.
+const PROBE_RULES = `Rules:
+- Push for numbers. Every claim that could be measured should be: a result needs the context that makes it impressive (percent of quota or target, rank out of how many, before and after); something they built or led needs reach (how many people, teams or customers use it); an improvement needs size (hours or days saved, percent faster, revenue or deals it touched); scope needs size (team, accounts, territory). When an answer has a bare number like "sold 4.3M", ask for the comparison that gives it weight.
+- When they may not know a number offhand, say where they could find it (a CRM or dashboard, a performance review, their manager, an old email or award announcement) and that a labelled estimate is fine. Never suggest or guess a number yourself.
+- Push for specifics. When an answer is generic ("people come to me for AI", "I improved engagements"), ask for one concrete example: what exactly, for whom, and what changed.
+- Push for the why. Ask what drove a decision or a career move when it isn't clear.
+- Ask one thing per question. Keep each question short and conversational, and refer to their specifics so it's clear you read their answers.
+- Never repeat a question they already answered well, including earlier follow-ups.
+- Prioritise: ask the questions that would most improve the answer first.`;
+
+function roundInstructions(round: number): string {
+  return round <= 1
+    ? "This is the first round of follow-ups. Ask 3 to 5 questions."
+    : `This is round ${round}, after they answered your first follow-ups. Ask up to 3 more questions only where a missing number, example or reason would still clearly weaken the answer. If the answer is already strong, return an empty list: {"followUps": []}.`;
+}
+
+export const PROBE_SYSTEM = `You are a demanding interview coach helping an experienced professional prepare one behavioral interview story. They have answered a fixed set of questions about one experience. Your job is to find what would make this story stronger and ask follow-up questions that get it.
 
 Check the answers against this checklist:
 ${CHECKLIST}
 
-Rules:
-- Ask 2 or 3 follow-up questions, aimed at the most important gaps first.
-- If the result has no concrete number, one question must ask for one and suggest where they could find it (a dashboard, CRM, a report, a manager, an old email). Never suggest or guess a number yourself.
-- Ask one thing per question. Keep each question short and conversational, and refer to their specifics so it's clear you read their answers.
-- Don't repeat a question they already answered well.
+${PROBE_RULES}
 
 Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${GAPS.join(", ")}"}]}`;
@@ -43,6 +56,8 @@ export const WRITE_SYSTEM = `You are an interview coach writing a behavioral int
 The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
 
 Write in the first person, in plain spoken English the user could say aloud, as if answering the interviewer. Use "I" for what they did themselves and "we" only for the team. Aim for about 250 to 300 words in total, about two minutes spoken.
+
+Make it strong, not just accurate: put their most impressive numbers where they land hardest, use every relevant figure and concrete example they gave (including in their follow-up answers), and cut details that dilute the story. Prefer concrete verbs over filler and clichés, while keeping their voice.
 
 Write these parts:
 - situation: 2 to 3 sentences on the context and what was at stake.
@@ -57,24 +72,20 @@ Reply with JSON only, no other text:
 {"title": "…", "parts": {${STAR_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
 // "Tell me about yourself" is a career introduction, not a story about one experience.
-const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope (team, territory, budget) are clear.
-- Path: the career moves that matter are there, with why they made them, not a list of every job.
-- Highlight: at least one result in real terms with a concrete number, or an estimate labelled as one.
-- Strengths: something specific they are known for, ideally with who relies on them for it.
-- Next: why they want this kind of role next, tied to what came before, not just "a new challenge".`;
+const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope with a size (team, number of accounts or reps they support, territory or quota) are clear.
+- Path: the career moves that matter are there, with why they made each one, not a list of every job.
+- Highlight: at least one result with a concrete number AND the context that makes it impressive: against quota or target, a rank out of how many, or a before and after.
+- Strengths: something specific they are known for, backed by an example with a number (how many people use what they built, time or money it saved, deals it helped win).
+- Next: what role they want, why now, and how it connects to what they've already done.`;
 
 const INTRO_GAPS = INTRO_PARTS.map((p) => p.id);
 
-export const INTRO_PROBE_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They have answered a fixed set of questions about their career. Your job is to find the biggest gaps in their answers and ask follow-up questions that fill them. Sometimes they upload an answer they prepared earlier instead of answering the questions; review it against the same checklist.
+export const INTRO_PROBE_SYSTEM = `You are a demanding interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They have answered a fixed set of questions about their career. Your job is to find what would make their answer stronger and ask follow-up questions that get it. Sometimes they upload an answer they prepared earlier instead of answering the questions; review it against the same checklist.
 
 Check the answers against this checklist:
 ${INTRO_CHECKLIST}
 
-Rules:
-- Ask 2 or 3 follow-up questions, aimed at the most important gaps first.
-- If the highlight has no concrete number, one question must ask for one and suggest where they could find it (a dashboard, CRM, a performance review, a manager, an old email). Never suggest or guess a number yourself.
-- Ask one thing per question. Keep each question short and conversational, and refer to their specifics so it's clear you read their answers.
-- Don't repeat a question they already answered well.
+${PROBE_RULES}
 
 Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}"}]}`;
@@ -87,11 +98,18 @@ If they uploaded a prepared answer, rework it into the parts below, keeping thei
 
 Write in the first person, in plain spoken English the user could say aloud at the start of an interview. It is a short career pitch, not a life story: present, then past, then where they're heading. Aim for about 150 to 220 words in total, 60 to 90 seconds spoken.
 
+Make it strong, not just accurate:
+- Find the one thread that ties their career together and the role they want next, and let every part serve it.
+- Open with who they are in a way that is specific to them, not a job title alone.
+- Lead with their most impressive numbers and give each its context (against quota, rank, how many people, time saved). Use every relevant figure and concrete example they gave, including in their follow-up answers.
+- Cut anything that doesn't support the thread, even if they mentioned it (an unrelated side interest dilutes the pitch).
+- Prefer concrete verbs over filler and clichés, while keeping their voice.
+
 Write these parts:
 - present: 1 to 2 sentences on who they are today: role, company or industry, and scope.
 - path: 2 to 3 sentences on the career moves that led here and why, skipping anything that doesn't support the story.
 - highlight: 1 to 2 sentences on the result they're proudest of, with their number.
-- strengths: 1 sentence on what they're known for.
+- strengths: 1 to 2 sentences on what they're known for, proved with their most concrete example.
 - next: 1 to 2 sentences on why they want this next role, which closes the answer and hands back to the interviewer.
 
 Also give it a short title (at most 8 words) for their story bank, e.g. "From support lead to solutions architect".
@@ -130,8 +148,9 @@ export function parsePrefill(text: string): Record<string, string> {
   );
 }
 
-export function probeSystem(storyType: StoryType | undefined): string {
-  return storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
+export function probeSystem(storyType: StoryType | undefined, round = 1): string {
+  const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
+  return `${base}\n\n${roundInstructions(round)}`;
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
@@ -200,7 +219,7 @@ export function writeMessages(
   return messages;
 }
 
-export function parseProbe(text: string): FollowUp[] {
+export function parseProbe(text: string, round = 1): FollowUp[] {
   const json = extractJson(text);
   const list = isRecord(json) && Array.isArray(json.followUps) ? json.followUps : null;
   if (!list) throw new Error("The follow-up questions came back in an unexpected format.");
@@ -210,10 +229,12 @@ export function parseProbe(text: string): FollowUp[] {
     .map((f) => ({
       question: typeof f.question === "string" ? f.question.trim() : "",
       gap: typeof f.gap === "string" ? f.gap.trim().toLowerCase() : "",
+      round,
     }))
     .filter((f) => f.question)
-    .slice(0, 3);
-  if (followUps.length === 0) throw new Error("No follow-up questions came back.");
+    .slice(0, round <= 1 ? 5 : 3);
+  // A later round may say the answer is strong enough; the first must ask something.
+  if (followUps.length === 0 && round <= 1) throw new Error("No follow-up questions came back.");
   return followUps;
 }
 

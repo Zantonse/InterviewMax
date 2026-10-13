@@ -6,7 +6,13 @@ export type FollowUp = {
   // Which part of the checklist the question is aimed at, e.g. "result".
   gap: string;
   answer?: string;
+  // Which review round asked it (1 or 2). Missing on stories from before there were two rounds.
+  round?: number;
 };
+
+// The review asks follow-ups in up to two rounds: the first always asks, the second only when the
+// answers are still thin.
+export const MAX_PROBE_ROUNDS = 2;
 
 export type StoryDraft = {
   // Keyed by the story type's part ids (see storyParts).
@@ -38,12 +44,14 @@ export type StoryContent = {
   imported?: ImportedAnswer;
   linkedin?: LinkedInProfile;
   followUps?: FollowUp[];
+  // Set when the review has nothing more to ask, or ran out of rounds.
+  probeDone?: boolean;
   draft?: StoryDraft;
 };
 
 // Where the user is in the builder, derived from what has been saved.
 //  core:       answering the scripted questions (skipped when a prepared answer was uploaded)
-//  probe:      all scripted questions answered; call one (follow-ups) hasn't run yet
+//  probe:      all answered; call one (follow-ups) hasn't run yet, or a further round is due
 //  follow_ups: answering the model's follow-up questions
 //  write:      everything answered; call two (write the story) hasn't run yet
 //  drafted:    a written draft exists
@@ -65,6 +73,15 @@ export function nextFollowUpIndex(content: StoryContent): number | undefined {
   return i >= 0 ? i : undefined;
 }
 
+export function probeRounds(content: StoryContent): number {
+  return Math.max(0, ...(content.followUps ?? []).map((f) => f.round ?? 1));
+}
+
+// Whether the review can run another round of follow-ups.
+export function canProbeAgain(content: StoryContent): boolean {
+  return !content.probeDone && probeRounds(content) < MAX_PROBE_ROUNDS;
+}
+
 export function builderStage(
   content: StoryContent,
   storyType: StoryType | undefined,
@@ -72,8 +89,9 @@ export function builderStage(
   if (!content.imported && nextCoreQuestion(content, storyType)) return "core";
   if (!content.followUps) return "probe";
   if (nextFollowUpIndex(content) !== undefined) return "follow_ups";
-  if (!content.draft) return "write";
-  return "drafted";
+  if (content.draft) return "drafted";
+  if (canProbeAgain(content)) return "probe";
+  return "write";
 }
 
 // Every answer the user has typed, as one block of text. Numbers in a draft must trace back to this.
@@ -123,11 +141,14 @@ export function parseContent(raw: unknown): StoryContent {
               question: f.question,
               gap: typeof f.gap === "string" ? f.gap : "",
               ...(typeof f.answer === "string" ? { answer: f.answer } : {}),
+              ...(typeof f.round === "number" ? { round: f.round } : {}),
             },
           ]
         : [],
     );
   }
+
+  if (raw.probeDone === true) content.probeDone = true;
 
   if (isRecord(raw.draft) && isRecord(raw.draft.parts)) {
     content.draft = {

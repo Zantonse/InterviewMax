@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   builderStage,
+  canProbeAgain,
   nextCoreQuestion,
   nextFollowUpIndex,
   type StoryContent,
@@ -80,12 +81,12 @@ export function StoryBuilder({
         setContent(result.content);
         setTitle(result.title);
         // After the last scripted answer, go straight on to call one; after the last
-        // follow-up, straight on to call two.
+        // follow-up, to the next round or straight on to call two.
         const next = builderStage(result.content, storyType);
         const saved = step.busy === "saving" || step.busy === "reading";
         if (saved && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
-        } else if (saved && next === "write") {
+        } else if ((saved || step.busy === "probing") && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
         }
       }
@@ -100,7 +101,14 @@ export function StoryBuilder({
 
   function submitFollowUp(index: number, answer: string) {
     setEditing(null);
-    run([{ busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) }]);
+    // Answering the last of the extra questions on a drafted story rewrites it to use them.
+    const unanswered = (content.followUps ?? []).filter((f) => !f.answer?.trim()).length;
+    const rewrite =
+      Boolean(content.draft) && unanswered === 1 && !content.followUps?.[index]?.answer;
+    run([
+      { busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) },
+      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+    ]);
   }
 
   function submitUpload(formData: FormData) {
@@ -205,27 +213,31 @@ export function StoryBuilder({
             );
           })}
 
-          {content.followUps && content.followUps.length > 0 && (
-            <CoachLine>
-              Thanks. A few follow-ups to fill the gaps before I write it up:
-            </CoachLine>
-          )}
-
           {content.followUps?.map((f, index) => {
             if (index > (currentFollowUp ?? Infinity)) return null;
             const isEditing = editing?.kind === "followUp" && editing.index === index;
+            const round = f.round ?? 1;
+            const opensRound = index === 0 || round !== (content.followUps?.[index - 1].round ?? 1);
             return (
-              <Exchange
-                key={index}
-                question={f.question}
-                answer={f.answer}
-                isCurrent={index === currentFollowUp}
-                isEditing={isEditing}
-                disabled={busy !== null}
-                onEdit={() => setEditing({ kind: "followUp", index })}
-                onCancel={() => setEditing(null)}
-                onSubmit={(text) => submitFollowUp(index, text)}
-              />
+              <Fragment key={index}>
+                {opensRound && (
+                  <CoachLine>
+                    {round === 1
+                      ? "Thanks. A few follow-ups to make it stronger before I write it up:"
+                      : "Good. A few more, so the numbers and examples carry it:"}
+                  </CoachLine>
+                )}
+                <Exchange
+                  question={f.question}
+                  answer={f.answer}
+                  isCurrent={index === currentFollowUp}
+                  isEditing={isEditing}
+                  disabled={busy !== null}
+                  onEdit={() => setEditing({ kind: "followUp", index })}
+                  onCancel={() => setEditing(null)}
+                  onSubmit={(text) => submitFollowUp(index, text)}
+                />
+              </Fragment>
             );
           })}
 
@@ -236,9 +248,11 @@ export function StoryBuilder({
           {!busy && stage === "probe" && (
             <ActionLine
               text={
-                content.imported
-                  ? "Your prepared answer is in. Next I'll review it and ask two or three follow-ups."
-                  : "That's every question. Next I'll look for gaps and ask two or three follow-ups."
+                content.followUps
+                  ? "Thanks. Next I'll check whether anything is still thin and ask a few more if so."
+                  : content.imported
+                    ? "Your prepared answer is in. Next I'll review it and ask a few follow-ups."
+                    : "That's every question. Next I'll look for gaps and ask a few follow-ups."
               }
               button="Get follow-up questions"
               onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
@@ -261,6 +275,15 @@ export function StoryBuilder({
               button="Rewrite the story"
               secondary
               onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+              extra={
+                canProbeAgain(content)
+                  ? {
+                      button: "Ask me more to make it stronger",
+                      onClick: () =>
+                        run([{ busy: "probing", action: () => askFollowUps(storyId) }]),
+                    }
+                  : undefined
+              }
             />
           )}
         </ol>
@@ -525,26 +548,40 @@ function ActionLine({
   button,
   secondary,
   onClick,
+  extra,
 }: {
   text: string;
   button: string;
   secondary?: boolean;
   onClick: () => void;
+  // A second, primary action shown first, e.g. another round of questions on a drafted story.
+  extra?: { button: string; onClick: () => void };
 }) {
   return (
     <li className="flex flex-col items-start gap-3 rounded-2xl bg-slate-50 p-4">
       <p className="text-slate-700">{text}</p>
-      <button
-        type="button"
-        onClick={onClick}
-        className={
-          secondary
-            ? "rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50"
-            : "rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
-        }
-      >
-        {button}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {extra && (
+          <button
+            type="button"
+            onClick={extra.onClick}
+            className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+          >
+            {extra.button}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onClick}
+          className={
+            secondary
+              ? "rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50"
+              : "rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+          }
+        >
+          {button}
+        </button>
+      </div>
     </li>
   );
 }

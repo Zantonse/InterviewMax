@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   allAnswerText,
   builderStage,
+  canProbeAgain,
   emptyContent,
+  probeRounds,
   parseContent,
   type StoryContent,
 } from "./content";
@@ -62,6 +64,16 @@ describe("builderStage", () => {
     expect(builderStage(answered, stakeholder)).toBe("follow_ups");
 
     answered.followUps[0].answer = "12";
+    // A second round is due once the first follow-ups are answered.
+    expect(builderStage(answered, stakeholder)).toBe("probe");
+    expect(canProbeAgain(answered)).toBe(true);
+
+    answered.followUps.push({ question: "Out of how many?", gap: "result", round: 2 });
+    expect(probeRounds(answered)).toBe(2);
+    expect(builderStage(answered, stakeholder)).toBe("follow_ups");
+
+    answered.followUps[1].answer = "40";
+    answered.probeDone = true;
     expect(builderStage(answered, stakeholder)).toBe("write");
 
     answered.draft = {
@@ -138,14 +150,24 @@ describe("prompts", () => {
     expect(messages[2].content).toContain("45%, $1M");
   });
 
-  it("parses follow-ups from fenced JSON and caps them at three", () => {
-    const text =
-      'Here you go:\n```json\n{"followUps":[{"question":"A?","gap":"Result"},{"question":"B?"},{"question":"C?"},{"question":"D?"}]}\n```';
-    expect(parseProbe(text)).toEqual([
-      { question: "A?", gap: "result" },
-      { question: "B?", gap: "" },
-      { question: "C?", gap: "" },
-    ]);
+  it("parses follow-ups from fenced JSON and caps them per round", () => {
+    const six = Array.from({ length: 6 }, (_, i) => `{"question":"Q${i}?","gap":"Result"}`);
+    const text = `Here you go:\n\`\`\`json\n{"followUps":[${six.join(",")}]}\n\`\`\``;
+    const first = parseProbe(text, 1);
+    expect(first).toHaveLength(5);
+    expect(first[0]).toEqual({ question: "Q0?", gap: "result", round: 1 });
+    expect(parseProbe(text, 2)).toHaveLength(3);
+  });
+
+  it("lets a later round say the answer is strong enough", () => {
+    expect(parseProbe('{"followUps":[]}', 2)).toEqual([]);
+    expect(() => parseProbe('{"followUps":[]}', 1)).toThrow();
+  });
+
+  it("tells the review which round it is and to push for numbers", () => {
+    expect(probeSystem(aboutMe, 1)).toContain("Ask 3 to 5 questions");
+    expect(probeSystem(aboutMe, 2)).toContain("return an empty list");
+    expect(probeSystem(stakeholder)).toContain("Push for numbers");
   });
 
   it("rejects unusable model output", () => {
@@ -206,5 +228,29 @@ describe("LinkedIn profile", () => {
     expect(allAnswerText(content)).toContain("35%");
     expect(builderStage(content, aboutMe)).toBe("core");
     expect(parseContent(JSON.parse(JSON.stringify(content))).linkedin).toEqual(content.linkedin);
+  });
+});
+
+describe("review rounds", () => {
+  it("keeps a story drafted before rounds existed drafted, with a second round on offer", () => {
+    const content = answeredContent(aboutMe);
+    content.followUps = [{ question: "Q?", gap: "highlight", answer: "A" }];
+    content.draft = { parts: { present: "P" }, untracedNumbers: [], model: "m", writtenAt: "" };
+    expect(builderStage(content, aboutMe)).toBe("drafted");
+    expect(probeRounds(content)).toBe(1);
+    expect(canProbeAgain(content)).toBe(true);
+
+    const saved = parseContent(
+      JSON.parse(
+        JSON.stringify({
+          ...content,
+          probeDone: true,
+          followUps: [{ question: "Q?", gap: "x", round: 2 }],
+        }),
+      ),
+    );
+    expect(saved.probeDone).toBe(true);
+    expect(saved.followUps?.[0].round).toBe(2);
+    expect(canProbeAgain(saved)).toBe(false);
   });
 });
