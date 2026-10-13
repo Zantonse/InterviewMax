@@ -35,6 +35,7 @@ export function QuestionList({
                   <Tag>{getTheme(q.theme)?.label}</Tag>
                   {q.specific && <Tag tone="accent">Only this job</Tag>}
                   {q.source === "report" && <Tag tone="accent">From an interview report</Tag>}
+                  {q.source === "transcript" && <Tag tone="accent">Asked you before</Tag>}
                 </p>
                 {q.why && <p className="mt-1 text-sm text-slate-600">{q.why}</p>}
                 <div className="mt-2 text-sm">

@@ -11,6 +11,8 @@ import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { builderStage } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
+import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
+import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
 export default function HomePage() {
   return (
@@ -42,8 +44,8 @@ export default function HomePage() {
           <PrepPath />
         </Suspense>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-2">
-          <Card className="bg-teal-800 text-white md:col-span-2 md:row-span-2" title="Story bank">
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-[auto_auto_1fr]">
+          <Card className="bg-teal-800 text-white md:col-span-2 md:row-span-3" title="Story bank">
             <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
               <StoryBank />
             </Suspense>
@@ -56,6 +58,11 @@ export default function HomePage() {
           <Card title="Likely questions">
             <Suspense fallback={<EmptyLine>…</EmptyLine>}>
               <LikelyQuestions />
+            </Suspense>
+          </Card>
+          <Card title="Past interviews">
+            <Suspense fallback={<EmptyLine>…</EmptyLine>}>
+              <PastInterviews />
             </Suspense>
           </Card>
         </div>
@@ -207,6 +214,52 @@ async function LikelyQuestions() {
         className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
       >
         All {job.likelyQuestions.questions.length} questions →
+      </Link>
+    </>
+  );
+}
+
+async function PastInterviews() {
+  let transcripts: Transcript[];
+  try {
+    transcripts = await listTranscripts();
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Home: loading transcripts failed", err);
+    return <EmptyLine>Your past interviews couldn&apos;t be loaded right now.</EmptyLine>;
+  }
+  if (transcripts.length === 0) {
+    return (
+      <>
+        <EmptyLine>
+          Had an interview already? Upload the transcript and I&apos;ll show what they probed for
+          and how your answers landed.
+        </EmptyLine>
+        <Link
+          href="/transcripts"
+          className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+        >
+          Add a transcript →
+        </Link>
+      </>
+    );
+  }
+  const { recurringGaps } = summarizeTranscripts(transcripts);
+  return (
+    <>
+      <p className="text-slate-700">
+        {transcripts.length} past {transcripts.length === 1 ? "interview" : "interviews"} added.
+      </p>
+      {recurringGaps.length > 0 && (
+        <p className="mt-2 text-sm text-slate-500">
+          Your answers keep missing: {recurringGaps.slice(0, 3).map((g) => gapLabel(g.gap).toLowerCase()).join(", ")}.
+        </p>
+      )}
+      <Link
+        href="/transcripts"
+        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+      >
+        See what they looked for →
       </Link>
     </>
   );
