@@ -12,7 +12,6 @@ export function TypeButton({
   blurb,
   badge,
   href,
-  locked,
 }: {
   id: string;
   label: string;
@@ -20,7 +19,6 @@ export function TypeButton({
   badge?: string;
   // Opens an existing story instead of starting a new one.
   href?: string;
-  locked?: boolean;
 }) {
   const { pending, data } = useFormStatus();
   const starting = pending && data?.get("storyType") === id;
@@ -46,18 +44,6 @@ export function TypeButton({
       <Link href={href} className={CARD} data-testid={`type-${id}`}>
         {body}
       </Link>
-    );
-  }
-  if (locked) {
-    return (
-      <div
-        className="rounded-3xl bg-white/60 p-6 text-left ring-1 ring-black/5"
-        aria-disabled="true"
-        data-testid={`type-${id}`}
-      >
-        <span className="block text-lg font-bold text-slate-500">{label}</span>
-        <span className="mt-2 block text-sm text-slate-500">{blurb}</span>
-      </div>
     );
   }
   return (

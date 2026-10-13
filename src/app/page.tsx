@@ -14,6 +14,10 @@ import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
+// Adding the first job from the home page reads the posting and predicts its questions, which are
+// model calls.
+export const maxDuration = 120;
+
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
@@ -94,8 +98,8 @@ async function StoryBank() {
       <p className="mt-1 text-teal-100">{stories.length === 1 ? "story" : "stories"} so far</p>
       {stories.length === 0 ? (
         <p className="mt-6 max-w-md text-teal-50">
-          Every story you build is kept here. Everyone starts with &ldquo;Tell me about
-          yourself&rdquo;: it&apos;s how almost every interview opens.
+          Every story you build is kept here. &ldquo;Tell me about yourself&rdquo; is a good first
+          one: it&apos;s how almost every interview opens.
         </p>
       ) : (
         <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
@@ -145,7 +149,8 @@ async function TargetJobs() {
     return (
       <>
         <EmptyLine>
-          Paste in a job you&apos;re going for, and I&apos;ll tell you which stories to build first.
+          Paste in a job you&apos;re going for, and I&apos;ll show you the questions they&apos;re
+          likely to ask.
         </EmptyLine>
         <Link
           href="/jobs"

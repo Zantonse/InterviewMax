@@ -8,12 +8,10 @@ import { removeStory } from "@/app/stories/actions";
 export function DeleteStoryButton({
   storyId,
   title,
-  required = false,
   variant = "full",
 }: {
   storyId: string;
   title: string;
-  required?: boolean;
   variant?: "full" | "compact";
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -78,8 +76,6 @@ export function DeleteStoryButton({
       <h2 className="font-semibold text-slate-900">Start this story from scratch</h2>
       <p className="mt-1 text-sm text-slate-600">
         Deleting removes every answer, follow-up and draft for this story.
-        {required &&
-          " Your other stories stay, but new ones stay locked until you've written a new Tell me about yourself."}
       </p>
       {confirming ? (
         <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="delete-confirm">

@@ -27,7 +27,7 @@ const PRIMARY =
 const SECONDARY =
   "rounded-xl px-4 py-2.5 font-semibold text-teal-800 ring-1 ring-teal-800/20 transition hover:bg-teal-50 disabled:opacity-60";
 
-export function AddJobForm() {
+export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
   const [link, setLink] = useState("");
   const [title, setTitle] = useState("");
@@ -140,7 +140,7 @@ export function AddJobForm() {
       </label>
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
       <button type="submit" disabled={pending || fetching} className={PRIMARY}>
-        {pending ? "Reading the posting…" : "Add this job"}
+        {pending ? "Reading the posting and predicting your questions…" : submitLabel}
       </button>
     </form>
   );

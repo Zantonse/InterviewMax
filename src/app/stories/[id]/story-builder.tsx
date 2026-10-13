@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
   canStrengthen,
@@ -150,32 +151,44 @@ export function StoryBuilder({
         </div>
 
         {storyType?.format === "intro" && (
-          <RoleMapCard storyId={storyId} content={content} prominent={canUpload} />
+          <RoleMapCard
+            storyId={storyId}
+            content={content}
+            prominent={
+              canUpload && suggestRoleMap(content.answers[questions[0]?.id], content.roleMap)
+            }
+          />
         )}
 
         {canUpload && (
-          <div className="mt-5 flex flex-col gap-3">
-            {!content.linkedin && (
+          <details className="group mt-4" data-testid="start-from-file">
+            <summary className="cursor-pointer text-sm text-slate-600">
+              Have a LinkedIn PDF or an answer you prepared?{" "}
+              <span className="font-medium text-teal-800 group-open:hidden">Start from a file</span>
+            </summary>
+            <div className="mt-3 flex flex-col gap-3">
+              {!content.linkedin && (
+                <UploadOption
+                  testId="upload-linkedin"
+                  lead="Have a LinkedIn profile?"
+                  text="On your profile, click More, then Save to PDF, and upload that file here. I'll fill in what it already answers and only ask about the rest."
+                  accept=".pdf"
+                  button="Upload profile"
+                  disabled={busy !== null}
+                  onUpload={submitLinkedIn}
+                />
+              )}
               <UploadOption
-                testId="upload-linkedin"
-                lead="Have a LinkedIn profile?"
-                text="On your profile, click More, then Save to PDF, and upload that file here. I'll fill in what it already answers and only ask about the rest."
-                accept=".pdf"
-                button="Upload profile"
+                testId="upload-prepared"
+                lead="Already prepared this answer?"
+                text="Upload it as a Word (.docx) or text file and I'll review it instead of asking these questions."
+                accept={UPLOAD_EXTENSIONS.join(",")}
+                button="Upload and review"
                 disabled={busy !== null}
-                onUpload={submitLinkedIn}
+                onUpload={submitUpload}
               />
-            )}
-            <UploadOption
-              testId="upload-prepared"
-              lead="Already prepared this answer?"
-              text="Upload it as a Word (.docx) or text file and I'll review it instead of asking these questions."
-              accept={UPLOAD_EXTENSIONS.join(",")}
-              button="Upload and review"
-              disabled={busy !== null}
-              onUpload={submitUpload}
-            />
-          </div>
+            </div>
+          </details>
         )}
 
         <ol className="mt-5 flex flex-col gap-4">

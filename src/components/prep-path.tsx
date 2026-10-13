@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
+import { AddJobForm } from "@/app/jobs/forms";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { builderStage } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
@@ -10,9 +11,11 @@ const PLAN_SIZE = 4;
 
 type PathStep = { label: string; detail: string; href: string; done: boolean };
 
-// Where the user is on the prep path (PRD: "Always show position"), shown on the home page.
+// Where the user is on the prep path (PRD: "Always show position"), shown on the home page. Before
+// the first job, it's a single step instead: paste a job and see its likely questions, with nothing
+// else to set up first.
 export async function PrepPath() {
-  let steps: PathStep[];
+  let steps: PathStep[] | null;
   try {
     steps = await pathSteps();
   } catch (err) {
@@ -20,10 +23,11 @@ export async function PrepPath() {
     console.error("Home: loading the prep path failed", err);
     return null;
   }
+  if (!steps) return <FirstJob />;
   const current = steps.findIndex((s) => !s.done);
   return (
     <nav aria-label="Your prep path" className="mt-8" data-testid="prep-path">
-      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {steps.map((step, i) => (
           <li key={step.label}>
             <Link
@@ -54,7 +58,28 @@ export async function PrepPath() {
   );
 }
 
-async function pathSteps(): Promise<PathStep[]> {
+function FirstJob() {
+  return (
+    <section
+      className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-teal-700/40 sm:p-8"
+      data-testid="first-job"
+    >
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+        Start with a job you&apos;re going for
+      </h2>
+      <p className="mt-2 max-w-2xl text-slate-600">
+        Paste the posting, or a link to it, and I&apos;ll show you the questions they&apos;re most
+        likely to ask. No resume or profile needed: you can add those later if you want answers
+        matched to your history.
+      </p>
+      <div className="mt-6">
+        <AddJobForm submitLabel="Show my likely questions" />
+      </div>
+    </section>
+  );
+}
+
+async function pathSteps(): Promise<PathStep[] | null> {
   const [jobs, { overview }, stories] = await Promise.all([
     listJobs(),
     getJobsPrep(),
@@ -70,36 +95,28 @@ async function pathSteps(): Promise<PathStep[]> {
     .map((p) => p.storyType)
     .filter((t) => t !== REQUIRED_STORY_TYPE_ID)
     .slice(0, PLAN_SIZE);
+  if (jobs.length === 0) return null;
   const predicted = jobs.find((j) => j.likelyQuestions);
   const planDone = plan.filter((t) => drafted.has(t)).length;
 
   return [
     {
-      label: "Add your target jobs",
-      detail:
-        jobs.length > 0
-          ? `${jobs.length} ${jobs.length === 1 ? "job" : "jobs"} added`
-          : "Paste in the jobs you're going for",
-      href: "/jobs",
-      done: jobs.length > 0,
-    },
-    {
       label: "See your likely questions",
       detail: predicted
         ? `Ready for ${predicted.title}`
-        : "What each job is most likely to ask",
-      href: predicted ? `/jobs/${predicted.id}` : jobs[0] ? `/jobs/${jobs[0].id}` : "/jobs",
+        : `Predict them for ${jobs[0].title}`,
+      href: predicted ? `/jobs/${predicted.id}` : `/jobs/${jobs[0].id}`,
       done: Boolean(predicted),
     },
     {
       label: "Tell me about yourself",
-      detail: drafted.has(REQUIRED_STORY_TYPE_ID) ? "Written" : "The opener every interview starts with",
+      detail: drafted.has(REQUIRED_STORY_TYPE_ID) ? "Written" : "Most interviews open with it",
       href: aboutMe ? `/stories/${aboutMe.id}` : "/stories/new",
       done: drafted.has(REQUIRED_STORY_TYPE_ID),
     },
     {
       label: "Build the stories your jobs need",
-      detail: plan.length > 0 ? `${planDone} of ${plan.length} written` : "Add a job to see which",
+      detail: plan.length > 0 ? `${planDone} of ${plan.length} written` : "See which on your jobs page",
       href: plan.length > 0 ? "/jobs" : "/stories/new",
       done: plan.length > 0 && planDone === plan.length,
     },

@@ -22,8 +22,8 @@ export default function NewStoryPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
           Pick one. I&apos;ll ask you a few short questions about it, then two or three follow-ups,
-          and write it from your answers. Everyone starts with &ldquo;Tell me about yourself&rdquo;;
-          the other stories open once that one is written.
+          and write it from your answers. &ldquo;Tell me about yourself&rdquo; is a good place to
+          start, since most interviews open with it, but you can build them in any order.
         </p>
 
         <Suspense fallback={<PickerSkeleton />}>
@@ -46,22 +46,12 @@ async function Picker() {
               id={type.id}
               label={type.label}
               blurb={type.blurb}
-              badge={required.drafted ? "Written" : "Start here"}
+              badge={required.drafted ? "Written" : "Opens most interviews"}
               href={required.storyId ? `/stories/${required.storyId}` : undefined}
             />
           );
         }
-        return (
-          <TypeButton
-            key={type.id}
-            id={type.id}
-            label={type.label}
-            blurb={
-              required.drafted ? type.blurb : "Opens once your Tell me about yourself is written."
-            }
-            locked={!required.drafted}
-          />
-        );
+        return <TypeButton key={type.id} id={type.id} label={type.label} blurb={type.blurb} />;
       })}
     </form>
   );
