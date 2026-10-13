@@ -27,6 +27,13 @@ export async function fetchPosting(link: string): Promise<FetchedPosting> {
     throw new Error(`LinkedIn doesn't let other sites read its job pages. ${PASTE_INSTEAD}`);
   }
 
+  // Job boards that list other companies' postings usually block servers from reading them. The
+  // company's own posting (often Greenhouse, Lever, Ashby or Workday) is one click away.
+  const board = source.kind === "page" ? jobBoardName(source.pageUrl) : undefined;
+  const instead = board
+    ? `${board} usually blocks other sites from reading its pages. On ${board}, use "Apply on company site" and paste that link, or ${PASTE_INSTEAD.charAt(0).toLowerCase()}${PASTE_INSTEAD.slice(1)}`
+    : PASTE_INSTEAD;
+
   let found: FetchedPosting | null;
   try {
     switch (source.kind) {
@@ -47,13 +54,15 @@ export async function fetchPosting(link: string): Promise<FetchedPosting> {
         break;
     }
   } catch (err) {
-    if (err instanceof FetchError) throw new Error(`${err.message} ${PASTE_INSTEAD}`);
+    if (err instanceof FetchError) throw new Error(`${err.message} ${instead}`);
     throw err;
   }
 
   if (!found || found.description.length < MIN_DESCRIPTION_LENGTH) {
     throw new Error(
-      source.kind === "page"
+      board
+        ? `I couldn't read the posting. ${instead}`
+        : source.kind === "page"
         ? `I couldn't find the posting on that page; some sites only show it after loading in a browser. ${PASTE_INSTEAD} (Links from ${SUPPORTED_SITES.join(", ")} work best.)`
         : `I couldn't find that posting. It may have closed. ${PASTE_INSTEAD}`,
     );
@@ -63,6 +72,18 @@ export async function fetchPosting(link: string): Promise<FetchedPosting> {
     company: found.company.slice(0, MAX_TITLE_LENGTH),
     description: found.description.slice(0, MAX_DESCRIPTION_LENGTH),
   };
+}
+
+const JOB_BOARDS: [RegExp, string][] = [
+  [/(^|\.)indeed\.[a-z.]+$/, "Indeed"],
+  [/(^|\.)glassdoor\.[a-z.]+$/, "Glassdoor"],
+  [/(^|\.)ziprecruiter\.com$/, "ZipRecruiter"],
+  [/(^|\.)monster\.[a-z.]+$/, "Monster"],
+];
+
+export function jobBoardName(pageUrl: string): string | undefined {
+  const host = new URL(pageUrl).hostname.toLowerCase();
+  return JOB_BOARDS.find(([re]) => re.test(host))?.[1];
 }
 
 class FetchError extends Error {}

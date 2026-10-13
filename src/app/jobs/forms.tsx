@@ -86,8 +86,9 @@ export function AddJobForm() {
           </button>
         </div>
         <p className="mt-1 text-xs text-slate-500">
-          Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn
-          blocks this, so paste the text from there.
+          Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn,
+          Indeed and Glassdoor block this: use their &ldquo;Apply on company site&rdquo; link,
+          or paste the text.
         </p>
         {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
         {fetched && (

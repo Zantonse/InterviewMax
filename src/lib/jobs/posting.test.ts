@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { isPrivateAddress } from "./fetch-posting";
+import { isPrivateAddress, jobBoardName } from "./fetch-posting";
 import {
   decodeEntities,
   fromAshby,
@@ -177,5 +177,14 @@ describe("isPrivateAddress", () => {
     ["2606:4700::1", false],
   ])("%s → %s", (address, expected) => {
     expect(isPrivateAddress(address)).toBe(expected);
+  });
+});
+
+describe("jobBoardName", () => {
+  it("names the job boards that block reading", () => {
+    expect(jobBoardName("https://www.indeed.com/viewjob?jk=abc")).toBe("Indeed");
+    expect(jobBoardName("https://uk.indeed.co.uk/viewjob?jk=abc")).toBe("Indeed");
+    expect(jobBoardName("https://www.glassdoor.com/job-listing/x")).toBe("Glassdoor");
+    expect(jobBoardName("https://careers.acme.com/jobs/1")).toBeUndefined();
   });
 });
