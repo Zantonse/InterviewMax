@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
 import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import {
@@ -10,6 +11,7 @@ import {
   type StoryGrade,
   type Tier,
 } from "@/lib/stories/grading";
+import type { ContentCheck, FitLevel, LevelMatch } from "@/lib/stories/fit";
 import type { StoryType } from "@/lib/stories/story-types";
 
 const TIER_STYLES: Record<Tier, string> = {
@@ -127,6 +129,8 @@ export function EvaluationPanel({
       </div>
 
       <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
+        {grade && <ContentFit content={grade.content} />}
+
         <div>
           <h3 className="text-sm font-bold text-slate-700">
             How it scores, criterion by criterion
@@ -322,5 +326,114 @@ function ScoreBar({ score }: { score: number }) {
         <span className="sr-only">, {score} out of 4</span>
       </span>
     </span>
+  );
+}
+
+const FIT_LABELS: Record<FitLevel, { label: string; style: string }> = {
+  strong: { label: "Strong fit", style: "bg-teal-800 text-white" },
+  partial: { label: "Partial fit", style: "bg-teal-100 text-teal-900" },
+  weak: { label: "Weak fit", style: "bg-amber-100 text-amber-900" },
+};
+
+const LEVEL_LABELS: Record<LevelMatch, string> = {
+  below: "Below the level",
+  matches: "Matches the level",
+  above: "Above the level",
+};
+
+// The content check: whether this is the right story for the user's target jobs, and what strong
+// material from their answers the story leaves out.
+function ContentFit({ content }: { content: ContentCheck | undefined }) {
+  if (!content || content.jobs.length === 0) {
+    return (
+      <div data-testid="content-fit">
+        <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          {content
+            ? "Couldn't check this story against your target jobs this time. Grade it again to retry."
+            : "Grade it again to see which of your target jobs' needs this story proves and which likely questions it answers."}{" "}
+          {!content && (
+            <Link href="/jobs" className="font-medium text-teal-800 hover:underline">
+              Add or see your target jobs
+            </Link>
+          )}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3" data-testid="content-fit">
+      <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+      {content.jobs.map((job) => (
+        <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-slate-800">
+              {job.title}
+              {job.company && <span className="font-normal text-slate-500"> at {job.company}</span>}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
+            >
+              {FIT_LABELS[job.fit].label}
+            </span>
+          </div>
+          <FitList title="It proves" mark="✓" markClass="text-teal-700" items={job.proves} />
+          <FitList title="It doesn't show" mark="–" markClass="text-amber-700" items={job.misses} />
+          <FitList
+            title="Good answer to"
+            mark="•"
+            markClass="text-slate-400"
+            items={job.answers.map((q) => `“${q}”`)}
+          />
+          {job.level && (
+            <p className="text-sm text-slate-700">
+              <span className="font-semibold">{LEVEL_LABELS[job.level.match]}. </span>
+              {job.level.note}
+            </p>
+          )}
+        </div>
+      ))}
+      {content.unused.length > 0 && (
+        <div data-testid="unused">
+          <p className="text-sm font-semibold text-slate-700">
+            Strong material from your answers that isn&apos;t in the story:
+          </p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+            {content.unused.map((u, i) => (
+              <li key={i}>{u}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FitList({
+  title,
+  mark,
+  markClass,
+  items,
+}: {
+  title: string;
+  mark: string;
+  markClass: string;
+  items: string[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="text-sm">
+      <p className="font-semibold text-slate-700">{title}:</p>
+      <ul className="mt-0.5 flex flex-col gap-0.5 text-slate-700">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2">
+            <span aria-hidden="true" className={`font-bold ${markClass}`}>
+              {mark}
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

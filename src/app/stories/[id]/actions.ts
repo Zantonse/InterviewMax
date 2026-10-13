@@ -2,7 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
-import { getJobsPrep } from "@/lib/jobs/data";
+import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import {
   gradeStory,
   inferCareerPath,
@@ -19,6 +19,8 @@ import {
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
+import { MAX_FIT_JOBS, type FitJob } from "@/lib/stories/fit";
+import { answersTranscript } from "@/lib/stories/prompts";
 import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
 import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
@@ -225,11 +227,36 @@ export async function gradeDraft(storyId: string): Promise<BuilderResult> {
   return withStory(storyId, async (story) => {
     const draft = story.content.draft;
     if (!draft) return fail("Write the story first, then I'll grade it.");
-    const grade = await gradeStory(story.title, draft, getStoryType(story.storyType));
+    const storyType = getStoryType(story.storyType);
+    const jobs = await jobsForFit();
+    const grade = await gradeStory(story.title, draft, storyType, {
+      answers: answersTranscript(story.content, storyType),
+      jobs,
+    });
     const content = { ...story.content, grade };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
+}
+
+// The target jobs the content check reads the story against. Loading them never blocks the grade.
+async function jobsForFit(): Promise<FitJob[]> {
+  try {
+    const [jobs, { overview }] = await Promise.all([listJobs(), getJobsPrep()]);
+    return jobs.slice(0, MAX_FIT_JOBS).map((job) => ({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      level: job.level,
+      focus: overview?.jobs[job.id]?.focus ?? [],
+      description: job.description,
+      questions: job.likelyQuestions?.questions.map((q) => q.question) ?? [],
+    }));
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Couldn't load target jobs for the content check", err);
+    return [];
+  }
 }
 
 async function withStory(
