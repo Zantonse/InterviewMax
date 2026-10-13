@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { builderStage } from "@/lib/stories/content";
-import { listStories } from "@/lib/stories/data";
+import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 
 export default function HomePage() {
@@ -48,7 +49,20 @@ export default function HomePage() {
 }
 
 async function StoryBank() {
-  const stories = await listStories();
+  let stories: StoryRecord[];
+  try {
+    stories = await listStories();
+  } catch (err) {
+    // A signed-out redirect must still go through.
+    unstable_rethrow(err);
+    // Don't take the whole home page down if the database can't be read.
+    console.error("Home: loading stories failed", err);
+    return (
+      <p className="max-w-md text-teal-50" role="alert" data-testid="story-bank-error">
+        Your stories couldn&apos;t be loaded right now. Try again in a minute.
+      </p>
+    );
+  }
   return (
     <>
       <p className="text-5xl font-extrabold" data-testid="story-count">
