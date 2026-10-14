@@ -36,3 +36,8 @@ test("target jobs need a signed-in user", async ({ page }) => {
   await page.goto("/jobs");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("adding a target job needs a signed-in user", async ({ page }) => {
+  await page.goto("/jobs/new");
+  await expect(page).toHaveURL(/\/login$/);
+});

@@ -1,6 +1,6 @@
 import type { TailoredDraft } from "./content";
 import { checkScript, type CheckResult } from "./grading";
-import { INTRO_LENGTH, TAILORED_PARTS } from "./story-types";
+import { INTRO_LENGTH, INTRO_MAX_FIGURES, TAILORED_PARTS } from "./story-types";
 
 // "Tell me about yourself" for one target job (see tailorIntro in builder.ts): its script and the
 // same quick checks as any story. Plain code, so the job page can show them.
@@ -18,6 +18,7 @@ export function tailoredChecks(draft: TailoredDraft): CheckResult[] {
     untraced: draft.untracedNumbers,
     range: INTRO_LENGTH,
     where: "your proof point",
+    maxFigures: INTRO_MAX_FIGURES,
   });
 }
 

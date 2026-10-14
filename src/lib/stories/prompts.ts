@@ -5,6 +5,7 @@ import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import type { FollowUp, StoryContent } from "./content";
 import {
   INTRO_LENGTH,
+  INTRO_MAX_FIGURES,
   INTRO_PARTS,
   INTRO_QUESTIONS,
   MAX_ANSWER_LENGTH,
@@ -116,6 +117,12 @@ ${PROBE_RULES}
 Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}"}]}`;
 
+// How an introduction earns attention (tester feedback): it lands the one most important thing,
+// fast, and leaves the evidence for the follow-up questions it invites.
+const INTRO_FOCUS_RULES = `It is an opening, not the whole case. Lead with the single most important thing about them for this audience and why it matters, then stop:
+- Open with a one-line headline of who they are and their scope, e.g. "I lead AI enablement and scale for the entire SE org." Save how the role works for later in the interview.
+- Use at most ${INTRO_MAX_FIGURES} figures in the whole answer, ideally one headline result with its context. Pick the figure that matters most and leave the rest out, even strong ones: they are the answers to the follow-up questions this opening invites.`;
+
 export const INTRO_WRITE_SYSTEM = `You are an interview coach writing an experienced professional's answer to "Tell me about yourself", from their own answers.
 
 The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
@@ -126,19 +133,21 @@ Write in the first person, in plain spoken English the user could say aloud at t
 
 ${TIGHT_RULES}
 
+${INTRO_FOCUS_RULES}
+
 Make it strong, not just accurate:
 - Find the one thread that ties their career together and the role they want next, and let every part serve it.
-- Open with who they are in a way that is specific to them, not a job title alone.
-- Lead with their most impressive numbers and give each its context (against quota, rank, how many people, time saved). Use every relevant figure and concrete example they gave, including in their follow-up answers.
+- Make the headline specific to them, not a job title alone.
+- Give the figure you keep its context (against quota, rank, how many people, time saved).
 - Cut anything that doesn't support the thread, even if they mentioned it (an unrelated side interest dilutes the pitch).
 - Prefer concrete verbs over filler and clichés, while keeping their voice.
 
 Write these parts:
-- present: 1 to 2 sentences on who they are today: role, company or industry, and scope.
+- present: 1 short sentence, the headline: their role and scope today.
 - path: 2 to 3 sentences on the career moves that led here and why, skipping anything that doesn't support the story.
-- highlight: 1 to 2 sentences on the result they're proudest of, with their number.
-- strengths: 1 to 2 sentences on what they're known for, proved with their most concrete example.
-- next: 1 to 2 sentences on why they want this next role, which closes the answer and hands back to the interviewer.
+- highlight: 1 to 2 sentences on the one result that matters most, with their number and its context.
+- strengths: 1 to 2 sentences on what they're known for, proved with a concrete example; no new figure unless it is the one that matters most.
+- next: 1 to 2 sentences on what they want next and why, concrete enough that it can be personalized to each company (what kind of company, at what moment, needs what they bring). It closes the answer and hands back to the interviewer.
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
 
@@ -293,6 +302,8 @@ export type WriteRetry = {
   untraced: string[];
   // Set when the draft ran over the hard length limit.
   words?: { count: number; max: number };
+  // Set when an introduction used more figures than it should.
+  figures?: { found: string[]; max: number };
 };
 
 export function retryMessages(retry: WriteRetry): ChatMessage[] {
@@ -305,6 +316,11 @@ export function retryMessages(retry: WriteRetry): ChatMessage[] {
   if (retry.words) {
     asks.push(
       `It's ${retry.words.count} words, over the ${retry.words.max}-word limit. Cut it to at most ${retry.words.max - 20} words: drop the weakest detail and any sentence that repeats or pads, and keep the strongest numbers.`,
+    );
+  }
+  if (retry.figures) {
+    asks.push(
+      `It uses ${retry.figures.found.length} figures (${retry.figures.found.join(", ")}). Keep at most ${retry.figures.max}: the one that matters most for this audience, with its context. Leave the others for follow-up questions.`,
     );
   }
   return [
@@ -373,16 +389,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // that, with the posting, decides which one proof point from their history to lead with.
 export const TAILOR_SYSTEM = `You are an interview coach writing an experienced professional's answer to "Tell me about yourself" for one specific job, from their own answers.
 
-Work company first. Before writing, read why they want this company and what the posting asks for, and decide the one thing about them this job most needs to hear. Then pick the single proof point from their answers that shows it best, and the angle on who they are that sets it up (for example, someone with both sales engineering and product experience, for a role that needs both). Leave out everything else, however impressive.
+Work company first. Before writing, read why they want this company and what the posting asks for, and work out the company's situation from them: for example, an established company going through an AI transformation, a fast-growing startup that needs revenue quickly, or a team building something new. Decide the one thing about them this company, at this moment, most needs to hear. Then pick the single proof point from their answers that shows it best, and the angle on who they are that sets it up. Leave out everything else, however impressive. The situation decides the order:
+- An established company in the middle of a transformation: establish their credentials in a sentence, then move straight to the transformation work they have done and would do here.
+- A startup or a team that has to grow fast: lead with the results that show they drive revenue or speed across customers, and how they would do it quickly here.
+- Otherwise: lead with what the posting's core need is, for example someone with both sales engineering and product experience for a role that needs both.
+
+Only describe the company's situation as the posting or the user describes it. If neither says, don't label the company; just aim at what the posting asks for.
+
+${INTRO_FOCUS_RULES}
 
 The hard rule: use only facts and figures the user gave in their answers. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. Facts about the company come only from the posting or from what the user said; never add your own. Don't name customers, people or companies they didn't name.
 
 ${TIGHT_RULES}
 
 Write in the first person, in plain spoken English they could say aloud at the start of the interview. Three beats, said one after another as a single answer with natural transitions:
-- who: 1 to 2 sentences on who they are, angled to what this job needs.
+- who: 1 short sentence, the headline: who they are and their scope, angled to what this company needs.
 - proof: 2 to 3 sentences on the one result or example that proves it, with their number and the context that makes it land.
-- why_here: 1 to 2 sentences on why this company and this role, in their words, connected to the proof. It closes the answer and hands back to the interviewer.
+- why_here: 1 to 2 sentences on why this company and this role, personal to this company: name what the company is doing or needs (from the posting or their words) and what they would bring to it, connected to the proof. Never a line that would fit any company. It closes the answer and hands back to the interviewer.
 
 Aim for about 150 to 200 words in total, 60 to 90 seconds spoken. Never go over ${INTRO_LENGTH.max} words: that is a hard limit.
 

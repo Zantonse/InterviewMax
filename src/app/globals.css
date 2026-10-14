@@ -28,6 +28,25 @@
   --color-navy-950: #0e182f;
 }
 
+/* The sidebar shrinks to icons on wide screens when collapsed (see components/nav-shell.tsx). */
+@custom-variant nav-collapsed {
+  @media (width >= 64rem) {
+    html[data-nav="collapsed"] & {
+      @slot;
+    }
+  }
+}
+
+/* Pages that show the sidebar make room for it on wide screens. */
+@media (width >= 64rem) {
+  body:has(#app-nav) {
+    padding-left: 16rem;
+  }
+  html[data-nav="collapsed"] body:has(#app-nav) {
+    padding-left: 4.5rem;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

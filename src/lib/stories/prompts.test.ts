@@ -340,6 +340,13 @@ describe("cut the fluff", () => {
     expect(ask.content).toContain("260 words");
     expect(ask.content).toContain("at most 205 words");
     expect(retryMessages({ previous: "{}", untraced: [] })[1].content).not.toContain("words");
+    expect(
+      retryMessages({
+        previous: "{}",
+        untraced: [],
+        figures: { found: ["1", "2", "3", "4"], max: 3 },
+      })[1].content,
+    ).toContain("Keep at most 3");
   });
 });
 
@@ -354,7 +361,7 @@ describe("Tell me about yourself for one job", () => {
   it("puts the company and why-here first, then the user's answers", () => {
     const content = answeredContent(aboutMe);
     const [message] = tailorMessages(content, aboutMe, job, "I want SE and PM together.");
-    const text = message.content;
+    const text = message.content as string;
     expect(text.indexOf("Sierra")).toBeLessThan(text.indexOf("My answers about my career"));
     expect(text).toContain("Why I want to work at Sierra");
     expect(text).toContain("I want SE and PM together.");

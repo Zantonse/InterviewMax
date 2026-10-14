@@ -12,6 +12,7 @@ import {
   MIN_DESCRIPTION_LENGTH,
   isLevel,
   suggestLevel,
+  titleFromPosting,
 } from "@/lib/jobs/content";
 import {
   deleteJob,
@@ -24,7 +25,11 @@ import {
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
-import { readPostingPdf } from "@/lib/jobs/read-posting-pdf";
+import {
+  readPostingPage,
+  readPostingPdf,
+  readPostingScreenshots,
+} from "@/lib/jobs/read-posting-file";
 import { readResumeFile } from "@/lib/jobs/resume";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
@@ -46,19 +51,39 @@ export async function fetchJobPosting(
   }
 }
 
-// Reads a posting saved as PDF so the add-job form can fill itself in. Nothing is saved yet.
-export async function readJobPostingPdf(
+// Reads a posting saved as a PDF, a web page or screenshots so the add-job form can fill itself
+// in. The form unwraps and trims a saved page before sending its HTML. Nothing is saved yet.
+export async function readJobPostingFile(
   formData: FormData,
 ): Promise<{ ok: true; posting: FetchedPosting } | { ok: false; error: string }> {
   try {
     await getCurrentUser();
-    const file = formData.get("file");
-    if (!(file instanceof File)) return { ok: false, error: "Choose a PDF first." };
-    return { ok: true, posting: await readPostingPdf(file) };
+    const kind = formData.get("kind");
+    if (kind === "pdf") {
+      const file = formData.get("file");
+      if (!(file instanceof File)) return { ok: false, error: "Choose a PDF first." };
+      return { ok: true, posting: await readPostingPdf(file) };
+    }
+    if (kind === "page") {
+      return { ok: true, posting: await readPostingPage(String(formData.get("html") ?? "")) };
+    }
+    if (kind === "image") {
+      const files = formData.getAll("image").filter((f): f is File => f instanceof File);
+      return { ok: true, posting: await readPostingScreenshots(files) };
+    }
+    return { ok: false, error: "Upload a PDF, a saved web page or a screenshot." };
   } catch (err) {
     unstable_rethrow(err);
-    console.error("Target jobs: reading a posting PDF failed", err);
-    return { ok: false, error: err instanceof Error ? err.message : "That PDF couldn't be read." };
+    console.error("Target jobs: reading a posting file failed", err);
+    return {
+      ok: false,
+      error:
+        err instanceof ModelError
+          ? "The assistant didn't respond. Try again in a moment."
+          : err instanceof Error
+            ? err.message
+            : "That file couldn't be read.",
+    };
   }
 }
 
@@ -66,13 +91,16 @@ export async function readJobPostingPdf(
 // questions, so the user lands on them with nothing else to set up. If either model call fails the
 // job is still kept, and its page offers to try again.
 export async function addJob(_prev: FormState, formData: FormData): Promise<FormState> {
-  const title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
+  let title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
   const company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
   const description = normalize(String(formData.get("description") ?? ""));
-  if (!title) return { error: "Add the job title." };
+  if (!description) {
+    return { error: "Add a link to the posting, upload it, or paste its text." };
+  }
   if (description.length < MIN_DESCRIPTION_LENGTH) {
     return { error: "Paste the whole job posting, not just the title." };
   }
+  title ||= titleFromPosting(description).slice(0, MAX_TITLE_LENGTH);
   if (description.length > MAX_DESCRIPTION_LENGTH) {
     return {
       error: `Keep the posting under ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters.`,

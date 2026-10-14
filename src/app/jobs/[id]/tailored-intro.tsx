@@ -1,10 +1,12 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { MicButton } from "@/components/mic-button";
 import type { TailoredIntro } from "@/lib/stories/content";
 import { CHECKS, countWords } from "@/lib/stories/grading";
 import { TAILORED_PARTS } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH, tailoredChecks } from "@/lib/stories/tailored";
+import { appendSpoken } from "@/lib/voice/text";
 import { writeTailoredIntro } from "./about-me-actions";
 
 // "Tell me about yourself" for this job, company first: why this company, in the user's words,
@@ -23,6 +25,7 @@ export function TailoredIntroPanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [talking, setTalking] = useState(false);
   const fieldId = useId();
 
   const draft = tailored?.draft;
@@ -58,7 +61,7 @@ export function TailoredIntroPanel({
         className="flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (why.trim() && !pending) write();
+          if (why.trim() && !pending && !talking) write();
         }}
       >
         <label htmlFor={fieldId} className="text-slate-800">
@@ -71,13 +74,13 @@ export function TailoredIntroPanel({
           onChange={(e) => setWhy(e.target.value)}
           rows={3}
           maxLength={MAX_WHY_COMPANY_LENGTH}
-          placeholder="Plain notes are fine."
+          placeholder="Type or tap Talk. Plain notes are fine."
           className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
         />
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={pending || !why.trim()}
+            disabled={pending || talking || !why.trim()}
             className="rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60"
           >
             {pending
@@ -86,6 +89,11 @@ export function TailoredIntroPanel({
                 ? "Rewrite it"
                 : `Write it for ${company}`}
           </button>
+          <MicButton
+            disabled={pending}
+            onActiveChange={setTalking}
+            onText={(spoken) => setWhy((w) => appendSpoken(w, spoken, MAX_WHY_COMPANY_LENGTH))}
+          />
         </div>
         {error && (
           <p role="alert" className="text-sm font-medium text-red-700">
@@ -120,7 +128,8 @@ export function TailoredIntroPanel({
           </div>
           {failed.length === 0 ? (
             <p className="text-sm font-medium text-navy-800">
-              ✓ Under 90 seconds, every number from your answers, no filler or unsure figures.
+              ✓ Under 90 seconds, a few key figures all from your answers, no filler or unsure
+              figures.
             </p>
           ) : (
             <ul

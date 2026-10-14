@@ -2,9 +2,16 @@ export type ProviderId = "anthropic" | "openai" | "openrouter";
 
 export type Effort = "low" | "medium" | "high";
 
+export type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+// A message is plain text, or (for models that can see) text and images; images are base64.
+export type ContentPart =
+  | { type: "text"; text: string }
+  | { type: "image"; mediaType: ImageMediaType; data: string };
+
 export type ChatMessage = {
   role: "user" | "assistant";
-  content: string;
+  content: string | ContentPart[];
 };
 
 export type GenerateRequest = {
@@ -25,9 +32,18 @@ export type GenerateResult = {
   usage: { inputTokens: number; outputTokens: number };
 };
 
+// Speech to text (mic mode). Audio is WAV, the format the mic button records in every browser.
+export type TranscribeRequest = {
+  model: string;
+  audio: Uint8Array;
+  format: "wav";
+};
+
 export interface ModelProvider {
   id: ProviderId;
   generate(request: GenerateRequest): Promise<GenerateResult>;
+  // Only providers with a transcription endpoint (OpenAI API, OpenRouter) have this.
+  transcribe?(request: TranscribeRequest): Promise<string>;
 }
 
 export class ModelError extends Error {

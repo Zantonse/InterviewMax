@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { StoryPlan } from "@/components/story-plan";
-import { MAX_JOBS, levelLabel, overviewBasis } from "@/lib/jobs/content";
+import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { listStories } from "@/lib/stories/data";
 import { removeResume } from "./actions";
@@ -22,9 +22,18 @@ export default function JobsPage() {
         <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-          Your target jobs
-        </h1>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Your target jobs
+          </h1>
+          <Link
+            href="/jobs/new"
+            className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-navy-950 transition hover:bg-amber-300"
+            data-testid="add-job-link"
+          >
+            + Add a target job
+          </Link>
+        </div>
         <p className="mt-2 max-w-2xl text-slate-600">
           Paste in the jobs you&apos;re going for. I&apos;ll read them with your resume, find what
           they share and where each differs, and tell you which stories to build first.
@@ -117,17 +126,6 @@ async function JobsContent() {
           <Card title="Build these stories first">
             <StoryPlan order={overview.storyOrder} stories={stories} />
           </Card>
-        )}
-
-        {jobs.length < MAX_JOBS && (
-          <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-navy-800">
-              Add another job
-            </summary>
-            <div className="mt-4">
-              <AddJobForm />
-            </div>
-          </details>
         )}
       </div>
 

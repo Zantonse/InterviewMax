@@ -35,14 +35,21 @@ export const STEP_MODELS = {
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
   // Target jobs: read the resume and every job posting together (what they share, how each differs).
   jobsRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Target jobs: pick the posting out of a job page saved as PDF or web page (copied lines only,
+  // checked in code).
+  postingExtract: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Target jobs: copy a posting's text out of screenshots. Needs a model that can see images.
+  postingScreenshot: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Likely questions: predict one target job's behavioral questions from the themes, its posting
   // and any interview reports the user pasted.
-  // Target jobs: pick the posting out of a job page saved as PDF (copied lines only, checked in code).
-  postingExtract: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   likelyQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
+  // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
+  // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).
+  transcribe: { provider: "openrouter", model: "openai/whisper-large-v3" },
 } as const satisfies Record<string, StepModel>;
 
 export type Step = keyof typeof STEP_MODELS;

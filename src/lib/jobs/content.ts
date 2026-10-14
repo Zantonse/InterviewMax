@@ -32,6 +32,18 @@ const PRINCIPAL_RE =
   /\b(principal|staff|distinguished|fellow|director|head of|vp|svp|evp|vice president|chief|cto|cfo|coo|ceo|cio|cdo)\b/i;
 const SENIOR_RE = /\b(senior|sr|lead|iii)\b/i;
 
+// A title for a job added without one (a posting whose title couldn't be picked out): the
+// posting's first short line that isn't a section heading.
+const HEADING_RE = /^(about( the| this)? (job|role|us|company)|job description|description|overview|summary)\b/i;
+
+export function titleFromPosting(description: string): string {
+  const line = description
+    .split("\n")
+    .map((l) => l.replace(/^[-•*]\s*/, "").trim())
+    .find((l) => l.length >= 3 && l.length <= 80 && !HEADING_RE.test(l) && !/[.:]$/.test(l));
+  return line ?? "Untitled job";
+}
+
 // The level a job title suggests, from keywords alone. The user confirms or changes it.
 export function suggestLevel(title: string): LevelId {
   if (PRINCIPAL_RE.test(title)) return "principal";

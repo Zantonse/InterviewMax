@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { ModelError, type GenerateRequest, type GenerateResult, type ModelProvider } from "../types";
+import {
+  ModelError,
+  type ChatMessage,
+  type GenerateRequest,
+  type GenerateResult,
+  type ModelProvider,
+} from "../types";
 
 type AnthropicLike = Pick<Anthropic, "messages">;
 
@@ -15,7 +21,7 @@ export function createAnthropicProvider(client: AnthropicLike): ModelProvider {
           model: req.model,
           max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
           ...(req.system ? { system: req.system } : {}),
-          messages: req.messages,
+          messages: req.messages.map(toMessage),
           ...(req.effort ? { output_config: { effort: req.effort } } : {}),
         });
       } catch (err) {
@@ -44,6 +50,25 @@ export function createAnthropicProvider(client: AnthropicLike): ModelProvider {
         },
       };
     },
+  };
+}
+
+function toMessage(m: ChatMessage): Anthropic.MessageParam {
+  if (typeof m.content === "string") return { role: m.role, content: m.content };
+  return {
+    role: m.role,
+    content: m.content.map((p) =>
+      p.type === "text"
+        ? { type: "text" as const, text: p.text }
+        : {
+            type: "image" as const,
+            source: {
+              type: "base64" as const,
+              media_type: p.mediaType,
+              data: p.data,
+            },
+          },
+    ),
   };
 }
 
