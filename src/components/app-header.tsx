@@ -50,6 +50,14 @@ export function AppHeader() {
             <NavIcon name="plus" />
             <span className="nav-collapsed:sr-only">Build a story</span>
           </Link>
+          <Link
+            href="/jobs/new"
+            title="Add a target job"
+            className="mt-2 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10"
+          >
+            <NavIcon name="briefcase" />
+            <span className="nav-collapsed:sr-only">Add a target job</span>
+          </Link>
         </div>
 
         <nav aria-label="Sections" className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 nav-collapsed:px-2">

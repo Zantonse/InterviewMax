@@ -92,23 +92,8 @@ export async function readJobPostingFile(
 // job is still kept, and its page offers to try again.
 export async function addJob(_prev: FormState, formData: FormData): Promise<FormState> {
   let title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
-  let company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
-  let description = normalize(String(formData.get("description") ?? ""));
-  const link = clean(formData.get("link"));
-
-  // A link on its own is enough: read the posting from it now if it wasn't fetched already.
-  if (!description && link) {
-    try {
-      await getCurrentUser();
-      const posting = await fetchPosting(link);
-      description = normalize(posting.description);
-      title ||= posting.title;
-      company ||= posting.company || null;
-    } catch (err) {
-      unstable_rethrow(err);
-      return { error: err instanceof Error ? err.message : "That posting couldn't be read." };
-    }
-  }
+  const company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
+  const description = normalize(String(formData.get("description") ?? ""));
   if (!description) {
     return { error: "Add a link to the posting, upload it, or paste its text." };
   }
