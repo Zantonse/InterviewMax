@@ -6,6 +6,7 @@ import {
   parseOverview,
   parseResume,
   suggestLevel,
+  titleFromPosting,
 } from "./content";
 import { jobsReadMessages, parseJobsRead, sourceText, type JobForPrompt } from "./prompts";
 
@@ -136,5 +137,19 @@ describe("jobsRead prompt", () => {
   it("throws on a reply it can't use", () => {
     expect(() => parseJobsRead("no json", jobs, "", false)).toThrow();
     expect(() => parseJobsRead('{"jobs": {"job7": {}}}', jobs, "", false)).toThrow();
+  });
+});
+
+describe("titleFromPosting", () => {
+  it("takes the first short line that isn't a heading", () => {
+    expect(
+      titleFromPosting("About the job\nSenior Solutions Engineer\nYou will run demos for customers."),
+    ).toBe("Senior Solutions Engineer");
+  });
+
+  it("falls back when no line looks like a title", () => {
+    expect(titleFromPosting("You will run technical discovery and demos for enterprise customers.")).toBe(
+      "Untitled job",
+    );
   });
 });

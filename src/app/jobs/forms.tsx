@@ -92,13 +92,17 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
 
   return (
     <form action={action} className="space-y-4" data-testid="add-job-form">
+      <p className="text-sm text-slate-600">
+        Add a link, upload the posting or paste it below: any one is enough.
+      </p>
       <div>
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-link`}>
-          Link to the posting <span className="font-normal text-slate-500">(optional)</span>
+          Link to the posting
         </label>
         <div className="mt-1 flex flex-col gap-2 sm:flex-row">
           <input
             id={`${id}-link`}
+            name="link"
             type="url"
             value={link}
             onChange={(e) => setLink(e.target.value)}
@@ -128,8 +132,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
       </div>
       <div>
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-file`}>
-          Or upload the posting as a PDF, web page or screenshots{" "}
-          <span className="font-normal text-slate-500">(optional)</span>
+          Or upload the posting as a PDF, web page or screenshots
         </label>
         <input
           id={`${id}-file`}
@@ -159,11 +162,10 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
-          Job title
+          Job title <span className="font-normal text-slate-500">(optional)</span>
           <input
             id={`${id}-title`}
             name="title"
-            required
             maxLength={MAX_TITLE_LENGTH}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -185,11 +187,11 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
         </label>
       </div>
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-description`}>
-        The job posting
+        The job posting{" "}
+        <span className="font-normal text-slate-500">(not needed with a link or upload)</span>
         <textarea
           id={`${id}-description`}
           name="description"
-          required
           rows={10}
           maxLength={MAX_DESCRIPTION_LENGTH}
           value={description}
