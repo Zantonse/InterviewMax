@@ -7,9 +7,8 @@ import { PrepPath } from "@/components/prep-path";
 import { QuestionList } from "@/components/question-list";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { builderStage } from "@/lib/stories/content";
+import { hasDraft } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
-import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
@@ -116,8 +115,7 @@ async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
       {stories.length > 0 && (
         <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
           {stories.map((story) => {
-            const drafted =
-              builderStage(story.content, getStoryType(story.storyType)) === "drafted";
+            const drafted = hasDraft(story.content);
             return (
               <li key={story.id}>
                 <Link

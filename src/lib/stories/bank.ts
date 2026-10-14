@@ -1,6 +1,6 @@
 import type { LevelId } from "@/lib/jobs/content";
 import { QUESTION_THEMES, type QuestionThemeId } from "@/lib/questions/themes";
-import { builderStage, gradeIsCurrent, type StoryContent } from "./content";
+import { gradeIsCurrent, hasDraft, type StoryContent } from "./content";
 import { BANK_ROLES } from "./grading";
 import { getStoryType, type StoryTypeId } from "./story-types";
 
@@ -17,7 +17,13 @@ type StoryLike = {
 
 // How well a theme is covered, from best to worst: the tier of its best graded story, "written" for
 // a draft without a current grade, then "in_progress". "empty" means no story of its types yet.
-export type ThemeStatus = "strong" | "good_enough" | "not_yet" | "written" | "in_progress" | "empty";
+export type ThemeStatus =
+  | "strong"
+  | "good_enough"
+  | "not_yet"
+  | "written"
+  | "in_progress"
+  | "empty";
 
 export type ThemeCoverage = {
   id: QuestionThemeId;
@@ -39,7 +45,7 @@ const STATUS_RANK: Record<ThemeStatus, number> = {
 };
 
 function storyStatus(story: StoryLike): ThemeStatus {
-  if (builderStage(story.content, getStoryType(story.storyType)) !== "drafted") return "in_progress";
+  if (!hasDraft(story.content)) return "in_progress";
   const grade = story.content.grade;
   return grade && gradeIsCurrent(story.content) ? grade.tier : "written";
 }
@@ -115,7 +121,7 @@ export function levelMix(stories: StoryLike[], level: LevelId | undefined): Leve
   for (const story of stories) {
     const type = getStoryType(story.storyType);
     if (!type || type.format === "intro") continue;
-    if (builderStage(story.content, type) !== "drafted") continue;
+    if (!hasDraft(story.content)) continue;
     const role = gradeIsCurrent(story.content) ? story.content.grade?.bankRole?.role : undefined;
     if (role && isBankRole(role)) counts[role] += 1;
     else ungraded += 1;

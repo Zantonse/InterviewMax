@@ -69,6 +69,15 @@ describe("themeCoverage", () => {
     expect(themeCoverage([story("c", "went_wrong", drafted({ tier: "not_yet" }))])[5].status).toBe("not_yet");
     expect(themes.find((t) => t.id === "collaboration")?.status).toBe("in_progress");
   });
+
+  it("keeps a drafted story counted while it has unanswered make-it-stronger questions", () => {
+    const strengthening = {
+      ...drafted({ tier: "strong" }),
+      followUps: [{ question: "How many people?", gap: "result", round: 2 }],
+    } as StoryContent;
+    const themes = themeCoverage([story("a", "major_project", strengthening)]);
+    expect(themes.find((t) => t.id === "impact")?.status).toBe("strong");
+  });
 });
 
 describe("levelMix", () => {
