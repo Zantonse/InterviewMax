@@ -186,8 +186,11 @@ export function StoryBuilder({
   );
   const canUpload = storyType?.format === "intro" && stage === "core";
   const inferredNow = currentCore === "path" ? content.inferredPath : undefined;
+  // A moment picked in the story finder fills in the first answer, for the user to make their own.
+  const seed = content.seed && storyType?.format !== "intro" ? content.seed : undefined;
+  const seedNow = currentCore === "start" ? seed : undefined;
   const hints: Record<string, string | undefined> = {
-    start: openingHint(targets, storyType),
+    start: seed ? seedHint(seed) : openingHint(targets, storyType),
     next: storyType?.format === "intro" ? nextRoleHint(targets) : undefined,
   };
 
@@ -370,8 +373,8 @@ export function StoryBuilder({
                     </button>
                   )}
                   <Composer
-                    key={`core-${currentCore}-${inferredNow ? "inferred" : "blank"}`}
-                    initial={inferredNow?.text ?? ""}
+                    key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
+                    initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
                     disabled={busy !== null}
                     submitLabel={inferredNow ? "That's right" : "Next"}
                     onSubmit={(text) => submitCore(currentCore, text)}
@@ -640,6 +643,12 @@ function progressLabel(
     case "drafted":
       return "Draft written";
   }
+}
+
+function seedHint(seed: NonNullable<StoryContent["seed"]>): string {
+  const quote = seed.quote.replace(/[.;,\s]+$/, "");
+  const from = quote ? `From ${seed.sourceLabel || "your resume"}: "${quote}". ` : "";
+  return `${from}I've started it with this moment${seed.question ? `, ${seed.question.replace(/\?$/, "")}` : ""}. Make it your own: where you were, your role and what was going on.`;
 }
 
 function Exchange({
