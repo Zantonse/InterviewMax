@@ -3,6 +3,7 @@ import { type StoryNumber, numbersTranscript } from "@/lib/numbers/checklist";
 import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import type { FollowUp, StoryContent } from "./content";
+import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import {
   INTRO_LENGTH,
   INTRO_PARTS,
@@ -180,9 +181,15 @@ export function parsePrefill(text: string): Record<string, string> {
   );
 }
 
-export function probeSystem(storyType: StoryType | undefined, round = 1): string {
+// With target jobs or a role they want, the follow-ups are also aimed at what those need.
+export function probeSystem(
+  storyType: StoryType | undefined,
+  round = 1,
+  targets?: BuilderTargets,
+): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
-  return `${base}\n\n${roundInstructions(round)}`;
+  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
+  return `${base}${tailor}\n\n${roundInstructions(round)}`;
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
@@ -229,15 +236,17 @@ export function probeMessages(
   past?: PastInterviewNotes,
   resume?: string,
   numbers: StoryNumber[] = [],
+  targets?: BuilderTargets,
 ): ChatMessage[] {
   const notes = past ? pastInterviewText(past) : "";
+  const preparing = hasTargets(targets) ? `\n\n${targetsTranscript(targets)}` : "";
   const background = resume?.trim()
     ? `\n\n## My resume, for background\n${resume.trim().slice(0, MAX_BACKGROUND_LENGTH)}`
     : "";
   return [
     {
       role: "user",
-      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, true)}${background}${notes ? `\n\n${notes}` : ""}`,
+      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, true)}${preparing}${background}${notes ? `\n\n${notes}` : ""}`,
     },
   ];
 }

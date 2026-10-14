@@ -33,6 +33,7 @@ import {
   writeDraft,
   type BuilderResult,
 } from "./actions";
+import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
 import { EvaluationPanel } from "./evaluation-panel";
 
 type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";
@@ -57,6 +58,7 @@ export function StoryBuilder({
   initialTitle,
   initialContent,
   hasResume = false,
+  targets,
   afterStory,
   menu,
   beside,
@@ -68,6 +70,9 @@ export function StoryBuilder({
   // Whether the user added a resume on the target jobs page; "Tell me about yourself" reads their
   // career path from it.
   hasResume?: boolean;
+  // What they're preparing for (target jobs, the role they want): the first question gets a hint
+  // so they pick a story that fits.
+  targets?: BuilderTargets;
   // Shown under the story on the Story & score view.
   afterStory?: React.ReactNode;
   // Story-level actions, such as delete, in the ⋯ menu.
@@ -179,6 +184,10 @@ export function StoryBuilder({
   );
   const canUpload = storyType?.format === "intro" && stage === "core";
   const inferredNow = currentCore === "path" ? content.inferredPath : undefined;
+  const hints: Record<string, string | undefined> = {
+    start: openingHint(targets, storyType),
+    next: storyType?.format === "intro" ? nextRoleHint(targets) : undefined,
+  };
 
   // The chat keeps its newest message in view, unless an earlier answer is open for editing.
   const listRef = useRef<HTMLOListElement>(null);
@@ -283,6 +292,7 @@ export function StoryBuilder({
                         : coreQuestionText(q.id, storyType)
                     }
                     answer={content.answers[q.id]}
+                    hint={content.answers[q.id]?.trim() ? undefined : hints[q.id]}
                     source={
                       content.roleMap?.seeded?.includes(q.id)
                         ? "From your role map"
@@ -633,6 +643,7 @@ function progressLabel(
 function Exchange({
   question,
   answer,
+  hint,
   source,
   isEditing,
   disabled,
@@ -642,6 +653,8 @@ function Exchange({
 }: {
   question: string;
   answer: string | undefined;
+  // A nudge under the question, e.g. which target job the story should fit.
+  hint?: string;
   // Where a prefilled answer came from, e.g. "From your LinkedIn".
   source?: string;
   isEditing: boolean;
@@ -653,6 +666,11 @@ function Exchange({
   return (
     <li className="flex flex-col gap-2">
       <CoachBubble>{question}</CoachBubble>
+      {hint && (
+        <p className="max-w-[90%] pl-1 text-sm text-slate-600" data-testid="question-hint">
+          {hint}
+        </p>
+      )}
       {isEditing ? (
         <Composer
           initial={answer ?? ""}

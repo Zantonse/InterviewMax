@@ -23,6 +23,7 @@ import {
 import { getStory, updateStory } from "@/lib/stories/data";
 import { MAX_FIT_JOBS, type FitJob } from "@/lib/stories/fit";
 import { answersTranscript } from "@/lib/stories/prompts";
+import { loadBuilderTargets } from "@/lib/stories/targets-data";
 import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
 import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
@@ -203,8 +204,12 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const past = storyType
       ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
       : undefined;
-    const [resume, numbers] = await Promise.all([resumeText(), storyNumbers(story.storyType)]);
-    const asked = await probeStory(story.content, storyType, round, past, resume, numbers);
+    const [resume, numbers, targets] = await Promise.all([
+      resumeText(),
+      storyNumbers(story.storyType),
+      loadBuilderTargets(storyType),
+    ]);
+    const asked = await probeStory(story.content, storyType, round, past, resume, numbers, targets);
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
