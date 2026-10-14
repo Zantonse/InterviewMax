@@ -20,6 +20,7 @@ import {
   listJobs,
   saveJobQuestions,
   saveJobsPrep,
+  setInterviewDate,
   setJobLevel,
 } from "@/lib/jobs/data";
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
@@ -31,6 +32,7 @@ import {
   readPostingScreenshots,
 } from "@/lib/jobs/read-posting-file";
 import { readResumeFile } from "@/lib/jobs/resume";
+import { isDate } from "@/lib/prep/plan";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
@@ -142,6 +144,16 @@ export async function confirmLevel(formData: FormData): Promise<void> {
   const level = formData.get("level");
   if (!isLevel(level)) return;
   await setJobLevel(String(formData.get("jobId") ?? ""), level);
+  refresh();
+}
+
+// Sets the date of the next interview for a job, which sizes the prep plan on home. "clear" removes it.
+export async function saveInterviewDate(formData: FormData): Promise<void> {
+  const jobId = String(formData.get("jobId") ?? "");
+  const date = formData.get("date");
+  if (formData.get("intent") === "clear") await setInterviewDate(jobId, null);
+  else if (isDate(date)) await setInterviewDate(jobId, date);
+  else return;
   refresh();
 }
 

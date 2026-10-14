@@ -22,6 +22,8 @@ export type TargetJob = {
   description: string;
   likelyQuestions: LikelyQuestions | null;
   interviewReports: string;
+  // The next interview for this job, as YYYY-MM-DD, when the user has set one.
+  interviewDate: string | null;
   createdAt: string;
 };
 
@@ -36,11 +38,12 @@ type Row = {
   job_description: string | null;
   likely_questions: unknown;
   interview_reports: string | null;
+  interview_date: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, interview_date, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -52,6 +55,7 @@ function toJob(row: Row): TargetJob {
     description: row.job_description ?? "",
     likelyQuestions: parseLikelyQuestions(row.likely_questions),
     interviewReports: row.interview_reports ?? "",
+    interviewDate: row.interview_date,
     createdAt: row.created_at,
   };
 }
@@ -120,6 +124,20 @@ export async function setJobLevel(id: string, level: LevelId): Promise<void> {
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the level: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Sets or clears (null) the date of the next interview for a job. The date is YYYY-MM-DD.
+export async function setInterviewDate(id: string, date: string | null): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ interview_date: date })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the interview date: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 
