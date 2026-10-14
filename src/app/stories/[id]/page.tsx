@@ -9,7 +9,8 @@ import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import type { StoryContent } from "@/lib/stories/content";
 import { getStory } from "@/lib/stories/data";
-import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
+import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
+import { loadBuilderTargets } from "@/lib/stories/targets-data";
 import { NumbersCard } from "./numbers-card";
 import { StoryBuilder } from "./story-builder";
 
@@ -41,7 +42,7 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background for "Tell me about yourself": the resume and target jobs. Optional, so a failure to
   // load them never blocks the builder.
-  const [[resume, jobs], checklist] = await Promise.all([
+  const [[resume, jobs], checklist, targets] = await Promise.all([
     intro
       ? Promise.all([
           getJobsPrep().then(
@@ -52,6 +53,7 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
         ])
       : ([false, [] as TargetJob[]] as const),
     getNumbersChecklistSafely(),
+    loadBuilderTargets(getStoryType(story.storyType)),
   ]);
   return (
     <StoryBuilder
@@ -60,6 +62,7 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
       initialTitle={story.title}
       initialContent={story.content}
       hasResume={resume}
+      targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
       menu={<DeleteStoryButton storyId={story.id} title={story.title} />}
       beside={

@@ -43,6 +43,7 @@ import {
 } from "./prompts";
 import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
+import type { BuilderTargets } from "./targets";
 import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryNumber } from "@/lib/numbers/checklist";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
@@ -50,7 +51,8 @@ import type { PastInterviewNotes } from "@/lib/transcripts/content";
 // Call one: assess the answers so far and return follow-up questions aimed at the gaps. Round 1
 // returns 3–5; round 2 returns up to 3, or none when the answers are already strong.
 // Notes from the user's past interview transcripts, when there are any, steer the questions toward
-// what real interviewers probed for and what the user's answers kept missing.
+// what real interviewers probed for and what the user's answers kept missing. Their target jobs and
+// the role they want next aim the questions at what those jobs' interviewers will look for.
 export async function probeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
@@ -58,11 +60,12 @@ export async function probeStory(
   past?: PastInterviewNotes,
   resume?: string,
   numbers: StoryNumber[] = [],
+  targets?: BuilderTargets,
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    probeSystem(storyType, round),
-    probeMessages(content, storyType, past, resume, numbers),
+    probeSystem(storyType, round, targets),
+    probeMessages(content, storyType, past, resume, numbers, targets),
   );
   return parseProbe(text, round);
 }
