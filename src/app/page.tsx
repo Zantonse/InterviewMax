@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
 import { PrepPath } from "@/components/prep-path";
+import { getAssessmentSafely, shouldStartWithAssessment } from "@/lib/assessment/data";
+import { gradeJourney } from "@/lib/assessment/journey";
 import { QuestionList } from "@/components/question-list";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
@@ -36,14 +38,54 @@ export default function HomePage() {
         </div>
 
         <Suspense fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}>
-          <PrepPath />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <Dashboard />
+          <NewUserGate>
+            <Suspense fallback={null}>
+              <JourneyLink />
+            </Suspense>
+            <Suspense
+              fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}
+            >
+              <PrepPath />
+            </Suspense>
+            <Suspense fallback={null}>
+              <Dashboard />
+            </Suspense>
+          </NewUserGate>
         </Suspense>
       </main>
     </div>
+  );
+}
+
+// A brand-new user starts with the journey check; everyone else gets the home page.
+async function NewUserGate({ children }: { children: React.ReactNode }) {
+  if (await shouldStartWithAssessment()) redirect("/assessment");
+  return <>{children}</>;
+}
+
+// The journey check stays one tap away: the grade once taken, an invitation otherwise.
+async function JourneyLink() {
+  const assessment = await getAssessmentSafely();
+  // Before the column exists there's nothing to show.
+  if (assessment === undefined) return null;
+  let jobs: TargetJob[];
+  try {
+    jobs = await listJobs();
+  } catch (err) {
+    unstable_rethrow(err);
+    jobs = [];
+  }
+  const taken = assessment && "answers" in assessment ? assessment : null;
+  const grade = taken && gradeJourney(taken.answers, { hasJob: jobs.length > 0 });
+  return (
+    <p className="mt-2 text-sm text-slate-600" data-testid="journey-link">
+      <Link href="/assessment" className="font-semibold text-navy-800 hover:underline">
+        {grade
+          ? `Journey grade: ${grade.score}/100 · ${grade.level}`
+          : "Take the 1-minute journey check"}{" "}
+        →
+      </Link>
+    </p>
   );
 }
 
