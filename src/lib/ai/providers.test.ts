@@ -74,18 +74,6 @@ describe("Anthropic provider", () => {
     ]);
   });
 
-  it("rejects audio without calling the API", async () => {
-    const create = vi.fn();
-    const provider = createAnthropicProvider({ messages: { create } } as never);
-    await expect(
-      provider.generate({
-        model: "m",
-        messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
-      }),
-    ).rejects.toBeInstanceOf(ModelError);
-    expect(create).not.toHaveBeenCalled();
-  });
-
   it("maps refusals and wraps errors", async () => {
     const refusing = createAnthropicProvider({
       messages: {
@@ -156,24 +144,26 @@ describe("OpenAI-compatible provider", () => {
     });
   });
 
-  it("sends audio as input_audio", async () => {
-    const create = vi.fn().mockResolvedValue({
-      model: "m",
-      choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
-    });
+  it("transcribes audio through the transcriptions endpoint", async () => {
+    const create = vi.fn().mockResolvedValue({ text: "We closed it." });
     const provider = createOpenAICompatibleProvider("openrouter", {
-      chat: { completions: { create } },
+      chat: { completions: { create: vi.fn() } },
+      audio: { transcriptions: { create } },
     } as never);
-    await provider.generate({
-      model: "m",
-      messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
+    const text = await provider.transcribe!({
+      model: "openai/whisper-large-v3",
+      audio: new Uint8Array([1, 2, 3]),
+      format: "wav",
     });
-    expect(create.mock.calls[0][0].messages).toEqual([
-      {
-        role: "user",
-        content: [{ type: "input_audio", input_audio: { data: "QUJD", format: "wav" } }],
-      },
-    ]);
+    expect(text).toBe("We closed it.");
+    const body = create.mock.calls[0][0];
+    expect(body.model).toBe("openai/whisper-large-v3");
+    expect(body.file.name).toBe("speech.wav");
+
+    create.mockRejectedValueOnce(new Error("boom"));
+    await expect(
+      provider.transcribe!({ model: "m", audio: new Uint8Array([1]), format: "wav" }),
+    ).rejects.toBeInstanceOf(ModelError);
   });
 
   it("sends images as data URLs", async () => {

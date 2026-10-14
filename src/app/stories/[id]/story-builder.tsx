@@ -34,7 +34,7 @@ import {
   writeDraft,
   type BuilderResult,
 } from "./actions";
-import { appendSpoken } from "@/lib/voice/prompts";
+import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
 
 type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";

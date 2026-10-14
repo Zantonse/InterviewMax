@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendSpoken, cleanTranscript } from "./prompts";
+import { appendSpoken, cleanTranscript } from "./text";
 import { SAMPLE_RATE, downsample, encodeWav, isWav, level } from "./wav";
 
 describe("encodeWav", () => {
@@ -49,15 +49,19 @@ describe("cleanTranscript", () => {
     expect(cleanTranscript("  We cut churn by 30%.  ")).toBe("We cut churn by 30%.");
   });
 
-  it("drops labels, fences and wrapping quotes", () => {
-    expect(cleanTranscript('Transcript: "I led the rollout."')).toBe("I led the rollout.");
-    expect(cleanTranscript("```\nI led the rollout.\n```")).toBe("I led the rollout.");
+  it("drops sound notes", () => {
+    expect(cleanTranscript("(laughs) I led the rollout [background noise].")).toBe(
+      "I led the rollout.",
+    );
+    expect(cleanTranscript("[silence]")).toBe("");
   });
 
-  it("turns not-speech notes into nothing", () => {
-    expect(cleanTranscript("[silence]")).toBe("");
-    expect(cleanTranscript("(No speech detected.)")).toBe("");
-    expect(cleanTranscript("There is no speech in this recording.")).toBe("");
+  it("drops Whisper's silence filler only when it's the whole piece", () => {
+    expect(cleanTranscript(" Thank you for watching. ")).toBe("");
+    expect(cleanTranscript("you")).toBe("");
+    expect(cleanTranscript("Thank you for the question. We grew 30%.")).toBe(
+      "Thank you for the question. We grew 30%.",
+    );
   });
 });
 
