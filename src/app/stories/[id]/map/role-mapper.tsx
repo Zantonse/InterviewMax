@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
+import { MicButton } from "@/components/mic-button";
 import { MIN_WORK_ANSWERS, ROLE_FAMILIES, WORK_QUESTIONS } from "@/lib/roles/families";
 import {
   FUNCTION_MARKS,
@@ -15,6 +16,7 @@ import {
   roleVocabulary,
 } from "@/lib/roles/role-map";
 import { MAX_ANSWER_LENGTH, getStoryType } from "@/lib/stories/story-types";
+import { appendSpoken } from "@/lib/voice/prompts";
 import {
   type RoleResult,
   createRoleProfile,
@@ -235,6 +237,9 @@ function WorkField({
         maxLength={MAX_ANSWER_LENGTH}
         className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
       />
+      <div className="mt-1">
+        <MicButton onText={(spoken) => onChange(appendSpoken(value, spoken, MAX_ANSWER_LENGTH))} />
+      </div>
     </div>
   );
 }

@@ -82,10 +82,12 @@ function toMessage(m: ChatMessage): ChatCompletionMessageParam {
     content: m.content.map((p) =>
       p.type === "text"
         ? { type: "text" as const, text: p.text }
-        : {
-            type: "image_url" as const,
-            image_url: { url: `data:${p.mediaType};base64,${p.data}` },
-          },
+        : p.type === "audio"
+          ? { type: "input_audio" as const, input_audio: { data: p.data, format: p.format } }
+          : {
+              type: "image_url" as const,
+              image_url: { url: `data:${p.mediaType};base64,${p.data}` },
+            },
     ),
   };
 }

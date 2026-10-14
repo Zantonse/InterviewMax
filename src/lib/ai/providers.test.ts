@@ -74,6 +74,18 @@ describe("Anthropic provider", () => {
     ]);
   });
 
+  it("rejects audio without calling the API", async () => {
+    const create = vi.fn();
+    const provider = createAnthropicProvider({ messages: { create } } as never);
+    await expect(
+      provider.generate({
+        model: "m",
+        messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
+      }),
+    ).rejects.toBeInstanceOf(ModelError);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("maps refusals and wraps errors", async () => {
     const refusing = createAnthropicProvider({
       messages: {
@@ -142,6 +154,26 @@ describe("OpenAI-compatible provider", () => {
       messages: [],
       max_tokens: 500,
     });
+  });
+
+  it("sends audio as input_audio", async () => {
+    const create = vi.fn().mockResolvedValue({
+      model: "m",
+      choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
+    });
+    const provider = createOpenAICompatibleProvider("openrouter", {
+      chat: { completions: { create } },
+    } as never);
+    await provider.generate({
+      model: "m",
+      messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
+    });
+    expect(create.mock.calls[0][0].messages).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_audio", input_audio: { data: "QUJD", format: "wav" } }],
+      },
+    ]);
   });
 
   it("sends images as data URLs", async () => {

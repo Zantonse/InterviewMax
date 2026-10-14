@@ -15,6 +15,16 @@ export function createAnthropicProvider(client: AnthropicLike): ModelProvider {
   return {
     id: "anthropic",
     async generate(req: GenerateRequest): Promise<GenerateResult> {
+      const hasAudio = req.messages.some(
+        (m) => typeof m.content !== "string" && m.content.some((p) => p.type === "audio"),
+      );
+      if (hasAudio) {
+        throw new ModelError(
+          "The Claude API doesn't take audio; use another provider.",
+          "anthropic",
+        );
+      }
+
       let response: Anthropic.Message;
       try {
         response = await client.messages.create({
@@ -60,14 +70,16 @@ function toMessage(m: ChatMessage): Anthropic.MessageParam {
     content: m.content.map((p) =>
       p.type === "text"
         ? { type: "text" as const, text: p.text }
-        : {
-            type: "image" as const,
-            source: {
-              type: "base64" as const,
-              media_type: p.mediaType,
-              data: p.data,
+        : p.type === "audio"
+          ? { type: "text" as const, text: "" } // never sent: generate() rejects audio first
+          : {
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: p.mediaType,
+                data: p.data,
+              },
             },
-          },
     ),
   };
 }
