@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { QuestionList } from "@/components/question-list";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
-import { builderStage } from "@/lib/stories/content";
+import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { removeJob } from "../actions";
@@ -45,7 +45,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   // "Tell me about yourself": the drafted one if there is one (stories are newest first).
   const introType = getStoryType(REQUIRED_STORY_TYPE_ID);
   const intros = stories.filter((s) => s.storyType === REQUIRED_STORY_TYPE_ID);
-  const intro = intros.find((s) => builderStage(s.content, introType) === "drafted") ?? intros[0];
+  const intro = intros.find((s) => hasDraft(s.content)) ?? intros[0];
   const introReady = Boolean(intro && builderStage(intro.content, introType) !== "core");
 
   return (

@@ -1,8 +1,13 @@
-import { builderStage } from "@/lib/stories/content";
-import { getStoryType, type StoryTypeId } from "@/lib/stories/story-types";
+import { hasDraft } from "@/lib/stories/content";
+import type { StoryTypeId } from "@/lib/stories/story-types";
 import { getTheme } from "./themes";
 
-type StoryLike = { id: string; title: string; storyType: string | null; content: Parameters<typeof builderStage>[0] };
+type StoryLike = {
+  id: string;
+  title: string;
+  storyType: string | null;
+  content: Parameters<typeof hasDraft>[0];
+};
 
 export type QuestionCoverage =
   // A story in the bank answers it.
@@ -18,10 +23,9 @@ export function coverageFor(themeId: string, stories: StoryLike[]): QuestionCove
   const candidates = theme.storyTypes.flatMap((typeId) =>
     stories.filter((s) => s.storyType === typeId),
   );
-  const drafted = candidates.find(
-    (s) => builderStage(s.content, getStoryType(s.storyType)) === "drafted",
-  );
+  const drafted = candidates.find((s) => hasDraft(s.content));
   const story = drafted ?? candidates[0];
-  if (story) return { kind: "story", storyId: story.id, title: story.title, drafted: Boolean(drafted) };
+  if (story)
+    return { kind: "story", storyId: story.id, title: story.title, drafted: Boolean(drafted) };
   return { kind: "build", storyType: theme.storyTypes[0] };
 }

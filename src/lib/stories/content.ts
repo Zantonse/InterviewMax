@@ -138,6 +138,12 @@ export function builderStage(
   return "write";
 }
 
+// Whether the story has a written draft. This is what "Draft written" means everywhere outside the
+// builder: a story keeps it while the user answers another round of "make it stronger" questions.
+export function hasDraft(content: StoryContent): boolean {
+  return Boolean(content.draft);
+}
+
 // Every answer the user has typed, as one block of text. Numbers in a draft must trace back to this.
 export function allAnswerText(content: StoryContent): string {
   return [

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { startStory } from "@/app/stories/new/actions";
 import type { StoryPriority } from "@/lib/jobs/content";
-import { builderStage } from "@/lib/stories/content";
+import { hasDraft } from "@/lib/stories/content";
 import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 
@@ -22,9 +22,8 @@ export function StoryPlan({
         if (!type) return null;
         // listStories is newest first; prefer a drafted one.
         const mine = stories.filter((s) => s.storyType === type.id);
-        const story =
-          mine.find((s) => builderStage(s.content, type) === "drafted") ?? mine[0] ?? undefined;
-        const drafted = story && builderStage(story.content, type) === "drafted";
+        const story = mine.find((s) => hasDraft(s.content)) ?? mine[0] ?? undefined;
+        const drafted = story && hasDraft(story.content);
         return (
           <li
             key={type.id}
@@ -41,7 +40,9 @@ export function StoryPlan({
               <Link
                 href={`/stories/${story.id}`}
                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                  drafted ? "bg-navy-800 text-white" : "bg-navy-50 text-navy-900 ring-1 ring-navy-800/20"
+                  drafted
+                    ? "bg-navy-800 text-white"
+                    : "bg-navy-50 text-navy-900 ring-1 ring-navy-800/20"
                 }`}
               >
                 {drafted ? "Draft written" : "In progress"}

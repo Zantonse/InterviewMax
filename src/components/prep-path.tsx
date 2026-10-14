@@ -4,9 +4,9 @@ import { AddJobForm } from "@/app/jobs/forms";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
-import { builderStage } from "@/lib/stories/content";
+import { hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
-import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
+import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 
 // How many of the stories the user's jobs need most count toward the last step.
 const PLAN_SIZE = 4;
@@ -88,11 +88,7 @@ async function pathSteps(): Promise<PathStep[] | null> {
     listStories(),
     getNumbersChecklistSafely(),
   ]);
-  const drafted = new Set(
-    stories
-      .filter((s) => builderStage(s.content, getStoryType(s.storyType)) === "drafted")
-      .map((s) => s.storyType),
-  );
+  const drafted = new Set(stories.filter((s) => hasDraft(s.content)).map((s) => s.storyType));
   const aboutMe = stories.find((s) => s.storyType === REQUIRED_STORY_TYPE_ID);
   const plan = (overview?.storyOrder ?? [])
     .map((p) => p.storyType)
@@ -105,9 +101,7 @@ async function pathSteps(): Promise<PathStep[] | null> {
   return [
     {
       label: "See your likely questions",
-      detail: predicted
-        ? `Ready for ${predicted.title}`
-        : `Predict them for ${jobs[0].title}`,
+      detail: predicted ? `Ready for ${predicted.title}` : `Predict them for ${jobs[0].title}`,
       href: predicted ? `/jobs/${predicted.id}` : `/jobs/${jobs[0].id}`,
       done: Boolean(predicted),
     },
@@ -127,7 +121,8 @@ async function pathSteps(): Promise<PathStep[] | null> {
     },
     {
       label: "Build the stories your jobs need",
-      detail: plan.length > 0 ? `${planDone} of ${plan.length} written` : "See which on your jobs page",
+      detail:
+        plan.length > 0 ? `${planDone} of ${plan.length} written` : "See which on your jobs page",
       href: plan.length > 0 ? "/jobs" : "/stories/new",
       done: plan.length > 0 && planDone === plan.length,
     },

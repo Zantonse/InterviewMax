@@ -9,7 +9,7 @@ import { QuestionList } from "@/components/question-list";
 import { WhyInterviewMax } from "@/components/why-interviewmax";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { builderStage } from "@/lib/stories/content";
+import { hasDraft } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
@@ -106,8 +106,7 @@ async function StoryBank() {
       ) : (
         <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
           {stories.map((story) => {
-            const drafted =
-              builderStage(story.content, getStoryType(story.storyType)) === "drafted";
+            const drafted = hasDraft(story.content);
             return (
               <li key={story.id} className="flex items-center gap-1 pr-2">
                 <Link
@@ -259,7 +258,12 @@ async function PastInterviews() {
       </p>
       {recurringGaps.length > 0 && (
         <p className="mt-2 text-sm text-slate-500">
-          Your answers keep missing: {recurringGaps.slice(0, 3).map((g) => gapLabel(g.gap).toLowerCase()).join(", ")}.
+          Your answers keep missing:{" "}
+          {recurringGaps
+            .slice(0, 3)
+            .map((g) => gapLabel(g.gap).toLowerCase())
+            .join(", ")}
+          .
         </p>
       )}
       <Link
