@@ -144,6 +144,28 @@ describe("OpenAI-compatible provider", () => {
     });
   });
 
+  it("transcribes audio through the transcriptions endpoint", async () => {
+    const create = vi.fn().mockResolvedValue({ text: "We closed it." });
+    const provider = createOpenAICompatibleProvider("openrouter", {
+      chat: { completions: { create: vi.fn() } },
+      audio: { transcriptions: { create } },
+    } as never);
+    const text = await provider.transcribe!({
+      model: "openai/whisper-large-v3",
+      audio: new Uint8Array([1, 2, 3]),
+      format: "wav",
+    });
+    expect(text).toBe("We closed it.");
+    const body = create.mock.calls[0][0];
+    expect(body.model).toBe("openai/whisper-large-v3");
+    expect(body.file.name).toBe("speech.wav");
+
+    create.mockRejectedValueOnce(new Error("boom"));
+    await expect(
+      provider.transcribe!({ model: "m", audio: new Uint8Array([1]), format: "wav" }),
+    ).rejects.toBeInstanceOf(ModelError);
+  });
+
   it("sends images as data URLs", async () => {
     const create = vi.fn().mockResolvedValue({
       model: "m",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { MicButton } from "@/components/mic-button";
 import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
@@ -34,6 +35,7 @@ import {
   type BuilderResult,
 } from "./actions";
 import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
+import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
 
 type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";
@@ -713,6 +715,7 @@ function Composer({
   onCancel?: () => void;
 }) {
   const [text, setText] = useState(initial);
+  const [talking, setTalking] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const fieldId = useId();
 
@@ -721,7 +724,7 @@ function Composer({
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, []);
 
-  const canSubmit = !disabled && text.trim().length > 0;
+  const canSubmit = !disabled && !talking && text.trim().length > 0;
 
   return (
     <form
@@ -747,13 +750,22 @@ function Composer({
         }}
         rows={3}
         maxLength={MAX_ANSWER_LENGTH}
-        placeholder="Type your answer. Plain notes are fine."
+        placeholder="Type or tap Talk. Plain notes are fine."
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
       />
-      <div className="flex items-center justify-end gap-2">
-        <span className="mr-auto hidden text-xs text-slate-400 sm:inline">
-          Ctrl or ⌘ + Enter to send
-        </span>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="mr-auto flex flex-wrap items-center gap-3">
+          <MicButton
+            disabled={disabled}
+            onActiveChange={setTalking}
+            onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_ANSWER_LENGTH))}
+          />
+          {!talking && (
+            <span className="hidden text-xs text-slate-400 sm:inline">
+              Ctrl or ⌘ + Enter to send
+            </span>
+          )}
+        </div>
         {onCancel && (
           <button
             type="button"

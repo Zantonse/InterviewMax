@@ -18,7 +18,7 @@ const STATUS: Record<Exclude<ThemeStatus, "empty">, { label: string; dot: string
   strong: { label: "Strong", dot: "bg-green-400" },
   good_enough: { label: "Good enough", dot: "bg-white" },
   not_yet: { label: "Not yet", dot: "bg-amber-300" },
-  written: { label: "Written, not graded", dot: "bg-navy-300" },
+  written: { label: "Not graded", dot: "bg-navy-300" },
   in_progress: { label: "In progress", dot: "bg-navy-500" },
 };
 
@@ -85,6 +85,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
   );
 }
 
+// Only what's still missing for the highest target level.
 function LevelMixLine({
   mix,
   level,
@@ -92,40 +93,22 @@ function LevelMixLine({
   mix: ReturnType<typeof levelMix>;
   level: ReturnType<typeof targetLevel>;
 }) {
-  const graded = Object.values(mix.counts).reduce((a, b) => a + b, 0);
-  if (graded === 0 && mix.ungraded === 0) return null;
-  const ungraded =
-    mix.ungraded > 0
-      ? `${mix.ungraded} written ${mix.ungraded === 1 ? "story isn't" : "stories aren't"} graded yet.`
-      : null;
+  const missing = mix.needs.filter((need) => need.have < need.needed);
+  if (!level || missing.length === 0) return null;
 
   return (
     <div className="mt-4 rounded-xl bg-white/10 px-4 py-3 text-sm" data-testid="level-mix">
-      {level && mix.needs.length > 0 ? (
-        <>
-          <p className="font-semibold">Story levels for {levelLabel(level)} roles</p>
-          <ul className="mt-1 space-y-0.5">
-            {mix.needs.map((need) => {
-              const met = need.have >= need.needed;
-              return (
-                <li key={need.role} className="flex items-start gap-2">
-                  <span className={met ? "text-green-300" : "text-amber-300"} aria-hidden>
-                    {met ? "✓" : "●"}
-                  </span>
-                  <span>{needLabel(need)[0].toUpperCase() + needLabel(need).slice(1)}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      ) : (
-        <p className="font-semibold">Story levels</p>
-      )}
-      <p className="mt-1 text-navy-100">
-        {mix.counts["hands-on proof"]} hands-on, {mix.counts["team-level impact"]} team-level,{" "}
-        {mix.counts["organization-level impact"]} organization-level. Hands-on stories are good
-        proof at any level.{ungraded ? ` ${ungraded}` : ""}
-      </p>
+      <p className="font-semibold">For {levelLabel(level)} roles</p>
+      <ul className="mt-1 space-y-0.5">
+        {missing.map((need) => (
+          <li key={need.role} className="flex items-start gap-2">
+            <span className="text-amber-300" aria-hidden>
+              ●
+            </span>
+            <span>{needLabel(need)[0].toUpperCase() + needLabel(need).slice(1)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

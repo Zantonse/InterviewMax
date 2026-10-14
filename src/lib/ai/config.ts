@@ -46,6 +46,10 @@ export const STEP_MODELS = {
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
+  // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
+  // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).
+  transcribe: { provider: "openrouter", model: "openai/whisper-large-v3" },
 } as const satisfies Record<string, StepModel>;
 
 export type Step = keyof typeof STEP_MODELS;

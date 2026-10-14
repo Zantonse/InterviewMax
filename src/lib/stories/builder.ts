@@ -14,6 +14,7 @@ import {
   draftText as gradedText,
   gradeMessages,
   gradeSystem,
+  introFigures,
   parseGrade,
   lengthRange,
   quickChecks,
@@ -40,7 +41,7 @@ import {
   writeMessages,
   writeSystem,
 } from "./prompts";
-import { INTRO_LENGTH, storyParts, type StoryType } from "./story-types";
+import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
 import type { BuilderTargets } from "./targets";
 import type { ChatMessage } from "@/lib/ai/types";
@@ -113,6 +114,7 @@ export async function writeStory(
     script: (story) => draftText(story.parts, storyType),
     answers,
     maxWords: lengthRange(storyType).max,
+    ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
   });
 
   return {
@@ -202,6 +204,7 @@ export async function tailorIntro(
     script: (t) => tailoredText(t.parts),
     answers,
     maxWords: INTRO_LENGTH.max,
+    maxFigures: INTRO_MAX_FIGURES,
   });
   const draft: TailoredDraft = {
     parts: value.parts,
@@ -221,6 +224,8 @@ async function writeChecked<T>(input: {
   script: (value: T) => string;
   answers: string;
   maxWords: number;
+  // "Tell me about yourself": more figures than this are sent back to cut.
+  maxFigures?: number;
 }) {
   let result = await input.write();
   let value = input.parse(result.text);
@@ -229,11 +234,17 @@ async function writeChecked<T>(input: {
     const untraced = untracedNumbers(script, input.answers);
     const count = countWords(script);
     const over = count > input.maxWords;
-    if ((untraced.length === 0 && !over) || attempt >= 2) return { result, value, untraced };
+    const max = input.maxFigures;
+    const figures = max === undefined ? [] : introFigures(script);
+    const tooMany = max !== undefined && figures.length > max;
+    if ((untraced.length === 0 && !over && !tooMany) || attempt >= 2) {
+      return { result, value, untraced };
+    }
     result = await input.write({
       previous: result.text,
       untraced,
       ...(over ? { words: { count, max: input.maxWords } } : {}),
+      ...(tooMany ? { figures: { found: figures, max } } : {}),
     });
     value = input.parse(result.text);
   }

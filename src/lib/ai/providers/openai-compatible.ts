@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import {
   ModelError,
@@ -7,9 +7,13 @@ import {
   type GenerateResult,
   type ModelProvider,
   type ProviderId,
+  type TranscribeRequest,
 } from "../types";
 
-type OpenAILike = { chat: Pick<OpenAI["chat"], "completions"> };
+type OpenAILike = {
+  chat: Pick<OpenAI["chat"], "completions">;
+  audio?: Pick<OpenAI["audio"], "transcriptions">;
+};
 
 const DEFAULT_MAX_TOKENS = 16000;
 
@@ -65,6 +69,21 @@ export function createOpenAICompatibleProvider(
           outputTokens: response.usage?.completion_tokens ?? 0,
         },
       };
+    },
+
+    // Both APIs take OpenAI's /audio/transcriptions request; on OpenRouter the model slug picks
+    // the speech-to-text vendor (e.g. "openai/whisper-large-v3").
+    async transcribe(req: TranscribeRequest): Promise<string> {
+      if (!client.audio) throw new ModelError(`${label(id)} client has no audio API`, id);
+      try {
+        const result = await client.audio.transcriptions.create({
+          model: req.model,
+          file: await toFile(req.audio, `speech.${req.format}`, { type: `audio/${req.format}` }),
+        });
+        return result.text ?? "";
+      } catch (err) {
+        throw new ModelError(describe(id, err), id, err);
+      }
     },
   };
 }

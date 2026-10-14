@@ -3,10 +3,8 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
-import { DeleteStoryButton } from "@/components/delete-story-button";
 import { PrepPath } from "@/components/prep-path";
 import { QuestionList } from "@/components/question-list";
-import { WhyInterviewMax } from "@/components/why-interviewmax";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { builderStage } from "@/lib/stories/content";
@@ -25,58 +23,73 @@ export default function HomePage() {
       <AppHeader />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Your interview prep
-            </h1>
-            <p className="mt-1 max-w-2xl text-slate-600">
-              Build one story at a time, from your own answers and your own numbers.
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            Your interview prep
+          </h1>
+          {/* On wide screens the sidebar has this button. */}
           <Link
             href="/stories/new"
-            className="rounded-xl bg-navy-800 px-4 py-3 font-semibold text-white transition hover:bg-navy-900"
+            className="rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 lg:hidden"
           >
             Build a story
           </Link>
         </div>
 
-        <WhyInterviewMax compact className="mt-5" />
-
-        <Suspense fallback={<div className="mt-4 h-16 animate-pulse rounded-3xl bg-white/80" />}>
+        <Suspense fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}>
           <PrepPath />
         </Suspense>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-[auto_auto_1fr]">
-          <Card className="bg-navy-800 text-white md:col-span-2 md:row-span-3" title="Story bank">
-            <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
-              <StoryBank />
-            </Suspense>
-          </Card>
-          <Card title="Target jobs">
-            <Suspense fallback={<EmptyLine>…</EmptyLine>}>
-              <TargetJobs />
-            </Suspense>
-          </Card>
-          <Card title="Likely questions">
-            <Suspense fallback={<EmptyLine>…</EmptyLine>}>
-              <LikelyQuestions />
-            </Suspense>
-          </Card>
-          <Card title="Past interviews">
-            <Suspense fallback={<EmptyLine>…</EmptyLine>}>
-              <PastInterviews />
-            </Suspense>
-          </Card>
-        </div>
+        <Suspense fallback={null}>
+          <Dashboard />
+        </Suspense>
       </main>
     </div>
   );
 }
 
-async function StoryBank() {
-  const jobs = listJobs().catch(noJobs);
+// The story bank, and beside it the target jobs and their likely questions once there is a job.
+// Before the first job the prep path above asks for one, so the side column stays out of the way.
+async function Dashboard() {
+  let jobs: TargetJob[] | null;
+  try {
+    jobs = await listJobs();
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Home: loading target jobs failed", err);
+    jobs = null;
+  }
+  const bank = (
+    <Card className="bg-navy-800 text-white" title="Story bank">
+      <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
+        <StoryBank jobs={jobs ?? []} />
+      </Suspense>
+    </Card>
+  );
+  if (jobs?.length === 0) return <div className="mt-4">{bank}</div>;
+  return (
+    <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-3">
+      <div className="md:col-span-2">{bank}</div>
+      <div className="space-y-4">
+        {jobs ? (
+          <>
+            <LikelyQuestions jobs={jobs} />
+            <TargetJobs jobs={jobs} />
+          </>
+        ) : (
+          <Card title="Target jobs">
+            <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>
+          </Card>
+        )}
+        <Suspense fallback={null}>
+          <PastInterviews />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
   let stories: StoryRecord[];
   try {
     stories = await listStories();
@@ -93,33 +106,25 @@ async function StoryBank() {
   }
   return (
     <>
-      <p className="text-5xl font-extrabold" data-testid="story-count">
-        {stories.length}
+      <p className="-mt-1 flex items-baseline gap-2">
+        <span className="text-4xl font-extrabold" data-testid="story-count">
+          {stories.length}
+        </span>
+        <span className="text-navy-100">{stories.length === 1 ? "story" : "stories"}</span>
       </p>
-      <p className="mt-1 text-navy-100">{stories.length === 1 ? "story" : "stories"} so far</p>
-      <CoverageGrid stories={stories} jobs={await jobs} />
-      {stories.length === 0 ? (
-        <p className="mt-6 max-w-md text-navy-50">
-          Every story you build is kept here. &ldquo;Tell me about yourself&rdquo; is a good first
-          one: it&apos;s how almost every interview opens.
-        </p>
-      ) : (
+      <CoverageGrid stories={stories} jobs={jobs} />
+      {stories.length > 0 && (
         <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
           {stories.map((story) => {
             const drafted =
               builderStage(story.content, getStoryType(story.storyType)) === "drafted";
             return (
-              <li key={story.id} className="flex items-center gap-1 pr-2">
+              <li key={story.id}>
                 <Link
                   href={`/stories/${story.id}`}
-                  className="flex min-w-0 flex-1 items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
+                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">{story.title}</span>
-                    <span className="block truncate text-sm text-navy-100">
-                      {getStoryType(story.storyType)?.label ?? "Story"}
-                    </span>
-                  </span>
+                  <span className="min-w-0 truncate font-semibold">{story.title}</span>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
                       drafted ? "bg-white text-navy-900" : "bg-navy-900/60 text-navy-50"
@@ -128,7 +133,6 @@ async function StoryBank() {
                     {drafted ? "Draft written" : "In progress"}
                   </span>
                 </Link>
-                <DeleteStoryButton storyId={story.id} title={story.title} variant="compact" />
               </li>
             );
           })}
@@ -138,33 +142,9 @@ async function StoryBank() {
   );
 }
 
-async function TargetJobs() {
-  let jobs: TargetJob[];
-  try {
-    jobs = await listJobs();
-  } catch (err) {
-    unstable_rethrow(err);
-    console.error("Home: loading target jobs failed", err);
-    return <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>;
-  }
-  if (jobs.length === 0) {
-    return (
-      <>
-        <EmptyLine>
-          Paste in a job you&apos;re going for, and I&apos;ll show you the questions they&apos;re
-          likely to ask.
-        </EmptyLine>
-        <Link
-          href="/jobs"
-          className="mt-4 inline-block rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white hover:bg-navy-900"
-        >
-          Add a target job
-        </Link>
-      </>
-    );
-  }
+function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
   return (
-    <>
+    <Card title="Target jobs">
       <ul className="space-y-2" data-testid="home-jobs">
         {jobs.map((job) => (
           <li key={job.id}>
@@ -177,43 +157,24 @@ async function TargetJobs() {
           </li>
         ))}
       </ul>
-      <Link
-        href="/jobs"
-        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
-      >
-        See what to build first →
-      </Link>
-    </>
+    </Card>
   );
 }
 
-async function LikelyQuestions() {
-  let jobs: TargetJob[];
+async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
+  const job = jobs.find((j) => j.likelyQuestions);
+  // Until one job has its questions, the prep path's next step is predicting them.
+  if (!job?.likelyQuestions) return null;
   let stories: StoryRecord[];
   try {
-    [jobs, stories] = await Promise.all([listJobs(), listStories()]);
+    stories = await listStories();
   } catch (err) {
     unstable_rethrow(err);
-    console.error("Home: loading likely questions failed", err);
-    return <EmptyLine>Your questions couldn&apos;t be loaded right now.</EmptyLine>;
-  }
-  if (jobs.length === 0) return <EmptyLine>Questions appear once you add a target job.</EmptyLine>;
-  const job = jobs.find((j) => j.likelyQuestions);
-  if (!job?.likelyQuestions) {
-    return (
-      <>
-        <EmptyLine>See the questions {jobs[0].title} is most likely to ask.</EmptyLine>
-        <Link
-          href={`/jobs/${jobs[0].id}`}
-          className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
-        >
-          Predict them →
-        </Link>
-      </>
-    );
+    console.error("Home: loading stories for likely questions failed", err);
+    stories = [];
   }
   return (
-    <>
+    <Card title="Likely questions">
       <p className="mb-3 text-sm text-slate-500">For {job.title}</p>
       <QuestionList questions={job.likelyQuestions.questions} stories={stories} limit={3} compact />
       <Link
@@ -222,10 +183,11 @@ async function LikelyQuestions() {
       >
         All {job.likelyQuestions.questions.length} questions →
       </Link>
-    </>
+    </Card>
   );
 }
 
+// Only shown once past interviews point at something to fix; the sidebar links to the page itself.
 async function PastInterviews() {
   let transcripts: Transcript[];
   try {
@@ -233,50 +195,22 @@ async function PastInterviews() {
   } catch (err) {
     unstable_rethrow(err);
     console.error("Home: loading transcripts failed", err);
-    return <EmptyLine>Your past interviews couldn&apos;t be loaded right now.</EmptyLine>;
-  }
-  if (transcripts.length === 0) {
-    return (
-      <>
-        <EmptyLine>
-          Had an interview already? Upload the transcript and I&apos;ll show what they probed for
-          and how your answers landed.
-        </EmptyLine>
-        <Link
-          href="/transcripts"
-          className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
-        >
-          Add a transcript →
-        </Link>
-      </>
-    );
+    return null;
   }
   const { recurringGaps } = summarizeTranscripts(transcripts);
+  if (recurringGaps.length === 0) return null;
   return (
-    <>
-      <p className="text-slate-700">
-        {transcripts.length} past {transcripts.length === 1 ? "interview" : "interviews"} added.
-      </p>
-      {recurringGaps.length > 0 && (
-        <p className="mt-2 text-sm text-slate-500">
-          Your answers keep missing: {recurringGaps.slice(0, 3).map((g) => gapLabel(g.gap).toLowerCase()).join(", ")}.
-        </p>
-      )}
-      <Link
-        href="/transcripts"
-        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
-      >
-        See what they looked for →
+    <Card title="Past interviews">
+      <Link href="/transcripts" className="block text-slate-700 hover:text-navy-800">
+        Your answers keep missing{" "}
+        {recurringGaps
+          .slice(0, 3)
+          .map((g) => gapLabel(g.gap).toLowerCase())
+          .join(", ")}
+        . →
       </Link>
-    </>
+    </Card>
   );
-}
-
-// The coverage grid still shows without the target jobs; only the level mix needs them. A
-// signed-out redirect comes through the stories load.
-function noJobs(err: unknown): TargetJob[] {
-  console.error("Home: loading target jobs for the level mix failed", err);
-  return [];
 }
 
 function Card({
