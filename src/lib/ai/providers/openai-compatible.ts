@@ -1,4 +1,4 @@
-import OpenAI, { toFile } from "openai";
+import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import {
   ModelError,
@@ -7,13 +7,9 @@ import {
   type GenerateResult,
   type ModelProvider,
   type ProviderId,
-  type TranscribeRequest,
 } from "../types";
 
-type OpenAILike = {
-  chat: Pick<OpenAI["chat"], "completions">;
-  audio?: Pick<OpenAI["audio"], "transcriptions">;
-};
+type OpenAILike = { chat: Pick<OpenAI["chat"], "completions"> };
 
 const DEFAULT_MAX_TOKENS = 16000;
 
@@ -70,21 +66,6 @@ export function createOpenAICompatibleProvider(
         },
       };
     },
-
-    // Both APIs take OpenAI's /audio/transcriptions request; on OpenRouter the model slug picks
-    // the speech-to-text vendor (e.g. "elevenlabs/scribe-v2").
-    async transcribe(req: TranscribeRequest): Promise<string> {
-      if (!client.audio) throw new ModelError(`${label(id)} client has no audio API`, id);
-      try {
-        const result = await client.audio.transcriptions.create({
-          model: req.model,
-          file: await toFile(req.audio, `speech.${req.format}`, { type: `audio/${req.format}` }),
-        });
-        return result.text ?? "";
-      } catch (err) {
-        throw new ModelError(describe(id, err), id, err);
-      }
-    },
   };
 }
 
@@ -101,10 +82,12 @@ function toMessage(m: ChatMessage): ChatCompletionMessageParam {
     content: m.content.map((p) =>
       p.type === "text"
         ? { type: "text" as const, text: p.text }
-        : {
-            type: "image_url" as const,
-            image_url: { url: `data:${p.mediaType};base64,${p.data}` },
-          },
+        : p.type === "audio"
+          ? { type: "input_audio" as const, input_audio: { data: p.data, format: p.format } }
+          : {
+              type: "image_url" as const,
+              image_url: { url: `data:${p.mediaType};base64,${p.data}` },
+            },
     ),
   };
 }

@@ -6,7 +6,7 @@ import type { TailoredIntro } from "@/lib/stories/content";
 import { CHECKS, countWords } from "@/lib/stories/grading";
 import { TAILORED_PARTS } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH, tailoredChecks } from "@/lib/stories/tailored";
-import { appendSpoken } from "@/lib/voice/text";
+import { appendSpoken } from "@/lib/voice/prompts";
 import { writeTailoredIntro } from "./about-me-actions";
 
 // "Tell me about yourself" for this job, company first: why this company, in the user's words,

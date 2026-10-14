@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendSpoken, cleanTranscript } from "./text";
+import { appendSpoken, cleanTranscript } from "./prompts";
 import { SAMPLE_RATE, downsample, encodeWav, isWav, level } from "./wav";
 
 describe("encodeWav", () => {
@@ -49,11 +49,15 @@ describe("cleanTranscript", () => {
     expect(cleanTranscript("  We cut churn by 30%.  ")).toBe("We cut churn by 30%.");
   });
 
-  it("drops sound notes", () => {
-    expect(cleanTranscript("(laughs) I led the rollout [background noise].")).toBe(
-      "I led the rollout.",
-    );
+  it("drops labels, fences and wrapping quotes", () => {
+    expect(cleanTranscript('Transcript: "I led the rollout."')).toBe("I led the rollout.");
+    expect(cleanTranscript("```\nI led the rollout.\n```")).toBe("I led the rollout.");
+  });
+
+  it("turns not-speech notes into nothing", () => {
     expect(cleanTranscript("[silence]")).toBe("");
+    expect(cleanTranscript("(No speech detected.)")).toBe("");
+    expect(cleanTranscript("There is no speech in this recording.")).toBe("");
   });
 });
 

@@ -16,7 +16,7 @@ import {
   roleVocabulary,
 } from "@/lib/roles/role-map";
 import { MAX_ANSWER_LENGTH, getStoryType } from "@/lib/stories/story-types";
-import { appendSpoken } from "@/lib/voice/text";
+import { appendSpoken } from "@/lib/voice/prompts";
 import {
   type RoleResult,
   createRoleProfile,

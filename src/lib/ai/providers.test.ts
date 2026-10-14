@@ -74,6 +74,18 @@ describe("Anthropic provider", () => {
     ]);
   });
 
+  it("rejects audio without calling the API", async () => {
+    const create = vi.fn();
+    const provider = createAnthropicProvider({ messages: { create } } as never);
+    await expect(
+      provider.generate({
+        model: "m",
+        messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
+      }),
+    ).rejects.toBeInstanceOf(ModelError);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("maps refusals and wraps errors", async () => {
     const refusing = createAnthropicProvider({
       messages: {
@@ -144,26 +156,24 @@ describe("OpenAI-compatible provider", () => {
     });
   });
 
-  it("transcribes audio through the transcriptions endpoint", async () => {
-    const create = vi.fn().mockResolvedValue({ text: "We closed it." });
-    const provider = createOpenAICompatibleProvider("openrouter", {
-      chat: { completions: { create: vi.fn() } },
-      audio: { transcriptions: { create } },
-    } as never);
-    const text = await provider.transcribe!({
-      model: "elevenlabs/scribe-v2",
-      audio: new Uint8Array([1, 2, 3]),
-      format: "wav",
+  it("sends audio as input_audio", async () => {
+    const create = vi.fn().mockResolvedValue({
+      model: "m",
+      choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
     });
-    expect(text).toBe("We closed it.");
-    const body = create.mock.calls[0][0];
-    expect(body.model).toBe("elevenlabs/scribe-v2");
-    expect(body.file.name).toBe("speech.wav");
-
-    create.mockRejectedValueOnce(new Error("boom"));
-    await expect(
-      provider.transcribe!({ model: "m", audio: new Uint8Array([1]), format: "wav" }),
-    ).rejects.toBeInstanceOf(ModelError);
+    const provider = createOpenAICompatibleProvider("openrouter", {
+      chat: { completions: { create } },
+    } as never);
+    await provider.generate({
+      model: "m",
+      messages: [{ role: "user", content: [{ type: "audio", format: "wav", data: "QUJD" }] }],
+    });
+    expect(create.mock.calls[0][0].messages).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_audio", input_audio: { data: "QUJD", format: "wav" } }],
+      },
+    ]);
   });
 
   it("sends images as data URLs", async () => {

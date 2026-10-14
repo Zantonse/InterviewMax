@@ -1,7 +1,7 @@
 import "server-only";
 import { STEP_MODELS, type Step, type StepModel } from "./config";
 import { getProvider } from "./registry";
-import { ModelError, type ChatMessage, type GenerateResult } from "./types";
+import type { ChatMessage, GenerateResult } from "./types";
 
 export type { ChatMessage, GenerateResult, ProviderId } from "./types";
 export { ModelError } from "./types";
@@ -20,17 +20,4 @@ export async function generateForStep(
     messages: input.messages,
     maxTokens: input.maxTokens ?? cfg.maxTokens,
   });
-}
-
-// Writes down speech for an app step (mic mode), using the speech-to-text model named in config.ts.
-export async function transcribeForStep(step: Step, audio: Uint8Array): Promise<string> {
-  const cfg: StepModel = STEP_MODELS[step];
-  const provider = getProvider(cfg.provider);
-  if (!provider.transcribe) {
-    throw new ModelError(
-      `${cfg.provider} can't transcribe audio; use openrouter or openai.`,
-      cfg.provider,
-    );
-  }
-  return provider.transcribe({ model: cfg.model, audio, format: "wav" });
 }
