@@ -24,6 +24,7 @@ import {
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
+import { readPostingPdf } from "@/lib/jobs/read-posting-pdf";
 import { readResumeFile } from "@/lib/jobs/resume";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
@@ -42,6 +43,22 @@ export async function fetchJobPosting(
     unstable_rethrow(err);
     console.error("Target jobs: fetching a posting failed", err);
     return { ok: false, error: err instanceof Error ? err.message : "That posting couldn't be read." };
+  }
+}
+
+// Reads a posting saved as PDF so the add-job form can fill itself in. Nothing is saved yet.
+export async function readJobPostingPdf(
+  formData: FormData,
+): Promise<{ ok: true; posting: FetchedPosting } | { ok: false; error: string }> {
+  try {
+    await getCurrentUser();
+    const file = formData.get("file");
+    if (!(file instanceof File)) return { ok: false, error: "Choose a PDF first." };
+    return { ok: true, posting: await readPostingPdf(file) };
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Target jobs: reading a posting PDF failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "That PDF couldn't be read." };
   }
 }
 
