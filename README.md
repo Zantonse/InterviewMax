@@ -13,6 +13,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 - **Target jobs** (`/jobs`). Add a job from a link to its posting, a PDF, a saved web page (.html/.mhtml), screenshots, or typed text; any one is enough. LinkedIn, Indeed and Glassdoor block link fetching, so the form asks for a paste there. Each job gets its role level, likely questions (themed, informed by interview reports you paste), and a read of how it compares with your resume and other jobs.
 - **Tell me about yourself.** Filled in from a LinkedIn profile PDF or Word resume, with "Map my role" for people who struggle to describe their job, then tailored per target job: company first, one proof point, three beats, under 90 seconds.
 - **Story builder** (`/stories/new`, `/stories/[id]`). Pick a story type, answer scripted questions, get gentle follow-ups that push for numbers and specifics, and get the story written from your own answers as a spoken script. "Make it stronger" asks more. Stories can be deleted to start over.
+- **Story finder** (`/stories/find`). For a blank page: one model call reads your resume, LinkedIn profile and Map my role answers (or three quick answers about recent work, with no resume) and suggests six to ten story moments by theme, empty themes first. Each quotes the line it comes from, and code drops any whose quote or numbers aren't in your text. One tap starts the builder with the moment filled in as the first answer, which only counts once you save it.
 - **Story grading.** A different model vendor grades each story (context, ownership, reflection, level) and checks its content against your target jobs, shown in its own column with "What's working" and "To raise it".
 - **Story bank and coverage grid** (home). Which question themes your stories cover, with empty themes starting the missing story, plus the mix of team- and org-level stories your target level needs.
 - **Your numbers** (`/numbers`). Per role, the numbers a strong story needs and where to find them; the story builder uses what you fill in.
@@ -41,11 +42,12 @@ npm run dev                  # http://localhost:3000
 
 ## Project layout
 
-- `src/app` – pages: `/login`, `/auth/confirm` and `/auth/continue` (email sign-in), `/` (home, prep path and story bank), `/stories/new` (pick a story type), `/stories/[id]` (the story builder, with `/stories/[id]/map` for Map my role), `/jobs`, `/jobs/new` and `/jobs/[id]` (target jobs, resume, likely questions, tailored About me), `/numbers` (numbers checklist), `/transcripts` and `/transcripts/[id]` (past interviews)
+- `src/app` – pages: `/login`, `/auth/confirm` and `/auth/continue` (email sign-in), `/` (home, prep path and story bank), `/stories/new` (pick a story type), `/stories/find` (story finder), `/stories/[id]` (the story builder, with `/stories/[id]/map` for Map my role), `/jobs`, `/jobs/new` and `/jobs/[id]` (target jobs, resume, likely questions, tailored About me), `/numbers` (numbers checklist), `/transcripts` and `/transcripts/[id]` (past interviews)
 - `src/components` – the sidebar (`nav-shell.tsx`), coverage grid, prep path and other shared pieces
 - `src/lib/jobs` – target jobs, the resume, reading postings from links, PDFs, web pages and screenshots, and the one call that reads them together
 - `src/lib/questions` – the ten question themes and templates, the likely-questions call, and coverage (which story answers each question)
 - `src/lib/stories` – story types, the scripted questions, the model prompts, grading, fit against target jobs, and the number check
+- `src/lib/finder` – the story finder: the call that suggests moments and the checks on its quotes
 - `src/lib/roles` – Map my role
 - `src/lib/numbers` – the numbers checklist per role family
 - `src/lib/transcripts` – reading and reviewing past interview transcripts
@@ -98,8 +100,9 @@ Keys are read from server environment variables only and never reach the browser
    | `supabase/migrations/20261014000000_numbers_checklist.sql` | The numbers checklist on the profile | Your numbers (#25) |
    | `supabase/migrations/20261014010000_intake_assessment.sql` | The intake assessment on the profile | Journey check |
    | `supabase/migrations/20261014020000_interview_date.sql` | The next interview date on each target job | Prep plan |
+   | `supabase/migrations/20261014030000_story_finder.sql` | Story finder suggestions on the profile | Story finder |
 
-   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`, `prep-plan/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
+   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`, `prep-plan/run-in-supabase.sql`, `story-finder/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
 4. Authentication → URL Configuration: set **Site URL** to the production URL and add these **Redirect URLs**:
    - `http://localhost:3000/**`
    - `https://*-<your-vercel-team-slug>.vercel.app/**` (preview deploys)

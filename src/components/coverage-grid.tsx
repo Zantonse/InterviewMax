@@ -79,6 +79,15 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
           ))}
         </ul>
       </form>
+      {covered < themes.length && (
+        <Link
+          href="/stories/find"
+          className="mt-3 inline-block text-sm font-semibold text-amber-200 hover:underline"
+          data-testid="find-stories"
+        >
+          Not sure what to tell? Find stories in your resume →
+        </Link>
+      )}
 
       <LevelMixLine mix={mix} level={level} />
     </section>
