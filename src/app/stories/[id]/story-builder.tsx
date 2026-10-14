@@ -62,6 +62,7 @@ export function StoryBuilder({
   hasResume = false,
   targets,
   afterStory,
+  nextUp,
   menu,
   beside,
 }: {
@@ -77,6 +78,8 @@ export function StoryBuilder({
   targets?: BuilderTargets;
   // Shown under the story on the Story & score view.
   afterStory?: React.ReactNode;
+  // What to do next, shown under the story once it's written.
+  nextUp?: React.ReactNode;
   // Story-level actions, such as delete, in the ⋯ menu.
   menu?: React.ReactNode;
   // Shown beside the chat on the Build view, under the answer checklist.
@@ -260,6 +263,16 @@ export function StoryBuilder({
               className="flex flex-1 flex-col gap-4 overflow-y-scroll overscroll-contain p-5 sm:p-6"
               data-testid="chat"
             >
+              {!content.imported && !content.linkedin && (
+                <li className="text-sm text-slate-500" data-testid="builder-intro">
+                  How this works: answer {questions.length} short questions in plain notes, typed
+                  or spoken. Then I&apos;ll ask a few follow-ups where it&apos;s thin and write
+                  {storyType?.format === "intro"
+                    ? " your answer from your words, ready to shape for each target job."
+                    : " the story from your words, ready to grade."}
+                </li>
+              )}
+
               {content.imported && (
                 <li className="flex flex-col gap-2">
                   <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
@@ -527,6 +540,7 @@ export function StoryBuilder({
                 </div>
               )}
             </StoryPanel>
+            {content.draft && nextUp}
             {afterStory}
           </div>
           <EvaluationPanel

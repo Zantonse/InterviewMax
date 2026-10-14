@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { QuestionList } from "@/components/question-list";
+import { StepStrip } from "@/components/step-strip";
+import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
 import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
@@ -47,6 +49,12 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   const intros = stories.filter((s) => s.storyType === REQUIRED_STORY_TYPE_ID);
   const intro = intros.find((s) => hasDraft(s.content)) ?? intros[0];
   const introReady = Boolean(intro && builderStage(intro.content, introType) !== "core");
+  const steps = jobSteps({
+    job,
+    company: job.company || "this job",
+    intro: intro && { content: intro.content, ready: introReady },
+    stories,
+  });
 
   return (
     <>
@@ -55,10 +63,14 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         {job.company && <span className="font-bold text-slate-500"> at {job.company}</span>}
       </h1>
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
+      <StepStrip label={`Your prep for ${job.title}`} steps={steps} />
 
-      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <section
+            id="questions"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-navy-800">
               Likely questions
             </h2>
@@ -154,7 +166,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </div>
 
         <div className="space-y-4">
-          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <section
+            id="level"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-navy-800">
               Role level
             </h2>

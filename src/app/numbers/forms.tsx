@@ -9,6 +9,8 @@ const INPUT =
   "w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-navy-700 focus:outline-none";
 const PRIMARY =
   "rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60";
+const SECONDARY =
+  "rounded-xl px-4 py-2.5 font-semibold text-navy-800 ring-1 ring-navy-800/30 transition hover:bg-navy-50";
 
 export function RoleForm({
   families,
@@ -75,6 +77,9 @@ export function RoleForm({
   );
 }
 
+// The numbers to fill in. Someone starting fresh gets them one at a time, with where to find each,
+// so a long list never looks like homework; anyone can switch to the whole list. Every input stays
+// in the form either way, so one save keeps them all.
 export function NumbersForm({
   items,
   values,
@@ -83,13 +88,52 @@ export function NumbersForm({
   values: Record<string, string>;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveNumbers, null);
+  const [guided, setGuided] = useState(() => !items.some((item) => values[item.id]?.trim()));
+  const [step, setStep] = useState(0);
   const id = useId();
+  const last = step === items.length - 1;
+
+  function go(to: number) {
+    setStep(to);
+    // Keeps typing flowing: the next box takes the cursor.
+    requestAnimationFrame(() => document.getElementById(`${id}-${items[to]?.id}`)?.focus());
+  }
+
   return (
     <form action={action} data-testid="numbers-form">
+      {guided && (
+        <div className="mb-4" data-testid="numbers-wizard">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="font-semibold text-navy-800" data-testid="numbers-step">
+              Number {step + 1} of {items.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setGuided(false)}
+              className="font-medium text-slate-500 hover:text-navy-800"
+            >
+              Show all at once
+            </button>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden>
+            <div
+              className="h-full rounded-full bg-amber-400 transition-all"
+              style={{ width: `${((step + 1) / items.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
       <ol className="flex flex-col divide-y divide-slate-100">
-        {items.map((item) => (
-          <li key={item.id} className="py-4 first:pt-0" data-testid="number-item">
-            <label className="block font-semibold text-slate-900" htmlFor={`${id}-${item.id}`}>
+        {items.map((item, i) => (
+          <li
+            key={item.id}
+            className={guided ? (i === step ? "pb-2" : "hidden") : "py-4 first:pt-0"}
+            data-testid="number-item"
+          >
+            <label
+              className={`block font-semibold text-slate-900 ${guided ? "text-lg" : ""}`}
+              htmlFor={`${id}-${item.id}`}
+            >
               {item.label}
             </label>
             <p className="mt-0.5 text-sm text-slate-600">{item.why}</p>
@@ -102,15 +146,49 @@ export function NumbersForm({
               defaultValue={values[item.id] ?? ""}
               maxLength={MAX_VALUE_LENGTH}
               placeholder="As you'd say it. Add “about” if it's an estimate."
+              onKeyDown={(e) => {
+                // In the one-at-a-time view, Enter moves on rather than saving.
+                if (guided && e.key === "Enter" && !last) {
+                  e.preventDefault();
+                  go(step + 1);
+                }
+              }}
               className={`mt-2 ${INPUT}`}
             />
           </li>
         ))}
       </ol>
       <div className="sticky bottom-0 -mx-5 mt-2 flex flex-wrap items-center gap-3 bg-white/95 px-5 py-3 sm:-mx-6 sm:px-6">
-        <button type="submit" disabled={pending} className={PRIMARY}>
-          {pending ? "Saving…" : "Save my numbers"}
-        </button>
+        {guided && !last ? (
+          <>
+            <button type="button" onClick={() => go(step + 1)} className={PRIMARY}>
+              Next
+            </button>
+            {step > 0 && (
+              <button type="button" onClick={() => go(step - 1)} className={SECONDARY}>
+                Back
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={pending}
+              className="text-sm font-medium text-slate-500 hover:text-navy-800 disabled:opacity-60"
+            >
+              {pending ? "Saving…" : "Save and finish later"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="submit" disabled={pending} className={PRIMARY}>
+              {pending ? "Saving…" : "Save my numbers"}
+            </button>
+            {guided && step > 0 && (
+              <button type="button" onClick={() => go(step - 1)} className={SECONDARY}>
+                Back
+              </button>
+            )}
+          </>
+        )}
         {state?.error && <ErrorLine>{state.error}</ErrorLine>}
         {state?.notice && !pending && (
           <p className="text-sm font-medium text-emerald-800" role="status">

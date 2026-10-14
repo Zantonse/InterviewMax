@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
@@ -38,6 +39,14 @@ export default function JobsPage() {
           Paste in the jobs you&apos;re going for. I&apos;ll read them with your resume, find what
           they share and where each differs, and tell you which stories to build first.
         </p>
+        <PageGuide
+          id="jobs"
+          steps={[
+            "Add each job you're going for: a link, a file or the pasted posting.",
+            "Optionally add your resume, so I can see what your history already shows.",
+            "Open a job for its likely questions, then build the stories under “Build these stories first”.",
+          ]}
+        />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <JobsContent />
         </Suspense>
