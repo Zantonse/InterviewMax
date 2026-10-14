@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageGuide } from "@/components/page-guide";
 import { type TargetJob, listJobs } from "@/lib/jobs/data";
 import {
   type NumbersChecklist,
@@ -38,6 +39,14 @@ export default function NumbersPage() {
           and where to find each. Fill in what you can; your stories will use them, and I&apos;ll
           never make one up.
         </p>
+        <PageGuide
+          id="numbers"
+          steps={[
+            "Confirm your role, and I'll list the numbers interviewers expect from it.",
+            "Fill them in one at a time. Skip any you don't know; rough is fine if you say “about”.",
+            "Your stories use them, and the builder shows which ones each story needs.",
+          ]}
+        />
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <NumbersContent />
         </Suspense>

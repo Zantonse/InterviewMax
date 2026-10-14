@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
 import { listJobs } from "@/lib/jobs/data";
 import { getTheme } from "@/lib/questions/themes";
@@ -31,6 +32,14 @@ export default function TranscriptsPage() {
           asked and probed for and how your answers landed, quoting the transcript for every point,
           and use it to sharpen your likely questions and your stories.
         </p>
+        <PageGuide
+          id="transcripts"
+          steps={[
+            "Upload or paste a transcript, and pick the target job it was for if there is one.",
+            "I review it: each question asked, what they probed for, and how your answer landed.",
+            "Build the stories under “Stories to work on”, then predict that job's questions again.",
+          ]}
+        />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <TranscriptsContent />
         </Suspense>
