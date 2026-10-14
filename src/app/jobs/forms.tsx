@@ -39,8 +39,19 @@ const SOURCE_LABEL: Record<Source, string> = {
   screenshot: "screenshots",
 };
 
+// Adding a target job, in two steps: find the posting (a link, a file or pasted text, any one is
+// enough), then check what was read and add it.
+type Method = "link" | "file" | "paste";
+const METHODS: { id: Method; label: string }[] = [
+  { id: "link", label: "Paste a link" },
+  { id: "file", label: "Upload a file" },
+  { id: "paste", label: "Paste the text" },
+];
+
 export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
+  const [step, setStep] = useState<"find" | "check">("find");
+  const [method, setMethod] = useState<Method>("link");
   const [link, setLink] = useState("");
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -67,6 +78,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
       if (result.posting.company) setCompany(result.posting.company);
       setDescription(result.posting.description);
       setFetched(from);
+      setStep("check");
     });
   }
 
@@ -90,119 +102,243 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
     });
   }
 
+  function choose(next: Method) {
+    setMethod(next);
+    setFetchError(null);
+  }
+
   return (
-    <form action={action} className="space-y-4" data-testid="add-job-form">
-      <div>
-        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-link`}>
-          Link to the posting <span className="font-normal text-slate-500">(optional)</span>
-        </label>
-        <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-          <input
-            id={`${id}-link`}
-            type="url"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                fetchLink();
-              }
-            }}
-            placeholder="https://jobs.lever.co/…"
-            className={INPUT.replace("mt-1 ", "")}
-          />
-          <button
-            type="button"
-            onClick={fetchLink}
-            disabled={fetching || !link.trim()}
-            className={`${SECONDARY} shrink-0`}
+    <form action={action} className="space-y-5" data-testid="add-job-form">
+      <ol className="flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold" aria-label="Steps">
+        <WizardStep n={1} current={step === "find"} done={step === "check"}>
+          Find the posting
+        </WizardStep>
+        <WizardStep n={2} current={step === "check"} done={false}>
+          Check it and add the job
+        </WizardStep>
+      </ol>
+
+      {step === "find" && (
+        <div className="space-y-4">
+          <div
+            role="radiogroup"
+            aria-label="How to add the posting"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-3"
           >
-            {fetching && fetchingFrom === "link" ? "Fetching…" : "Fetch posting"}
-          </button>
+            {METHODS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={method === m.id}
+                onClick={() => choose(m.id)}
+                className={`rounded-xl px-4 py-3 text-left font-semibold ring-1 transition ${
+                  method === m.id
+                    ? "bg-navy-800 text-white ring-navy-800"
+                    : "bg-white text-navy-900 ring-slate-300 hover:bg-navy-50"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {method === "link" && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-link`}>
+                Link to the posting
+              </label>
+              <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                <input
+                  id={`${id}-link`}
+                  type="url"
+                  value={link}
+                  autoFocus
+                  onChange={(e) => setLink(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      fetchLink();
+                    }
+                  }}
+                  placeholder="https://jobs.lever.co/…"
+                  className={INPUT.replace("mt-1 ", "")}
+                />
+                <button
+                  type="button"
+                  onClick={fetchLink}
+                  disabled={fetching || !link.trim()}
+                  className={`${PRIMARY} shrink-0`}
+                >
+                  {fetching ? "Reading the posting…" : "Next"}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Works best with {SUPPORTED_SITES.join(", ")} and most company career pages.
+                LinkedIn, Indeed and Glassdoor block links: upload the posting instead.
+              </p>
+            </div>
+          )}
+
+          {method === "file" && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-file`}>
+                A PDF, saved web page or screenshots of the posting
+              </label>
+              <input
+                id={`${id}-file`}
+                type="file"
+                multiple
+                accept={POSTING_FILE_ACCEPT}
+                disabled={fetching}
+                onChange={(e) => {
+                  uploadFiles(Array.from(e.target.files ?? []));
+                  e.target.value = "";
+                }}
+                className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                {fetching
+                  ? `Reading the ${SOURCE_LABEL[fetchingFrom]}…`
+                  : "On the posting, use your browser's Print, then Save as PDF; or Save page as; or take screenshots of the whole posting (pick them all at once). Works for LinkedIn, Indeed and Glassdoor."}
+              </p>
+            </div>
+          )}
+
+          {method === "paste" && (
+            <div>
+              <label
+                className="block text-sm font-semibold text-slate-700"
+                htmlFor={`${id}-paste`}
+              >
+                The whole posting
+                <textarea
+                  id={`${id}-paste`}
+                  rows={10}
+                  autoFocus
+                  maxLength={MAX_DESCRIPTION_LENGTH}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Paste everything: the responsibilities and requirements are what I read."
+                  className={INPUT}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setFetched(null);
+                  setStep("check");
+                }}
+                disabled={!description.trim()}
+                className={`${PRIMARY} mt-3`}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
         </div>
-        <p className="mt-1 text-xs text-slate-500">
-          Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn,
-          Indeed and Glassdoor block links: save the posting as a file and upload it below, or
-          paste the text.
-        </p>
-      </div>
-      <div>
-        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-file`}>
-          Or upload the posting as a PDF, web page or screenshots{" "}
-          <span className="font-normal text-slate-500">(optional)</span>
-        </label>
-        <input
-          id={`${id}-file`}
-          type="file"
-          multiple
-          accept={POSTING_FILE_ACCEPT}
-          disabled={fetching}
-          onChange={(e) => {
-            uploadFiles(Array.from(e.target.files ?? []));
-            e.target.value = "";
-          }}
-          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          {fetching && fetchingFrom !== "link"
-            ? `Reading the ${SOURCE_LABEL[fetchingFrom]}…`
-            : "On the posting, use your browser's Print, then Save as PDF; or Save page as; or take screenshots of the whole posting (pick them all at once). Works for LinkedIn, Indeed and Glassdoor."}
-        </p>
-      </div>
-      {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
-      {fetched && (
-        <p className="text-sm font-medium text-navy-800" role="status">
-          {fetched === "screenshot"
-            ? "Read from your screenshots. Check each line against the posting, then add the job."
-            : `Filled in from the ${SOURCE_LABEL[fetched]}. Check it over, then add the job.`}
-        </p>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
-          Job title
-          <input
-            id={`${id}-title`}
-            name="title"
-            required
-            maxLength={MAX_TITLE_LENGTH}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Senior Solutions Engineer"
-            className={INPUT}
-          />
-        </label>
-        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-company`}>
-          Company <span className="font-normal text-slate-500">(optional)</span>
-          <input
-            id={`${id}-company`}
-            name="company"
-            maxLength={MAX_TITLE_LENGTH}
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="e.g. Acme"
-            className={INPUT}
-          />
-        </label>
-      </div>
-      <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-description`}>
-        The job posting
-        <textarea
-          id={`${id}-description`}
-          name="description"
-          required
-          rows={10}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Paste the whole posting, or fill it in from a link or file above: the responsibilities and requirements are what I read."
-          className={INPUT}
-        />
-      </label>
-      {state?.error && <ErrorLine>{state.error}</ErrorLine>}
-      <button type="submit" disabled={pending || fetching} className={PRIMARY}>
-        {pending ? "Reading the posting and predicting your questions…" : submitLabel}
-      </button>
+
+      {step === "check" && (
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-navy-800" role="status">
+            {fetched === "screenshot"
+              ? "Read from your screenshots. Check each line against the posting, then add the job."
+              : fetched
+                ? `Read from the ${SOURCE_LABEL[fetched]}. Fix anything that's off, then add the job.`
+                : "Add a title if you like, then add the job."}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
+              Job title <span className="font-normal text-slate-500">(optional)</span>
+              <input
+                id={`${id}-title`}
+                name="title"
+                maxLength={MAX_TITLE_LENGTH}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="I'll take it from the posting"
+                className={INPUT}
+              />
+            </label>
+            <label
+              className="block text-sm font-semibold text-slate-700"
+              htmlFor={`${id}-company`}
+            >
+              Company <span className="font-normal text-slate-500">(optional)</span>
+              <input
+                id={`${id}-company`}
+                name="company"
+                maxLength={MAX_TITLE_LENGTH}
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="e.g. Acme"
+                className={INPUT}
+              />
+            </label>
+          </div>
+          <label
+            className="block text-sm font-semibold text-slate-700"
+            htmlFor={`${id}-description`}
+          >
+            The job posting
+            <textarea
+              id={`${id}-description`}
+              name="description"
+              rows={10}
+              maxLength={MAX_DESCRIPTION_LENGTH}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={INPUT}
+            />
+          </label>
+          {state?.error && <ErrorLine>{state.error}</ErrorLine>}
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" disabled={pending} className={PRIMARY}>
+              {pending ? "Reading the posting and predicting your questions…" : submitLabel}
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setStep("find")}
+              className={SECONDARY}
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      )}
     </form>
+  );
+}
+
+function WizardStep({
+  n,
+  current,
+  done,
+  children,
+}: {
+  n: number;
+  current: boolean;
+  done: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <li
+      className={`flex items-center gap-2 ${current ? "text-navy-900" : "text-slate-400"}`}
+      aria-current={current ? "step" : undefined}
+    >
+      <span
+        className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${
+          current || done ? "bg-navy-800 text-white" : "bg-slate-200 text-slate-500"
+        }`}
+      >
+        {done ? "✓" : n}
+      </span>
+      {children}
+    </li>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   MIN_DESCRIPTION_LENGTH,
   isLevel,
   suggestLevel,
+  titleFromPosting,
 } from "@/lib/jobs/content";
 import {
   deleteJob,
@@ -90,13 +91,16 @@ export async function readJobPostingFile(
 // questions, so the user lands on them with nothing else to set up. If either model call fails the
 // job is still kept, and its page offers to try again.
 export async function addJob(_prev: FormState, formData: FormData): Promise<FormState> {
-  const title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
+  let title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
   const company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
   const description = normalize(String(formData.get("description") ?? ""));
-  if (!title) return { error: "Add the job title." };
+  if (!description) {
+    return { error: "Add a link to the posting, upload it, or paste its text." };
+  }
   if (description.length < MIN_DESCRIPTION_LENGTH) {
     return { error: "Paste the whole job posting, not just the title." };
   }
+  title ||= titleFromPosting(description).slice(0, MAX_TITLE_LENGTH);
   if (description.length > MAX_DESCRIPTION_LENGTH) {
     return {
       error: `Keep the posting under ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters.`,
