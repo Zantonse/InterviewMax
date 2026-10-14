@@ -126,7 +126,7 @@ Only needed with `AUTH_PROVIDER=auth0`. Uses [`@auth0/nextjs-auth0`](https://git
      api.idToken.setCustomClaim("role", "authenticated");
    };
    ```
-4. Supabase → Authentication → Third-party Auth: add Auth0 with the tenant ID (and region, if the domain has one, e.g. `us` in `name.us.auth0.com`).
+4. Supabase → Authentication → Third-party Auth: add Auth0 with the tenant ID (and region, if the domain has one, e.g. `us` in `name.us.auth0.com`). A domain that isn't `*.auth0.com` (ours is `imax.cic-demo-platform.auth0app.com`) can't be added there; add it as a custom issuer through the Management API with a personal access token instead: `POST https://api.supabase.com/v1/projects/<ref>/config/auth/third-party-auth` with `{"oidc_issuer_url": "<the issuer from /.well-known/openid-configuration>"}`. The Auth0 application must sign tokens with RS256.
 5. Apply `20261014020000_auth0_sign_in.sql`, then set `AUTH_PROVIDER=auth0`.
 
 ### Vercel
