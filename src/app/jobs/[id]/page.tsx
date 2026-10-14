@@ -9,7 +9,7 @@ import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { removeJob } from "../actions";
-import { LevelForm, PendingButton, PredictForm } from "../forms";
+import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { TailoredIntroPanel } from "./tailored-intro";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
@@ -154,6 +154,19 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </div>
 
         <div className="space-y-4">
+          <section
+            id="interview-date"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-navy-800">
+              Interview date
+            </h2>
+            <p className="mb-4 text-sm text-slate-600">
+              Your plan on the home page fits the time you have: tomorrow, the top 3 questions and
+              About me; two weeks, your whole story bank.
+            </p>
+            <InterviewDateForm jobId={job.id} date={job.interviewDate} />
+          </section>
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-navy-800">
               Role level

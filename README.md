@@ -97,8 +97,9 @@ Keys are read from server environment variables only and never reach the browser
    | `supabase/migrations/20261013020000_interview_transcripts.sql` | The `interview_transcripts` table, owner-only | Past interviews (#15) |
    | `supabase/migrations/20261014000000_numbers_checklist.sql` | The numbers checklist on the profile | Your numbers (#25) |
    | `supabase/migrations/20261014010000_intake_assessment.sql` | The intake assessment on the profile | Journey check |
+   | `supabase/migrations/20261014020000_interview_date.sql` | The next interview date on each target job | Prep plan |
 
-   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
+   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`, `prep-plan/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
 4. Authentication → URL Configuration: set **Site URL** to the production URL and add these **Redirect URLs**:
    - `http://localhost:3000/**`
    - `https://*-<your-vercel-team-slug>.vercel.app/**` (preview deploys)
