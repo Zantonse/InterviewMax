@@ -3,17 +3,8 @@
 import { useState, useTransition } from "react";
 import { removeStory } from "@/app/stories/actions";
 
-// Deletes a story after one confirm step. "full" sits in the story page's ⋯ menu; "compact" fits
-// a row of the story bank on the home page.
-export function DeleteStoryButton({
-  storyId,
-  title,
-  variant = "full",
-}: {
-  storyId: string;
-  title: string;
-  variant?: "full" | "compact";
-}) {
+// Deletes a story after one confirm step. Sits in the story page's ⋯ menu.
+export function DeleteStoryButton({ storyId, title }: { storyId: string; title: string }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -24,51 +15,6 @@ export function DeleteStoryButton({
       const result = await removeStory(storyId);
       if (result?.error) setError(result.error);
     });
-  }
-
-  if (variant === "compact") {
-    return confirming ? (
-      <span className="flex shrink-0 items-center gap-1.5" data-testid="delete-confirm">
-        <span className="text-xs text-navy-50">{error ?? "Delete?"}</span>
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={pending}
-          className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-        >
-          {pending ? "Deleting…" : "Yes"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirming(false)}
-          disabled={pending}
-          className="rounded-lg px-2 py-1 text-xs font-semibold text-navy-50 hover:bg-white/10"
-        >
-          No
-        </button>
-      </span>
-    ) : (
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        aria-label={`Delete ${title}`}
-        title="Delete story"
-        className="shrink-0 rounded-lg p-2 text-navy-100 hover:bg-white/10 hover:text-white"
-      >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-        </svg>
-      </button>
-    );
   }
 
   return (
