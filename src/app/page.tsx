@@ -2,6 +2,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { CoverageGrid } from "@/components/coverage-grid";
 import { DeleteStoryButton } from "@/components/delete-story-button";
 import { PrepPath } from "@/components/prep-path";
 import { QuestionList } from "@/components/question-list";
@@ -75,6 +76,7 @@ export default function HomePage() {
 }
 
 async function StoryBank() {
+  const jobs = listJobs().catch(noJobs);
   let stories: StoryRecord[];
   try {
     stories = await listStories();
@@ -95,6 +97,7 @@ async function StoryBank() {
         {stories.length}
       </p>
       <p className="mt-1 text-navy-100">{stories.length === 1 ? "story" : "stories"} so far</p>
+      <CoverageGrid stories={stories} jobs={await jobs} />
       {stories.length === 0 ? (
         <p className="mt-6 max-w-md text-navy-50">
           Every story you build is kept here. &ldquo;Tell me about yourself&rdquo; is a good first
@@ -267,6 +270,13 @@ async function PastInterviews() {
       </Link>
     </>
   );
+}
+
+// The coverage grid still shows without the target jobs; only the level mix needs them. A
+// signed-out redirect comes through the stories load.
+function noJobs(err: unknown): TargetJob[] {
+  console.error("Home: loading target jobs for the level mix failed", err);
+  return [];
 }
 
 function Card({
