@@ -191,7 +191,9 @@ function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
             <Link href={`/jobs/${job.id}`} className="block hover:text-navy-800">
               <span className="block truncate font-semibold">{job.title}</span>
               <span className="block truncate text-sm text-slate-500">
-                {[job.company, levelLabel(job.level)].filter(Boolean).join(" · ")}
+                {[job.company, levelLabel(job.level), job.interviewDate && interviewOn(job.interviewDate)]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             </Link>
           </li>
@@ -199,6 +201,16 @@ function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
       </ul>
     </Card>
   );
+}
+
+// "Interview Oct 16": a calendar date, the same wherever the user is.
+function interviewOn(date: string): string {
+  const day = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `Interview ${day}`;
 }
 
 async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {

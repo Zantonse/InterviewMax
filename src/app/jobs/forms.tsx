@@ -18,6 +18,7 @@ import {
   predictLikelyQuestions,
   readJobPostingFile,
   rereadJobs,
+  saveInterviewDate,
   saveResume,
   type FormState,
 } from "./actions";
@@ -459,6 +460,39 @@ function LevelButton({ confirmed }: { confirmed: boolean }) {
     <button type="submit" disabled={pending} className={SECONDARY}>
       {pending ? "Saving…" : confirmed ? "Change" : "That's right"}
     </button>
+  );
+}
+
+export function InterviewDateForm({ jobId, date }: { jobId: string; date: string | null }) {
+  const id = useId();
+  return (
+    <form action={saveInterviewDate} className="flex flex-wrap items-end gap-3">
+      <input type="hidden" name="jobId" value={jobId} />
+      <label className="block text-sm font-semibold text-slate-700" htmlFor={id}>
+        Next interview
+        <input
+          id={id}
+          type="date"
+          name="date"
+          required
+          defaultValue={date ?? ""}
+          className={INPUT}
+          data-testid="interview-date"
+        />
+      </label>
+      <PendingButton pendingText="Saving…">{date ? "Change" : "Save"}</PendingButton>
+      {date && (
+        <button
+          type="submit"
+          name="intent"
+          value="clear"
+          formNoValidate
+          className="text-sm font-medium text-slate-500 hover:text-red-700"
+        >
+          Clear
+        </button>
+      )}
+    </form>
   );
 }
 
