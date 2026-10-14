@@ -43,6 +43,7 @@ import {
 import { INTRO_LENGTH, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
 import type { ChatMessage } from "@/lib/ai/types";
+import type { StoryNumber } from "@/lib/numbers/checklist";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
 
 // Call one: assess the answers so far and return follow-up questions aimed at the gaps. Round 1
@@ -55,11 +56,12 @@ export async function probeStory(
   round: number,
   past?: PastInterviewNotes,
   resume?: string,
+  numbers: StoryNumber[] = [],
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
     probeSystem(storyType, round),
-    probeMessages(content, storyType, past, resume),
+    probeMessages(content, storyType, past, resume, numbers),
   );
   return parseProbe(text, round);
 }
@@ -92,16 +94,18 @@ export async function inferCareerPath(source: string): Promise<string> {
 // Call two: write the story from the user's answers. Every number in the draft is checked
 // against the answers in code, and its length against the hard limit; if either fails, the model
 // gets up to two chances to fix it. Whatever still doesn't trace is saved on the draft so the
-// builder can flag it.
+// builder can flag it. Values from the user's numbers checklist count as their answers.
 export async function writeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
+  numbers: StoryNumber[] = [],
 ): Promise<{ title: string; draft: StoryDraft }> {
-  const answers = allAnswerText(content);
+  const answers = `${allAnswerText(content)}\n${filledValues(numbers)}`;
   const system = writeSystem(storyType);
 
   const { result, value: story, untraced } = await writeChecked({
-    write: (retry) => call("storyWrite", system, writeMessages(content, storyType, retry)),
+    write: (retry) =>
+      call("storyWrite", system, writeMessages(content, storyType, retry, numbers)),
     parse: (text) => parseWrite(text, storyType),
     script: (story) => draftText(story.parts, storyType),
     answers,
@@ -181,11 +185,16 @@ export async function tailorIntro(
   storyType: StoryType | undefined,
   job: TailorJob,
   whyCompany: string,
+  numbers: StoryNumber[] = [],
 ): Promise<{ draft: TailoredDraft; checks: CheckResult[] }> {
-  const answers = `${allAnswerText(content)}\n${whyCompany}`;
+  const answers = `${allAnswerText(content)}\n${whyCompany}\n${filledValues(numbers)}`;
   const { result, value, untraced } = await writeChecked({
     write: (retry) =>
-      call("storyTailor", TAILOR_SYSTEM, tailorMessages(content, storyType, job, whyCompany, retry)),
+      call(
+        "storyTailor",
+        TAILOR_SYSTEM,
+        tailorMessages(content, storyType, job, whyCompany, retry, numbers),
+      ),
     parse: parseTailor,
     script: (t) => tailoredText(t.parts),
     answers,
@@ -225,6 +234,11 @@ async function writeChecked<T>(input: {
     });
     value = input.parse(result.text);
   }
+}
+
+// The checklist values the writer was given; they are the user's own words.
+function filledValues(numbers: StoryNumber[]): string {
+  return numbers.flatMap((n) => (n.value ? [n.value] : [])).join("\n");
 }
 
 function draftText(parts: StoryDraft["parts"], storyType: StoryType | undefined) {

@@ -3,6 +3,8 @@
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
+import { numbersForStory } from "@/lib/numbers/checklist";
+import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { tailorIntro } from "@/lib/stories/builder";
 import { builderStage, type TailoredIntro } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
@@ -37,7 +39,10 @@ export async function writeTailoredIntro(jobId: string, whyCompany: string): Pro
       draft: story.content.tailored?.[job.id]?.draft,
     });
 
-    const { overview } = await getJobsPrep();
+    const [{ overview }, checklist] = await Promise.all([
+      getJobsPrep(),
+      getNumbersChecklistSafely(),
+    ]);
     const { draft } = await tailorIntro(
       story.content,
       storyType,
@@ -48,6 +53,7 @@ export async function writeTailoredIntro(jobId: string, whyCompany: string): Pro
         focus: overview?.jobs[job.id]?.focus ?? [],
       },
       why,
+      numbersForStory(checklist, REQUIRED_STORY_TYPE_ID),
     );
     const tailored = { whyCompany: why, draft };
     await saveTailored(story.id, job.id, tailored);

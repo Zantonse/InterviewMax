@@ -3,6 +3,8 @@
 import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
+import { numbersForStory } from "@/lib/numbers/checklist";
+import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import {
   gradeStory,
   inferCareerPath,
@@ -180,6 +182,12 @@ async function resumeText(): Promise<string | undefined> {
   }
 }
 
+// The numbers checklist entries that fit this story: the follow-ups ask for the missing ones, and
+// filled-in values count as the user's own answers when the story is written.
+async function storyNumbers(storyTypeId: string | null) {
+  return numbersForStory(await getNumbersChecklistSafely(), storyTypeId);
+}
+
 // Call one. Runs after the last scripted answer, once more after the first follow-ups, and again
 // whenever the user asks to make a drafted story stronger.
 export async function askFollowUps(storyId: string): Promise<BuilderResult> {
@@ -195,7 +203,8 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const past = storyType
       ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
       : undefined;
-    const asked = await probeStory(story.content, storyType, round, past, await resumeText());
+    const [resume, numbers] = await Promise.all([resumeText(), storyNumbers(story.storyType)]);
+    const asked = await probeStory(story.content, storyType, round, past, resume, numbers);
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
@@ -214,7 +223,11 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
     if (stage !== "write" && stage !== "drafted")
       return fail("Answer the remaining questions first.");
 
-    const { title, draft } = await writeStory(story.content, getStoryType(story.storyType));
+    const { title, draft } = await writeStory(
+      story.content,
+      getStoryType(story.storyType),
+      await storyNumbers(story.storyType),
+    );
     const content = { ...story.content, draft };
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
