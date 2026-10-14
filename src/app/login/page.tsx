@@ -33,7 +33,9 @@ async function LinkError({ searchParams }: { searchParams: PageProps<"/login">["
   if (!error) return null;
   return (
     <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
-      That sign-in link didn&apos;t work or has expired. Request a new one below.
+      That sign-in link didn&apos;t work or has expired. Request a new one below, then type the
+      code from the email instead of clicking the link. Work email security tools sometimes open
+      links before you do, which uses them up.
     </p>
   );
 }
