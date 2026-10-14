@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { isAdminEmail } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth";
 import { listStories } from "@/lib/stories/data";
 import { NavIcon, type NavIconName } from "./nav-icons";
@@ -69,6 +70,9 @@ export function AppHeader() {
                 </NavLink>
               </li>
             ))}
+            <Suspense fallback={null}>
+              <AdminLink />
+            </Suspense>
           </ul>
 
           <div className="mt-6 nav-collapsed:hidden">
@@ -89,6 +93,19 @@ export function AppHeader() {
         </div>
       </NavShell>
     </>
+  );
+}
+
+// Shown only to admins (checked on the server); the admin pages check again before showing anything.
+async function AdminLink() {
+  const user = await getCurrentUser();
+  if (!isAdminEmail(user.email)) return null;
+  return (
+    <li>
+      <NavLink href="/admin" label="Admin">
+        <NavIcon name="shield" />
+      </NavLink>
+    </li>
   );
 }
 

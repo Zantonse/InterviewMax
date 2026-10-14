@@ -20,6 +20,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 - **Past interviews** (`/transcripts`). Upload or paste real interview transcripts; the review of what was asked and how each answer landed feeds likely questions and story follow-ups.
 - **Mic mode.** A Talk button beside the story builder's answer box, each Map my role question and "Why this company?". The browser records 16 kHz WAV (works the same in phone Safari, Chrome and Firefox) and sends it in pieces of up to 45 seconds, cut at a pause; each piece is written down by the `transcribe` step (Whisper Large V3 through OpenRouter's speech-to-text endpoint) and added to the box to edit before sending. Audio isn't stored.
 - A collapsible left navy sidebar on every signed-in page (a drawer on phones) links all of the above plus your recent stories.
+- **Usage tracking and admin panel** (`/admin`). The server records milestones (sign-up, job added, likely questions shown, story started, finished and graded, About me finished, story finder used, interview date set, journey check done) as a user id, an event name and a time: never story text, numbers or uploads, and no third-party trackers. `/admin` opens only for emails in `ADMIN_EMAILS` (checked on the server against both the session and the profile; everyone else gets a 404) and shows every user with their progress, the funnel with drop-off by step, median time from sign-up to first likely questions and to first finished story, stories per user, one user's timeline on click, and an empty review queue for features not built yet. Every admin page view is logged in `admin_views` and listed on the page. Activity from before tracking started is backfilled with estimated times.
 
 Not built yet: feedback on spoken delivery (pace, filler words; PRD P1), and the PRD's resume enhancer, paywall and success stories.
 
@@ -51,6 +52,7 @@ npm run dev                  # http://localhost:3000
 - `src/lib/roles` – Map my role
 - `src/lib/numbers` – the numbers checklist per role family
 - `src/lib/transcripts` – reading and reviewing past interview transcripts
+- `src/lib/usage` – usage events and `trackEvent()`; `src/lib/admin` – who is an admin, the admin panel's reads and its metrics
 - `src/proxy.ts` – refreshes the Supabase session and sends signed-out visitors to `/login`
 - `src/lib/supabase` – Supabase clients for server code and the proxy
 - `src/lib/ai` – the model layer (see below)
@@ -101,8 +103,9 @@ Keys are read from server environment variables only and never reach the browser
    | `supabase/migrations/20261014010000_intake_assessment.sql` | The intake assessment on the profile | Journey check |
    | `supabase/migrations/20261014020000_interview_date.sql` | The next interview date on each target job | Prep plan |
    | `supabase/migrations/20261014030000_story_finder.sql` | Story finder suggestions on the profile | Story finder |
+   | `supabase/migrations/20261014050000_usage_tracking.sql` | `usage_events` and `admin_views` (no browser access), the sign-up trigger, a one-time backfill of earlier activity, and the admin panel's two count functions | Usage tracking and admin panel |
 
-   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`, `prep-plan/run-in-supabase.sql`, `story-finder/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
+   Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`, `prep-plan/run-in-supabase.sql`, `story-finder/run-in-supabase.sql`, `admin-panel/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
 4. Authentication → URL Configuration: set **Site URL** to the production URL and add these **Redirect URLs**:
    - `http://localhost:3000/**`
    - `https://*-<your-vercel-team-slug>.vercel.app/**` (preview deploys)

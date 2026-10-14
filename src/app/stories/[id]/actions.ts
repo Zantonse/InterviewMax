@@ -25,9 +25,15 @@ import { MAX_FIT_JOBS, type FitJob } from "@/lib/stories/fit";
 import { answersTranscript } from "@/lib/stories/prompts";
 import { loadBuilderTargets } from "@/lib/stories/targets-data";
 import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
-import { MAX_ANSWER_LENGTH, coreQuestions, getStoryType } from "@/lib/stories/story-types";
+import {
+  MAX_ANSWER_LENGTH,
+  REQUIRED_STORY_TYPE_ID,
+  coreQuestions,
+  getStoryType,
+} from "@/lib/stories/story-types";
 import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { trackEvent } from "@/lib/usage/track";
 
 export type BuilderResult =
   | { ok: true; content: StoryContent; title: string }
@@ -236,6 +242,8 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
     const content = { ...story.content, draft };
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
+    await trackEvent("story_finished");
+    if (story.storyType === REQUIRED_STORY_TYPE_ID) await trackEvent("about_me_finished");
     return { ok: true, content, title: newTitle };
   });
 }
@@ -253,6 +261,7 @@ export async function gradeDraft(storyId: string): Promise<BuilderResult> {
     });
     const content = { ...story.content, grade };
     await updateStory(storyId, { content });
+    await trackEvent("story_graded");
     return { ok: true, content, title: story.title };
   });
 }

@@ -9,6 +9,7 @@ import { findMoments, finderSources } from "@/lib/finder/find";
 import { emptyContent } from "@/lib/stories/content";
 import { insertStory, listStories } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
+import { trackEvent } from "@/lib/usage/track";
 
 export type FindResult = { ok: true } | { ok: false; error: string };
 
@@ -21,6 +22,7 @@ export async function findStoryMoments(): Promise<FindResult> {
       return { ok: false, error: "Add your resume, or answer the three questions, first." };
     }
     await findMoments(stories, finder, sources);
+    await trackEvent("story_finder_used");
   } catch (err) {
     return failure(err);
   }
@@ -46,6 +48,7 @@ export async function saveQuickAnswers(_prev: FindResult | null, formData: FormD
     const withAnswers = { ...(finder ?? {}), answers };
     await saveStoryFinder(withAnswers);
     await findMoments(stories, withAnswers, await finderSources(stories, withAnswers));
+    await trackEvent("story_finder_used");
   } catch (err) {
     return failure(err);
   }
@@ -76,6 +79,7 @@ export async function startFromMoment(formData: FormData) {
       },
     },
   });
+  await trackEvent("story_started");
   redirect(`/stories/${storyId}`);
 }
 

@@ -36,6 +36,7 @@ import { isDate } from "@/lib/prep/plan";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
+import { trackEvent } from "@/lib/usage/track";
 
 export type FormState = { error?: string; notice?: string } | null;
 
@@ -115,6 +116,7 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
       return { error: `You can keep up to ${MAX_JOBS} target jobs. Remove one to add another.` };
     }
     id = await insertJob({ title, company, level: suggestLevel(title), description });
+    await trackEvent("job_added");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Target jobs: adding a job failed", err);
@@ -128,6 +130,7 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
 async function predictAfterAdd(jobId: string): Promise<void> {
   try {
     await predictQuestions(jobId);
+    await trackEvent("likely_questions_shown");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Likely questions: predicting after adding a job failed", err);
@@ -152,8 +155,10 @@ export async function saveInterviewDate(formData: FormData): Promise<void> {
   const jobId = String(formData.get("jobId") ?? "");
   const date = formData.get("date");
   if (formData.get("intent") === "clear") await setInterviewDate(jobId, null);
-  else if (isDate(date)) await setInterviewDate(jobId, date);
-  else return;
+  else if (isDate(date)) {
+    await setInterviewDate(jobId, date);
+    await trackEvent("prep_plan_set");
+  } else return;
   refresh();
 }
 
@@ -213,6 +218,7 @@ export async function predictLikelyQuestions(
       await saveJobQuestions(jobId, { interviewReports: text });
     }
     await predictQuestions(jobId);
+    await trackEvent("likely_questions_shown");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Likely questions: predicting failed", err);
