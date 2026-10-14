@@ -7,6 +7,7 @@ import {
   fillerPhrases,
   gradeSystem,
   hedgedFigures,
+  introFigures,
   lengthRange,
   parseGrade,
   pronounCounts,
@@ -76,6 +77,26 @@ describe("quick checks", () => {
     const short = quickChecks(d, aboutMe).find((c) => c.id === "length");
     expect(short?.pass).toBe(false);
     expect(short?.detail).toContain("aim for 150 to 225 words");
+  });
+
+  it("flags an introduction that lists too many figures, but not a STAR story", () => {
+    const busy = draft({
+      present: "I lead AI enablement for 400 SEs.",
+      highlight: "I hit 140% of quota, closed $2.4M, cut ramp by 30% and trained 12 managers.",
+    });
+    const focus = quickChecks(busy, aboutMe).find((c) => c.id === "focus");
+    expect(focus?.pass).toBe(false);
+    expect(focus?.detail).toContain("save the rest for follow-up questions");
+    const lean = draft({
+      present: "I lead AI enablement for the entire SE org, since 2019.",
+      highlight: "I hit 140% of quota.",
+    });
+    expect(quickChecks(lean, aboutMe).find((c) => c.id === "focus")?.pass).toBe(true);
+    expect(quickChecks(goodStar, stakeholder).find((c) => c.id === "focus")).toBeUndefined();
+  });
+
+  it("doesn't count years as figures", () => {
+    expect(introFigures("Since 2019 I've led 40 reps.")).toEqual(["40"]);
   });
 
   it("counts I against we, including contractions", () => {

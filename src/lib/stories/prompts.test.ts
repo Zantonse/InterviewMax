@@ -340,6 +340,13 @@ describe("cut the fluff", () => {
     expect(ask.content).toContain("260 words");
     expect(ask.content).toContain("at most 205 words");
     expect(retryMessages({ previous: "{}", untraced: [] })[1].content).not.toContain("words");
+    expect(
+      retryMessages({
+        previous: "{}",
+        untraced: [],
+        figures: { found: ["1", "2", "3", "4"], max: 3 },
+      })[1].content,
+    ).toContain("Keep at most 3");
   });
 });
 

@@ -165,7 +165,10 @@ export function EvaluationPanel({
         <div>
           <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
           <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks">
-            {CHECKS.map((k) => {
+            {CHECKS.filter(
+              // Some checks apply to one format only ("A few key figures" is for About me).
+              (k) => k.id !== "focus" || !grade || grade.checks.some((c) => c.id === k.id),
+            ).map((k) => {
               const result = grade?.checks.find((c) => c.id === k.id);
               return (
                 <li key={k.id} className="flex gap-2 text-sm">
