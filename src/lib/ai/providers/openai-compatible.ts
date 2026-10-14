@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import {
   ModelError,
+  type ChatMessage,
   type GenerateRequest,
   type GenerateResult,
   type ModelProvider,
@@ -23,7 +24,7 @@ export function createOpenAICompatibleProvider(
     async generate(req: GenerateRequest): Promise<GenerateResult> {
       const messages: ChatCompletionMessageParam[] = [
         ...(req.system ? [{ role: "system" as const, content: req.system }] : []),
-        ...req.messages,
+        ...req.messages.map(toMessage),
       ];
 
       let response: OpenAI.Chat.Completions.ChatCompletion;
@@ -65,6 +66,27 @@ export function createOpenAICompatibleProvider(
         },
       };
     },
+  };
+}
+
+function toMessage(m: ChatMessage): ChatCompletionMessageParam {
+  if (typeof m.content === "string") return { role: m.role, content: m.content };
+  if (m.role === "assistant") {
+    return {
+      role: "assistant",
+      content: m.content.map((p) => (p.type === "text" ? p.text : "")).join(""),
+    };
+  }
+  return {
+    role: "user",
+    content: m.content.map((p) =>
+      p.type === "text"
+        ? { type: "text" as const, text: p.text }
+        : {
+            type: "image_url" as const,
+            image_url: { url: `data:${p.mediaType};base64,${p.data}` },
+          },
+    ),
   };
 }
 

@@ -24,7 +24,11 @@ import {
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
-import { readPostingPdf } from "@/lib/jobs/read-posting-pdf";
+import {
+  readPostingPage,
+  readPostingPdf,
+  readPostingScreenshots,
+} from "@/lib/jobs/read-posting-file";
 import { readResumeFile } from "@/lib/jobs/resume";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
@@ -46,19 +50,39 @@ export async function fetchJobPosting(
   }
 }
 
-// Reads a posting saved as PDF so the add-job form can fill itself in. Nothing is saved yet.
-export async function readJobPostingPdf(
+// Reads a posting saved as a PDF, a web page or screenshots so the add-job form can fill itself
+// in. The form unwraps and trims a saved page before sending its HTML. Nothing is saved yet.
+export async function readJobPostingFile(
   formData: FormData,
 ): Promise<{ ok: true; posting: FetchedPosting } | { ok: false; error: string }> {
   try {
     await getCurrentUser();
-    const file = formData.get("file");
-    if (!(file instanceof File)) return { ok: false, error: "Choose a PDF first." };
-    return { ok: true, posting: await readPostingPdf(file) };
+    const kind = formData.get("kind");
+    if (kind === "pdf") {
+      const file = formData.get("file");
+      if (!(file instanceof File)) return { ok: false, error: "Choose a PDF first." };
+      return { ok: true, posting: await readPostingPdf(file) };
+    }
+    if (kind === "page") {
+      return { ok: true, posting: await readPostingPage(String(formData.get("html") ?? "")) };
+    }
+    if (kind === "image") {
+      const files = formData.getAll("image").filter((f): f is File => f instanceof File);
+      return { ok: true, posting: await readPostingScreenshots(files) };
+    }
+    return { ok: false, error: "Upload a PDF, a saved web page or a screenshot." };
   } catch (err) {
     unstable_rethrow(err);
-    console.error("Target jobs: reading a posting PDF failed", err);
-    return { ok: false, error: err instanceof Error ? err.message : "That PDF couldn't be read." };
+    console.error("Target jobs: reading a posting file failed", err);
+    return {
+      ok: false,
+      error:
+        err instanceof ModelError
+          ? "The assistant didn't respond. Try again in a moment."
+          : err instanceof Error
+            ? err.message
+            : "That file couldn't be read.",
+    };
   }
 }
 
