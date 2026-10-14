@@ -13,9 +13,9 @@ const PLAN_SIZE = 4;
 
 type PathStep = { label: string; detail: string; href: string; done: boolean };
 
-// Where the user is on the prep path (PRD: "Always show position"), shown on the home page. Before
-// the first job, it's a single step instead: paste a job and see its likely questions, with nothing
-// else to set up first.
+// Where the user is on the prep path (PRD: "Always show position"), shown on the home page as one
+// bar: the next step and a button to it, with the four steps as dots. Before the first job, it's a
+// single step instead: paste a job and see its likely questions, with nothing else to set up first.
 export async function PrepPath() {
   let steps: PathStep[] | null;
   try {
@@ -27,35 +27,41 @@ export async function PrepPath() {
   }
   if (!steps) return <FirstJob />;
   const current = steps.findIndex((s) => !s.done);
+  if (current < 0) return null;
+  const step = steps[current];
   return (
-    <nav aria-label="Your prep path" className="mt-4" data-testid="prep-path">
-      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {steps.map((step, i) => (
-          <li key={step.label}>
-            <Link
-              href={step.href}
-              aria-current={i === current ? "step" : undefined}
-              className={`flex h-full items-center gap-3 rounded-2xl px-4 py-2.5 ring-1 transition ${
-                i === current
-                  ? "bg-white shadow-sm ring-navy-700/50"
-                  : "bg-white/60 ring-black/5 hover:bg-white"
-              }`}
-            >
+    <nav
+      aria-label="Your prep path"
+      className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-navy-700/30"
+      data-testid="prep-path"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
+          Next step
+          <span className="flex gap-1" aria-label={`Step ${current + 1} of ${steps.length}`}>
+            {steps.map((s, i) => (
               <span
-                className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  step.done ? "bg-navy-800 text-white" : "bg-navy-50 text-navy-900"
+                key={s.label}
+                title={s.label}
+                className={`size-2 rounded-full ${
+                  s.done ? "bg-navy-800" : i === current ? "bg-amber-400" : "bg-navy-100"
                 }`}
-              >
-                {step.done ? "✓" : i + 1}
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-slate-900">{step.label}</span>
-                <span className="block text-xs text-slate-600">{step.detail}</span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+              />
+            ))}
+          </span>
+        </p>
+        <p className="mt-1 font-semibold text-slate-900">
+          {step.label}
+          <span className="font-normal text-slate-500"> · {step.detail}</span>
+        </p>
+      </div>
+      <Link
+        href={step.href}
+        aria-current="step"
+        className="shrink-0 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-amber-300"
+      >
+        Continue
+      </Link>
     </nav>
   );
 }
@@ -63,16 +69,15 @@ export async function PrepPath() {
 function FirstJob() {
   return (
     <section
-      className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
+      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
       data-testid="first-job"
     >
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
         Start with a job you&apos;re going for
       </h2>
       <p className="mt-2 max-w-2xl text-slate-600">
-        Paste the posting, or a link to it, and I&apos;ll show you the questions they&apos;re most
-        likely to ask. No resume or profile needed: you can add those later if you want answers
-        matched to your history.
+        Paste the posting or a link, and I&apos;ll show the questions they&apos;re most likely to
+        ask. No resume needed.
       </p>
       <div className="mt-6">
         <AddJobForm submitLabel="Show my likely questions" />
