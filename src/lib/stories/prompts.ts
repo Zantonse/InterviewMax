@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { type StoryNumber, numbersTranscript } from "@/lib/numbers/checklist";
 import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import type { FollowUp, StoryContent } from "./content";
@@ -227,6 +228,7 @@ export function probeMessages(
   storyType: StoryType | undefined,
   past?: PastInterviewNotes,
   resume?: string,
+  numbers: StoryNumber[] = [],
 ): ChatMessage[] {
   const notes = past ? pastInterviewText(past) : "";
   const background = resume?.trim()
@@ -235,9 +237,15 @@ export function probeMessages(
   return [
     {
       role: "user",
-      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}${background}${notes ? `\n\n${notes}` : ""}`,
+      content: `Here are my answers so far.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, true)}${background}${notes ? `\n\n${notes}` : ""}`,
     },
   ];
+}
+
+// The user's numbers checklist, after their answers. The writer gets only the filled-in values.
+function withNumbers(numbers: StoryNumber[], ask: boolean): string {
+  const text = numbersTranscript(numbers, { ask });
+  return text ? `\n\n${text}` : "";
 }
 
 const MAX_BACKGROUND_LENGTH = 8000;
@@ -267,11 +275,12 @@ export function writeMessages(
   content: StoryContent,
   storyType: StoryType | undefined,
   retry?: WriteRetry,
+  numbers: StoryNumber[] = [],
 ): ChatMessage[] {
   const messages: ChatMessage[] = [
     {
       role: "user",
-      content: `Write my story from these answers.\n\n${answersTranscript(content, storyType)}`,
+      content: `Write my story from these answers.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, false)}`,
     },
   ];
   if (retry) messages.push(...retryMessages(retry));
@@ -398,6 +407,7 @@ export function tailorMessages(
   job: TailorJob,
   whyCompany: string,
   retry?: WriteRetry,
+  numbers: StoryNumber[] = [],
 ): ChatMessage[] {
   const company = job.company || "this company";
   const lines = [
@@ -412,7 +422,7 @@ export function tailorMessages(
     whyCompany.trim(),
     "",
     "## My answers about my career",
-    answersTranscript(content, storyType),
+    answersTranscript(content, storyType) + withNumbers(numbers, false),
   ];
   if (content.draft) {
     lines.push(

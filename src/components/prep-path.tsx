@@ -2,6 +2,8 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { AddJobForm } from "@/app/jobs/forms";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
+import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
+import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { builderStage } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
@@ -27,7 +29,7 @@ export async function PrepPath() {
   const current = steps.findIndex((s) => !s.done);
   return (
     <nav aria-label="Your prep path" className="mt-4" data-testid="prep-path">
-      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((step, i) => (
           <li key={step.label}>
             <Link
@@ -80,10 +82,11 @@ function FirstJob() {
 }
 
 async function pathSteps(): Promise<PathStep[] | null> {
-  const [jobs, { overview }, stories] = await Promise.all([
+  const [jobs, { overview }, stories, numbers] = await Promise.all([
     listJobs(),
     getJobsPrep(),
     listStories(),
+    getNumbersChecklistSafely(),
   ]);
   const drafted = new Set(
     stories
@@ -107,6 +110,14 @@ async function pathSteps(): Promise<PathStep[] | null> {
         : `Predict them for ${jobs[0].title}`,
       href: predicted ? `/jobs/${predicted.id}` : `/jobs/${jobs[0].id}`,
       done: Boolean(predicted),
+    },
+    {
+      label: "Gather your numbers",
+      detail: numbers
+        ? `${filledCount(numbers)} of ${checklistItems(numbers).length} filled in`
+        : "The figures your stories need",
+      href: "/numbers",
+      done: hasEnoughNumbers(numbers),
     },
     {
       label: "Tell me about yourself",

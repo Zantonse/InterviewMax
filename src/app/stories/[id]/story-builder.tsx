@@ -59,6 +59,7 @@ export function StoryBuilder({
   hasResume = false,
   afterStory,
   menu,
+  beside,
 }: {
   storyId: string;
   storyTypeId: string | null;
@@ -71,6 +72,8 @@ export function StoryBuilder({
   afterStory?: React.ReactNode;
   // Story-level actions, such as delete, in the ⋯ menu.
   menu?: React.ReactNode;
+  // Shown beside the chat on the Build view, under the answer checklist.
+  beside?: React.ReactNode;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -411,6 +414,7 @@ export function StoryBuilder({
               currentCore={currentCore}
               onShowStory={() => setView("story")}
             />
+            {beside}
             {storyType?.format === "intro" && (canUpload || content.roleMap) && (
               <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <RoleMapCard

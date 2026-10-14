@@ -21,6 +21,8 @@ export const STEP_MODELS = {
   storyPrefill: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Map my role: list the usual parts of a job function that has no hand-written map.
   roleMap: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Numbers checklist: list the numbers a story needs for a role with no hand-written list.
+  numbersChecklist: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Map my role: write the one-page role profile from the user's answers.
   roleProfile: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Story builder, call two: write the story from the user's own answers.
