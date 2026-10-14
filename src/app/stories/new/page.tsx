@@ -26,6 +26,22 @@ export default function NewStoryPage() {
           start, since most interviews open with it, but you can build them in any order.
         </p>
 
+        <Link
+          href="/stories/find"
+          className="mt-6 flex max-w-2xl items-center justify-between gap-4 rounded-2xl bg-amber-50 px-5 py-4 ring-1 ring-amber-300 transition hover:bg-amber-100"
+          data-testid="find-stories-link"
+        >
+          <span>
+            <span className="block font-semibold text-slate-900">
+              Not sure which story to tell?
+            </span>
+            <span className="block text-sm text-slate-600">
+              I&apos;ll point out moments from your resume that could answer each kind of question.
+            </span>
+          </span>
+          <span className="shrink-0 font-semibold text-navy-800">Find my stories →</span>
+        </Link>
+
         <Suspense fallback={<PickerSkeleton />}>
           <Picker />
         </Suspense>

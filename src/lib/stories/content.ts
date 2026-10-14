@@ -67,8 +67,19 @@ export type TailoredDraft = {
   writtenAt: string;
 };
 
+// A moment picked in the story finder (src/lib/finder). A suggestion only: it fills in the first
+// answer for the user to edit, and counts as their words once they save that answer.
+export type StorySeed = {
+  moment: string;
+  question: string;
+  quote: string;
+  // Where the quote came from, e.g. "your resume".
+  sourceLabel: string;
+};
+
 export type StoryContent = {
   version: 1;
+  seed?: StorySeed;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -225,6 +236,15 @@ export function parseContent(raw: unknown): StoryContent {
       }
     }
     if (Object.keys(tailored).length > 0) content.tailored = tailored;
+  }
+
+  if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
+    content.seed = {
+      moment: raw.seed.moment,
+      question: typeof raw.seed.question === "string" ? raw.seed.question : "",
+      quote: typeof raw.seed.quote === "string" ? raw.seed.quote : "",
+      sourceLabel: typeof raw.seed.sourceLabel === "string" ? raw.seed.sourceLabel : "",
+    };
   }
 
   const roleMap = parseRoleMap(raw.roleMap);
