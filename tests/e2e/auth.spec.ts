@@ -8,8 +8,16 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Email me a sign-in link" })).toBeVisible();
 });
 
+test("opening an email link doesn't sign in until Continue is clicked", async ({ page }) => {
+  // Mail scanners open links with a GET; that must not use up the one-time token.
+  await page.goto("/auth/confirm?token_hash=bad&type=email");
+  await expect(page).toHaveURL(/\/auth\/continue\?token_hash=bad&type=email$/);
+  await expect(page.getByRole("button", { name: "Continue to InterviewMax" })).toBeVisible();
+});
+
 test("an expired email link shows a clear message", async ({ page }) => {
   await page.goto("/auth/confirm?token_hash=bad&type=email");
+  await page.getByRole("button", { name: "Continue to InterviewMax" }).click();
   await expect(page).toHaveURL(/\/login\?error=link$/);
   await expect(page.getByText("That sign-in link didn't work or has expired")).toBeVisible();
 });
