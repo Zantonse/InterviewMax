@@ -244,6 +244,16 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# The sign-in emails, branded. On the hosted project, paste the same HTML and subjects into
+# Authentication > Emails > Templates (Magic Link and Confirm signup).
+[auth.email.template.magic_link]
+subject = "Your InterviewMax sign-in link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Welcome to InterviewMax: confirm your email"
+content_path = "./supabase/templates/confirmation.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

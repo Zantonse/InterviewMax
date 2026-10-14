@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Welcome to InterviewMax</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f6f9;">
+    <div style="display:none;max-height:0;overflow:hidden;">Confirm your email to start building your first story.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f9;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+            <tr>
+              <td style="padding:0 4px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.3px;color:#172748;">
+                InterviewMax
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#ffffff;border-radius:20px;border:1px solid #e2e8f0;overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="height:6px;background:#1f3360;font-size:0;line-height:0;">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:32px 32px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                      <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#b45309;">Welcome</p>
+                      <h1 style="margin:0 0 12px;font-size:26px;line-height:1.25;font-weight:800;color:#0f172a;">Let&#39;s build stories that land</h1>
+                      <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#334155;">Confirm your email and you&#39;ll go straight to your prep. Everyone starts with &ldquo;Tell me about yourself&rdquo;, the question almost every interview opens with.</p>
+                      <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-radius:12px;background:#1f3360;">
+                            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">Confirm and sign in</a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">This link works once and expires in an hour. If the button doesn&#39;t work, paste this into your browser:</p>
+                      <p style="margin:6px 0 0;font-size:13px;line-height:1.5;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#2c4474;">{{ .ConfirmationURL }}</a></p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:24px 32px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border-radius:12px;">
+                        <tr>
+                          <td style="padding:14px 16px;font-size:14px;line-height:1.5;color:#78350f;">
+                            <strong>Your stories, your numbers.</strong> Every story you build comes from your own answers, so it holds up when an interviewer asks a follow-up.
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 4px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#94a3b8;">
+                You got this email because someone asked to sign in to InterviewMax with {{ .Email }}. If it wasn&#39;t you, you can ignore it.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

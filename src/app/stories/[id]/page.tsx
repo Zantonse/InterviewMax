@@ -20,7 +20,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
-        <Link href="/" className="text-sm font-medium text-teal-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
           ← Back to your prep
         </Link>
         <Suspense fallback={<BuilderSkeleton />}>
@@ -68,7 +68,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
       data-testid="tailor-links"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-teal-800">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-navy-800">
         Make it company-first for each job
       </h2>
       <p className="mt-2 text-sm text-slate-600">
@@ -77,7 +77,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
       </p>
       {jobs.length === 0 ? (
         <p className="mt-3 text-sm text-slate-600">
-          <Link href="/jobs" className="font-semibold text-teal-800 underline">
+          <Link href="/jobs" className="font-semibold text-navy-800 underline">
             Add a target job
           </Link>{" "}
           to get started.
@@ -88,7 +88,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
             <li key={job.id}>
               <Link
                 href={`/jobs/${job.id}#about-me`}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-teal-800 ring-1 ring-teal-800/20 hover:bg-teal-50"
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-navy-800 ring-1 ring-navy-800/20 hover:bg-navy-50"
               >
                 {job.company || job.title}
                 {content.tailored?.[job.id]?.draft && (

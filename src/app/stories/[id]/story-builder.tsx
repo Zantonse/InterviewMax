@@ -209,7 +209,7 @@ export function StoryBuilder({
                 onClick={() => setView(v.id)}
                 className={`rounded-full px-3.5 py-1.5 transition ${
                   view === v.id
-                    ? "bg-white text-teal-800 shadow-sm"
+                    ? "bg-white text-navy-800 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
                 data-testid={`tab-${v.id}`}
@@ -250,7 +250,7 @@ export function StoryBuilder({
                 <li className="flex flex-col gap-2">
                   <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
                   <div className="flex flex-col items-end gap-1" data-testid="imported-answer">
-                    <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
+                    <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-navy-800 px-4 py-3 text-white">
                       {content.imported.text}
                     </p>
                     {content.imported.fileName && (
@@ -348,7 +348,7 @@ export function StoryBuilder({
                     <button
                       type="button"
                       onClick={() => run([{ busy: "inferring", action: () => inferPath(storyId) }])}
-                      className="mb-2 text-sm font-medium text-teal-800 hover:underline"
+                      className="mb-2 text-sm font-medium text-navy-800 hover:underline"
                       data-testid="infer-path"
                     >
                       Read it from my {hasResume ? "resume" : "LinkedIn profile"} instead
@@ -424,7 +424,7 @@ export function StoryBuilder({
                   <details className="group mt-3" data-testid="start-from-file">
                     <summary className="cursor-pointer text-sm text-slate-600">
                       Have a LinkedIn PDF or a prepared answer?{" "}
-                      <span className="font-medium text-teal-800 group-open:hidden">
+                      <span className="font-medium text-navy-800 group-open:hidden">
                         Start from a file
                       </span>
                     </summary>
@@ -484,7 +484,7 @@ export function StoryBuilder({
                         type="button"
                         onClick={strengthen}
                         disabled={busy !== null}
-                        className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+                        className="rounded-xl bg-navy-800 px-4 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
                       >
                         Ask me more to make it stronger
                       </button>
@@ -493,7 +493,7 @@ export function StoryBuilder({
                       type="button"
                       onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
                       disabled={busy !== null}
-                      className="rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50 disabled:opacity-50"
+                      className="rounded-xl px-4 py-2 font-semibold text-navy-800 ring-1 ring-navy-800/30 hover:bg-navy-50 disabled:opacity-50"
                     >
                       {busy === "writing" ? "Rewriting…" : "Rewrite"}
                     </button>
@@ -504,7 +504,7 @@ export function StoryBuilder({
                   <button
                     type="button"
                     onClick={() => setView("build")}
-                    className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+                    className="rounded-xl bg-navy-800 px-4 py-2 font-semibold text-white hover:bg-navy-900"
                   >
                     Answer the questions
                   </button>
@@ -554,7 +554,7 @@ function AnswerChecklist({
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
       data-testid="answer-checklist"
     >
-      <h2 className="text-xs font-bold uppercase tracking-wide text-teal-800">
+      <h2 className="text-xs font-bold uppercase tracking-wide text-navy-800">
         Your answers so far
       </h2>
       <ul className="mt-3 flex flex-col gap-2 text-sm">
@@ -569,9 +569,9 @@ function AnswerChecklist({
               <span
                 className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
                   done
-                    ? "border-teal-800 bg-teal-800"
+                    ? "border-navy-800 bg-navy-800"
                     : current
-                      ? "border-teal-800"
+                      ? "border-navy-800"
                       : "border-slate-300"
                 }`}
               />
@@ -592,7 +592,7 @@ function AnswerChecklist({
           <button
             type="button"
             onClick={onShowStory}
-            className="font-medium text-teal-800 hover:underline"
+            className="font-medium text-navy-800 hover:underline"
           >
             See your story and its score →
           </button>
@@ -659,7 +659,7 @@ function Exchange({
         />
       ) : answer ? (
         <div className="flex flex-col items-end gap-1">
-          <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-teal-800 px-4 py-3 text-white">
+          <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-navy-800 px-4 py-3 text-white">
             {answer}
           </p>
           {source && <p className="text-xs text-slate-500">{source}</p>}
@@ -667,7 +667,7 @@ function Exchange({
             type="button"
             onClick={onEdit}
             disabled={disabled}
-            className="text-xs font-medium text-slate-500 hover:text-teal-800 disabled:opacity-50"
+            className="text-xs font-medium text-slate-500 hover:text-navy-800 disabled:opacity-50"
           >
             Edit
           </button>
@@ -726,7 +726,7 @@ function Composer({
         rows={3}
         maxLength={MAX_ANSWER_LENGTH}
         placeholder="Type your answer. Plain notes are fine."
-        className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/20"
+        className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
       />
       <div className="flex items-center justify-end gap-2">
         <span className="mr-auto hidden text-xs text-slate-400 sm:inline">
@@ -744,7 +744,7 @@ function Composer({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-xl bg-teal-800 px-5 py-2 font-semibold text-white transition hover:bg-teal-900 disabled:opacity-50"
+          className="rounded-xl bg-navy-800 px-5 py-2 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-50"
         >
           {disabled ? "Saving…" : submitLabel}
         </button>
@@ -769,7 +769,7 @@ function RoleMapCard({
     return (
       <p className="text-sm text-slate-600" data-testid="role-map-link">
         Built on your role map.{" "}
-        <Link href={href} className="font-medium text-teal-800 hover:underline">
+        <Link href={href} className="font-medium text-navy-800 hover:underline">
           See your role profile
         </Link>
       </p>
@@ -779,7 +779,7 @@ function RoleMapCard({
     return (
       <p className="text-sm text-slate-600" data-testid="role-map-link">
         Want words for what you did?{" "}
-        <Link href={href} className="font-medium text-teal-800 hover:underline">
+        <Link href={href} className="font-medium text-navy-800 hover:underline">
           Map my role
         </Link>
       </p>
@@ -787,7 +787,7 @@ function RoleMapCard({
   }
   return (
     <div
-      className="flex flex-col items-start gap-3 rounded-2xl bg-teal-800 p-4 text-white"
+      className="flex flex-col items-start gap-3 rounded-2xl bg-navy-800 p-4 text-white"
       data-testid="role-map-card"
     >
       <p>
@@ -796,7 +796,7 @@ function RoleMapCard({
       </p>
       <Link
         href={href}
-        className="rounded-xl bg-white px-4 py-2 font-semibold text-teal-900 hover:bg-teal-50"
+        className="rounded-xl bg-white px-4 py-2 font-semibold text-navy-900 hover:bg-navy-50"
       >
         {content.roleMap ? "Continue mapping my role" : "Map my role"}
       </Link>
@@ -827,7 +827,7 @@ function UploadOption({
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-dashed border-navy-200 bg-navy-50/50 p-4"
       data-testid={testId}
       onSubmit={(e) => {
         e.preventDefault();
@@ -849,12 +849,12 @@ function UploadOption({
           type="file"
           accept={accept}
           disabled={disabled}
-          className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-teal-800 file:ring-1 file:ring-teal-800/20"
+          className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-navy-800 file:ring-1 file:ring-navy-800/20"
         />
         <button
           type="submit"
           disabled={disabled}
-          className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900 disabled:opacity-50"
+          className="rounded-xl bg-navy-800 px-4 py-2 font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
         >
           {button}
         </button>
@@ -870,20 +870,20 @@ function UploadOption({
 
 function CoachBubble({ children }: { children: React.ReactNode }) {
   return (
-    <p className="max-w-[90%] rounded-2xl rounded-bl-md bg-teal-50 px-4 py-3 text-slate-800">
+    <p className="max-w-[90%] rounded-2xl rounded-bl-md bg-navy-50 px-4 py-3 text-slate-800">
       {children}
     </p>
   );
 }
 
 function CoachLine({ children }: { children: React.ReactNode }) {
-  return <li className="pt-2 text-sm font-semibold text-teal-900">{children}</li>;
+  return <li className="pt-2 text-sm font-semibold text-navy-900">{children}</li>;
 }
 
 function Thinking({ children }: { children: React.ReactNode }) {
   return (
     <li role="status" className="flex items-center gap-2 text-sm text-slate-600">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-teal-600" />
+      <span className="h-2 w-2 animate-pulse rounded-full bg-navy-600" />
       {children}
     </li>
   );
@@ -911,7 +911,7 @@ function ActionLine({
           <button
             type="button"
             onClick={extra.onClick}
-            className="rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+            className="rounded-xl bg-navy-800 px-4 py-2 font-semibold text-white hover:bg-navy-900"
           >
             {extra.button}
           </button>
@@ -921,8 +921,8 @@ function ActionLine({
           onClick={onClick}
           className={
             secondary
-              ? "rounded-xl px-4 py-2 font-semibold text-teal-800 ring-1 ring-teal-800/30 hover:bg-teal-50"
-              : "rounded-xl bg-teal-800 px-4 py-2 font-semibold text-white hover:bg-teal-900"
+              ? "rounded-xl px-4 py-2 font-semibold text-navy-800 ring-1 ring-navy-800/30 hover:bg-navy-50"
+              : "rounded-xl bg-navy-800 px-4 py-2 font-semibold text-white hover:bg-navy-900"
           }
         >
           {button}
@@ -989,7 +989,7 @@ function StoryPanel({
           <button
             type="button"
             onClick={copy}
-            className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-teal-800 ring-1 ring-teal-800/20 hover:bg-teal-50"
+            className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-navy-800 ring-1 ring-navy-800/20 hover:bg-navy-50"
           >
             {copied ? "Copied" : "Copy"}
           </button>
@@ -1005,7 +1005,7 @@ function StoryPanel({
           <button
             type="button"
             onClick={() => setShowParts((v) => !v)}
-            className="font-medium text-teal-800 hover:underline"
+            className="font-medium text-navy-800 hover:underline"
           >
             {showParts ? "Show as a script" : "Show by part"}
           </button>
@@ -1033,7 +1033,7 @@ function StoryPanel({
                 <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
                   <span
                     className={`h-2 w-2 rounded-full ${
-                      written ? "bg-teal-600" : notes.length ? "bg-teal-300" : "bg-slate-200"
+                      written ? "bg-navy-600" : notes.length ? "bg-navy-300" : "bg-slate-200"
                     }`}
                   />
                   {part.label}
@@ -1043,7 +1043,7 @@ function StoryPanel({
                     <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
                   </p>
                 ) : notes.length ? (
-                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-teal-100 pl-3 text-sm text-slate-500">
+                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-navy-100 pl-3 text-sm text-slate-500">
                     {notes.map((n, i) => (
                       <li key={i} className="line-clamp-3 whitespace-pre-wrap">
                         {n}
@@ -1100,7 +1100,7 @@ function notesForPart(
 function NumberCheck({ untraced }: { untraced: string[] }) {
   if (untraced.length === 0) {
     return (
-      <p className="mt-2 text-sm font-medium text-teal-800" data-testid="number-check">
+      <p className="mt-2 text-sm font-medium text-emerald-700" data-testid="number-check">
         ✓ Every number in this story comes from your answers.
       </p>
     );

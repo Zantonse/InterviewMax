@@ -29,7 +29,7 @@ export function DeleteStoryButton({
   if (variant === "compact") {
     return confirming ? (
       <span className="flex shrink-0 items-center gap-1.5" data-testid="delete-confirm">
-        <span className="text-xs text-teal-50">{error ?? "Delete?"}</span>
+        <span className="text-xs text-navy-50">{error ?? "Delete?"}</span>
         <button
           type="button"
           onClick={confirm}
@@ -42,7 +42,7 @@ export function DeleteStoryButton({
           type="button"
           onClick={() => setConfirming(false)}
           disabled={pending}
-          className="rounded-lg px-2 py-1 text-xs font-semibold text-teal-50 hover:bg-white/10"
+          className="rounded-lg px-2 py-1 text-xs font-semibold text-navy-50 hover:bg-white/10"
         >
           No
         </button>
@@ -53,7 +53,7 @@ export function DeleteStoryButton({
         onClick={() => setConfirming(true)}
         aria-label={`Delete ${title}`}
         title="Delete story"
-        className="shrink-0 rounded-lg p-2 text-teal-100 hover:bg-white/10 hover:text-white"
+        className="shrink-0 rounded-lg p-2 text-navy-100 hover:bg-white/10 hover:text-white"
       >
         <svg
           aria-hidden="true"

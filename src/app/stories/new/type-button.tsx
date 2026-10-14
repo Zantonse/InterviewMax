@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 
 const CARD =
-  "group rounded-3xl bg-white p-6 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-teal-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 disabled:translate-y-0 disabled:opacity-70";
+  "group rounded-3xl bg-white p-6 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-navy-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-700 disabled:translate-y-0 disabled:opacity-70";
 
 export function TypeButton({
   id,
@@ -26,11 +26,11 @@ export function TypeButton({
   const body = (
     <>
       <span className="flex items-start justify-between gap-2">
-        <span className="block text-lg font-bold text-slate-900 group-hover:text-teal-900">
+        <span className="block text-lg font-bold text-slate-900 group-hover:text-navy-900">
           {label}
         </span>
         {badge && (
-          <span className="shrink-0 rounded-full bg-teal-800 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="shrink-0 rounded-full bg-navy-800 px-2.5 py-1 text-xs font-semibold text-white">
             {badge}
           </span>
         )}

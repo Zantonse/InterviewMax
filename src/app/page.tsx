@@ -35,7 +35,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/stories/new"
-            className="rounded-xl bg-teal-800 px-4 py-3 font-semibold text-white transition hover:bg-teal-900"
+            className="rounded-xl bg-navy-800 px-4 py-3 font-semibold text-white transition hover:bg-navy-900"
           >
             Build a story
           </Link>
@@ -48,7 +48,7 @@ export default function HomePage() {
         </Suspense>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-[auto_auto_1fr]">
-          <Card className="bg-teal-800 text-white md:col-span-2 md:row-span-3" title="Story bank">
+          <Card className="bg-navy-800 text-white md:col-span-2 md:row-span-3" title="Story bank">
             <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
               <StoryBank />
             </Suspense>
@@ -84,7 +84,7 @@ async function StoryBank() {
     // Don't take the whole home page down if the database can't be read.
     console.error("Home: loading stories failed", err);
     return (
-      <p className="max-w-md text-teal-50" role="alert" data-testid="story-bank-error">
+      <p className="max-w-md text-navy-50" role="alert" data-testid="story-bank-error">
         Your stories couldn&apos;t be loaded right now. Try again in a minute.
       </p>
     );
@@ -94,9 +94,9 @@ async function StoryBank() {
       <p className="text-5xl font-extrabold" data-testid="story-count">
         {stories.length}
       </p>
-      <p className="mt-1 text-teal-100">{stories.length === 1 ? "story" : "stories"} so far</p>
+      <p className="mt-1 text-navy-100">{stories.length === 1 ? "story" : "stories"} so far</p>
       {stories.length === 0 ? (
-        <p className="mt-6 max-w-md text-teal-50">
+        <p className="mt-6 max-w-md text-navy-50">
           Every story you build is kept here. &ldquo;Tell me about yourself&rdquo; is a good first
           one: it&apos;s how almost every interview opens.
         </p>
@@ -113,13 +113,13 @@ async function StoryBank() {
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{story.title}</span>
-                    <span className="block truncate text-sm text-teal-100">
+                    <span className="block truncate text-sm text-navy-100">
                       {getStoryType(story.storyType)?.label ?? "Story"}
                     </span>
                   </span>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      drafted ? "bg-white text-teal-900" : "bg-teal-900/60 text-teal-50"
+                      drafted ? "bg-white text-navy-900" : "bg-navy-900/60 text-navy-50"
                     }`}
                   >
                     {drafted ? "Draft written" : "In progress"}
@@ -153,7 +153,7 @@ async function TargetJobs() {
         </EmptyLine>
         <Link
           href="/jobs"
-          className="mt-4 inline-block rounded-xl bg-teal-800 px-4 py-2.5 font-semibold text-white hover:bg-teal-900"
+          className="mt-4 inline-block rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white hover:bg-navy-900"
         >
           Add a target job
         </Link>
@@ -165,7 +165,7 @@ async function TargetJobs() {
       <ul className="space-y-2" data-testid="home-jobs">
         {jobs.map((job) => (
           <li key={job.id}>
-            <Link href={`/jobs/${job.id}`} className="block hover:text-teal-800">
+            <Link href={`/jobs/${job.id}`} className="block hover:text-navy-800">
               <span className="block truncate font-semibold">{job.title}</span>
               <span className="block truncate text-sm text-slate-500">
                 {[job.company, levelLabel(job.level)].filter(Boolean).join(" · ")}
@@ -176,7 +176,7 @@ async function TargetJobs() {
       </ul>
       <Link
         href="/jobs"
-        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
       >
         See what to build first →
       </Link>
@@ -202,7 +202,7 @@ async function LikelyQuestions() {
         <EmptyLine>See the questions {jobs[0].title} is most likely to ask.</EmptyLine>
         <Link
           href={`/jobs/${jobs[0].id}`}
-          className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+          className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
         >
           Predict them →
         </Link>
@@ -215,7 +215,7 @@ async function LikelyQuestions() {
       <QuestionList questions={job.likelyQuestions.questions} stories={stories} limit={3} compact />
       <Link
         href={`/jobs/${job.id}`}
-        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
       >
         All {job.likelyQuestions.questions.length} questions →
       </Link>
@@ -241,7 +241,7 @@ async function PastInterviews() {
         </EmptyLine>
         <Link
           href="/transcripts"
-          className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+          className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
         >
           Add a transcript →
         </Link>
@@ -261,7 +261,7 @@ async function PastInterviews() {
       )}
       <Link
         href="/transcripts"
-        className="mt-4 inline-block text-sm font-semibold text-teal-800 hover:underline"
+        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
       >
         See what they looked for →
       </Link>

@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Past interview · InterviewMax" };
 export const maxDuration = 300;
 
 const LANDED_STYLES: Record<Landed, { label: string; className: string }> = {
-  strong: { label: "Landed well", className: "bg-teal-800 text-white" },
+  strong: { label: "Landed well", className: "bg-navy-800 text-white" },
   mixed: { label: "Partly landed", className: "bg-amber-100 text-amber-900" },
   weak: { label: "Didn't land", className: "bg-red-100 text-red-900" },
   unclear: { label: "Not judged", className: "bg-slate-100 text-slate-600" },
@@ -27,7 +27,7 @@ export default function TranscriptPage({ params }: PageProps<"/transcripts/[id]"
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/transcripts" className="text-sm font-medium text-teal-800 hover:underline">
+        <Link href="/transcripts" className="text-sm font-medium text-navy-800 hover:underline">
           ← All past interviews
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
@@ -57,7 +57,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
       {job && (
         <p className="mt-1 text-sm text-slate-500">
           For{" "}
-          <Link href={`/jobs/${job.id}`} className="font-semibold text-teal-800 hover:underline">
+          <Link href={`/jobs/${job.id}`} className="font-semibold text-navy-800 hover:underline">
             {job.title}
           </Link>
         </p>
@@ -67,7 +67,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
         <div className="space-y-4 lg:col-span-2">
           {analysis ? (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-teal-800">
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-navy-800">
                 What they asked, and how it landed
               </h2>
               <p className="mb-4 text-sm text-slate-600">
@@ -88,7 +88,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
             </section>
           )}
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-teal-800">
+            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-navy-800">
               The transcript
             </summary>
             <p className="mt-4 whitespace-pre-line text-slate-700">{transcript.transcript}</p>
@@ -98,7 +98,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
         <div className="space-y-4">
           {analysis && analysis.lookingFor.length > 0 && (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-800">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-navy-800">
                 What this interviewer looked for
               </h2>
               <ul className="space-y-3" data-testid="looking-for">
@@ -141,11 +141,11 @@ function AskedItem({ q, n }: { q: AskedQuestion; n: number }) {
   return (
     <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
       <p className="font-semibold text-slate-900">
-        <span className="mr-2 text-teal-800">{n}.</span>
+        <span className="mr-2 text-navy-800">{n}.</span>
         {q.question}
       </p>
       <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
-        <span className="rounded-full bg-teal-50 px-2 py-0.5 font-semibold text-teal-900">
+        <span className="rounded-full bg-navy-50 px-2 py-0.5 font-semibold text-navy-900">
           {getTheme(q.theme)?.label ?? "Other"}
         </span>
         <span className={`rounded-full px-2 py-0.5 font-semibold ${landed.className}`}>
@@ -179,7 +179,7 @@ function AskedItem({ q, n }: { q: AskedQuestion; n: number }) {
 
 function Quote({ children, label }: { children: React.ReactNode; label?: string }) {
   return (
-    <blockquote className="mt-1 border-l-2 border-teal-700/30 pl-3 text-sm text-slate-600">
+    <blockquote className="mt-1 border-l-2 border-navy-700/30 pl-3 text-sm text-slate-600">
       {label && <span className="font-semibold text-slate-700">{label}: </span>}
       &ldquo;{children}&rdquo;
     </blockquote>

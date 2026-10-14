@@ -19,7 +19,7 @@ export default function JobsPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-teal-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
           ← Back to your prep
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -83,7 +83,7 @@ async function JobsContent() {
               <li key={job.id}>
                 <Link
                   href={`/jobs/${job.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-teal-700/40"
+                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-navy-700/40"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="text-lg font-bold text-slate-900">
@@ -92,7 +92,7 @@ async function JobsContent() {
                         <span className="font-normal text-slate-600"> at {job.company}</span>
                       )}
                     </span>
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-900">
+                    <span className="rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-900">
                       {levelLabel(job.level) ?? "Level not set"}
                       {!job.levelConfirmed && " · confirm"}
                     </span>
@@ -121,7 +121,7 @@ async function JobsContent() {
 
         {jobs.length < MAX_JOBS && (
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-teal-800">
+            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-navy-800">
               Add another job
             </summary>
             <div className="mt-4">
@@ -195,7 +195,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-navy-800">{title}</h2>
       {children}
     </section>
   );

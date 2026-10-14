@@ -72,13 +72,13 @@ export function TailoredIntroPanel({
           rows={3}
           maxLength={MAX_WHY_COMPANY_LENGTH}
           placeholder="Plain notes are fine."
-          className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/20"
+          className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-navy-600 focus:bg-white focus:ring-2 focus:ring-navy-600/20"
         />
         <div>
           <button
             type="submit"
             disabled={pending || !why.trim()}
-            className="rounded-xl bg-teal-800 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-900 disabled:opacity-60"
+            className="rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60"
           >
             {pending
               ? "Writing it for this job…"
@@ -105,7 +105,7 @@ export function TailoredIntroPanel({
             <button
               type="button"
               onClick={copy}
-              className="rounded-full px-3 py-1.5 font-medium text-teal-800 ring-1 ring-teal-800/20 hover:bg-teal-50"
+              className="rounded-full px-3 py-1.5 font-medium text-navy-800 ring-1 ring-navy-800/20 hover:bg-navy-50"
             >
               {copied ? "Copied" : "Copy"}
             </button>
@@ -119,7 +119,7 @@ export function TailoredIntroPanel({
             ))}
           </div>
           {failed.length === 0 ? (
-            <p className="text-sm font-medium text-teal-800">
+            <p className="text-sm font-medium text-navy-800">
               ✓ Under 90 seconds, every number from your answers, no filler or unsure figures.
             </p>
           ) : (
