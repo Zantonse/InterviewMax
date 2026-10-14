@@ -202,6 +202,11 @@ export function coreQuestionText(questionId: string, storyType: StoryType | unde
 export const INTRO_LENGTH = { min: 150, max: 225 };
 export const STAR_LENGTH = { min: 180, max: 300 };
 
+// An introduction leads with the one figure that matters most and saves the rest for follow-up
+// questions (tester feedback: a list of metrics buries the point). More than this is flagged, and
+// the writer is sent back to cut.
+export const INTRO_MAX_FIGURES = 3;
+
 export const MAX_ANSWER_LENGTH = 4000;
 
 // Each user keeps one "Tell me about yourself"; it's suggested first but doesn't gate the others.

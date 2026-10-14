@@ -3,7 +3,13 @@ import type { StoryDraft } from "./content";
 import { parseStoredFit, type ContentCheck } from "./fit";
 import { findNumbers } from "./numbers";
 import { extractJson } from "./prompts";
-import { INTRO_LENGTH, STAR_LENGTH, storyParts, type StoryType } from "./story-types";
+import {
+  INTRO_LENGTH,
+  INTRO_MAX_FIGURES,
+  STAR_LENGTH,
+  storyParts,
+  type StoryType,
+} from "./story-types";
 
 // Grading a written story (PRD, quality gate). Two halves that run side by side:
 //   quick checks: plain code, no judgment (a number in the result, every number traced, "I" against
@@ -56,7 +62,8 @@ export const INTRO_CRITERIA = [
   {
     id: "present",
     label: "Where you are now",
-    question: "Are your current role, company or industry, and scope clear, with a size?",
+    question:
+      "Does it open with a short headline of who you are today (role and scope, in a sentence or so), saving the details for later?",
   },
   {
     id: "path",
@@ -66,7 +73,8 @@ export const INTRO_CRITERIA = [
   {
     id: "highlight",
     label: "Proof",
-    question: "Is there a result with a number and the context that makes it impressive?",
+    question:
+      "Does it lead with the one most important result, with a number and the context that makes it impressive, and save the other metrics for follow-up questions?",
   },
   {
     id: "strengths",
@@ -76,7 +84,8 @@ export const INTRO_CRITERIA = [
   {
     id: "next",
     label: "Why this next role",
-    question: "Is it clear what you want next, why now, and how it follows from your path?",
+    question:
+      "Is it clear what you want next, why now, and how it follows from your path, in words specific enough to personalize to each company rather than generic?",
   },
   {
     id: "thread",
@@ -97,6 +106,8 @@ export const CHECKS = [
   { id: "length", label: "Spoken length" },
   { id: "filler", label: "No filler or vague phrases" },
   { id: "hedged", label: "No unsure figures" },
+  // "Tell me about yourself" only.
+  { id: "focus", label: "A few key figures, not a list" },
 ] as const;
 
 export type CheckId = (typeof CHECKS)[number]["id"];
@@ -273,7 +284,18 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     untraced: draft.untracedNumbers,
     range: lengthRange(storyType),
     where: storyType?.format === "intro" ? "your proof point" : "the result",
+    ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
   });
+}
+
+// The figures an introduction says, as written, once each. Years ("since 2019") aren't metrics.
+export function introFigures(text: string): string[] {
+  const found = new Set<string>();
+  for (const n of findNumbers(text, { includeCommonWords: false })) {
+    if (/^(19|20)\d\d$/.test(n.raw)) continue;
+    found.add(n.raw);
+  }
+  return [...found];
 }
 
 // The same checks on any spoken script, e.g. "Tell me about yourself" for one target job.
@@ -284,6 +306,8 @@ export function checkScript(input: {
   untraced: string[];
   range: { min: number; max: number };
   where: string;
+  // An introduction leads with its most important figure and saves the rest for follow-ups.
+  maxFigures?: number;
 }): CheckResult[] {
   const { text, untraced, where } = input;
   const numbers = findNumbers(input.numberText, { includeCommonWords: false });
@@ -293,8 +317,9 @@ export function checkScript(input: {
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
   const filler = fillerPhrases(text);
   const hedged = hedgedFigures(text);
+  const figures = input.maxFigures === undefined ? [] : introFigures(text);
 
-  return [
+  const results: CheckResult[] = [
     {
       id: "number",
       pass: numbers.length > 0,
@@ -332,6 +357,17 @@ export function checkScript(input: {
         : "Every figure is said with confidence.",
     },
   ];
+  if (input.maxFigures !== undefined) {
+    const over = figures.length > input.maxFigures;
+    results.push({
+      id: "focus",
+      pass: !over,
+      detail: over
+        ? `${figures.length} figures (${figures.join(", ")}). Keep the one or two that matter most for this audience and save the rest for follow-up questions.`
+        : `${figures.length} figure${figures.length === 1 ? "" : "s"}, so the one that matters stands out.`,
+    });
+  }
+  return results;
 }
 
 function formatSeconds(seconds: number) {
@@ -399,6 +435,11 @@ function checkFixes(checks: CheckResult[], storyType: StoryType | undefined): st
       "Firm up the unsure figures: check the real number in your records and add it to an answer, or drop it.",
     );
   }
+  if (failed("focus")) {
+    fixes.push(
+      "Cut to the one or two figures that matter most for this audience, and save the rest for follow-up questions.",
+    );
+  }
   if (failed("number")) {
     fixes.push(
       storyType?.format === "intro"
@@ -463,7 +504,16 @@ For each criterion:
 - note: one or two sentences (at most 40 words) on why it got that score, quoting or naming the specific part of the story. Say what works as well as what doesn't.
 - improve: when the score is below 4, one sentence on the specific change that would raise it, addressed to the user. Leave it empty for a 4.
 
-Write a one-sentence summary of how the story lands for an interviewer overall.
+${
+  intro
+    ? `For "Tell me about yourself", judge it as an opening, not the whole case. It should land the single most important thing about the candidate and why it matters, then stop:
+- A long opening that walks through role details is a weakness; a one-line headline ("I lead AI enablement for the whole SE org") with the details saved for later is a strength.
+- More than two or three metrics is a weakness, not a strength: the extra figures belong in follow-up answers. Say which ones to keep and which to save.
+- "Why this next role" should be ready to personalize to each company: what the company is going through and why the candidate fits that moment (for example, a company in an AI transformation versus a startup that needs revenue fast). When it is generic, the improve line should say to personalize it to each company, on each target job's page.
+
+`
+    : ""
+}Write a one-sentence summary of how the story lands for an interviewer overall.
 
 List the two or three things that already work best, so the user knows what to keep. Be specific: quote or name the line, number or example.
 

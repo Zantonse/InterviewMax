@@ -63,7 +63,9 @@ For each job:
 - answers: the numbers of the likely questions this story would answer well, if any. Only include a question when this story is a natural, strong answer to it.
 - level: when the job has a level, say whether the scope of the story (hands-on work, a team-level result, or organization-level impact) is "below", "matches" or "above" what that level is expected to show, with one short sentence on why. A hands-on story can still be useful at a senior level; say so plainly when it is.
 
-Then list up to 3 strong facts in the candidate's own answers that the written story leaves out and that would help with these jobs (a number, a named example, a result). Quote or name them from the answers; never invent or change a fact or a number. Return an empty list when the story already uses the best material.
+When the story is "Tell me about yourself", read it as the opening of an interview at each company. In misses, say plainly when "why this next role" isn't personalized to that company, and what the answer should lead with there given the company's situation as the job describes it (for example, at an established company going through an AI transformation, establish credentials quickly then move to transformation work; at a startup, lead with results that show fast revenue impact). Each job page writes a version for that company, so point there.
+
+Then list up to 3 strong facts in the candidate's own answers that the written story leaves out and that would help with these jobs (a number, a named example, a result). Quote or name them from the answers; never invent or change a fact or a number. Return an empty list when the story already uses the best material. For "Tell me about yourself", only list a fact that would be a better lead than what the story uses, phrased as a swap ("Lead with … instead of …"), never as one more figure to add: an introduction should carry only a few.
 
 Be specific and brief. Address the candidate as "you".
 

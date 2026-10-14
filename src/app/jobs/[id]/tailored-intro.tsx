@@ -128,7 +128,8 @@ export function TailoredIntroPanel({
           </div>
           {failed.length === 0 ? (
             <p className="text-sm font-medium text-navy-800">
-              ✓ Under 90 seconds, every number from your answers, no filler or unsure figures.
+              ✓ Under 90 seconds, a few key figures all from your answers, no filler or unsure
+              figures.
             </p>
           ) : (
             <ul
