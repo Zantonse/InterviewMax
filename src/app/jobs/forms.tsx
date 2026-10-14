@@ -8,6 +8,7 @@ import {
   MAX_TITLE_LENGTH,
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
+import { POSTING_FILE_ACCEPT, postingFileKind } from "@/lib/jobs/posting-file";
 import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import {
@@ -15,11 +16,12 @@ import {
   confirmLevel,
   fetchJobPosting,
   predictLikelyQuestions,
-  readJobPostingPdf,
+  readJobPostingFile,
   rereadJobs,
   saveResume,
   type FormState,
 } from "./actions";
+import { postingUpload } from "./posting-upload";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-navy-700 focus:outline-none";
@@ -27,6 +29,15 @@ const PRIMARY =
   "rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60";
 const SECONDARY =
   "rounded-xl px-4 py-2.5 font-semibold text-navy-800 ring-1 ring-navy-800/20 transition hover:bg-navy-50 disabled:opacity-60";
+
+// Where the add-job form was filled in from.
+type Source = "link" | "pdf" | "page" | "screenshot";
+const SOURCE_LABEL: Record<Source, string> = {
+  link: "link",
+  pdf: "PDF",
+  page: "saved page",
+  screenshot: "screenshots",
+};
 
 export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
@@ -36,12 +47,12 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
   const [description, setDescription] = useState("");
   const [fetchError, setFetchError] = useState<string | null>(null);
   // Where the form was last filled in from, to say so.
-  const [fetched, setFetched] = useState<null | "link" | "pdf">(null);
+  const [fetched, setFetched] = useState<null | Source>(null);
   const [fetching, startFetch] = useTransition();
-  const [fetchingFrom, setFetchingFrom] = useState<"link" | "pdf">("link");
+  const [fetchingFrom, setFetchingFrom] = useState<Source>("link");
   const id = useId();
 
-  function fill(from: "link" | "pdf", load: () => ReturnType<typeof fetchJobPosting>) {
+  function fill(from: Source, load: () => ReturnType<typeof fetchJobPosting>) {
     setFetchError(null);
     setFetched(null);
     setFetchingFrom(from);
@@ -64,11 +75,19 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
     fill("link", () => fetchJobPosting(link));
   }
 
-  function uploadPdf(file: File | undefined) {
-    if (!file) return;
-    const data = new FormData();
-    data.append("file", file);
-    fill("pdf", () => readJobPostingPdf(data));
+  function uploadFiles(files: File[]) {
+    if (files.length === 0) return;
+    const kind = postingFileKind(files[0].name);
+    fill(kind === "image" ? "screenshot" : kind === "page" ? "page" : "pdf", async () => {
+      try {
+        return await readJobPostingFile(await postingUpload(files));
+      } catch (err) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : "That file couldn't be read.",
+        };
+      }
+    });
   }
 
   return (
@@ -103,36 +122,39 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
         </div>
         <p className="mt-1 text-xs text-slate-500">
           Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn,
-          Indeed and Glassdoor block links: save the posting as a PDF and upload it below, or
+          Indeed and Glassdoor block links: save the posting as a file and upload it below, or
           paste the text.
         </p>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-pdf`}>
-          Or upload the posting as a PDF{" "}
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-file`}>
+          Or upload the posting as a PDF, web page or screenshots{" "}
           <span className="font-normal text-slate-500">(optional)</span>
         </label>
         <input
-          id={`${id}-pdf`}
+          id={`${id}-file`}
           type="file"
-          accept=".pdf,application/pdf"
+          multiple
+          accept={POSTING_FILE_ACCEPT}
           disabled={fetching}
           onChange={(e) => {
-            uploadPdf(e.target.files?.[0]);
+            uploadFiles(Array.from(e.target.files ?? []));
             e.target.value = "";
           }}
           className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
         />
         <p className="mt-1 text-xs text-slate-500">
-          {fetching && fetchingFrom === "pdf"
-            ? "Reading the PDF…"
-            : "On the posting, use your browser's Print, then Save as PDF. Works for LinkedIn, Indeed and Glassdoor."}
+          {fetching && fetchingFrom !== "link"
+            ? `Reading the ${SOURCE_LABEL[fetchingFrom]}…`
+            : "On the posting, use your browser's Print, then Save as PDF; or Save page as; or take screenshots of the whole posting (pick them all at once). Works for LinkedIn, Indeed and Glassdoor."}
         </p>
       </div>
       {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
       {fetched && (
         <p className="text-sm font-medium text-navy-800" role="status">
-          Filled in from the {fetched === "pdf" ? "PDF" : "link"}. Check it over, then add the job.
+          {fetched === "screenshot"
+            ? "Read from your screenshots. Check each line against the posting, then add the job."
+            : `Filled in from the ${SOURCE_LABEL[fetched]}. Check it over, then add the job.`}
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -172,7 +194,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
           maxLength={MAX_DESCRIPTION_LENGTH}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Paste the whole posting, or fill it in from a link or PDF above: the responsibilities and requirements are what I read."
+          placeholder="Paste the whole posting, or fill it in from a link or file above: the responsibilities and requirements are what I read."
           className={INPUT}
         />
       </label>

@@ -164,7 +164,7 @@ export function fromPage(html: string): FetchedPosting | null {
   return posting(title, company, [htmlToText(main)]);
 }
 
-function jobPostingLd(html: string): FetchedPosting | null {
+export function jobPostingLd(html: string): FetchedPosting | null {
   const scripts = html.matchAll(
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
   );

@@ -43,6 +43,37 @@ describe("Anthropic provider", () => {
     });
   });
 
+  it("sends images as base64 blocks", async () => {
+    const create = vi.fn().mockResolvedValue({
+      model: "m",
+      stop_reason: "end_turn",
+      content: [],
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    const provider = createAnthropicProvider({ messages: { create } } as never);
+    await provider.generate({
+      model: "m",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", mediaType: "image/jpeg", data: "QUJD" },
+            { type: "text", text: "Read it." },
+          ],
+        },
+      ],
+    });
+    expect(create.mock.calls[0][0].messages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "QUJD" } },
+          { type: "text", text: "Read it." },
+        ],
+      },
+    ]);
+  });
+
   it("maps refusals and wraps errors", async () => {
     const refusing = createAnthropicProvider({
       messages: {
@@ -111,6 +142,37 @@ describe("OpenAI-compatible provider", () => {
       messages: [],
       max_tokens: 500,
     });
+  });
+
+  it("sends images as data URLs", async () => {
+    const create = vi.fn().mockResolvedValue({
+      model: "m",
+      choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
+    });
+    const provider = createOpenAICompatibleProvider("openrouter", {
+      chat: { completions: { create } },
+    } as never);
+    await provider.generate({
+      model: "m",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", mediaType: "image/png", data: "QUJD" },
+            { type: "text", text: "Read it." },
+          ],
+        },
+      ],
+    });
+    expect(create.mock.calls[0][0].messages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: "data:image/png;base64,QUJD" } },
+          { type: "text", text: "Read it." },
+        ],
+      },
+    ]);
   });
 
   it("labels OpenRouter errors with the provider id", async () => {
