@@ -17,7 +17,8 @@ const TIMEOUT_MS = 10_000;
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 
-const PASTE_INSTEAD = "Open the posting, copy its text and paste it below instead.";
+const PASTE_INSTEAD =
+  "Open the posting and save it as a PDF (Print, then Save as PDF) to upload below, or paste its text instead.";
 
 // Fetches the posting a link points to. Throws an Error whose message can be shown to the user.
 export async function fetchPosting(link: string): Promise<FetchedPosting> {

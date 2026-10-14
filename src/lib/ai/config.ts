@@ -37,6 +37,8 @@ export const STEP_MODELS = {
   jobsRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Likely questions: predict one target job's behavioral questions from the themes, its posting
   // and any interview reports the user pasted.
+  // Target jobs: pick the posting out of a job page saved as PDF (copied lines only, checked in code).
+  postingExtract: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   likelyQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.

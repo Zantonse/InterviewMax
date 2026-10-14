@@ -15,6 +15,7 @@ import {
   confirmLevel,
   fetchJobPosting,
   predictLikelyQuestions,
+  readJobPostingPdf,
   rereadJobs,
   saveResume,
   type FormState,
@@ -34,25 +35,40 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [fetched, setFetched] = useState(false);
+  // Where the form was last filled in from, to say so.
+  const [fetched, setFetched] = useState<null | "link" | "pdf">(null);
   const [fetching, startFetch] = useTransition();
+  const [fetchingFrom, setFetchingFrom] = useState<"link" | "pdf">("link");
   const id = useId();
 
-  function fetchLink() {
-    if (!link.trim()) return;
+  function fill(from: "link" | "pdf", load: () => ReturnType<typeof fetchJobPosting>) {
     setFetchError(null);
-    setFetched(false);
+    setFetched(null);
+    setFetchingFrom(from);
     startFetch(async () => {
-      const result = await fetchJobPosting(link);
+      const result = await load();
       if (!result.ok) {
         setFetchError(result.error);
         return;
       }
-      setTitle(result.posting.title);
-      setCompany(result.posting.company);
+      // Keep what the user already typed when the source doesn't give it.
+      if (result.posting.title) setTitle(result.posting.title);
+      if (result.posting.company) setCompany(result.posting.company);
       setDescription(result.posting.description);
-      setFetched(true);
+      setFetched(from);
     });
+  }
+
+  function fetchLink() {
+    if (!link.trim()) return;
+    fill("link", () => fetchJobPosting(link));
+  }
+
+  function uploadPdf(file: File | undefined) {
+    if (!file) return;
+    const data = new FormData();
+    data.append("file", file);
+    fill("pdf", () => readJobPostingPdf(data));
   }
 
   return (
@@ -82,21 +98,43 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
             disabled={fetching || !link.trim()}
             className={`${SECONDARY} shrink-0`}
           >
-            {fetching ? "Fetching…" : "Fetch posting"}
+            {fetching && fetchingFrom === "link" ? "Fetching…" : "Fetch posting"}
           </button>
         </div>
         <p className="mt-1 text-xs text-slate-500">
           Works best with {SUPPORTED_SITES.join(", ")} and most company career pages. LinkedIn,
-          Indeed and Glassdoor block this: use their &ldquo;Apply on company site&rdquo; link,
-          or paste the text.
+          Indeed and Glassdoor block links: save the posting as a PDF and upload it below, or
+          paste the text.
         </p>
-        {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
-        {fetched && (
-          <p className="mt-1 text-sm font-medium text-navy-800" role="status">
-            Filled in from the link. Check it over, then add the job.
-          </p>
-        )}
       </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-pdf`}>
+          Or upload the posting as a PDF{" "}
+          <span className="font-normal text-slate-500">(optional)</span>
+        </label>
+        <input
+          id={`${id}-pdf`}
+          type="file"
+          accept=".pdf,application/pdf"
+          disabled={fetching}
+          onChange={(e) => {
+            uploadPdf(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:font-semibold file:text-navy-900"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          {fetching && fetchingFrom === "pdf"
+            ? "Reading the PDF…"
+            : "On the posting, use your browser's Print, then Save as PDF. Works for LinkedIn, Indeed and Glassdoor."}
+        </p>
+      </div>
+      {fetchError && <ErrorLine>{fetchError}</ErrorLine>}
+      {fetched && (
+        <p className="text-sm font-medium text-navy-800" role="status">
+          Filled in from the {fetched === "pdf" ? "PDF" : "link"}. Check it over, then add the job.
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
           Job title
@@ -134,7 +172,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
           maxLength={MAX_DESCRIPTION_LENGTH}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Paste the whole posting, or fetch it from a link above: the responsibilities and requirements are what I read."
+          placeholder="Paste the whole posting, or fill it in from a link or PDF above: the responsibilities and requirements are what I read."
           className={INPUT}
         />
       </label>
