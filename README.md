@@ -8,7 +8,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 
 ## What it does
 
-- **Sign in** with a magic link or a 6-digit code from the same email. The link opens a "One more click" page first, so a work email's link scanner can't use it up.
+- **Sign in** with a magic link or a 6-digit code from the same email. The link opens a "One more click" page first, so a work email's link scanner can't use it up. With `AUTH_PROVIDER=auth0`, Auth0 signs people in instead (Google, Microsoft, LinkedIn or an emailed code) and Supabase keeps the data; existing users are matched by verified email on their first Auth0 sign-in and keep their stories.
 - **Value first.** Paste a job posting and see its likely behavioral questions straight away; the rest of the setup can wait.
 - **Target jobs** (`/jobs`). Add a job from a link to its posting, a PDF, a saved web page (.html/.mhtml), screenshots, or typed text; any one is enough. LinkedIn, Indeed and Glassdoor block link fetching, so the form asks for a paste there. Each job gets its role level, likely questions (themed, informed by interview reports you paste), and a read of how it compares with your resume and other jobs.
 - **Tell me about yourself.** Filled in from a LinkedIn profile PDF or Word resume, with "Map my role" for people who struggle to describe their job, then tailored per target job: company first, one proof point, three beats, under 90 seconds.
@@ -49,7 +49,8 @@ npm run dev                  # http://localhost:3000
 - `src/lib/roles` – Map my role
 - `src/lib/numbers` – the numbers checklist per role family
 - `src/lib/transcripts` – reading and reviewing past interview transcripts
-- `src/proxy.ts` – refreshes the Supabase session and sends signed-out visitors to `/login`
+- `src/proxy.ts` – refreshes the Supabase or Auth0 session and sends signed-out visitors to `/login`
+- `src/lib/auth0` – the Auth0 client, its proxy, and the `AUTH_PROVIDER` switch
 - `src/lib/supabase` – Supabase clients for server code and the proxy
 - `src/lib/ai` – the model layer (see below)
 - `supabase/migrations` – database schema, in the order to apply it (see Supabase setup below)
@@ -97,6 +98,7 @@ Keys are read from server environment variables only and never reach the browser
    | `supabase/migrations/20261013020000_interview_transcripts.sql` | The `interview_transcripts` table, owner-only | Past interviews (#15) |
    | `supabase/migrations/20261014000000_numbers_checklist.sql` | The numbers checklist on the profile | Your numbers (#25) |
    | `supabase/migrations/20261014010000_intake_assessment.sql` | The intake assessment on the profile | Journey check |
+   | `supabase/migrations/20261014020000_auth0_sign_in.sql` | `auth_identities`, `current_user_id()` and `claim_profile()`; owner policies use `current_user_id()` so Supabase and Auth0 tokens both work; user ids hang off `profiles` instead of `auth.users` | Auth0 sign-in |
 
    Each feature's pull request also left a copy of its SQL in the project's shared files (`foundation/supabase-setup.sql`, `target-jobs/run-in-supabase.sql` for the second and third rows together, `transcripts/run-in-supabase.sql`, `numbers-checklist/run-in-supabase.sql`, `assessment/run-in-supabase.sql`); they match the migrations above. A page that 500s right after a merge usually means its SQL hasn't been run yet.
 4. Authentication → URL Configuration: set **Site URL** to the production URL and add these **Redirect URLs**:
@@ -106,6 +108,26 @@ Keys are read from server environment variables only and never reach the browser
 5. Authentication → Email Templates: paste `supabase/templates/magic_link.html` into **Magic Link** (subject "Your InterviewMax sign-in link") and `supabase/templates/confirmation.html` into **Confirm signup** (subject "Welcome to InterviewMax: confirm your email"). Both link to `/auth/confirm` with a token hash, which works in any browser and survives mail scanners, and both show the 6-digit code the sign-in page accepts. Local Supabase picks them up from `supabase/config.toml`.
 
 Supabase's built-in email sender is rate limited (a few emails an hour), which is fine for testing; set up custom SMTP before real users arrive. The current Supabase project is shared with another app; InterviewMax should move to its own project before real users.
+
+New tables must write their owner policies with `(select public.current_user_id())` and default `user_id` to `public.current_user_id()`, not `auth.uid()`: `auth.uid()` errors on an Auth0 user id. `supabase/rollbacks/20261014020000_auth0_sign_in_down.sql` undoes the Auth0 migration if it has to be rolled back.
+
+### Auth0
+
+Only needed with `AUTH_PROVIDER=auth0`. Uses [`@auth0/nextjs-auth0`](https://github.com/auth0/nextjs-auth0) v4 and Supabase [third-party auth for Auth0](https://supabase.com/docs/guides/auth/third-party/auth0): Supabase trusts the Auth0 ID token, so row-level security still limits each user to their own rows.
+
+1. Auth0 → Applications: a **Regular Web Application**. Allowed Callback URLs: `<site>/auth/callback`; Allowed Logout URLs and Allowed Web Origins: `<site>`, for localhost, production and the preview you test on. Copy its domain, client ID and secret into the `AUTH0_*` variables.
+2. Auth0 → Authentication: turn on Google, Microsoft Account, LinkedIn (each asking for the email address) and Passwordless → Email set to send a **code**, not a link, so work mail scanners can't use it up. Enable them all for the application. The buttons on `/login` use the connection names `google-oauth2`, `windowslive`, `linkedin` and `email`.
+3. Auth0 → Actions → Triggers → post-login: an action that gives InterviewMax's ID tokens the `role` claim Supabase needs (Auth0 drops it from access tokens, so the app sends Supabase the ID token):
+
+   ```js
+   const INTERVIEWMAX_CLIENT_ID = "<the application's client ID>";
+   exports.onExecutePostLogin = async (event, api) => {
+     if (event.client.client_id !== INTERVIEWMAX_CLIENT_ID) return;
+     api.idToken.setCustomClaim("role", "authenticated");
+   };
+   ```
+4. Supabase → Authentication → Third-party Auth: add Auth0 with the tenant ID (and region, if the domain has one, e.g. `us` in `name.us.auth0.com`).
+5. Apply `20261014020000_auth0_sign_in.sql`, then set `AUTH_PROVIDER=auth0`.
 
 ### Vercel
 

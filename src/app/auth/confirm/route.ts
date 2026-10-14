@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { authProvider } from "@/lib/auth0/provider";
 import { createClient } from "@/lib/supabase/server";
 
 // Lands here from the magic-link email. Handles both link styles:
@@ -11,6 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 // real click with "expired". So GET only shows a Continue button
 // (/auth/continue), and the token is verified when that button POSTs back here.
 export async function GET(request: NextRequest) {
+  // Old email links after the switch to Auth0 just lead back to the sign-in page.
+  if (authProvider() === "auth0") return finish(request, false);
   const { searchParams } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (authProvider() === "auth0") return finish(request, false);
   const form = await request.formData();
   const tokenHash = String(form.get("token_hash") ?? "");
   const type = String(form.get("type") ?? "") as EmailOtpType;
