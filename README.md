@@ -20,7 +20,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 - **Mic mode.** A Talk button beside the story builder's answer box, each Map my role question and "Why this company?". The browser records 16 kHz WAV (works the same in phone Safari, Chrome and Firefox) and sends it in pieces of up to 45 seconds, cut at a pause; each piece is written down by the `transcribe` step (Whisper Large V3 through OpenRouter's speech-to-text endpoint) and added to the box to edit before sending. Audio isn't stored.
 - A collapsible left navy sidebar on every signed-in page (a drawer on phones) links all of the above plus your recent stories.
 
-Not built yet: feedback on spoken delivery (pace, filler words; PRD P1), the evaluation harness for the grader (waiting on about 10 hand-graded stories), and the PRD's resume enhancer, paywall and success stories.
+Not built yet: feedback on spoken delivery (pace, filler words; PRD P1), and the PRD's resume enhancer, paywall and success stories.
 
 ## Run it locally
 
@@ -36,6 +36,7 @@ npm run dev                  # http://localhost:3000
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:e2e` | Browser tests (Playwright; builds must exist, so run `npm run build` first) |
 | `npm run ai:smoke` | One test call through each model provider that has a key set |
+| `npm run eval:grade -- <folder>` | Rerun the grader on the hand-graded stories and report where it disagrees (see below) |
 | `npm run db:push` | Apply `supabase/migrations` to the linked Supabase project |
 
 ## Project layout
@@ -54,6 +55,19 @@ npm run dev                  # http://localhost:3000
 - `supabase/migrations` – database schema, in the order to apply it (see Supabase setup below)
 - `supabase/templates` – the branded sign-in emails
 - `docs/build-diary.md` – what shipped, what was decided, and what feedback changed direction
+
+## Grader eval harness
+
+After any change to the grading prompt (`src/lib/stories/grading.ts`) or the `storyGrade` model, rerun the grader on the hand-graded stories and compare:
+
+```bash
+# Copy stories.json and grades.csv from the project's shared files (eval-harness/) into ./eval-set
+npm run eval:grade                              # one grader run per story
+npm run eval:grade -- --runs 3                  # three runs each, to see how stable scores are
+npm run eval:grade -- --model anthropic/claude-opus-5.5   # try another grader model
+```
+
+It needs `OPENROUTER_API_KEY` in `.env.local`, prints exact and within-one agreement, the grader's bias per criterion, tier agreement and every disagreement, and saves the report to `eval-set/results/`. The stories are user data, so `eval-set/` is git-ignored; the set lives in the project's shared files. `grades.csv` has a `pre_grade` per story and criterion and a `your_grade` column for a person's correction, which wins when filled in.
 
 ## Model layer
 
