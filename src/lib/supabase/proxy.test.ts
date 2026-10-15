@@ -7,6 +7,13 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/auth/confirm")).toBe(true);
   });
 
+  it("lets anyone read the policies and the account-deleted page", () => {
+    expect(isPublicPath("/privacy")).toBe(true);
+    expect(isPublicPath("/ai-usage")).toBe(true);
+    expect(isPublicPath("/account-deleted")).toBe(true);
+    expect(isPublicPath("/settings")).toBe(false);
+  });
+
   it("protects everything else", () => {
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/stories")).toBe(false);
