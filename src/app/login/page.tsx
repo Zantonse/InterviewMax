@@ -18,7 +18,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </h1>
         <p className="mt-2 text-slate-600">
           {auth0
-            ? "Sign in with Google, Microsoft, LinkedIn or a code sent to your email. No password needed."
+            ? "Sign in with Google, LinkedIn or a code sent to your email. No password needed."
             : "Sign in with your email. No password needed."}
         </p>
         <Suspense fallback={null}>

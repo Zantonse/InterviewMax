@@ -8,7 +8,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 
 ## What it does
 
-- **Sign in** with a magic link or a 6-digit code from the same email. The link opens a "One more click" page first, so a work email's link scanner can't use it up. With `AUTH_PROVIDER=auth0`, Auth0 signs people in instead (Google, Microsoft, LinkedIn or an emailed code) and Supabase keeps the data; existing users are matched by verified email on their first Auth0 sign-in and keep their stories.
+- **Sign in** with a magic link or a 6-digit code from the same email. The link opens a "One more click" page first, so a work email's link scanner can't use it up. With `AUTH_PROVIDER=auth0`, Auth0 signs people in instead (Google, LinkedIn or an emailed code) and Supabase keeps the data; existing users are matched by verified email on their first Auth0 sign-in and keep their stories.
 - **Value first.** Paste a job posting and see its likely behavioral questions straight away; the rest of the setup can wait.
 - **Target jobs** (`/jobs`). Add a job from a link to its posting, a PDF, a saved web page (.html/.mhtml), screenshots, or typed text; any one is enough. LinkedIn, Indeed and Glassdoor block link fetching, so the form asks for a paste there. Each job gets its role level, likely questions (themed, informed by interview reports you paste), and a read of how it compares with your resume and other jobs.
 - **Tell me about yourself.** Filled in from a LinkedIn profile PDF or Word resume, with "Map my role" for people who struggle to describe their job, then tailored per target job: company first, one proof point, three beats, under 90 seconds.
@@ -120,7 +120,7 @@ New tables must write their owner policies with `(select public.current_user_id(
 Only needed with `AUTH_PROVIDER=auth0`. Uses [`@auth0/nextjs-auth0`](https://github.com/auth0/nextjs-auth0) v4 and Supabase [third-party auth for Auth0](https://supabase.com/docs/guides/auth/third-party/auth0): Supabase trusts the Auth0 ID token, so row-level security still limits each user to their own rows.
 
 1. Auth0 → Applications: a **Regular Web Application**. Allowed Callback URLs: `<site>/auth/callback`; Allowed Logout URLs and Allowed Web Origins: `<site>`, for localhost, production and the preview you test on. Copy its domain, client ID and secret into the `AUTH0_*` variables.
-2. Auth0 → Authentication: turn on Google, Microsoft Account, LinkedIn (each asking for the email address) and Passwordless → Email set to send a **code**, not a link, so work mail scanners can't use it up. Enable them all for the application. The buttons on `/login` use the connection names `google-oauth2`, `windowslive`, `linkedin` and `email`.
+2. Auth0 → Authentication: turn on Google, LinkedIn (each asking for the email address) and Passwordless → Email set to send a **code**, not a link, so work mail scanners can't use it up. Enable them all for the application. The buttons on `/login` use the connection names `google-oauth2`, `linkedin` and `email`.
 3. Auth0 → Actions → Triggers → post-login: an action that gives InterviewMax's ID tokens the `role` claim Supabase needs (Auth0 drops it from access tokens, so the app sends Supabase the ID token):
 
    ```js

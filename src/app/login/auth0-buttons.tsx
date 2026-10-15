@@ -3,7 +3,6 @@
 // Auth0's defaults; "email" is Auth0's passwordless email connection, set to send a code.
 const CHOICES = [
   { connection: "google-oauth2", label: "Continue with Google" },
-  { connection: "windowslive", label: "Continue with Microsoft" },
   { connection: "linkedin", label: "Continue with LinkedIn" },
 ] as const;
 
