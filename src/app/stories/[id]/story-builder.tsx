@@ -335,9 +335,13 @@ export function StoryBuilder({
                 const round = f.round ?? 1;
                 const opensRound =
                   index === 0 || round !== (content.followUps?.[index - 1].round ?? 1);
+                const fromPractice = f.source === "practice";
+                const opensPractice =
+                  fromPractice && content.followUps?.[index - 1]?.source !== "practice";
                 return (
                   <Fragment key={index}>
-                    {opensRound && (
+                    {opensPractice && <CoachLine>Added from your practice answers:</CoachLine>}
+                    {opensRound && !fromPractice && (
                       <CoachLine>
                         {round === 1
                           ? "Thanks. A few quick follow-ups, easiest first:"

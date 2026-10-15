@@ -41,3 +41,10 @@ test("adding a target job needs a signed-in user", async ({ page }) => {
   await page.goto("/jobs/new");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("practice mode needs a signed-in user", async ({ page }) => {
+  await page.goto("/practice/00000000-0000-0000-0000-000000000000");
+  await expect(page).toHaveURL(/\/login$/);
+  await page.goto("/jobs/00000000-0000-0000-0000-000000000000/practice");
+  await expect(page).toHaveURL(/\/login$/);
+});

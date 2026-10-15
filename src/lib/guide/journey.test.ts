@@ -70,7 +70,7 @@ describe("jobSteps", () => {
     expect(currentStep(steps)?.id).toBe("stories");
   });
 
-  it("is complete when every top question has a written story", () => {
+  it("ends with practice, done once a round is finished", () => {
     const intro = story("intro", "about_me", true, {
       tailored: { "job-1": { whyCompany: "x", draft: { parts: {}, angle: "", untracedNumbers: [], model: "t", writtenAt: "" } } },
     } as Partial<StoryContent>);
@@ -80,7 +80,16 @@ describe("jobSteps", () => {
       intro: { content: intro.content, ready: true },
       stories: [intro, story("s1", "difficult_stakeholder", true), story("s2", "went_wrong", true)],
     });
-    expect(currentStep(steps)).toBeUndefined();
+    expect(currentStep(steps)?.id).toBe("practice");
+    expect(currentStep(steps)?.href).toBe("/jobs/job-1/practice");
+    const practiced = jobSteps({
+      job: { ...JOB, levelConfirmed: true },
+      company: "Acme",
+      intro: { content: intro.content, ready: true },
+      stories: [intro, story("s1", "difficult_stakeholder", true), story("s2", "went_wrong", true)],
+      practiced: true,
+    });
+    expect(currentStep(practiced)).toBeUndefined();
   });
 });
 

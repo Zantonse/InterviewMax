@@ -124,17 +124,33 @@ describe("buildPlan", () => {
     });
   });
 
-  it("this week: adds numbers and the top 5", () => {
+  it("this week: adds numbers and the top 5, then practice", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-10-19" } }));
     expect(plan.horizon).toBe("week");
-    expect(ids(plan)).toEqual(["questions", "aboutMe", "numbers", "answers"]);
+    expect(ids(plan)).toEqual(["questions", "aboutMe", "numbers", "answers", "practice"]);
     expect(plan.steps[3].detail).toBe("0 of 5 answered");
+    expect(plan.steps[4]).toMatchObject({ href: "/jobs/job-1/practice", done: false });
+    expect(plan.later).toEqual([]);
+  });
+
+  it("a finished practice round ticks off the practice step", () => {
+    const plan = buildPlan(
+      input({ job: { ...JOB, interviewDate: "2026-10-19" }, practiced: true }),
+    );
+    expect(plan.steps.find((s) => s.id === "practice")?.done).toBe(true);
   });
 
   it("two weeks or more: the full bank", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-11-01" } }));
     expect(plan.horizon).toBe("full");
-    expect(ids(plan)).toEqual(["questions", "numbers", "aboutMe", "storyPlan", "answers"]);
+    expect(ids(plan)).toEqual([
+      "questions",
+      "numbers",
+      "aboutMe",
+      "storyPlan",
+      "answers",
+      "practice",
+    ]);
     expect(plan.steps[4].detail).toBe("0 of 6 answered");
   });
 

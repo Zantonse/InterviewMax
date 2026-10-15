@@ -6,6 +6,7 @@ import { getAssessmentSafely } from "@/lib/assessment/data";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
+import { listPracticeSessionsSafely } from "@/lib/practice/data";
 import { type Plan, type PlanJob, buildPlan, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
@@ -168,14 +169,16 @@ function FirstJob() {
 }
 
 async function loadPlan() {
-  const [jobs, { overview }, stories, numbers, assessment, requestHeaders] = await Promise.all([
-    listJobs(),
-    getJobsPrep(),
-    listStories(),
-    getNumbersChecklistSafely(),
-    getAssessmentSafely(),
-    headers(),
-  ]);
+  const [jobs, { overview }, stories, numbers, assessment, practice, requestHeaders] =
+    await Promise.all([
+      listJobs(),
+      getJobsPrep(),
+      listStories(),
+      getNumbersChecklistSafely(),
+      getAssessmentSafely(),
+      listPracticeSessionsSafely(),
+      headers(),
+    ]);
   // Vercel sends the visitor's time zone, so "tomorrow" is the user's tomorrow.
   const today = todayIn(requestHeaders.get("x-vercel-ip-timezone"));
   const job = focusJob(jobs, today);
@@ -198,6 +201,7 @@ async function loadPlan() {
       .map((p) => p.storyType)
       .filter((t) => t !== REQUIRED_STORY_TYPE_ID)
       .slice(0, PLAN_SIZE),
+    practiced: practice.some((s) => s.targetJobId === job.id && s.finishedAt),
   });
   return { plan, job, nextInterview };
 }

@@ -10,6 +10,9 @@ export type FollowUp = {
   answer?: string;
   // Which review round asked it (1 or 2). Missing on stories from before there were two rounds.
   round?: number;
+  // "practice" when the user added it from a practice answer (see src/lib/practice): the question
+  // is the one they practiced, and the answer is what they said, confirmed by them.
+  source?: "practice";
 };
 
 // The review asks follow-ups in up to two rounds: the first always asks, the second only when the
@@ -213,6 +216,7 @@ export function parseContent(raw: unknown): StoryContent {
               gap: typeof f.gap === "string" ? f.gap : "",
               ...(typeof f.answer === "string" ? { answer: f.answer } : {}),
               ...(typeof f.round === "number" ? { round: f.round } : {}),
+              ...(f.source === "practice" ? { source: "practice" as const } : {}),
             },
           ]
         : [],
