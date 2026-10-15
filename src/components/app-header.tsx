@@ -159,6 +159,15 @@ async function AccountMenu() {
       >
         {user.email}
       </span>
+      <Link
+        href="/settings"
+        title="Settings and your data"
+        className="flex shrink-0 items-center rounded-lg p-1.5 text-ink-100 hover:bg-white/10 hover:text-white nav-collapsed:hidden"
+        data-testid="settings-link"
+      >
+        <NavIcon name="settings" />
+        <span className="sr-only">Settings</span>
+      </Link>
       <form action="/auth/signout" method="post">
         <button
           type="submit"

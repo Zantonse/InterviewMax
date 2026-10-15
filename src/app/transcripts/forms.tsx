@@ -9,6 +9,7 @@ import {
   TRANSCRIPT_EXTENSIONS,
 } from "@/lib/transcripts/content";
 import { addTranscript, reviewAgain, type FormState } from "./actions";
+import { AiNotice } from "@/components/ai-notice";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
@@ -38,6 +39,7 @@ export function AddTranscriptForm({
         <span className="mt-1 block text-xs font-normal text-slate-500">
           PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export.
         </span>
+        <AiNotice purpose="find what the interviewers asked and probed" className="mt-1" />
       </label>
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-text`}>
         Or paste it
