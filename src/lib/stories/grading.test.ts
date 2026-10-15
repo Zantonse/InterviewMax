@@ -228,6 +228,56 @@ describe("the grader's prompt and reply", () => {
   });
 });
 
+describe("show your thinking", () => {
+  const criteria = Object.fromEntries(STAR_CRITERIA.map((c) => [c.id, { score: 3, note: "Ok." }]));
+
+  it("asks the grader for thinking feedback on behavioral stories only, kept out of the scores", () => {
+    const star = gradeSystem(stakeholder);
+    expect(star).toContain('"thinking"');
+    expect(star).toMatch(/feedback only: don't let it change any score/);
+    expect(gradeSystem(aboutMe)).not.toContain('"thinking"');
+  });
+
+  it("parses the feedback, and drops it rather than failing the grade when it's malformed", () => {
+    const reply = (thinking: unknown) => JSON.stringify({ criteria, thinking });
+    expect(
+      parseGrade(
+        reply({ level: "partly", note: "Says it cut scope.", improve: "Say why." }),
+        stakeholder,
+      ).thinking,
+    ).toEqual({ level: "partly", note: "Says it cut scope.", improve: "Say why." });
+    // Nothing to add once it's shown.
+    expect(
+      parseGrade(reply({ level: "shown", note: "Clear.", improve: "More." }), stakeholder).thinking,
+    ).toEqual({ level: "shown", note: "Clear." });
+    expect(parseGrade(reply({ level: "great" }), stakeholder).thinking).toBeUndefined();
+    expect(parseGrade(reply(undefined), stakeholder).thinking).toBeUndefined();
+  });
+
+  it("never changes the tier, and round-trips through stories.content", () => {
+    const input = {
+      criteria: scores(STAR_CRITERIA, 4),
+      checks: checks(),
+      modelFixes: [],
+      storyType: stakeholder,
+      model: "m",
+      draftWrittenAt: goodStar.writtenAt,
+    };
+    const without = combineGrade(input);
+    const missing = combineGrade({
+      ...input,
+      thinking: { level: "missing", note: "Only lists steps.", improve: "Say why." },
+    });
+    expect(missing.tier).toBe(without.tier);
+    expect(missing.fixes).toEqual(without.fixes);
+    const content = parseContent(JSON.parse(JSON.stringify({ answers: {}, grade: missing })));
+    expect(content.grade?.thinking).toEqual(missing.thinking);
+    // About me has no key decision, so no thinking feedback.
+    expect(combineGrade({ ...input, storyType: aboutMe, thinking: missing.thinking }).thinking)
+      .toBeUndefined();
+  });
+});
+
 describe("saved grades", () => {
   it("round-trips through stories.content and goes stale when the draft is rewritten", () => {
     const grade = combineGrade({
