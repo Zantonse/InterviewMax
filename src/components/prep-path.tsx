@@ -87,18 +87,18 @@ export async function PrepPath() {
                 You&apos;re ready
                 <span className="font-normal text-slate-500">
                   {" "}
-                  · Read your top questions once more and say your answers out loud
+                  · Read your brief and do the one-minute warm-up
                 </span>
               </>
             )}
           </p>
         </div>
         <Link
-          href={step ? step.href : `/jobs/${job.id}`}
+          href={step ? step.href : `/jobs/${job.id}/brief`}
           aria-current="step"
           className="shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
         >
-          {step ? "Continue" : "Review questions"}
+          {step ? "Continue" : "Open your brief"}
         </Link>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -109,6 +109,15 @@ export async function PrepPath() {
             data-testid="set-interview-date"
           >
             {plan.basis === "assessment" ? "Set the date" : "Interview booked? Add the date"} →
+          </Link>
+        )}
+        {step && plan.horizon === "crunch" && (
+          <Link
+            href={`/jobs/${job.id}/brief`}
+            className="font-semibold text-ink-800 hover:underline"
+            data-testid="plan-brief"
+          >
+            Your pre-interview brief →
           </Link>
         )}
         {plan.horizon && (

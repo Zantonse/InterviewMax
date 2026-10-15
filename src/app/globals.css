@@ -60,6 +60,15 @@
   }
 }
 
+/* On paper (the pre-interview brief prints on one page) the sidebar is hidden, so drop its room. */
+@media print {
+  body:has(#app-nav),
+  html[data-nav="collapsed"] body:has(#app-nav) {
+    padding-left: 0;
+    background: white;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

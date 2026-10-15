@@ -19,7 +19,7 @@ export function NavShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-ink-950/20 bg-ink-900 px-4 py-3 lg:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-ink-950/20 bg-ink-900 px-4 py-3 lg:hidden print:hidden">
         <Link href="/" className="text-lg font-extrabold tracking-tight text-white">
           Interview<span className="text-accent-400">Max</span>
         </Link>
@@ -49,7 +49,7 @@ export function NavShell({ children }: { children: ReactNode }) {
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a")) setOpen(false);
         }}
-        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-ink-900 shadow-xl transition-transform duration-200 data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18"
+        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-ink-900 shadow-xl transition-transform duration-200 data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18 print:hidden"
       >
         <button
           type="button"

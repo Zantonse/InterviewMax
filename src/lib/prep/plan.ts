@@ -20,8 +20,8 @@ export type PlanStep = {
   done: boolean;
 };
 
-// A step the plan calls for but the app can't do yet (pre-interview brief). Shown in the plan,
-// never as the next step.
+// A step the plan calls for but the app can't do yet. Shown in the plan, never as the next step.
+// (The pre-interview brief was one; it's built now, and home links to it once the plan is done.)
 export type LaterStep = { id: string; label: string };
 
 export type Plan = {
@@ -144,7 +144,7 @@ export function buildPlan(input: PlanInput): Plan {
         basis,
         days,
         steps: [questions, aboutMe, answersStep(job, input.stories, 3), toughStep(input.stories)],
-        later: [BRIEF],
+        later: [],
       };
     case "week":
       return {
@@ -177,11 +177,6 @@ export function buildPlan(input: PlanInput): Plan {
       };
   }
 }
-
-const BRIEF: LaterStep = {
-  id: "brief",
-  label: "Read your one-page brief and warm up",
-};
 
 // Practice mode: a round of the job's likely questions, out loud, with follow-ups. Last, once
 // there are stories to practice.
