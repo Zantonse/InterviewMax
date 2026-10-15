@@ -7,7 +7,7 @@ export function StepStrip({ label, steps }: { label: string; steps: GuideStep[] 
   return (
     <nav
       aria-label={label}
-      className="mt-5 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-navy-700/30"
+      className="mt-5 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-ink-700/30"
       data-testid="step-strip"
     >
       <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -19,7 +19,7 @@ export function StepStrip({ label, steps }: { label: string; steps: GuideStep[] 
                 href={step.href}
                 aria-current={isCurrent ? "step" : undefined}
                 className={`flex items-start gap-3 rounded-xl px-3 py-2 transition ${
-                  isCurrent ? "bg-amber-50 ring-1 ring-amber-300" : "hover:bg-slate-50"
+                  isCurrent ? "bg-accent-50 ring-1 ring-accent-300" : "hover:bg-slate-50"
                 } ${!isCurrent && current >= 0 ? "max-sm:py-1" : ""}`}
                 data-testid={`step-${step.id}`}
                 data-done={step.done || undefined}
@@ -27,9 +27,9 @@ export function StepStrip({ label, steps }: { label: string; steps: GuideStep[] 
                 <span
                   className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                     step.done
-                      ? "bg-navy-800 text-white"
+                      ? "bg-ink-800 text-white"
                       : isCurrent
-                        ? "bg-amber-400 text-navy-950"
+                        ? "bg-accent-400 text-ink-950"
                         : "bg-slate-100 text-slate-500 ring-1 ring-slate-300"
                   }`}
                   aria-hidden

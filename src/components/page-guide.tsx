@@ -28,10 +28,10 @@ export function PageGuide({ id, steps }: { id: string; steps: React.ReactNode[] 
       className="group mt-2 max-w-2xl"
       data-testid={`guide-${id}`}
     >
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-navy-800 hover:underline [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-ink-800 hover:underline [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
-          className="flex size-4 items-center justify-center rounded-full bg-navy-800 text-[0.625rem] font-bold text-white"
+          className="flex size-4 items-center justify-center rounded-full bg-ink-800 text-[0.625rem] font-bold text-white"
         >
           ?
         </span>
@@ -40,10 +40,10 @@ export function PageGuide({ id, steps }: { id: string; steps: React.ReactNode[] 
           ▾
         </span>
       </summary>
-      <ol className="mt-3 grid gap-2 rounded-2xl bg-white/80 p-4 text-sm text-slate-700 ring-1 ring-navy-800/10 sm:grid-cols-3 sm:gap-4">
+      <ol className="mt-3 grid gap-2 rounded-2xl bg-white/80 p-4 text-sm text-slate-700 ring-1 ring-ink-800/10 sm:grid-cols-3 sm:gap-4">
         {steps.map((step, i) => (
           <li key={i} className="flex gap-2.5">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-navy-950">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent-400 text-xs font-bold text-ink-950">
               {i + 1}
             </span>
             <span>{step}</span>

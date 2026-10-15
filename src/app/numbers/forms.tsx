@@ -6,11 +6,11 @@ import type { NumberItem } from "@/lib/numbers/families";
 import { chooseRole, saveNumbers, type FormState } from "./actions";
 
 const INPUT =
-  "w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-navy-700 focus:outline-none";
+  "w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
 const PRIMARY =
-  "rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60";
+  "rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60";
 const SECONDARY =
-  "rounded-xl px-4 py-2.5 font-semibold text-navy-800 ring-1 ring-navy-800/30 transition hover:bg-navy-50";
+  "rounded-xl px-4 py-2.5 font-semibold text-ink-800 ring-1 ring-ink-800/30 transition hover:bg-ink-50";
 
 export function RoleForm({
   families,
@@ -35,7 +35,7 @@ export function RoleForm({
             <label
               key={f.id}
               className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ${
-                familyId === f.id ? "bg-navy-50 ring-navy-700" : "bg-white ring-slate-300"
+                familyId === f.id ? "bg-ink-50 ring-ink-700" : "bg-white ring-slate-300"
               }`}
             >
               <input
@@ -44,7 +44,7 @@ export function RoleForm({
                 value={f.id}
                 checked={familyId === f.id}
                 onChange={() => setFamilyId(f.id)}
-                className="accent-navy-800"
+                className="accent-ink-800"
               />
               <span className="text-sm font-medium text-slate-900">{f.label}</span>
             </label>
@@ -104,20 +104,20 @@ export function NumbersForm({
       {guided && (
         <div className="mb-4" data-testid="numbers-wizard">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="font-semibold text-navy-800" data-testid="numbers-step">
+            <span className="font-semibold text-ink-800" data-testid="numbers-step">
               Number {step + 1} of {items.length}
             </span>
             <button
               type="button"
               onClick={() => setGuided(false)}
-              className="font-medium text-slate-500 hover:text-navy-800"
+              className="font-medium text-slate-500 hover:text-ink-800"
             >
               Show all at once
             </button>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden>
             <div
-              className="h-full rounded-full bg-amber-400 transition-all"
+              className="h-full rounded-full bg-accent-400 transition-all"
               style={{ width: `${((step + 1) / items.length) * 100}%` }}
             />
           </div>
@@ -172,7 +172,7 @@ export function NumbersForm({
             <button
               type="submit"
               disabled={pending}
-              className="text-sm font-medium text-slate-500 hover:text-navy-800 disabled:opacity-60"
+              className="text-sm font-medium text-slate-500 hover:text-ink-800 disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save and finish later"}
             </button>

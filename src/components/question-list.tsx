@@ -26,7 +26,7 @@ export function QuestionList({
         return (
           <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
             <p className="font-semibold text-slate-900">
-              <span className="mr-2 text-navy-800">{i + 1}.</span>
+              <span className="mr-2 text-ink-800">{i + 1}.</span>
               {q.question}
             </p>
             {!compact && (
@@ -42,7 +42,7 @@ export function QuestionList({
                   {coverage?.kind === "story" ? (
                     <Link
                       href={`/stories/${coverage.storyId}`}
-                      className="font-medium text-navy-800 hover:underline"
+                      className="font-medium text-ink-800 hover:underline"
                     >
                       {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
                     </Link>
@@ -53,7 +53,7 @@ export function QuestionList({
                         type="submit"
                         name="storyType"
                         value={coverage.storyType}
-                        className="font-medium text-navy-800 hover:underline"
+                        className="font-medium text-ink-800 hover:underline"
                       >
                         Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
                       </button>
@@ -73,7 +73,7 @@ function Tag({ children, tone = "plain" }: { children: React.ReactNode; tone?: "
   return (
     <span
       className={`rounded-full px-2 py-0.5 font-semibold ${
-        tone === "accent" ? "bg-amber-100 text-amber-900" : "bg-navy-50 text-navy-900"
+        tone === "accent" ? "bg-accent-100 text-accent-900" : "bg-ink-50 text-ink-900"
       }`}
     >
       {children}

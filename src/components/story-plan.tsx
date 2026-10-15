@@ -31,7 +31,7 @@ export function StoryPlan({
           >
             <span className="min-w-0">
               <span className="block font-semibold text-slate-900">
-                <span className="mr-2 text-navy-800">{i + 1}.</span>
+                <span className="mr-2 text-ink-800">{i + 1}.</span>
                 {type.label}
               </span>
               {p.why && <span className="block text-sm text-slate-600">{p.why}</span>}
@@ -41,8 +41,8 @@ export function StoryPlan({
                 href={`/stories/${story.id}`}
                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
                   drafted
-                    ? "bg-navy-800 text-white"
-                    : "bg-navy-50 text-navy-900 ring-1 ring-navy-800/20"
+                    ? "bg-ink-800 text-white"
+                    : "bg-ink-50 text-ink-900 ring-1 ring-ink-800/20"
                 }`}
               >
                 {drafted ? "Draft written" : "In progress"}
@@ -53,7 +53,7 @@ export function StoryPlan({
                   type="submit"
                   name="storyType"
                   value={type.id}
-                  className="rounded-full px-3 py-1 text-xs font-semibold text-navy-800 ring-1 ring-navy-800/30 hover:bg-navy-50"
+                  className="rounded-full px-3 py-1 text-xs font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50"
                 >
                   Start
                 </button>

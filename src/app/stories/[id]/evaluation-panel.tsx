@@ -78,7 +78,7 @@ export function EvaluationPanel({
             </span>
           )}
         </span>
-        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-navy-800">
+        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-ink-800">
           {open ? "Hide" : "Show"}
           <svg
             viewBox="0 0 20 20"
@@ -99,7 +99,7 @@ export function EvaluationPanel({
       <div className="mt-3">
         {grading ? (
           <p role="status" className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-navy-600" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-ink-600" />
             Grading your story against each criterion…
           </p>
         ) : !content.draft ? (
@@ -118,7 +118,7 @@ export function EvaluationPanel({
               type="button"
               onClick={onGrade}
               disabled={disabled}
-              className="rounded-xl bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-900 disabled:opacity-50"
+              className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
             >
               {stale ? "Grade it again" : "Grade my story"}
             </button>
@@ -151,7 +151,7 @@ export function EvaluationPanel({
                   <p className="text-xs text-slate-500">{c.question}</p>
                   {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
                   {scored?.improve && (
-                    <p className="text-sm text-navy-900">
+                    <p className="text-sm text-ink-900">
                       <span className="font-semibold">To raise it: </span>
                       {scored.improve}
                     </p>
@@ -237,7 +237,7 @@ export function EvaluationPanel({
               type="button"
               onClick={onGrade}
               disabled={disabled}
-              className="font-medium text-navy-800 hover:underline disabled:opacity-50"
+              className="font-medium text-ink-800 hover:underline disabled:opacity-50"
             >
               Grade again
             </button>
@@ -262,7 +262,7 @@ function Summary({ grade }: { grade: StoryGrade }) {
                 i === current
                   ? "font-semibold text-slate-900"
                   : i < current
-                    ? "text-navy-700"
+                    ? "text-ink-700"
                     : "text-slate-400"
               }
             >
@@ -356,7 +356,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
             ? "Couldn't check this story against your target jobs this time. Grade it again to retry."
             : "Grade it again to see which of your target jobs' needs this story proves and which likely questions it answers."}{" "}
           {!content && (
-            <Link href="/jobs" className="font-medium text-navy-800 hover:underline">
+            <Link href="/jobs" className="font-medium text-ink-800 hover:underline">
               Add or see your target jobs
             </Link>
           )}
