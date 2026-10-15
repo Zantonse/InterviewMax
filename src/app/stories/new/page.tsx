@@ -14,7 +14,7 @@ export default function NewStoryPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -28,7 +28,7 @@ export default function NewStoryPage() {
 
         <Link
           href="/stories/find"
-          className="mt-6 flex max-w-2xl items-center justify-between gap-4 rounded-2xl bg-amber-50 px-5 py-4 ring-1 ring-amber-300 transition hover:bg-amber-100"
+          className="mt-6 flex max-w-2xl items-center justify-between gap-4 rounded-2xl bg-accent-50 px-5 py-4 ring-1 ring-accent-300 transition hover:bg-accent-100"
           data-testid="find-stories-link"
         >
           <span>
@@ -39,7 +39,7 @@ export default function NewStoryPage() {
               I&apos;ll point out moments from your resume that could answer each kind of question.
             </span>
           </span>
-          <span className="shrink-0 font-semibold text-navy-800">Find my stories →</span>
+          <span className="shrink-0 font-semibold text-ink-800">Find my stories →</span>
         </Link>
 
         <Suspense fallback={<PickerSkeleton />}>

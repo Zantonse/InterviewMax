@@ -21,7 +21,7 @@ export default function TranscriptsPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -88,7 +88,7 @@ async function TranscriptsContent() {
               <li key={t.id}>
                 <Link
                   href={`/transcripts/${t.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-navy-700/40"
+                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="text-lg font-bold text-slate-900">
@@ -97,7 +97,7 @@ async function TranscriptsContent() {
                         <span className="font-normal text-slate-600"> at {t.company}</span>
                       )}
                     </span>
-                    <span className="rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-900">
+                    <span className="rounded-full bg-ink-50 px-2.5 py-1 text-xs font-semibold text-ink-900">
                       {t.analysis
                         ? `${t.analysis.asked.length} questions${weak?.length ? ` · ${weak.length} to work on` : ""}`
                         : "Not reviewed yet"}
@@ -124,7 +124,7 @@ async function TranscriptsContent() {
 
         {transcripts.length < MAX_TRANSCRIPTS && (
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-navy-800">
+            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
@@ -174,7 +174,7 @@ async function TranscriptsContent() {
             {jobs.length > 0 && (
               <p className="mt-4 text-sm text-slate-500">
                 Predict your likely questions again on a{" "}
-                <Link href="/jobs" className="font-semibold text-navy-800 underline">
+                <Link href="/jobs" className="font-semibold text-ink-800 underline">
                   target job
                 </Link>{" "}
                 to fold these in.
@@ -198,7 +198,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-navy-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
       {children}
     </section>
   );

@@ -27,15 +27,15 @@ export function MomentButton({
       name="moment"
       value={id}
       disabled={pending}
-      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-navy-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-700 disabled:translate-y-0 disabled:opacity-70"
+      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:translate-y-0 disabled:opacity-70"
       data-testid={`moment-${id}`}
     >
-      <span className="font-bold text-slate-900 group-hover:text-navy-900">{moment}</span>
+      <span className="font-bold text-slate-900 group-hover:text-ink-900">{moment}</span>
       {question && <span className="mt-0.5 text-slate-700">{capitalize(question)}</span>}
       <span className="mt-2 line-clamp-2 text-sm text-slate-500">
         From {sourceLabel}: &ldquo;{quote}&rdquo;
       </span>
-      <span className="mt-3 text-sm font-semibold text-navy-800">
+      <span className="mt-3 text-sm font-semibold text-ink-800">
         {starting ? "Starting…" : "Build this story →"}
       </span>
     </button>
@@ -77,7 +77,7 @@ export function AutoFind({ reading }: { reading: string }) {
             type="button"
             onClick={find}
             disabled={pending}
-            className="mt-4 rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white hover:bg-navy-900 disabled:opacity-70"
+            className="mt-4 rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white hover:bg-ink-900 disabled:opacity-70"
           >
             Try again
           </button>
@@ -106,7 +106,7 @@ export function FindAgainButton() {
             if (!result.ok) setError(result.error);
           })
         }
-        className="rounded-xl px-3 py-2 text-sm font-semibold text-navy-800 ring-1 ring-navy-800/20 hover:bg-navy-50 disabled:opacity-70"
+        className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50 disabled:opacity-70"
         data-testid="find-again"
       >
         {pending ? "Finding…" : "Find new suggestions"}
@@ -134,7 +134,7 @@ export function QuickQuestions({ initial }: { initial: Record<string, string> })
             defaultValue={initial[q.id] ?? ""}
             rows={3}
             maxLength={MAX_QUICK_ANSWER_LENGTH}
-            className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-navy-700 focus:outline-none focus:ring-1 focus:ring-navy-700"
+            className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
           />
         </label>
       ))}
@@ -146,7 +146,7 @@ export function QuickQuestions({ initial }: { initial: Record<string, string> })
       <button
         type="submit"
         disabled={pending}
-        className="rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white hover:bg-navy-900 disabled:opacity-70"
+        className="rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white hover:bg-ink-900 disabled:opacity-70"
       >
         {pending ? "Finding your stories…" : "Find my stories"}
       </button>

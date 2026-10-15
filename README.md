@@ -19,7 +19,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 - **Your numbers** (`/numbers`). Per role, the numbers a strong story needs and where to find them; the story builder uses what you fill in.
 - **Past interviews** (`/transcripts`). Upload or paste real interview transcripts; the review of what was asked and how each answer landed feeds likely questions and story follow-ups.
 - **Mic mode.** A Talk button beside the story builder's answer box, each Map my role question and "Why this company?". The browser records 16 kHz WAV (works the same in phone Safari, Chrome and Firefox) and sends it in pieces of up to 45 seconds, cut at a pause; each piece is written down by the `transcribe` step (Whisper Large V3 through OpenRouter's speech-to-text endpoint) and added to the box to edit before sending. Audio isn't stored.
-- A collapsible left navy sidebar on every signed-in page (a drawer on phones) links all of the above plus your recent stories.
+- A collapsible left graphite sidebar on every signed-in page (a drawer on phones) links all of the above plus your recent stories.
 
 Not built yet: feedback on spoken delivery (pace, filler words; PRD P1), and the PRD's resume enhancer, paywall and success stories.
 

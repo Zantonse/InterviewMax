@@ -18,8 +18,8 @@ const STATUS: Record<Exclude<ThemeStatus, "empty">, { label: string; dot: string
   strong: { label: "Strong", dot: "bg-green-400" },
   good_enough: { label: "Good enough", dot: "bg-white" },
   not_yet: { label: "Not yet", dot: "bg-amber-300" },
-  written: { label: "Not graded", dot: "bg-navy-300" },
-  in_progress: { label: "In progress", dot: "bg-navy-500" },
+  written: { label: "Not graded", dot: "bg-ink-300" },
+  in_progress: { label: "In progress", dot: "bg-ink-500" },
 };
 
 // The story bank against the ten question themes, on the home page's story bank card. Covered
@@ -37,7 +37,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
         <h3 id="coverage-heading" className="font-semibold">
           Question themes covered
         </h3>
-        <p className="text-sm text-navy-100" data-testid="coverage-count">
+        <p className="text-sm text-ink-100" data-testid="coverage-count">
           {covered} of {themes.length}
         </p>
       </div>
@@ -69,7 +69,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
                   className="flex h-full flex-col items-start rounded-xl bg-white/10 px-3 py-2 transition hover:bg-white/20"
                 >
                   <span className="text-sm font-semibold">{theme.label}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-navy-100">
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-100">
                     <span className={`size-2 rounded-full ${STATUS[theme.status].dot}`} aria-hidden />
                     {STATUS[theme.status].label}
                   </span>
@@ -82,7 +82,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
       {covered < themes.length && (
         <Link
           href="/stories/find"
-          className="mt-3 inline-block text-sm font-semibold text-amber-200 hover:underline"
+          className="mt-3 inline-block text-sm font-semibold text-accent-200 hover:underline"
           data-testid="find-stories"
         >
           Not sure what to tell? Find stories in your resume →

@@ -19,16 +19,16 @@ export function NavShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-950/20 bg-navy-900 px-4 py-3 lg:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-ink-950/20 bg-ink-900 px-4 py-3 lg:hidden">
         <Link href="/" className="text-lg font-extrabold tracking-tight text-white">
-          Interview<span className="text-amber-400">Max</span>
+          Interview<span className="text-accent-400">Max</span>
         </Link>
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls="app-nav"
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-navy-100 ring-1 ring-white/20 hover:bg-white/10"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-100 ring-1 ring-white/20 hover:bg-white/10"
         >
           <NavIcon name="menu" />
           Menu
@@ -37,7 +37,7 @@ export function NavShell({ children }: { children: ReactNode }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-navy-950/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-ink-950/50 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -49,12 +49,12 @@ export function NavShell({ children }: { children: ReactNode }) {
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a")) setOpen(false);
         }}
-        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-navy-900 shadow-xl transition-transform duration-200 data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18"
+        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-ink-900 shadow-xl transition-transform duration-200 data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18"
       >
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="absolute top-4 right-3 rounded-lg p-1.5 text-navy-200 hover:bg-white/10 hover:text-white lg:hidden"
+          className="absolute top-4 right-3 rounded-lg p-1.5 text-ink-200 hover:bg-white/10 hover:text-white lg:hidden"
           aria-label="Close menu"
         >
           <NavIcon name="close" />
@@ -105,8 +105,8 @@ function NavLinkBody({
         compact ? "py-1.5 text-sm" : "py-2 text-[0.9375rem]"
       } ${
         active
-          ? "bg-white/10 text-white shadow-[inset_3px_0_0_var(--color-amber-400)]"
-          : "text-navy-100 hover:bg-white/5 hover:text-white"
+          ? "bg-white/10 text-white shadow-[inset_3px_0_0_var(--color-accent-400)]"
+          : "text-ink-100 hover:bg-white/5 hover:text-white"
       }`}
     >
       {children}
@@ -131,7 +131,7 @@ export function CollapseButton() {
       type="button"
       onClick={toggle}
       title="Collapse or expand the sidebar"
-      className="mt-2 hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-navy-300 hover:bg-white/5 hover:text-white lg:flex nav-collapsed:justify-center"
+      className="mt-2 hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-300 hover:bg-white/5 hover:text-white lg:flex nav-collapsed:justify-center"
     >
       <span className="nav-collapsed:rotate-180">
         <NavIcon name="collapse" />

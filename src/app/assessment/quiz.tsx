@@ -58,18 +58,18 @@ export function Quiz({
 
   return (
     <section
-      className="mt-6 max-w-2xl rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
+      className="mt-6 max-w-2xl rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8"
       data-testid="assessment-quiz"
     >
       <div className="flex items-center justify-between gap-4">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
           {step + 1} of {QUESTIONS.length}
           <span className="flex gap-1" aria-hidden>
             {QUESTIONS.map((q, i) => (
               <span
                 key={q.id}
                 className={`size-2 rounded-full ${
-                  i < step ? "bg-navy-800" : i === step ? "bg-amber-400" : "bg-navy-100"
+                  i < step ? "bg-ink-800" : i === step ? "bg-accent-400" : "bg-ink-100"
                 }`}
               />
             ))}
@@ -80,7 +80,7 @@ export function Quiz({
             type="button"
             onClick={() => setStep(step - 1)}
             disabled={saving}
-            className="text-sm font-semibold text-navy-800 hover:underline disabled:opacity-60"
+            className="text-sm font-semibold text-ink-800 hover:underline disabled:opacity-60"
           >
             ← Back
           </button>
@@ -98,8 +98,8 @@ export function Quiz({
               aria-pressed={chosen === option.id}
               className={`rounded-xl px-4 py-3 text-left font-semibold ring-1 transition disabled:opacity-60 ${
                 chosen === option.id
-                  ? "bg-navy-800 text-white ring-navy-800"
-                  : "bg-white text-slate-900 ring-slate-300 hover:bg-navy-50 hover:ring-navy-700"
+                  ? "bg-ink-800 text-white ring-ink-800"
+                  : "bg-white text-slate-900 ring-slate-300 hover:bg-ink-50 hover:ring-ink-700"
               }`}
             >
               {option.label}
@@ -122,7 +122,7 @@ export function Quiz({
       {retake ? (
         <Link
           href="/assessment"
-          className="mt-6 inline-block text-sm text-slate-500 hover:text-navy-800 hover:underline"
+          className="mt-6 inline-block text-sm text-slate-500 hover:text-ink-800 hover:underline"
         >
           Keep my last result
         </Link>
@@ -130,7 +130,7 @@ export function Quiz({
         <form action={skipAssessment} className="mt-6">
           <button
             type="submit"
-            className="text-sm text-slate-500 hover:text-navy-800 hover:underline"
+            className="text-sm text-slate-500 hover:text-ink-800 hover:underline"
           >
             Skip for now
           </button>

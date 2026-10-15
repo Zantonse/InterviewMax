@@ -26,7 +26,7 @@ export function LoginForm() {
         required
         autoComplete="email"
         placeholder="you@example.com"
-        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-navy-600 focus:ring-2 focus:ring-navy-600/20"
+        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
       />
       {state.status === "error" && (
         <p role="alert" className="text-sm text-red-700">
@@ -36,7 +36,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-xl bg-navy-800 px-4 py-3 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60"
+        className="rounded-xl bg-ink-800 px-4 py-3 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
       >
         {pending ? "Sending…" : "Email me a sign-in link"}
       </button>
@@ -53,7 +53,7 @@ function CodeForm({ email, onRestart }: { email: string; onRestart: () => void }
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="status" className="rounded-2xl bg-navy-50 p-5 text-navy-900">
+      <div role="status" className="rounded-2xl bg-ink-50 p-5 text-ink-900">
         <p className="font-semibold">Check your inbox</p>
         <p className="mt-1 text-sm">
           We sent a sign-in email to <span className="font-medium">{email}</span>. Click the
@@ -74,7 +74,7 @@ function CodeForm({ email, onRestart }: { email: string; onRestart: () => void }
           maxLength={12}
           required
           placeholder="123456"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-lg tracking-[0.3em] outline-none focus:border-navy-600 focus:ring-2 focus:ring-navy-600/20"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-lg tracking-[0.3em] outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
         />
         {codeError && (
           <p role="alert" className="text-sm text-red-700">
@@ -84,7 +84,7 @@ function CodeForm({ email, onRestart }: { email: string; onRestart: () => void }
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-navy-800 px-4 py-3 font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60"
+          className="rounded-xl bg-ink-800 px-4 py-3 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
         >
           {pending ? "Checking…" : "Sign in with code"}
         </button>
@@ -92,7 +92,7 @@ function CodeForm({ email, onRestart }: { email: string; onRestart: () => void }
       <button
         type="button"
         onClick={onRestart}
-        className="self-start text-sm font-medium text-navy-700 underline hover:text-navy-900"
+        className="self-start text-sm font-medium text-ink-700 underline hover:text-ink-900"
       >
         Use a different email or send a new one
       </button>
