@@ -12,7 +12,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-16">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-        <p className="text-sm font-semibold uppercase tracking-wide text-navy-700">InterviewMax</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-ink-700">InterviewMax</p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
           Build stories that land.
         </h1>

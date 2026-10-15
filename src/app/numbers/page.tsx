@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageGuide } from "@/components/page-guide";
 import { type TargetJob, listJobs } from "@/lib/jobs/data";
 import {
   type NumbersChecklist,
@@ -27,7 +28,7 @@ export default function NumbersPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -38,6 +39,14 @@ export default function NumbersPage() {
           and where to find each. Fill in what you can; your stories will use them, and I&apos;ll
           never make one up.
         </p>
+        <PageGuide
+          id="numbers"
+          steps={[
+            "Confirm your role, and I'll list the numbers interviewers expect from it.",
+            "Fill them in one at a time. Skip any you don't know; rough is fine if you say “about”.",
+            "Your stories use them, and the builder shows which ones each story needs.",
+          ]}
+        />
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <NumbersContent />
         </Suspense>
@@ -80,7 +89,7 @@ async function NumbersContent() {
     <>
       <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-navy-800">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
             {checklistRole(checklist)}
           </h2>
           <p className="text-sm text-slate-600" data-testid="numbers-filled">
@@ -90,7 +99,7 @@ async function NumbersContent() {
         <NumbersForm items={items} values={checklist.values} />
       </section>
       <details className="mt-4 rounded-3xl bg-white/70 p-5 ring-1 ring-black/5 sm:p-6">
-        <summary className="cursor-pointer text-sm font-medium text-navy-800">
+        <summary className="cursor-pointer text-sm font-medium text-ink-800">
           Not your role? Change it
         </summary>
         <div className="mt-4">

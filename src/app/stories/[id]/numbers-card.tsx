@@ -12,13 +12,13 @@ export function NumbersCard({ role, numbers }: { role: string | null; numbers: S
         className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
         data-testid="story-numbers"
       >
-        <h2 className="text-xs font-bold uppercase tracking-wide text-navy-800">Your numbers</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">Your numbers</h2>
         <p className="mt-2 text-sm text-slate-600">
           Stories land harder with numbers. See which ones interviewers expect for your role.
         </p>
         <Link
           href="/numbers"
-          className="mt-3 inline-block text-sm font-medium text-navy-800 hover:underline"
+          className="mt-3 inline-block text-sm font-medium text-ink-800 hover:underline"
         >
           Gather your numbers →
         </Link>
@@ -32,7 +32,7 @@ export function NumbersCard({ role, numbers }: { role: string | null; numbers: S
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
       data-testid="story-numbers"
     >
-      <h2 className="text-xs font-bold uppercase tracking-wide text-navy-800">
+      <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
         Numbers for this story
       </h2>
       <ul className="mt-3 flex flex-col gap-2 text-sm">
@@ -52,7 +52,7 @@ export function NumbersCard({ role, numbers }: { role: string | null; numbers: S
       </ul>
       <Link
         href="/numbers"
-        className="mt-3 inline-block text-sm font-medium text-navy-800 hover:underline"
+        className="mt-3 inline-block text-sm font-medium text-ink-800 hover:underline"
       >
         {shown.some((n) => !n.value) ? "Fill in your numbers →" : "Edit your numbers →"}
       </Link>

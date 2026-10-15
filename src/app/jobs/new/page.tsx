@@ -16,7 +16,7 @@ export default function NewJobPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/jobs" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/jobs" className="text-sm font-medium text-ink-800 hover:underline">
           ← Your target jobs
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
@@ -42,7 +42,7 @@ async function NewJob() {
     return (
       <p className="text-slate-700">
         You already have {MAX_JOBS} target jobs, the most you can keep.{" "}
-        <Link href="/jobs" className="font-semibold text-navy-800 hover:underline">
+        <Link href="/jobs" className="font-semibold text-ink-800 hover:underline">
           Remove one
         </Link>{" "}
         to add another.

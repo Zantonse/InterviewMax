@@ -31,7 +31,7 @@ export default function HomePage() {
           {/* On wide screens the sidebar has this button. */}
           <Link
             href="/stories/new"
-            className="rounded-xl bg-navy-800 px-4 py-2.5 font-semibold text-white transition hover:bg-navy-900 lg:hidden"
+            className="rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 lg:hidden"
           >
             Build a story
           </Link>
@@ -79,7 +79,7 @@ async function JourneyLink() {
   const grade = taken && gradeJourney(taken.answers, { hasJob: jobs.length > 0 });
   return (
     <p className="mt-2 text-sm text-slate-600" data-testid="journey-link">
-      <Link href="/assessment" className="font-semibold text-navy-800 hover:underline">
+      <Link href="/assessment" className="font-semibold text-ink-800 hover:underline">
         {grade
           ? `Journey grade: ${grade.score}/100 · ${grade.level}`
           : "Take the 1-minute journey check"}{" "}
@@ -101,7 +101,7 @@ async function Dashboard() {
     jobs = null;
   }
   const bank = (
-    <Card className="bg-navy-800 text-white" title="Story bank">
+    <Card className="bg-ink-800 text-white" title="Story bank">
       <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
         <StoryBank jobs={jobs ?? []} />
       </Suspense>
@@ -140,7 +140,7 @@ async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
     // Don't take the whole home page down if the database can't be read.
     console.error("Home: loading stories failed", err);
     return (
-      <p className="max-w-md text-navy-50" role="alert" data-testid="story-bank-error">
+      <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
         Your stories couldn&apos;t be loaded right now. Try again in a minute.
       </p>
     );
@@ -151,7 +151,7 @@ async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
         <span className="text-4xl font-extrabold" data-testid="story-count">
           {stories.length}
         </span>
-        <span className="text-navy-100">{stories.length === 1 ? "story" : "stories"}</span>
+        <span className="text-ink-100">{stories.length === 1 ? "story" : "stories"}</span>
       </p>
       <CoverageGrid stories={stories} jobs={jobs} />
       {stories.length > 0 && (
@@ -167,7 +167,7 @@ async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
                   <span className="min-w-0 truncate font-semibold">{story.title}</span>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      drafted ? "bg-white text-navy-900" : "bg-navy-900/60 text-navy-50"
+                      drafted ? "bg-white text-ink-900" : "bg-ink-900/60 text-ink-50"
                     }`}
                   >
                     {drafted ? "Draft written" : "In progress"}
@@ -188,10 +188,12 @@ function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
       <ul className="space-y-2" data-testid="home-jobs">
         {jobs.map((job) => (
           <li key={job.id}>
-            <Link href={`/jobs/${job.id}`} className="block hover:text-navy-800">
+            <Link href={`/jobs/${job.id}`} className="block hover:text-ink-800">
               <span className="block truncate font-semibold">{job.title}</span>
               <span className="block truncate text-sm text-slate-500">
-                {[job.company, levelLabel(job.level)].filter(Boolean).join(" · ")}
+                {[job.company, levelLabel(job.level), job.interviewDate && interviewOn(job.interviewDate)]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             </Link>
           </li>
@@ -199,6 +201,16 @@ function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
       </ul>
     </Card>
   );
+}
+
+// "Interview Oct 16": a calendar date, the same wherever the user is.
+function interviewOn(date: string): string {
+  const day = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `Interview ${day}`;
 }
 
 async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
@@ -219,7 +231,7 @@ async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
       <QuestionList questions={job.likelyQuestions.questions} stories={stories} limit={3} compact />
       <Link
         href={`/jobs/${job.id}`}
-        className="mt-4 inline-block text-sm font-semibold text-navy-800 hover:underline"
+        className="mt-4 inline-block text-sm font-semibold text-ink-800 hover:underline"
       >
         All {job.likelyQuestions.questions.length} questions →
       </Link>
@@ -241,7 +253,7 @@ async function PastInterviews() {
   if (recurringGaps.length === 0) return null;
   return (
     <Card title="Past interviews">
-      <Link href="/transcripts" className="block text-slate-700 hover:text-navy-800">
+      <Link href="/transcripts" className="block text-slate-700 hover:text-ink-800">
         Your answers keep missing{" "}
         {recurringGaps
           .slice(0, 3)

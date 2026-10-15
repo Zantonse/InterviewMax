@@ -1,67 +1,148 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { AddJobForm } from "@/app/jobs/forms";
+import { getAssessmentSafely } from "@/lib/assessment/data";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
-import { hasDraft } from "@/lib/stories/content";
+import { type Plan, type PlanJob, buildPlan, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 
-// How many of the stories the user's jobs need most count toward the last step.
+// How many of the stories the user's jobs need most count toward the story plan step.
 const PLAN_SIZE = 4;
 
-type PathStep = { label: string; detail: string; href: string; done: boolean };
+const ASSESSMENT_WHEN: Record<string, string> = {
+  days: "in the next few days",
+  soon: "within 2 weeks",
+  later: "more than 2 weeks away",
+};
 
-// Where the user is on the prep path (PRD: "Always show position"), shown on the home page as one
-// bar: the next step and a button to it, with the four steps as dots. Before the first job, it's a
-// single step instead: paste a job and see its likely questions, with nothing else to set up first.
+// Where the user is on their prep plan (PRD: "Always show position" and "Time-boxed prep plan"),
+// shown on the home page as one bar: the next step and a button to it, with the plan's steps as
+// dots. The interview date on the nearest job sizes the plan (see src/lib/prep/plan.ts). Before the
+// first job, it's a single step instead: paste a job and see its likely questions.
 export async function PrepPath() {
-  let steps: PathStep[] | null;
+  let loaded: { plan: Plan; job: PlanJob; nextInterview: string | null } | null;
   try {
-    steps = await pathSteps();
+    loaded = await loadPlan();
   } catch (err) {
     unstable_rethrow(err);
     console.error("Home: loading the prep path failed", err);
     return null;
   }
-  if (!steps) return <FirstJob />;
+  if (!loaded) return <FirstJob />;
+  const { plan, job, nextInterview } = loaded;
+  const { steps } = plan;
   const current = steps.findIndex((s) => !s.done);
-  if (current < 0) return null;
-  const step = steps[current];
+  // With no interview in view, a finished path steps aside; with one, it says you're ready.
+  if (current < 0 && plan.basis === "none") return null;
+  const step = current >= 0 ? steps[current] : null;
+  const where = job.company ? ` at ${job.company}` : "";
+  const heading =
+    plan.basis === "date" && plan.days !== null
+      ? `Plan for your interview ${whenLabel(plan.days)}${where}`
+      : plan.basis === "assessment" && nextInterview
+        ? `Plan for an interview ${ASSESSMENT_WHEN[nextInterview]}`
+        : "Next step";
+
   return (
     <nav
-      aria-label="Your prep path"
-      className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-navy-700/30"
+      aria-label="Your prep plan"
+      className="mt-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-ink-700/30"
       data-testid="prep-path"
+      data-horizon={plan.horizon ?? "none"}
     >
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
-          Next step
-          <span className="flex gap-1" aria-label={`Step ${current + 1} of ${steps.length}`}>
-            {steps.map((s, i) => (
-              <span
-                key={s.label}
-                title={s.label}
-                className={`size-2 rounded-full ${
-                  s.done ? "bg-navy-800" : i === current ? "bg-amber-400" : "bg-navy-100"
-                }`}
-              />
-            ))}
-          </span>
-        </p>
-        <p className="mt-1 font-semibold text-slate-900">
-          {step.label}
-          <span className="font-normal text-slate-500"> · {step.detail}</span>
-        </p>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
+            <span data-testid="plan-heading">{heading}</span>
+            <span
+              className="flex gap-1"
+              aria-label={
+                step ? `Step ${current + 1} of ${steps.length}` : `All ${steps.length} steps done`
+              }
+            >
+              {steps.map((s, i) => (
+                <span
+                  key={s.id}
+                  title={s.label}
+                  className={`size-2 rounded-full ${
+                    s.done ? "bg-ink-800" : i === current ? "bg-accent-400" : "bg-ink-100"
+                  }`}
+                />
+              ))}
+            </span>
+          </p>
+          <p className="mt-1 font-semibold text-slate-900">
+            {step ? (
+              <>
+                {step.label}
+                <span className="font-normal text-slate-500"> · {step.detail}</span>
+              </>
+            ) : (
+              <>
+                You&apos;re ready
+                <span className="font-normal text-slate-500">
+                  {" "}
+                  · Read your top questions once more and say your answers out loud
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+        <Link
+          href={step ? step.href : `/jobs/${job.id}`}
+          aria-current="step"
+          className="shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
+        >
+          {step ? "Continue" : "Review questions"}
+        </Link>
       </div>
-      <Link
-        href={step.href}
-        aria-current="step"
-        className="shrink-0 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-amber-300"
-      >
-        Continue
-      </Link>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        {plan.basis !== "date" && (
+          <Link
+            href={`/jobs/${job.id}#interview-date`}
+            className="font-semibold text-ink-800 hover:underline"
+            data-testid="set-interview-date"
+          >
+            {plan.basis === "assessment" ? "Set the date" : "Interview booked? Add the date"} →
+          </Link>
+        )}
+        {plan.horizon && (
+          <details className="group w-full" data-testid="whole-plan">
+            <summary className="cursor-pointer font-semibold text-ink-800 hover:underline">
+              See the whole plan
+            </summary>
+            <ol className="mt-2 space-y-1">
+              {steps.map((s) => (
+                <li key={s.id} className="flex items-baseline gap-2">
+                  <span aria-hidden className={s.done ? "text-ink-800" : "text-slate-400"}>
+                    {s.done ? "✓" : "○"}
+                  </span>
+                  <Link
+                    href={s.href}
+                    className={
+                      s.done ? "text-slate-500 line-through" : "text-slate-800 hover:underline"
+                    }
+                  >
+                    {s.label}
+                  </Link>
+                  <span className="text-slate-500">· {s.detail}</span>
+                </li>
+              ))}
+              {plan.later.map((s) => (
+                <li key={s.id} className="flex items-baseline gap-2 text-slate-400">
+                  <span aria-hidden>○</span>
+                  <span>{s.label}</span>
+                  <span>· coming soon</span>
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+      </div>
     </nav>
   );
 }
@@ -69,7 +150,7 @@ export async function PrepPath() {
 function FirstJob() {
   return (
     <section
-      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
+      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8"
       data-testid="first-job"
     >
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
@@ -86,50 +167,37 @@ function FirstJob() {
   );
 }
 
-async function pathSteps(): Promise<PathStep[] | null> {
-  const [jobs, { overview }, stories, numbers] = await Promise.all([
+async function loadPlan() {
+  const [jobs, { overview }, stories, numbers, assessment, requestHeaders] = await Promise.all([
     listJobs(),
     getJobsPrep(),
     listStories(),
     getNumbersChecklistSafely(),
+    getAssessmentSafely(),
+    headers(),
   ]);
-  const drafted = new Set(stories.filter((s) => hasDraft(s.content)).map((s) => s.storyType));
-  const aboutMe = stories.find((s) => s.storyType === REQUIRED_STORY_TYPE_ID);
-  const plan = (overview?.storyOrder ?? [])
-    .map((p) => p.storyType)
-    .filter((t) => t !== REQUIRED_STORY_TYPE_ID)
-    .slice(0, PLAN_SIZE);
-  if (jobs.length === 0) return null;
-  const predicted = jobs.find((j) => j.likelyQuestions);
-  const planDone = plan.filter((t) => drafted.has(t)).length;
-
-  return [
-    {
-      label: "See your likely questions",
-      detail: predicted ? `Ready for ${predicted.title}` : `Predict them for ${jobs[0].title}`,
-      href: predicted ? `/jobs/${predicted.id}` : `/jobs/${jobs[0].id}`,
-      done: Boolean(predicted),
-    },
-    {
-      label: "Gather your numbers",
-      detail: numbers
-        ? `${filledCount(numbers)} of ${checklistItems(numbers).length} filled in`
-        : "The figures your stories need",
-      href: "/numbers",
-      done: hasEnoughNumbers(numbers),
-    },
-    {
-      label: "Tell me about yourself",
-      detail: drafted.has(REQUIRED_STORY_TYPE_ID) ? "Written" : "Most interviews open with it",
-      href: aboutMe ? `/stories/${aboutMe.id}` : "/stories/new",
-      done: drafted.has(REQUIRED_STORY_TYPE_ID),
-    },
-    {
-      label: "Build the stories your jobs need",
-      detail:
-        plan.length > 0 ? `${planDone} of ${plan.length} written` : "See which on your jobs page",
-      href: plan.length > 0 ? "/jobs" : "/stories/new",
-      done: plan.length > 0 && planDone === plan.length,
-    },
-  ];
+  // Vercel sends the visitor's time zone, so "tomorrow" is the user's tomorrow.
+  const today = todayIn(requestHeaders.get("x-vercel-ip-timezone"));
+  const job = focusJob(jobs, today);
+  if (!job) return null;
+  const nextInterview =
+    assessment && "answers" in assessment ? assessment.answers.nextInterview : null;
+  const plan = buildPlan({
+    job,
+    today,
+    nextInterview,
+    stories,
+    numbers: numbers
+      ? {
+          filled: filledCount(numbers),
+          total: checklistItems(numbers).length,
+          enough: hasEnoughNumbers(numbers),
+        }
+      : null,
+    storyPlan: (overview?.storyOrder ?? [])
+      .map((p) => p.storyType)
+      .filter((t) => t !== REQUIRED_STORY_TYPE_ID)
+      .slice(0, PLAN_SIZE),
+  });
+  return { plan, job, nextInterview };
 }

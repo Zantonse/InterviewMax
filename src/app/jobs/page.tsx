@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
@@ -19,7 +20,7 @@ export default function JobsPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
@@ -28,7 +29,7 @@ export default function JobsPage() {
           </h1>
           <Link
             href="/jobs/new"
-            className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-navy-950 transition hover:bg-amber-300"
+            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300"
             data-testid="add-job-link"
           >
             + Add a target job
@@ -38,6 +39,14 @@ export default function JobsPage() {
           Paste in the jobs you&apos;re going for. I&apos;ll read them with your resume, find what
           they share and where each differs, and tell you which stories to build first.
         </p>
+        <PageGuide
+          id="jobs"
+          steps={[
+            "Add each job you're going for: a link, a file or the pasted posting.",
+            "Optionally add your resume, so I can see what your history already shows.",
+            "Open a job for its likely questions, then build the stories under “Build these stories first”.",
+          ]}
+        />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <JobsContent />
         </Suspense>
@@ -92,7 +101,7 @@ async function JobsContent() {
               <li key={job.id}>
                 <Link
                   href={`/jobs/${job.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-navy-700/40"
+                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="text-lg font-bold text-slate-900">
@@ -101,7 +110,7 @@ async function JobsContent() {
                         <span className="font-normal text-slate-600"> at {job.company}</span>
                       )}
                     </span>
-                    <span className="rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-900">
+                    <span className="rounded-full bg-ink-50 px-2.5 py-1 text-xs font-semibold text-ink-900">
                       {levelLabel(job.level) ?? "Level not set"}
                       {!job.levelConfirmed && " · confirm"}
                     </span>
@@ -193,7 +202,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-navy-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
       {children}
     </section>
   );

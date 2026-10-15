@@ -62,7 +62,7 @@ async function Assessment({
       <p className="mt-4 text-sm text-slate-500">
         From {new Date(taken.completedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}.
         Jobs you&apos;ve added since count already.{" "}
-        <Link href="/assessment?retake=1" className="font-semibold text-navy-800 hover:underline">
+        <Link href="/assessment?retake=1" className="font-semibold text-ink-800 hover:underline">
           Retake
         </Link>
       </p>
