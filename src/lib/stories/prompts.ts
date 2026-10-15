@@ -70,7 +70,7 @@ Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${GAPS.join(", ")}"}]}`;
 
 // Shared by every writer. Tester feedback (Oct 13): drafts rambled and hedged ("maybe 100 accounts").
-const TIGHT_RULES = `Keep it tight:
+export const TIGHT_RULES = `Keep it tight:
 - Every sentence earns its place with a fact, a number, an example or a reason. Cut throat-clearing, restated points and closing pleasantries.
 - No filler or puffery: no "really", "truly", "passionate", "the kind of", "world-class", "a wide range of", "leveraged", "helped with".
 - Say figures with confidence. If the user was unsure of a figure ("maybe 100 accounts", "I think 20%"), leave it out unless the answer needs it; if you keep it, keep their exact words so it can be flagged for them to firm up. Never firm it up yourself, and never add hedges of your own ("it's still early", "maybe").`;
