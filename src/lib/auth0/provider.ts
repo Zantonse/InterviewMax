@@ -3,5 +3,7 @@
 export type AuthProvider = "supabase" | "auth0";
 
 export function authProvider(): AuthProvider {
-  return process.env.AUTH_PROVIDER === "auth0" ? "auth0" : "supabase";
+  // Forgiving about case and stray spaces or quotes pasted into the Vercel dashboard.
+  const value = (process.env.AUTH_PROVIDER ?? "").trim().replace(/^["']|["']$/g, "").toLowerCase();
+  return value === "auth0" ? "auth0" : "supabase";
 }
