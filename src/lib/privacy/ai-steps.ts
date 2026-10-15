@@ -63,6 +63,14 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Reviewing a past interview",
     sends: "The transcript you upload or paste",
   },
+  practiceProbe: {
+    feature: "Practice mode follow-up questions",
+    sends: "The practice question, your spoken answers to it and the job’s title",
+  },
+  practiceFeedback: {
+    feature: "Practice mode feedback",
+    sends: "Your spoken practice answers, the saved story for that question and the job’s title",
+  },
   transcribe: {
     feature: "Mic mode (speech to text)",
     sends: "The recording of what you say while the mic is on",
