@@ -26,7 +26,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
-        <Link href="/" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
         <Suspense fallback={<BuilderSkeleton />}>
@@ -92,7 +92,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
       data-testid="tailor-links"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-navy-800">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
         Next: make it company-first for each job
       </h2>
       <p className="mt-2 text-sm text-slate-600">
@@ -101,7 +101,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
       </p>
       {jobs.length === 0 ? (
         <p className="mt-3 text-sm text-slate-600">
-          <Link href="/jobs" className="font-semibold text-navy-800 underline">
+          <Link href="/jobs" className="font-semibold text-ink-800 underline">
             Add a target job
           </Link>{" "}
           to get started.
@@ -112,7 +112,7 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
             <li key={job.id}>
               <Link
                 href={`/jobs/${job.id}#about-me`}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-navy-800 ring-1 ring-navy-800/20 hover:bg-navy-50"
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
               >
                 {job.company || job.title}
                 {content.tailored?.[job.id]?.draft && (
@@ -132,10 +132,10 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
 function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefined }) {
   return (
     <section
-      className="rounded-3xl bg-navy-50 p-5 ring-1 ring-navy-800/10 sm:p-6"
+      className="rounded-3xl bg-ink-50 p-5 ring-1 ring-ink-800/10 sm:p-6"
       data-testid="next-up"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-navy-800">What&apos;s next</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">What&apos;s next</h2>
       {next ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p className="min-w-0 text-slate-700">
@@ -157,14 +157,14 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
       ) : hasPlan ? (
         <p className="mt-2 text-slate-700">
           That&apos;s every story your jobs need written. Go over your{" "}
-          <Link href="/jobs" className="font-semibold text-navy-800 underline">
+          <Link href="/jobs" className="font-semibold text-ink-800 underline">
             likely questions
           </Link>{" "}
           and practise each answer out loud.
         </p>
       ) : (
         <p className="mt-2 text-slate-700">
-          <Link href="/jobs/new" className="font-semibold text-navy-800 underline">
+          <Link href="/jobs/new" className="font-semibold text-ink-800 underline">
             Add a target job
           </Link>{" "}
           and I&apos;ll tell you which story to build next.
@@ -175,7 +175,7 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
 }
 
 const NEXT_BUTTON =
-  "inline-block shrink-0 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-amber-300";
+  "inline-block shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300";
 
 function BuilderSkeleton() {
   return (

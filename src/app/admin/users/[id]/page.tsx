@@ -25,7 +25,7 @@ export default function AdminUserPage({ params }: PageProps<"/admin/users/[id]">
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/admin" className="text-sm font-medium text-navy-800 hover:underline">
+        <Link href="/admin" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to admin
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>

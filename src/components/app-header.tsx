@@ -34,10 +34,10 @@ export function AppHeader() {
             aria-label="InterviewMax home"
           >
             <span className="nav-collapsed:hidden">
-              Interview<span className="text-amber-400">Max</span>
+              Interview<span className="text-accent-400">Max</span>
             </span>
             <span className="hidden nav-collapsed:inline">
-              I<span className="text-amber-400">M</span>
+              I<span className="text-accent-400">M</span>
             </span>
           </Link>
         </div>
@@ -46,7 +46,7 @@ export function AppHeader() {
           <Link
             href="/stories/new"
             title="Build a story"
-            className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-amber-300"
+            className="flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
           >
             <NavIcon name="plus" />
             <span className="nav-collapsed:sr-only">Build a story</span>
@@ -76,7 +76,7 @@ export function AppHeader() {
           </ul>
 
           <div className="mt-6 nav-collapsed:hidden">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-navy-300">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-ink-300">
               Stories
             </p>
             <Suspense fallback={<StoriesSkeleton />}>
@@ -115,10 +115,10 @@ async function RecentStories() {
     stories = await listStories();
   } catch (error) {
     unstable_rethrow(error);
-    return <p className="mt-2 px-3 text-sm text-navy-300">Couldn&apos;t load your stories.</p>;
+    return <p className="mt-2 px-3 text-sm text-ink-300">Couldn&apos;t load your stories.</p>;
   }
   if (stories.length === 0) {
-    return <p className="mt-2 px-3 text-sm text-navy-300">No stories yet.</p>;
+    return <p className="mt-2 px-3 text-sm text-ink-300">No stories yet.</p>;
   }
   const shown = stories.slice(0, RECENT_STORIES);
   return (
@@ -130,7 +130,7 @@ async function RecentStories() {
       ))}
       {stories.length > shown.length && (
         <li>
-          <Link href="/" className="block px-3 py-1.5 text-sm text-navy-300 hover:text-white">
+          <Link href="/" className="block px-3 py-1.5 text-sm text-ink-300 hover:text-white">
             All {stories.length} stories →
           </Link>
         </li>
@@ -153,7 +153,7 @@ async function AccountMenu() {
   return (
     <div className="flex items-center justify-between gap-2 text-sm nav-collapsed:justify-center">
       <span
-        className="min-w-0 truncate px-1 text-navy-200 nav-collapsed:hidden"
+        className="min-w-0 truncate px-1 text-ink-200 nav-collapsed:hidden"
         data-testid="user-email"
         title={user.email}
       >
@@ -163,7 +163,7 @@ async function AccountMenu() {
         <button
           type="submit"
           title="Sign out"
-          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 font-medium text-navy-100 hover:bg-white/10 hover:text-white"
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 font-medium text-ink-100 hover:bg-white/10 hover:text-white"
         >
           <NavIcon name="signout" />
           <span className="nav-collapsed:sr-only">Sign out</span>

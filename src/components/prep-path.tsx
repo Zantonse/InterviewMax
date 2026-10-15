@@ -50,13 +50,13 @@ export async function PrepPath() {
   return (
     <nav
       aria-label="Your prep plan"
-      className="mt-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-navy-700/30"
+      className="mt-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-ink-700/30"
       data-testid="prep-path"
       data-horizon={plan.horizon ?? "none"}
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
+          <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
             <span data-testid="plan-heading">{heading}</span>
             <span
               className="flex gap-1"
@@ -69,7 +69,7 @@ export async function PrepPath() {
                   key={s.id}
                   title={s.label}
                   className={`size-2 rounded-full ${
-                    s.done ? "bg-navy-800" : i === current ? "bg-amber-400" : "bg-navy-100"
+                    s.done ? "bg-ink-800" : i === current ? "bg-accent-400" : "bg-ink-100"
                   }`}
                 />
               ))}
@@ -95,7 +95,7 @@ export async function PrepPath() {
         <Link
           href={step ? step.href : `/jobs/${job.id}`}
           aria-current="step"
-          className="shrink-0 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-amber-300"
+          className="shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
         >
           {step ? "Continue" : "Review questions"}
         </Link>
@@ -104,7 +104,7 @@ export async function PrepPath() {
         {plan.basis !== "date" && (
           <Link
             href={`/jobs/${job.id}#interview-date`}
-            className="font-semibold text-navy-800 hover:underline"
+            className="font-semibold text-ink-800 hover:underline"
             data-testid="set-interview-date"
           >
             {plan.basis === "assessment" ? "Set the date" : "Interview booked? Add the date"} →
@@ -112,13 +112,13 @@ export async function PrepPath() {
         )}
         {plan.horizon && (
           <details className="group w-full" data-testid="whole-plan">
-            <summary className="cursor-pointer font-semibold text-navy-800 hover:underline">
+            <summary className="cursor-pointer font-semibold text-ink-800 hover:underline">
               See the whole plan
             </summary>
             <ol className="mt-2 space-y-1">
               {steps.map((s) => (
                 <li key={s.id} className="flex items-baseline gap-2">
-                  <span aria-hidden className={s.done ? "text-navy-800" : "text-slate-400"}>
+                  <span aria-hidden className={s.done ? "text-ink-800" : "text-slate-400"}>
                     {s.done ? "✓" : "○"}
                   </span>
                   <Link
@@ -150,7 +150,7 @@ export async function PrepPath() {
 function FirstJob() {
   return (
     <section
-      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-navy-700/40 sm:p-8"
+      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8"
       data-testid="first-job"
     >
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">

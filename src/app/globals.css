@@ -12,20 +12,33 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* The brand color: a deep navy. Green is kept for "strong" and passing checks, amber for what to
-   fix. */
+/* The brand: graphite ("ink") for the sidebar, dark cards and primary buttons, and periwinkle
+   ("accent") for the main call to action and highlights. Green is kept for "strong" and passing
+   checks, amber for what to fix. */
 @theme {
-  --color-navy-50: #f1f5fb;
-  --color-navy-100: #e1e9f5;
-  --color-navy-200: #c6d4ea;
-  --color-navy-300: #9db4d9;
-  --color-navy-400: #6b8cc2;
-  --color-navy-500: #4a6ca9;
-  --color-navy-600: #37548e;
-  --color-navy-700: #2c4474;
-  --color-navy-800: #1f3360;
-  --color-navy-900: #172748;
-  --color-navy-950: #0e182f;
+  --color-ink-50: #f4f5f8;
+  --color-ink-100: #e6e8ef;
+  --color-ink-200: #ccd0de;
+  --color-ink-300: #a6adc4;
+  --color-ink-400: #7a83a3;
+  --color-ink-500: #5a6385;
+  --color-ink-600: #464e6c;
+  --color-ink-700: #383f57;
+  --color-ink-800: #2b3044;
+  --color-ink-900: #1f2333;
+  --color-ink-950: #12141e;
+
+  --color-accent-50: #f3f4ff;
+  --color-accent-100: #e8eaff;
+  --color-accent-200: #dfe3ff;
+  --color-accent-300: #c3cbff;
+  --color-accent-400: #a5b1ff;
+  --color-accent-500: #8392f7;
+  --color-accent-600: #6573e8;
+  --color-accent-700: #5260cc;
+  --color-accent-800: #4450a5;
+  --color-accent-900: #3a4583;
+  --color-accent-950: #23294d;
 }
 
 /* The sidebar shrinks to icons on wide screens when collapsed (see components/nav-shell.tsx). */

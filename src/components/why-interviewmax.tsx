@@ -40,13 +40,13 @@ export function WhyInterviewMax({
         data-testid="why-interviewmax"
       >
         <summary className="flex cursor-pointer list-none items-baseline gap-3 [&::-webkit-details-marker]:hidden">
-          <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-navy-700">
+          <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-ink-700">
             Why InterviewMax
           </span>
           <span className="min-w-0 flex-1 truncate text-sm text-slate-600 group-open:hidden">
             {TEASER}
           </span>
-          <span className="ml-auto shrink-0 text-sm font-semibold text-navy-800">
+          <span className="ml-auto shrink-0 text-sm font-semibold text-ink-800">
             <span className="group-open:hidden">More</span>
             <span className="hidden group-open:inline">Less</span>
           </span>
@@ -64,7 +64,7 @@ export function WhyInterviewMax({
     >
       <h2
         id="why-interviewmax"
-        className="text-sm font-bold uppercase tracking-wide text-navy-700"
+        className="text-sm font-bold uppercase tracking-wide text-ink-700"
       >
         Why InterviewMax
       </h2>

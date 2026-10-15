@@ -93,9 +93,9 @@ async function AdminContent() {
           {steps.map((step, i) => (
             <li key={step.event} className="grid grid-cols-[minmax(0,12rem)_1fr_auto] items-center gap-3">
               <span className="text-sm font-medium text-slate-800">{EVENT_LABELS[step.event]}</span>
-              <span className="h-3 overflow-hidden rounded-full bg-navy-50">
+              <span className="h-3 overflow-hidden rounded-full bg-ink-50">
                 <span
-                  className="block h-full rounded-full bg-navy-700"
+                  className="block h-full rounded-full bg-ink-700"
                   style={{ width: `${Math.round(step.ofAll * 100)}%` }}
                 />
               </span>
@@ -178,9 +178,9 @@ function UsersTable({ users }: { users: UserProgress[] }) {
         </thead>
         <tbody className="divide-y divide-slate-100 text-slate-800">
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-navy-50/60">
+            <tr key={u.id} className="hover:bg-ink-50/60">
               <td className="py-2.5 pr-4">
-                <Link href={`/admin/users/${u.id}`} className="font-medium text-navy-800 hover:underline">
+                <Link href={`/admin/users/${u.id}`} className="font-medium text-ink-800 hover:underline">
                   {u.email || "(no email)"}
                 </Link>
               </td>

@@ -13,7 +13,7 @@ export function Card({
 }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-navy-800">{title}</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
       {note && <p className="mt-1 text-sm text-slate-500">{note}</p>}
       <div className="mt-4">{children}</div>
     </section>

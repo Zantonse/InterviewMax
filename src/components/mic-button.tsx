@@ -290,7 +290,7 @@ export function MicButton({
           type="button"
           onClick={start}
           disabled={disabled || phase !== "idle"}
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-navy-800 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-ink-800 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50"
         >
           <MicIcon />
           {phase === "starting" ? "Starting…" : phase === "finishing" ? "Writing it down…" : "Talk"}
