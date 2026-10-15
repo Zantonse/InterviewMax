@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { isAdminEmail } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth";
 import { listStories } from "@/lib/stories/data";
+import { storyHref } from "@/lib/tough/questions";
 import { NavIcon, type NavIconName } from "./nav-icons";
 import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 
@@ -10,6 +12,7 @@ import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 const NAV: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
   { href: "/jobs", label: "Target jobs", icon: "briefcase" },
+  { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
   { href: "/transcripts", label: "Past interviews", icon: "chat" },
   { href: "/numbers", label: "Your numbers", icon: "chart" },
 ];
@@ -69,6 +72,9 @@ export function AppHeader() {
                 </NavLink>
               </li>
             ))}
+            <Suspense fallback={null}>
+              <AdminLink />
+            </Suspense>
           </ul>
 
           <div className="mt-6 nav-collapsed:hidden">
@@ -92,6 +98,19 @@ export function AppHeader() {
   );
 }
 
+// Shown only to admins (checked on the server); the admin pages check again before showing anything.
+async function AdminLink() {
+  const user = await getCurrentUser();
+  if (!isAdminEmail(user.email)) return null;
+  return (
+    <li>
+      <NavLink href="/admin" label="Admin">
+        <NavIcon name="shield" />
+      </NavLink>
+    </li>
+  );
+}
+
 async function RecentStories() {
   let stories;
   try {
@@ -108,7 +127,7 @@ async function RecentStories() {
     <ul className="mt-2 space-y-0.5" data-testid="nav-stories">
       {shown.map((story) => (
         <li key={story.id}>
-          <NavLink href={`/stories/${story.id}`} label={story.title || "Untitled story"} compact />
+          <NavLink href={storyHref(story)} label={story.title || "Untitled story"} compact />
         </li>
       ))}
       {stories.length > shown.length && (
@@ -142,6 +161,15 @@ async function AccountMenu() {
       >
         {user.email}
       </span>
+      <Link
+        href="/settings"
+        title="Settings and your data"
+        className="flex shrink-0 items-center rounded-lg p-1.5 text-ink-100 hover:bg-white/10 hover:text-white nav-collapsed:hidden"
+        data-testid="settings-link"
+      >
+        <NavIcon name="settings" />
+        <span className="sr-only">Settings</span>
+      </Link>
       <form action="/auth/signout" method="post">
         <button
           type="submit"

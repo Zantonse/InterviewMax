@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { DeleteStoryButton } from "@/components/delete-story-button";
@@ -13,6 +13,7 @@ import type { StoryContent } from "@/lib/stories/content";
 import { getStory, listStories, type StoryRecord } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { loadBuilderTargets } from "@/lib/stories/targets-data";
+import { isToughType } from "@/lib/tough/questions";
 import { NumbersCard } from "./numbers-card";
 import { StoryBuilder } from "./story-builder";
 
@@ -41,6 +42,8 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
   const { id } = await params;
   const story = await getStory(id);
   if (!story) notFound();
+  // Tough-question answers have their own coach page.
+  if (isToughType(story.storyType)) redirect(`/tough-questions/${story.id}`);
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.

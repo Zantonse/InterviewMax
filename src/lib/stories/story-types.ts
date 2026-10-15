@@ -115,7 +115,9 @@ export const STAR_QUESTIONS = [
   {
     id: "choice",
     part: "actions",
-    text: "Where did you have to choose between options? What were they, and why did you pick the one you did?",
+    // "Show your thinking" (PRD, Oct 15): interviewers judge judgment, so ask how they thought at
+    // the key moment, not only what they did. The id stays "choice" so earlier answers still count.
+    text: "What were you thinking at the key moment? What else did you consider, why did you pick this, and what did you watch to know if you'd called it right?",
   },
   {
     id: "result",

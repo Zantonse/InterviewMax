@@ -17,6 +17,12 @@ type OpenAILike = {
 
 const DEFAULT_MAX_TOKENS = 16000;
 
+// Sent with every OpenRouter chat call: route only to providers that don't keep or train on
+// prompts (PRD "Data privacy and AI usage"). If no provider for a model qualifies, OpenRouter
+// refuses the call rather than falling back to one that does. The same rule is also set for the
+// whole account in OpenRouter's privacy settings, which covers speech to text too.
+export const OPENROUTER_PRIVACY = { data_collection: "deny" } as const;
+
 // The OpenAI API and OpenRouter share the Chat Completions format,
 // so one adapter serves both. OpenRouter is just a different base URL and key.
 export function createOpenAICompatibleProvider(
@@ -39,7 +45,7 @@ export function createOpenAICompatibleProvider(
           // OpenRouter passes max_tokens to every upstream provider; not all of them accept
           // max_completion_tokens. The OpenAI API itself wants max_completion_tokens.
           ...(id === "openrouter"
-            ? { max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS }
+            ? { max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS, provider: OPENROUTER_PRIVACY }
             : { max_completion_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS }),
           ...(req.effort ? { reasoning_effort: req.effort } : {}),
         });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PolicyLinks } from "@/components/policy-links";
 import { WhyInterviewMax } from "@/components/why-interviewmax";
 import { authProvider } from "@/lib/auth0/provider";
 import { Auth0Buttons } from "./auth0-buttons";
@@ -29,6 +30,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </div>
       </div>
       <WhyInterviewMax className="w-full max-w-3xl" />
+      <PolicyLinks />
     </main>
   );
 }

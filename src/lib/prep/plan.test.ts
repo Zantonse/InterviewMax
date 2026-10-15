@@ -102,25 +102,55 @@ describe("focusJob", () => {
 });
 
 describe("buildPlan", () => {
-  it("tomorrow: questions, About me for the company, top 3; brief and tough question later", () => {
+  it("tomorrow: questions, About me for the company, top 3, one tough question; brief later", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-10-15" } }));
     expect(plan).toMatchObject({ horizon: "crunch", basis: "date", days: 1 });
-    expect(ids(plan)).toEqual(["questions", "aboutMe", "answers"]);
+    expect(ids(plan)).toEqual(["questions", "aboutMe", "answers", "tough"]);
     expect(plan.steps[2].label).toContain("top 3");
-    expect(plan.later.map((s) => s.id)).toEqual(["tough", "brief"]);
+    expect(plan.steps[3]).toMatchObject({ href: "/tough-questions", done: false });
+    expect(plan.later.map((s) => s.id)).toEqual(["brief"]);
   });
 
-  it("this week: adds numbers and the top 5", () => {
+  it("the tough question step opens the answer in progress, and is done once one is written", () => {
+    const job = { ...JOB, interviewDate: "2026-10-15" };
+    const started = { id: "t1", title: "Why are you leaving?", storyType: "tough_why_leaving" };
+    let plan = buildPlan(input({ job, stories: [{ ...started, content: content() }] }));
+    expect(plan.steps[3]).toMatchObject({ href: "/tough-questions/t1", done: false });
+    plan = buildPlan(input({ job, stories: [{ ...started, content: content(draft) }] }));
+    expect(plan.steps[3]).toMatchObject({
+      href: "/tough-questions/t1",
+      detail: "Why are you leaving?",
+      done: true,
+    });
+  });
+
+  it("this week: adds numbers and the top 5, then practice", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-10-19" } }));
     expect(plan.horizon).toBe("week");
-    expect(ids(plan)).toEqual(["questions", "aboutMe", "numbers", "answers"]);
+    expect(ids(plan)).toEqual(["questions", "aboutMe", "numbers", "answers", "practice"]);
     expect(plan.steps[3].detail).toBe("0 of 5 answered");
+    expect(plan.steps[4]).toMatchObject({ href: "/jobs/job-1/practice", done: false });
+    expect(plan.later).toEqual([]);
+  });
+
+  it("a finished practice round ticks off the practice step", () => {
+    const plan = buildPlan(
+      input({ job: { ...JOB, interviewDate: "2026-10-19" }, practiced: true }),
+    );
+    expect(plan.steps.find((s) => s.id === "practice")?.done).toBe(true);
   });
 
   it("two weeks or more: the full bank", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-11-01" } }));
     expect(plan.horizon).toBe("full");
-    expect(ids(plan)).toEqual(["questions", "numbers", "aboutMe", "storyPlan", "answers"]);
+    expect(ids(plan)).toEqual([
+      "questions",
+      "numbers",
+      "aboutMe",
+      "storyPlan",
+      "answers",
+      "practice",
+    ]);
     expect(plan.steps[4].detail).toBe("0 of 6 answered");
   });
 

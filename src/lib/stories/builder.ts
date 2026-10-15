@@ -152,6 +152,7 @@ export async function gradeStory(
     summary: graded.summary,
     strengths: graded.strengths,
     bankRole: graded.bankRole,
+    thinking: graded.thinking,
     content,
     storyType,
     model: result.model,

@@ -7,6 +7,8 @@ import { QuestionList } from "@/components/question-list";
 import { StepStrip } from "@/components/step-strip";
 import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
+import { currentItemIndex } from "@/lib/practice/content";
+import { listPracticeSessionsSafely } from "@/lib/practice/data";
 import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
@@ -37,10 +39,11 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
 async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const [job, { overview, resume }, stories] = await Promise.all([
+  const [job, { overview, resume }, stories, rounds] = await Promise.all([
     getJob(id),
     getJobsPrep(),
     listStories(),
+    listPracticeSessionsSafely(id),
   ]);
   if (!job) notFound();
   const read = overview?.jobs[job.id];
@@ -54,7 +57,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     company: job.company || "this job",
     intro: intro && { content: intro.content, ready: introReady },
     stories,
+    practiced: rounds.some((r) => r.finishedAt),
   });
+  const lastRound = rounds[0];
 
   return (
     <>
@@ -103,6 +108,45 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               />
             </div>
           </section>
+          {job.likelyQuestions && (
+            <section
+              id="practice"
+              className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              data-testid="job-practice"
+            >
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+                Practice out loud
+              </h2>
+              <p className="mb-4 text-sm text-slate-600">
+                Answer five of these questions out loud, weakest first. The interviewer follows up
+                on what&apos;s thin, and you get feedback on each answer and how long it took.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={
+                    lastRound && currentItemIndex(lastRound.items) >= 0
+                      ? `/practice/${lastRound.id}`
+                      : `/jobs/${job.id}/practice`
+                  }
+                  className="rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900"
+                >
+                  {lastRound && currentItemIndex(lastRound.items) >= 0
+                    ? "Carry on practicing"
+                    : lastRound
+                      ? "Practice again"
+                      : "Start practicing"}
+                </Link>
+                {lastRound && (
+                  <Link
+                    href={`/jobs/${job.id}/practice`}
+                    className="text-sm font-medium text-ink-800 hover:underline"
+                  >
+                    Your rounds ({rounds.length}) →
+                  </Link>
+                )}
+              </div>
+            </section>
+          )}
           <section
             id="about-me"
             className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"

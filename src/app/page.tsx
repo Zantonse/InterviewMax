@@ -11,6 +11,7 @@ import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { hasDraft } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
+import { storyHref } from "@/lib/tough/questions";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
@@ -161,7 +162,7 @@ async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
             return (
               <li key={story.id}>
                 <Link
-                  href={`/stories/${story.id}`}
+                  href={storyHref(story)}
                   className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
                 >
                   <span className="min-w-0 truncate font-semibold">{story.title}</span>

@@ -27,7 +27,7 @@ import {
 const CHECKLIST = `- Situation: where they were, their role, and what was at stake are clear.
 - Ownership: their own actions are separated from the team's ("I", not only "we").
 - Actions: concrete steps, not generalities.
-- Decision: where they chose between options, what the options were and why they chose.
+- Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
 - Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
 - Reflection: a specific lesson or something they'd do differently.`;
 
@@ -70,7 +70,7 @@ Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${GAPS.join(", ")}"}]}`;
 
 // Shared by every writer. Tester feedback (Oct 13): drafts rambled and hedged ("maybe 100 accounts").
-const TIGHT_RULES = `Keep it tight:
+export const TIGHT_RULES = `Keep it tight:
 - Every sentence earns its place with a fact, a number, an example or a reason. Cut throat-clearing, restated points and closing pleasantries.
 - No filler or puffery: no "really", "truly", "passionate", "the kind of", "world-class", "a wide range of", "leveraged", "helped with".
 - Say figures with confidence. If the user was unsure of a figure ("maybe 100 accounts", "I think 20%"), leave it out unless the answer needs it; if you keep it, keep their exact words so it can be flagged for them to firm up. Never firm it up yourself, and never add hedges of your own ("it's still early", "maybe").`;
@@ -88,7 +88,7 @@ Make it strong, not just accurate: put their most impressive numbers where they 
 Write these parts:
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, including the choice they made and why.
+- actions: 3 to 5 sentences on the steps they took. At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
 - result: 1 to 2 sentences on the outcome, with their number.
 - reflection: 1 to 2 sentences on what they learned or would do differently.
 

@@ -1,12 +1,14 @@
 import { coverageFor } from "@/lib/questions/coverage";
 import { hasDraft, type StoryContent } from "@/lib/stories/content";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
+import { isToughType } from "@/lib/tough/questions";
 
 // The time-boxed prep plan (PRD v0.3, P0): the date of the next interview sets which steps matter
 // and in what order, and the first step not done is home's "Next step". Rules in code, no model call.
 // With an interview tonight or tomorrow it's the top 3 likely questions and About me for that
-// company; with a week, stories for the top 5 and the numbers behind them; with two weeks or more,
-// the full bank. Steps for features not built yet are listed as coming later and never block.
+// company and one tough question; with a week, stories for the top 5 and the numbers behind them;
+// with two weeks or more, the full bank, each then practiced out loud. Steps for features not built
+// yet are listed as coming later and never block.
 
 export type Horizon = "crunch" | "week" | "full";
 
@@ -18,8 +20,8 @@ export type PlanStep = {
   done: boolean;
 };
 
-// A step the plan calls for but the app can't do yet (pre-interview brief, practice mode, the
-// tough-questions coach). Shown in the plan, never as the next step.
+// A step the plan calls for but the app can't do yet (pre-interview brief). Shown in the plan,
+// never as the next step.
 export type LaterStep = { id: string; label: string };
 
 export type Plan = {
@@ -57,6 +59,8 @@ export type PlanInput = {
   numbers: { filled: number; total: number; enough: boolean } | null;
   // The story types the user's jobs need most, from the jobs read, About me left out.
   storyPlan: string[];
+  // Whether the user has finished a practice round for this job.
+  practiced?: boolean;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -139,16 +143,22 @@ export function buildPlan(input: PlanInput): Plan {
         horizon,
         basis,
         days,
-        steps: [questions, aboutMe, answersStep(job, input.stories, 3)],
-        later: [TOUGH, BRIEF],
+        steps: [questions, aboutMe, answersStep(job, input.stories, 3), toughStep(input.stories)],
+        later: [BRIEF],
       };
     case "week":
       return {
         horizon,
         basis,
         days,
-        steps: [questions, aboutMe, numbers, answersStep(job, input.stories, 5)],
-        later: [PRACTICE],
+        steps: [
+          questions,
+          aboutMe,
+          numbers,
+          answersStep(job, input.stories, 5),
+          practiceStep(job, input.practiced),
+        ],
+        later: [],
       };
     default:
       return {
@@ -161,24 +171,29 @@ export function buildPlan(input: PlanInput): Plan {
           aboutMe,
           storyPlanStep(input.storyPlan, input.stories),
           answersStep(job, input.stories),
+          practiceStep(job, input.practiced),
         ],
-        later: [PRACTICE],
+        later: [],
       };
   }
 }
 
-const TOUGH: LaterStep = {
-  id: "tough",
-  label: "Prepare one tough question (why you're leaving, a gap)",
-};
 const BRIEF: LaterStep = {
   id: "brief",
   label: "Read your one-page brief and warm up",
 };
-const PRACTICE: LaterStep = {
-  id: "practice",
-  label: "Practice out loud with follow-ups",
-};
+
+// Practice mode: a round of the job's likely questions, out loud, with follow-ups. Last, once
+// there are stories to practice.
+function practiceStep(job: PlanJob, practiced = false): PlanStep {
+  return {
+    id: "practice",
+    label: "Practice out loud with follow-ups",
+    detail: practiced ? "A round done" : "Five questions, the weakest first",
+    href: `/jobs/${job.id}/practice`,
+    done: practiced,
+  };
+}
 
 function questionsStep(job: PlanJob): PlanStep {
   return {
@@ -243,6 +258,25 @@ function storyPlanStep(plan: string[], stories: StoryLike[]): PlanStep {
       plan.length > 0 ? `${planDone} of ${plan.length} written` : "See which on your jobs page",
     href: plan.length > 0 ? "/jobs" : "/stories/new",
     done: plan.length > 0 && planDone === plan.length,
+  };
+}
+
+// One tough question answered (why you're leaving, a gap, salary…): straight to the one in
+// progress, or to the list to pick one.
+function toughStep(stories: StoryLike[]): PlanStep {
+  const tough = stories.filter((s) => isToughType(s.storyType));
+  const written = tough.find((s) => hasDraft(s.content));
+  const started = tough[0];
+  return {
+    id: "tough",
+    label: "Prepare one tough question",
+    detail: written ? written.title : "Why you're leaving, a gap, salary",
+    href: written
+      ? `/tough-questions/${written.id}`
+      : started
+        ? `/tough-questions/${started.id}`
+        : "/tough-questions",
+    done: Boolean(written),
   };
 }
 

@@ -14,19 +14,23 @@ export type GuideStep = { id: string; label: string; detail: string; href: strin
 // most interviews reach.
 export const TOP_QUESTIONS = 5;
 
-// The four things to do for one target job, in order: see the questions, confirm the level, shape
-// "Tell me about yourself" for this company, then have a written story for each top question.
+// The five things to do for one target job, in order: see the questions, confirm the level, shape
+// "Tell me about yourself" for this company, have a written story for each top question, then
+// practice them out loud.
 export function jobSteps({
   job,
   company,
   intro,
   stories,
+  practiced = false,
 }: {
   job: { id: string; likelyQuestions: { questions: LikelyQuestion[] } | null; levelConfirmed: boolean };
   company: string;
   // The user's "Tell me about yourself", and whether its questions are answered enough to tailor.
   intro: { content: StoryContent; ready: boolean } | undefined;
   stories: StoryLike[];
+  // Whether a practice round for this job has been finished.
+  practiced?: boolean;
 }): GuideStep[] {
   const questions = job.likelyQuestions?.questions.slice(0, TOP_QUESTIONS) ?? [];
   const covered = questions.filter((q) => {
@@ -63,6 +67,13 @@ export function jobSteps({
       detail: questions.length > 0 ? `${covered} of ${questions.length} ready` : "After the questions",
       href: "#questions",
       done: questions.length > 0 && covered === questions.length,
+    },
+    {
+      id: "practice",
+      label: "Practice out loud",
+      detail: practiced ? "A round done" : "Follow-ups and feedback",
+      href: `/jobs/${job.id}/practice`,
+      done: practiced,
     },
   ];
 }

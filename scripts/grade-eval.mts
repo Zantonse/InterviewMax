@@ -80,7 +80,10 @@ for (const story of stories) {
       const tier = tierFor(graded.criteria, checks);
       graderRuns.push({ story: story.id, run: i + 1, scores, tier });
       raw.push({ story: story.id, run: i + 1, tier, ...graded, checks });
-      console.log(`  ✓ ${story.id} run ${i + 1}: ${tier} ${JSON.stringify(scores)}`);
+      // "Show your thinking" is feedback only for now; it's logged and saved so its effect on
+      // grades can be checked here before it becomes a scored check.
+      const thinking = graded.thinking ? ` thinking: ${graded.thinking.level}` : "";
+      console.log(`  ✓ ${story.id} run ${i + 1}: ${tier} ${JSON.stringify(scores)}${thinking}`);
     } catch (err) {
       failures++;
       console.error(`  ✗ ${story.id} run ${i + 1}: ${err instanceof Error ? err.message : err}`);

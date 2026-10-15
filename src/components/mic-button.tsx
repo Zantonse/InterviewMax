@@ -60,19 +60,24 @@ function canRecord() {
 }
 
 const noSubscribe = () => () => {};
+// Before the page is running in the browser we can't tell, so nothing is shown yet.
+const unknownOnServer = () => null;
 
 export function MicButton({
   onText,
   disabled,
   onActiveChange,
+  onRecorded,
 }: {
   // Called with each written-down piece, in the order it was said.
   onText: (text: string) => void;
   disabled?: boolean;
   // Told when recording starts and when the last piece is back, so a form can hold Send until then.
   onActiveChange?: (active: boolean) => void;
+  // Told how many seconds were recorded, each time the user stops (practice mode times answers).
+  onRecorded?: (seconds: number) => void;
 }) {
-  const supported = useSyncExternalStore(noSubscribe, canRecord, () => false);
+  const supported = useSyncExternalStore<boolean | null>(noSubscribe, canRecord, unknownOnServer);
   const [phase, setPhase] = useState<Phase>("idle");
   const [seconds, setSeconds] = useState(0);
   const [loud, setLoud] = useState(0);
@@ -80,6 +85,7 @@ export function MicButton({
 
   const session = useRef<Session | null>(null);
   const onTextRef = useRef(onText);
+  const onRecordedRef = useRef(onRecorded);
   const next = useRef(0); // sequence number for the next piece sent
   const done = useRef<Map<number, string>>(new Map()); // pieces back, waiting for earlier ones
   const flushed = useRef(0); // sequence number of the next piece to hand to onText
@@ -88,7 +94,8 @@ export function MicButton({
 
   useEffect(() => {
     onTextRef.current = onText;
-  }, [onText]);
+    onRecordedRef.current = onRecorded;
+  }, [onText, onRecorded]);
 
   const active = phase !== "idle";
   useEffect(() => {
@@ -162,6 +169,7 @@ export function MicButton({
 
   const stop = useCallback(() => {
     if (!session.current) return;
+    onRecordedRef.current?.(session.current.totalSamples / SAMPLE_RATE);
     cutPiece();
     release();
     setLoud(0);
@@ -262,7 +270,15 @@ export function MicButton({
   // Leaving the page mid-recording turns the microphone off without sending anything.
   useEffect(() => release, [release]);
 
-  if (!supported) return null;
+  if (supported === null) return null;
+  // Some in-app browsers (opened from an email or LinkedIn link) can't record. Say so, rather than
+  // leaving the user wondering where the microphone went.
+  if (!supported)
+    return (
+      <span className="text-xs text-slate-500" data-testid="mic-unsupported">
+        <MicIcon /> To talk instead of typing, open this page in Safari or Chrome.
+      </span>
+    );
 
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
@@ -290,7 +306,8 @@ export function MicButton({
           type="button"
           onClick={start}
           disabled={disabled || phase !== "idle"}
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-ink-800 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50"
+          title="Talk instead of typing. An AI model writes down what you say; the recording isn't kept."
+          className="inline-flex items-center gap-1.5 rounded-xl bg-accent-100 px-3 py-2 font-semibold text-accent-900 ring-1 ring-accent-300 hover:bg-accent-200 disabled:opacity-50"
         >
           <MicIcon />
           {phase === "starting" ? "Starting…" : phase === "finishing" ? "Writing it down…" : "Talk"}
@@ -298,7 +315,8 @@ export function MicButton({
       )}
       {phase === "recording" && (
         <span className="text-xs text-slate-500" role="status">
-          Listening. Your words appear as you go; edit them before you send.
+          Listening. Your words appear as you go; edit them before you send. Speech is written
+          down by an AI model and the recording isn&apos;t kept.
         </span>
       )}
       {error && phase !== "recording" && (
@@ -322,6 +340,7 @@ function MicIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
+      className="inline shrink-0 align-[-4px]"
     >
       <path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5 11a7 7 0 0 0 14 0M12 18v3" />
     </svg>
