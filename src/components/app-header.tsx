@@ -3,6 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { listStories } from "@/lib/stories/data";
+import { storyHref } from "@/lib/tough/questions";
 import { NavIcon, type NavIconName } from "./nav-icons";
 import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 
@@ -10,6 +11,7 @@ import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 const NAV: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
   { href: "/jobs", label: "Target jobs", icon: "briefcase" },
+  { href: "/tough-questions", label: "Tough questions", icon: "shield" },
   { href: "/transcripts", label: "Past interviews", icon: "chat" },
   { href: "/numbers", label: "Your numbers", icon: "chart" },
 ];
@@ -108,7 +110,7 @@ async function RecentStories() {
     <ul className="mt-2 space-y-0.5" data-testid="nav-stories">
       {shown.map((story) => (
         <li key={story.id}>
-          <NavLink href={`/stories/${story.id}`} label={story.title || "Untitled story"} compact />
+          <NavLink href={storyHref(story)} label={story.title || "Untitled story"} compact />
         </li>
       ))}
       {stories.length > shown.length && (

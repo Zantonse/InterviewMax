@@ -77,8 +77,17 @@ export type StorySeed = {
   sourceLabel: string;
 };
 
+// Tough-questions coach only (src/lib/tough): which target job the answer turns toward, the coach's
+// note on it, and whether the user has edited the written answer (kept in draft.parts.answer).
+export type ToughMeta = {
+  jobId?: string;
+  note?: string;
+  edited?: boolean;
+};
+
 export type StoryContent = {
   version: 1;
+  tough?: ToughMeta;
   seed?: StorySeed;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
@@ -261,6 +270,14 @@ export function parseContent(raw: unknown): StoryContent {
         : [],
       model: typeof raw.draft.model === "string" ? raw.draft.model : "",
       writtenAt: typeof raw.draft.writtenAt === "string" ? raw.draft.writtenAt : "",
+    };
+  }
+
+  if (isRecord(raw.tough)) {
+    content.tough = {
+      ...(typeof raw.tough.jobId === "string" ? { jobId: raw.tough.jobId } : {}),
+      ...(typeof raw.tough.note === "string" ? { note: raw.tough.note } : {}),
+      ...(raw.tough.edited === true ? { edited: true } : {}),
     };
   }
 

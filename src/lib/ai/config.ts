@@ -34,6 +34,9 @@ export const STEP_MODELS = {
   // Story finder: point at moments in the resume, LinkedIn profile and role map that could become
   // stories, each quoting the line it comes from (quotes and numbers checked in code).
   storyFind: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Tough-questions coach: a short, honest answer to one awkward question (why leaving, a gap,
+  // salary…) from the user's answers about their situation. Numbers checked in code.
+  toughAnswer: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
   // Target jobs: read the resume and every job posting together (what they share, how each differs).

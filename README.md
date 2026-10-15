@@ -17,6 +17,7 @@ Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email s
 - **Story grading.** A different model vendor grades each story (context, ownership, reflection, level) and checks its content against your target jobs, shown in its own column with "What's working" and "To raise it".
 - **Story bank and coverage grid** (home). Which question themes your stories cover, with empty themes starting the missing story, plus the mix of team- and org-level stories your target level needs.
 - **Your numbers** (`/numbers`). Per role, the numbers a strong story needs and where to find them; the story builder uses what you fill in.
+- **Tough questions** (`/tough-questions`). Why you're leaving, a gap, a layoff or firing, many moves, greatest weakness, a failure and salary expectations. A few plain questions about what really happened, then one call writes a 20 to 40 second answer that's true, brief and turns toward a chosen target job. It never suggests hiding or bending a fact; code checks every number against the user's answers and the length. Answers are saved in the stories table as their own type (`tough_<id>`), editable, and the prep plan's "tonight or tomorrow" plan asks for one.
 - **Past interviews** (`/transcripts`). Upload or paste real interview transcripts; the review of what was asked and how each answer landed feeds likely questions and story follow-ups.
 - **Mic mode.** A Talk button beside the story builder's answer box, each Map my role question and "Why this company?". The browser records 16 kHz WAV (works the same in phone Safari, Chrome and Firefox) and sends it in pieces of up to 45 seconds, cut at a pause; each piece is written down by the `transcribe` step (Whisper Large V3 through OpenRouter's speech-to-text endpoint) and added to the box to edit before sending. Audio isn't stored.
 - A collapsible left graphite sidebar on every signed-in page (a drawer on phones) links all of the above plus your recent stories.
@@ -42,11 +43,12 @@ npm run dev                  # http://localhost:3000
 
 ## Project layout
 
-- `src/app` – pages: `/login`, `/auth/confirm` and `/auth/continue` (email sign-in), `/` (home, prep path and story bank), `/stories/new` (pick a story type), `/stories/find` (story finder), `/stories/[id]` (the story builder, with `/stories/[id]/map` for Map my role), `/jobs`, `/jobs/new` and `/jobs/[id]` (target jobs, resume, likely questions, tailored About me), `/numbers` (numbers checklist), `/transcripts` and `/transcripts/[id]` (past interviews)
+- `src/app` – pages: `/login`, `/auth/confirm` and `/auth/continue` (email sign-in), `/` (home, prep path and story bank), `/stories/new` (pick a story type), `/stories/find` (story finder), `/stories/[id]` (the story builder, with `/stories/[id]/map` for Map my role), `/jobs`, `/jobs/new` and `/jobs/[id]` (target jobs, resume, likely questions, tailored About me), `/numbers` (numbers checklist), `/transcripts` and `/transcripts/[id]` (past interviews), `/tough-questions` and `/tough-questions/[id]` (tough-questions coach)
 - `src/components` – the sidebar (`nav-shell.tsx`), coverage grid, prep path and other shared pieces
 - `src/lib/jobs` – target jobs, the resume, reading postings from links, PDFs, web pages and screenshots, and the one call that reads them together
 - `src/lib/questions` – the ten question themes and templates, the likely-questions call, and coverage (which story answers each question)
 - `src/lib/stories` – story types, the scripted questions, the model prompts, grading, fit against target jobs, and the number check
+- `src/lib/tough` – the tough-questions coach: the questions, the writer's prompt and the checks on its answer
 - `src/lib/finder` – the story finder: the call that suggests moments and the checks on its quotes
 - `src/lib/roles` – Map my role
 - `src/lib/numbers` – the numbers checklist per role family
