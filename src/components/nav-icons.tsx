@@ -10,6 +10,7 @@ const PATHS = {
   menu: "M4 6h16M4 12h16M4 18h16",
   close: "M6 6l12 12M18 6 6 18",
   collapse: "M15 6l-6 6 6 6",
+  shield: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z",
 } as const;
 
 export type NavIconName = keyof typeof PATHS;
