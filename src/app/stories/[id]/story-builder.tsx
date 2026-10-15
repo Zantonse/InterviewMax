@@ -37,6 +37,7 @@ import {
 import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
+import { AiNotice } from "@/components/ai-notice";
 
 type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
@@ -485,6 +486,7 @@ export function StoryBuilder({
                         disabled={busy !== null}
                         onUpload={submitUpload}
                       />
+                      <AiNotice purpose="fill in and review your answers" />
                     </div>
                   </details>
                 )}

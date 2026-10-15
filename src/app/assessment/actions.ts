@@ -3,6 +3,7 @@
 import { redirect, unstable_rethrow } from "next/navigation";
 import { saveAssessment } from "@/lib/assessment/data";
 import { parseAnswers } from "@/lib/assessment/journey";
+import { trackEvent } from "@/lib/usage/track";
 
 export type SubmitResult = { ok: true; saved: boolean } | { ok: false; error: string };
 
@@ -13,6 +14,7 @@ export async function submitAssessment(raw: unknown): Promise<SubmitResult> {
   if (!answers) return { ok: false, error: "Answer all five questions first." };
   try {
     await saveAssessment({ answers, completedAt: new Date().toISOString() });
+    await trackEvent("assessment_done");
     return { ok: true, saved: true };
   } catch (err) {
     unstable_rethrow(err);

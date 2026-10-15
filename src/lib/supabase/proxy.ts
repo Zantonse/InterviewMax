@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseEnv } from "./env";
 
-// Paths a signed-out visitor may open.
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Paths a signed-out visitor may open: sign-in, the policies, and the page shown after an
+// account is deleted.
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/ai-usage", "/account-deleted"];
 
 export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

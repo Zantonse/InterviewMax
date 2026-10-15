@@ -5,6 +5,7 @@ import { emptyContent } from "@/lib/stories/content";
 import { insertStory } from "@/lib/stories/data";
 import { requiredStoryStatus } from "@/lib/stories/required";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
+import { trackEvent } from "@/lib/usage/track";
 
 export async function startStory(formData: FormData) {
   const storyType = getStoryType(String(formData.get("storyType") ?? ""));
@@ -22,5 +23,6 @@ export async function startStory(formData: FormData) {
     themes: storyType.themes,
     content: emptyContent(),
   });
+  await trackEvent("story_started");
   redirect(`/stories/${id}`);
 }

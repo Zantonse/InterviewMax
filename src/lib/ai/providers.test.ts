@@ -126,7 +126,7 @@ describe("OpenAI-compatible provider", () => {
     expect(result.usage).toEqual({ inputTokens: 9, outputTokens: 4 });
   });
 
-  it("sends max_tokens to OpenRouter", async () => {
+  it("sends max_tokens and the no-training rule to OpenRouter", async () => {
     const create = vi.fn().mockResolvedValue({
       model: "anthropic/claude-opus-5.5",
       choices: [{ finish_reason: "stop", message: { content: "ok", refusal: null } }],
@@ -141,6 +141,7 @@ describe("OpenAI-compatible provider", () => {
       model: "anthropic/claude-opus-5.5",
       messages: [],
       max_tokens: 500,
+      provider: { data_collection: "deny" },
     });
   });
 
