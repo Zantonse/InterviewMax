@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { QUICK_QUESTIONS, MAX_QUICK_ANSWER_LENGTH } from "@/lib/finder/content";
+import { MicButton } from "@/components/mic-button";
+import { appendSpoken } from "@/lib/voice/text";
 import { findStoryMoments, saveQuickAnswers } from "./actions";
 
 // A suggested moment. Sits inside a form whose action is startFromMoment.
@@ -122,21 +124,18 @@ export function FindAgainButton() {
 
 export function QuickQuestions({ initial }: { initial: Record<string, string> }) {
   const [state, action, pending] = useActionState(saveQuickAnswers, null);
+  const [talking, setTalking] = useState(false);
   return (
     <form action={action} className="mt-5 space-y-4" data-testid="quick-questions">
       {QUICK_QUESTIONS.map((q, i) => (
-        <label key={q.id} className="block">
-          <span className="font-medium text-slate-800">
-            {i + 1}. {q.text}
-          </span>
-          <textarea
-            name={q.id}
-            defaultValue={initial[q.id] ?? ""}
-            rows={3}
-            maxLength={MAX_QUICK_ANSWER_LENGTH}
-            className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
-          />
-        </label>
+        <QuickAnswer
+          key={q.id}
+          id={q.id}
+          label={`${i + 1}. ${q.text}`}
+          initial={initial[q.id] ?? ""}
+          disabled={pending}
+          onTalkingChange={setTalking}
+        />
       ))}
       {state && !state.ok && (
         <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
@@ -145,11 +144,51 @@ export function QuickQuestions({ initial }: { initial: Record<string, string> })
       )}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || talking}
         className="rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white hover:bg-ink-900 disabled:opacity-70"
       >
         {pending ? "Finding your stories…" : "Find my stories"}
       </button>
     </form>
+  );
+}
+
+// One quick question: type, or tap Talk and say it.
+function QuickAnswer({
+  id,
+  label,
+  initial,
+  disabled,
+  onTalkingChange,
+}: {
+  id: string;
+  label: string;
+  initial: string;
+  disabled: boolean;
+  onTalkingChange: (talking: boolean) => void;
+}) {
+  const [text, setText] = useState(initial);
+  return (
+    <div>
+      <label className="block">
+        <span className="font-medium text-slate-800">{label}</span>
+        <textarea
+          name={id}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          maxLength={MAX_QUICK_ANSWER_LENGTH}
+          placeholder="Type or tap Talk. Plain notes are fine."
+          className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
+        />
+      </label>
+      <div className="mt-1">
+        <MicButton
+          disabled={disabled}
+          onActiveChange={onTalkingChange}
+          onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_QUICK_ANSWER_LENGTH))}
+        />
+      </div>
+    </div>
   );
 }
