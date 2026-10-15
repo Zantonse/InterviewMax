@@ -12,7 +12,7 @@ import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 const NAV: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
   { href: "/jobs", label: "Target jobs", icon: "briefcase" },
-  { href: "/tough-questions", label: "Tough questions", icon: "shield" },
+  { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
   { href: "/transcripts", label: "Past interviews", icon: "chat" },
   { href: "/numbers", label: "Your numbers", icon: "chart" },
 ];
