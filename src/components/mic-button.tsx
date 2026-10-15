@@ -290,6 +290,7 @@ export function MicButton({
           type="button"
           onClick={start}
           disabled={disabled || phase !== "idle"}
+          title="Talk instead of typing. An AI model writes down what you say; the recording isn't kept."
           className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-ink-800 ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-50"
         >
           <MicIcon />
@@ -298,7 +299,8 @@ export function MicButton({
       )}
       {phase === "recording" && (
         <span className="text-xs text-slate-500" role="status">
-          Listening. Your words appear as you go; edit them before you send.
+          Listening. Your words appear as you go; edit them before you send. Speech is written
+          down by an AI model and the recording isn&apos;t kept.
         </span>
       )}
       {error && phase !== "recording" && (

@@ -23,6 +23,7 @@ import {
   type FormState,
 } from "./actions";
 import { postingUpload } from "./posting-upload";
+import { AiNotice } from "@/components/ai-notice";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
@@ -203,6 +204,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
                   ? `Reading the ${SOURCE_LABEL[fetchingFrom]}…`
                   : "On the posting, use your browser's Print, then Save as PDF; or Save page as; or take screenshots of the whole posting (pick them all at once). Works for LinkedIn, Indeed and Glassdoor."}
               </p>
+              <AiNotice purpose="copy out the job posting" className="mt-1" />
             </div>
           )}
 
@@ -362,6 +364,7 @@ export function ResumeForm({ hasResume }: { hasResume: boolean }) {
         Or paste it
         <textarea id={`${id}-text`} name="text" rows={4} className={INPUT} />
       </label>
+      <AiNotice purpose="read your career path and compare it with your jobs" />
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
       <button type="submit" disabled={pending} className={SECONDARY}>
         {pending ? "Reading your resume…" : "Save resume"}
