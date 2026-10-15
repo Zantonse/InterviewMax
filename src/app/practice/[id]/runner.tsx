@@ -31,10 +31,13 @@ export function PracticeRunner({
   sessionId,
   jobId,
   initialItems,
+  openers = {},
 }: {
   sessionId: string;
   jobId: string;
   initialItems: PracticeItem[];
+  // The opening line picked in "How to tell it", keyed by story id, as a cue before answering.
+  openers?: Record<string, string>;
 }) {
   const [items, setItems] = useState(initialItems);
   // Which question is on screen, or -1 for the summary. Stays on a question after its feedback
@@ -96,6 +99,14 @@ export function PracticeRunner({
             "No story for this one yet. Answer from memory; the feedback says what a strong answer needs."
           )}
         </p>
+        {item.storyId && openers[item.storyId] && !item.turns[0]?.answer && (
+          <details className="mt-2 text-sm" data-testid="practice-opener">
+            <summary className="cursor-pointer font-medium text-ink-800">Peek at your opener</summary>
+            <p className="mt-1 rounded-xl bg-ink-50 px-3 py-2 text-slate-800">
+              {openers[item.storyId]}
+            </p>
+          </details>
+        )}
 
         <ol className="mt-4 space-y-3" aria-live="polite">
           {item.turns.map((t, i) => (

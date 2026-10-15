@@ -24,8 +24,11 @@ import {
   type StoryType,
 } from "@/lib/stories/story-types";
 import {
+  addVividDetail,
   askFollowUps,
+  coachDraft,
   gradeDraft,
+  pickHook,
   importLinkedIn,
   importPreparedAnswer,
   inferPath,
@@ -37,9 +40,18 @@ import {
 import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
+import { TellingPanel } from "./telling-panel";
 import { AiNotice } from "@/components/ai-notice";
 
-type Busy = null | "saving" | "reading" | "inferring" | "probing" | "writing" | "grading";
+type Busy =
+  | null
+  | "saving"
+  | "reading"
+  | "inferring"
+  | "probing"
+  | "writing"
+  | "grading"
+  | "coaching";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
 // Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
@@ -53,6 +65,8 @@ const GAP_TO_PART: Record<string, string> = {
   decision: "actions",
   result: "result",
   reflection: "reflection",
+  // The vivid detail asked for in "How to tell it".
+  detail: "actions",
 };
 
 export function StoryBuilder({
@@ -549,6 +563,20 @@ export function StoryBuilder({
                 </div>
               )}
             </StoryPanel>
+            <TellingPanel
+              content={content}
+              storyType={storyType}
+              coaching={busy === "coaching"}
+              disabled={busy !== null}
+              onCoach={() => run([{ busy: "coaching", action: () => coachDraft(storyId) }])}
+              onPickHook={(i) => run([{ busy: "saving", action: () => pickHook(storyId, i) }])}
+              onAddDetail={(answer) =>
+                run([
+                  { busy: "saving", action: () => addVividDetail(storyId, answer) },
+                  { busy: "coaching", action: () => coachDraft(storyId) },
+                ])
+              }
+            />
             {content.draft && nextUp}
             {afterStory}
           </div>
