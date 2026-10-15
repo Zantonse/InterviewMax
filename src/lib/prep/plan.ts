@@ -6,7 +6,8 @@ import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 // and in what order, and the first step not done is home's "Next step". Rules in code, no model call.
 // With an interview tonight or tomorrow it's the top 3 likely questions and About me for that
 // company; with a week, stories for the top 5 and the numbers behind them; with two weeks or more,
-// the full bank. Steps for features not built yet are listed as coming later and never block.
+// the full bank, each then practiced out loud. Steps for features not built yet are listed as
+// coming later and never block.
 
 export type Horizon = "crunch" | "week" | "full";
 
@@ -18,7 +19,7 @@ export type PlanStep = {
   done: boolean;
 };
 
-// A step the plan calls for but the app can't do yet (pre-interview brief, practice mode, the
+// A step the plan calls for but the app can't do yet (pre-interview brief, the
 // tough-questions coach). Shown in the plan, never as the next step.
 export type LaterStep = { id: string; label: string };
 
@@ -57,6 +58,8 @@ export type PlanInput = {
   numbers: { filled: number; total: number; enough: boolean } | null;
   // The story types the user's jobs need most, from the jobs read, About me left out.
   storyPlan: string[];
+  // Whether the user has finished a practice round for this job.
+  practiced?: boolean;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -147,8 +150,14 @@ export function buildPlan(input: PlanInput): Plan {
         horizon,
         basis,
         days,
-        steps: [questions, aboutMe, numbers, answersStep(job, input.stories, 5)],
-        later: [PRACTICE],
+        steps: [
+          questions,
+          aboutMe,
+          numbers,
+          answersStep(job, input.stories, 5),
+          practiceStep(job, input.practiced),
+        ],
+        later: [],
       };
     default:
       return {
@@ -161,8 +170,9 @@ export function buildPlan(input: PlanInput): Plan {
           aboutMe,
           storyPlanStep(input.storyPlan, input.stories),
           answersStep(job, input.stories),
+          practiceStep(job, input.practiced),
         ],
-        later: [PRACTICE],
+        later: [],
       };
   }
 }
@@ -175,10 +185,18 @@ const BRIEF: LaterStep = {
   id: "brief",
   label: "Read your one-page brief and warm up",
 };
-const PRACTICE: LaterStep = {
-  id: "practice",
-  label: "Practice out loud with follow-ups",
-};
+
+// Practice mode: a round of the job's likely questions, out loud, with follow-ups. Last, once
+// there are stories to practice.
+function practiceStep(job: PlanJob, practiced = false): PlanStep {
+  return {
+    id: "practice",
+    label: "Practice out loud with follow-ups",
+    detail: practiced ? "A round done" : "Five questions, the weakest first",
+    href: `/jobs/${job.id}/practice`,
+    done: practiced,
+  };
+}
 
 function questionsStep(job: PlanJob): PlanStep {
   return {

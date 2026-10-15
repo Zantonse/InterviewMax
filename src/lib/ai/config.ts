@@ -49,6 +49,12 @@ export const STEP_MODELS = {
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Practice mode: a skeptical interviewer asks one follow-up at a time, aimed at the weakest part
+  // of a spoken answer. Kept light: the user is waiting between answers.
+  practiceProbe: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Practice mode: feedback on one answer and its follow-ups against the saved story, and the new
+  // details worth adding to it (each quoted from what the user said and checked in code).
+  practiceFeedback: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
   // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
   // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).

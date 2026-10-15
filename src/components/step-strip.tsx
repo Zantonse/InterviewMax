@@ -10,7 +10,9 @@ export function StepStrip({ label, steps }: { label: string; steps: GuideStep[] 
       className="mt-5 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-ink-700/30"
       data-testid="step-strip"
     >
-      <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-4">
+      <ol
+        className={`grid grid-cols-1 gap-1 sm:grid-cols-2 ${steps.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
+      >
         {steps.map((step, i) => {
           const isCurrent = i === current;
           return (

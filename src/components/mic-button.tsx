@@ -65,12 +65,15 @@ export function MicButton({
   onText,
   disabled,
   onActiveChange,
+  onRecorded,
 }: {
   // Called with each written-down piece, in the order it was said.
   onText: (text: string) => void;
   disabled?: boolean;
   // Told when recording starts and when the last piece is back, so a form can hold Send until then.
   onActiveChange?: (active: boolean) => void;
+  // Told how many seconds were recorded, each time the user stops (practice mode times answers).
+  onRecorded?: (seconds: number) => void;
 }) {
   const supported = useSyncExternalStore(noSubscribe, canRecord, () => false);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -80,6 +83,7 @@ export function MicButton({
 
   const session = useRef<Session | null>(null);
   const onTextRef = useRef(onText);
+  const onRecordedRef = useRef(onRecorded);
   const next = useRef(0); // sequence number for the next piece sent
   const done = useRef<Map<number, string>>(new Map()); // pieces back, waiting for earlier ones
   const flushed = useRef(0); // sequence number of the next piece to hand to onText
@@ -88,7 +92,8 @@ export function MicButton({
 
   useEffect(() => {
     onTextRef.current = onText;
-  }, [onText]);
+    onRecordedRef.current = onRecorded;
+  }, [onText, onRecorded]);
 
   const active = phase !== "idle";
   useEffect(() => {
@@ -162,6 +167,7 @@ export function MicButton({
 
   const stop = useCallback(() => {
     if (!session.current) return;
+    onRecordedRef.current?.(session.current.totalSamples / SAMPLE_RATE);
     cutPiece();
     release();
     setLoud(0);
