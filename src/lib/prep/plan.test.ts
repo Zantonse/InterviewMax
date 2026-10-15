@@ -102,13 +102,13 @@ describe("focusJob", () => {
 });
 
 describe("buildPlan", () => {
-  it("tomorrow: questions, About me for the company, top 3, one tough question; brief later", () => {
+  it("tomorrow: questions, About me for the company, top 3, one tough question", () => {
     const plan = buildPlan(input({ job: { ...JOB, interviewDate: "2026-10-15" } }));
     expect(plan).toMatchObject({ horizon: "crunch", basis: "date", days: 1 });
     expect(ids(plan)).toEqual(["questions", "aboutMe", "answers", "tough"]);
     expect(plan.steps[2].label).toContain("top 3");
     expect(plan.steps[3]).toMatchObject({ href: "/tough-questions", done: false });
-    expect(plan.later.map((s) => s.id)).toEqual(["brief"]);
+    expect(plan.later).toEqual([]);
   });
 
   it("the tough question step opens the answer in progress, and is done once one is written", () => {
