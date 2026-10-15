@@ -1,4 +1,4 @@
--- Undoes supabase/migrations/20261014020000_auth0_sign_in.sql: back to Supabase Auth only, with
+-- Undoes supabase/migrations/20261014040000_auth0_sign_in.sql: back to Supabase Auth only, with
 -- auth.uid() policies and foreign keys to auth.users. Run in the SQL editor if Auth0 sign-in has to
 -- be rolled back. Set AUTH_PROVIDER back to supabase (or remove it) first.
 --

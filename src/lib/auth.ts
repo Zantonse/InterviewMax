@@ -30,7 +30,7 @@ async function getAuth0User(): Promise<CurrentUser> {
     redirect("/login");
   }
   // Finds this Auth0 identity's profile, linking it to an existing tester by verified email or
-  // making a new one on first sign-in (supabase/migrations/20261014020000_auth0_sign_in.sql).
+  // making a new one on first sign-in (supabase/migrations/20261014040000_auth0_sign_in.sql).
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("claim_profile");
   if (error || typeof data !== "string") {

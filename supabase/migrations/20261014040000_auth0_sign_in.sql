@@ -8,7 +8,7 @@
 -- Supabase magic-link sign-in working too, until the app's AUTH_PROVIDER switch moves to auth0.
 --
 -- Existing users are matched by verified email on their first Auth0 sign-in (claim_profile()).
--- Undo with supabase/rollbacks/20261014020000_auth0_sign_in_down.sql.
+-- Undo with supabase/rollbacks/20261014040000_auth0_sign_in_down.sql.
 
 -- Which Auth0 identities belong to which profile. One person can have several (Google one day,
 -- an email code the next) as long as each comes with the same verified email.
