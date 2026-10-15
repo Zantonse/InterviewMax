@@ -138,6 +138,26 @@ export const BANK_ROLES = [
   "organization-level impact",
 ] as const;
 
+// "Show your thinking" (PRD, Oct 15): whether a behavioral story shows how the user thought at the
+// key decision (what they noticed, the options they weighed, why they chose, what they watched for).
+// Feedback only, shown under Actions and data for the eval harness. It never changes a score or the
+// tier until the eval harness shows how it would move grades.
+export const THINKING_LEVELS = [
+  { id: "shown", label: "Shown" },
+  { id: "partly", label: "Partly shown" },
+  { id: "missing", label: "Not shown yet" },
+] as const;
+
+export type ThinkingLevel = (typeof THINKING_LEVELS)[number]["id"];
+
+export type ThinkingFeedback = {
+  level: ThinkingLevel;
+  // Where the reasoning shows, or what's missing.
+  note: string;
+  // What to add, addressed to the user. Empty when it's shown.
+  improve?: string;
+};
+
 export type StoryGrade = {
   tier: Tier;
   // The one or two things to do next, most important first.
@@ -150,6 +170,8 @@ export type StoryGrade = {
   checks: CheckResult[];
   // Behavioral stories only.
   bankRole?: { role: string; note: string };
+  // Behavioral stories only. Feedback, not scored (see ThinkingFeedback).
+  thinking?: ThinkingFeedback;
   // Where a quick check and the grader's score disagree.
   flags: string[];
   // How the story fits the user's target jobs (see fit.ts). Missing with no target jobs, or when
@@ -457,6 +479,7 @@ export function combineGrade(input: {
   summary?: string;
   strengths?: string[];
   bankRole?: { role: string; note: string };
+  thinking?: ThinkingFeedback;
   content?: ContentCheck;
   storyType: StoryType | undefined;
   model: string;
@@ -473,6 +496,7 @@ export function combineGrade(input: {
     criteria,
     checks,
     ...(input.bankRole && storyType?.format !== "intro" ? { bankRole: input.bankRole } : {}),
+    ...(input.thinking && storyType?.format !== "intro" ? { thinking: input.thinking } : {}),
     flags: disagreements(criteria, checks, storyType),
     ...(input.content ? { content: input.content } : {}),
     model: input.model,
@@ -522,14 +546,25 @@ Then give the one or two changes that would most improve the story, most importa
       ? ""
       : `
 
-Also say which job this story does in a story bank: one of ${BANK_ROLES.map((r) => `"${r}"`).join(", ")}, with one short sentence on why. This describes the story's level; it is not a score.`
+Also say which job this story does in a story bank: one of ${BANK_ROLES.map((r) => `"${r}"`).join(", ")}, with one short sentence on why. This describes the story's level; it is not a score.
+
+${THINKING_RULES}`
   }
 
 Reply with JSON only, no other text:
 {"summary": "…", "strengths": ["…"], "criteria": {${criteria.map((c) => `"${c.id}": {"score": 1, "note": "…", "improve": "…"}`).join(", ")}}, "fixes": ["…"]${
-    intro ? "" : `, "bankRole": {"role": "…", "note": "…"}`
+    intro
+      ? ""
+      : `, "bankRole": {"role": "…", "note": "…"}, "thinking": {"level": "${THINKING_LEVELS.map((l) => l.id).join("|")}", "note": "…", "improve": "…"}`
   }}`;
 }
+
+// The grader's instructions for "show your thinking". Kept out of the scores on purpose.
+const THINKING_RULES = `Also say whether the story shows the user's thinking at the key decision: what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, and the reasoning is what a resume can't show. One or two short thinking moments are enough; a long monologue is not better. Judge only what is written.
+- level: "shown" when the reasoning at the key decision is clear, "partly" when some of it is there (say, the choice but not why, or no sense of what they watched for), "missing" when the story only lists what they did.
+- note: one sentence (at most 30 words) quoting where the thinking shows, or naming the moment where it's missing.
+- improve: unless it's shown, one sentence addressed to the user on what to add at that moment, e.g. "At the point you chose to cut scope, say what else you considered and why." Never invent their reasoning.
+This is feedback only: don't let it change any score.`;
 
 export function gradeMessages(
   title: string,
@@ -553,6 +588,7 @@ export function parseGrade(
   summary?: string;
   strengths: string[];
   bankRole?: { role: string; note: string };
+  thinking?: ThinkingFeedback;
 } {
   const json = extractJson(text);
   if (!isRecord(json) || !isRecord(json.criteria)) {
@@ -585,13 +621,26 @@ export function parseGrade(
       bankRole = { role, note };
     }
   }
+  const thinking = storyType?.format !== "intro" ? parseThinking(json.thinking) : undefined;
   return {
     criteria,
     fixes,
     ...(summary ? { summary } : {}),
     strengths,
     ...(bankRole ? { bankRole } : {}),
+    ...(thinking ? { thinking } : {}),
   };
+}
+
+// Feedback only, so a missing or malformed answer is dropped rather than failing the grade.
+export function parseThinking(raw: unknown): ThinkingFeedback | undefined {
+  if (!isRecord(raw)) return undefined;
+  const level = THINKING_LEVELS.find((l) => l.id === raw.level)?.id;
+  if (!level) return undefined;
+  const note = typeof raw.note === "string" ? raw.note.trim().slice(0, 300) : "";
+  const improve =
+    level !== "shown" && typeof raw.improve === "string" ? raw.improve.trim().slice(0, 300) : "";
+  return { level, note, ...(improve ? { improve } : {}) };
 }
 
 function stringList(value: unknown, max: number): string[] {
@@ -635,6 +684,7 @@ export function parseStoredGrade(raw: unknown): StoryGrade | undefined {
     ...(isRecord(raw.bankRole) && typeof raw.bankRole.role === "string"
       ? { bankRole: { role: raw.bankRole.role, note: str(raw.bankRole.note) } }
       : {}),
+    ...(parseThinking(raw.thinking) ? { thinking: parseThinking(raw.thinking) } : {}),
     flags: strings(raw.flags),
     ...(parseStoredFit(raw.content) ? { content: parseStoredFit(raw.content) } : {}),
     model: str(raw.model),

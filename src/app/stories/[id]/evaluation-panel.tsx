@@ -8,7 +8,10 @@ import {
   SCORE_LABELS,
   TIERS,
   gradingCriteria,
+  THINKING_LEVELS,
   type StoryGrade,
+  type ThinkingFeedback,
+  type ThinkingLevel,
   type Tier,
 } from "@/lib/stories/grading";
 import type { ContentCheck, FitLevel, LevelMatch } from "@/lib/stories/fit";
@@ -19,6 +22,40 @@ const TIER_STYLES: Record<Tier, string> = {
   good_enough: "bg-emerald-100 text-emerald-900",
   strong: "bg-emerald-700 text-white",
 };
+
+const THINKING_STYLES: Record<ThinkingLevel, string> = {
+  shown: "bg-emerald-100 text-emerald-900",
+  partly: "bg-amber-100 text-amber-900",
+  missing: "bg-amber-100 text-amber-900",
+};
+
+// "Show your thinking" under Actions: feedback only, never part of the score or the tier.
+function ThinkingNote({ thinking }: { thinking: ThinkingFeedback }) {
+  const label = THINKING_LEVELS.find((l) => l.id === thinking.level)?.label;
+  return (
+    <div
+      className="mt-1 flex flex-col gap-1 rounded-xl bg-white p-2.5 ring-1 ring-black/5"
+      data-testid="thinking"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-slate-800">Show your thinking</span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${THINKING_STYLES[thinking.level]}`}
+        >
+          {label}
+        </span>
+        <span className="text-xs text-slate-500">Feedback only, not part of the score</span>
+      </div>
+      {thinking.note && <p className="text-sm text-slate-700">{thinking.note}</p>}
+      {thinking.improve && (
+        <p className="text-sm text-ink-900">
+          <span className="font-semibold">Try: </span>
+          {thinking.improve}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // The story's grade, in its own column beside the story. Coaching order: the tier, what works and
 // the next fix first, then the score and reasoning on each criterion and the quick checks, which
@@ -155,6 +192,9 @@ export function EvaluationPanel({
                       <span className="font-semibold">To raise it: </span>
                       {scored.improve}
                     </p>
+                  )}
+                  {c.id === "actions" && grade?.thinking && (
+                    <ThinkingNote thinking={grade.thinking} />
                   )}
                 </li>
               );
