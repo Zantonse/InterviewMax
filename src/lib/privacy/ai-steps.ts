@@ -39,6 +39,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Story finder",
     sends: "Your resume, LinkedIn text and role map, or your answers to its questions",
   },
+  toughAnswer: {
+    feature: "Tough questions",
+    sends: "Your answers about that question and, if you pick one, that job’s posting",
+  },
   storyGrade: {
     feature: "Grading a story",
     sends: "The written story, the story type and your target jobs",
