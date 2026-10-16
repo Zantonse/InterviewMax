@@ -7,6 +7,7 @@ import type { StoredSignal } from "@/lib/signals/visits";
 import { parseContent, type StoryContent } from "@/lib/stories/content";
 import { isUsageEvent, type UsageEvent } from "@/lib/usage/events";
 import { isAdminEmail } from "./access";
+import type { EventRow, SignalRow } from "./analytics";
 import type { EventFirst, UserProgress } from "./metrics";
 
 // The admin panel's only door to the database. Every function here starts with requireAdmin(),
@@ -18,6 +19,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const TIMELINE_LIMIT = 500;
 const SIGNALS_LIMIT = 1000;
 const RECENT_VIEWS = 20;
+// Analytics read rows a page at a time (the API returns at most 1000 per request), up to a cap.
+const PAGE_SIZE = 1000;
+const ANALYTICS_ROW_CAP = 50_000;
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
 export type Admin = { email: string; supabase: AdminClient };
@@ -48,7 +52,7 @@ export async function requireAdmin(): Promise<Admin> {
 export async function logAdminView(
   admin: Admin,
   // "story:<id>" records which story was opened.
-  view: "overview" | "user" | `story:${string}`,
+  view: "overview" | "analytics" | "user" | `story:${string}`,
   subjectUserId?: string,
 ): Promise<void> {
   const { error } = await admin.supabase.from("admin_views").insert({
@@ -159,6 +163,73 @@ export async function userSignals(admin: Admin, userId: string): Promise<StoredS
         ? [{ kind: row.kind, path: row.path, target: row.target, at: row.created_at }]
         : [],
   );
+}
+
+// Reads every row of a query a page at a time, up to ANALYTICS_ROW_CAP. `truncated` says the cap
+// was hit, so the page can say the numbers are partial.
+async function readAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+  what: string,
+): Promise<{ rows: T[]; truncated: boolean }> {
+  const rows: T[] = [];
+  for (let from = 0; from < ANALYTICS_ROW_CAP; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`Couldn't load ${what}: ${error.message}`);
+    const batch = (data ?? []) as T[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) return { rows, truncated: false };
+  }
+  return { rows, truncated: true };
+}
+
+// Usage events since `since` (all time when null), oldest first. Ids, names and times only.
+export async function listEventsSince(
+  admin: Admin,
+  since: Date | null,
+): Promise<{ rows: EventRow[]; truncated: boolean }> {
+  const { rows, truncated } = await readAll<{
+    user_id: string;
+    event: string;
+    created_at: string;
+    estimated: boolean;
+  }>((from, to) => {
+    let query = admin.supabase.from("usage_events").select("user_id, event, created_at, estimated");
+    if (since) query = query.gte("created_at", since.toISOString());
+    return query.order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
+  }, "usage events");
+  return {
+    truncated,
+    rows: rows.flatMap((row) =>
+      isUsageEvent(row.event)
+        ? [{ userId: row.user_id, event: row.event, at: row.created_at, estimated: row.estimated }]
+        : [],
+    ),
+  };
+}
+
+// Click signals since `since` (all time when null), oldest first. Kind and page only, not targets.
+export async function listSignalsSince(
+  admin: Admin,
+  since: Date | null,
+): Promise<{ rows: SignalRow[]; truncated: boolean }> {
+  const { rows, truncated } = await readAll<{
+    user_id: string;
+    kind: string;
+    path: string;
+    created_at: string;
+  }>((from, to) => {
+    let query = admin.supabase.from("ui_signals").select("user_id, kind, path, created_at");
+    if (since) query = query.gte("created_at", since.toISOString());
+    return query.order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
+  }, "click signals");
+  return {
+    truncated,
+    rows: rows.flatMap((row) =>
+      isSignalKind(row.kind)
+        ? [{ userId: row.user_id, kind: row.kind, path: row.path, at: row.created_at }]
+        : [],
+    ),
+  };
 }
 
 export function isUserId(value: string): boolean {
