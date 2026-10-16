@@ -127,7 +127,7 @@ function NextStep({ id, questionsJobId }: { id: string; questionsJobId?: string 
       return (
         <>
           <Heading>Build a few more stories</Heading>
-          <Lead>Pick a story type and answer a few short questions.</Lead>
+          <Lead>Pick a story type and tell it your way, in notes or out loud.</Lead>
           <Go href="/stories/new">Build a story</Go>
         </>
       );

@@ -14,16 +14,18 @@ export type FollowUp = {
   // "practice" when the user added it from a practice answer (see src/lib/practice): the question
   // is the one they practiced, and the answer is what they said, confirmed by them.
   source?: "practice";
+  // "I don't know this": the user passed on this one question. It isn't asked again in this round,
+  // and the coach is told so it doesn't ask again later.
+  skipped?: boolean;
 };
 
-// The review asks follow-ups in up to two rounds: the first always asks, the second only when the
-// answers are still thin. "Tell me about yourself" is short, so it gets one round before the draft;
-// "Ask me more to make it stronger" is there for more.
-export const MAX_PROBE_ROUNDS = 2;
-export const MAX_INTRO_PROBE_ROUNDS = 1;
+// The review asks one round of follow-ups before the story is final (tester feedback, Oct 16: a
+// second round is where people stopped answering). "Ask me more to make it stronger" is there for
+// more, on request.
+export const MAX_PROBE_ROUNDS = 1;
 
-export function maxProbeRounds(storyType: StoryType | undefined): number {
-  return storyType?.format === "intro" ? MAX_INTRO_PROBE_ROUNDS : MAX_PROBE_ROUNDS;
+export function maxProbeRounds(): number {
+  return MAX_PROBE_ROUNDS;
 }
 
 // Once a story is drafted, "Ask me more to make it stronger" runs further rounds on request, up to
@@ -123,7 +125,8 @@ export type StoryContent = {
 // Where the user is in the builder, derived from what has been saved.
 //  core:       answering the scripted questions (skipped when a prepared answer was uploaded)
 //  probe:      all answered; call one (follow-ups) hasn't run yet, or a further round is due
-//  follow_ups: answering the model's follow-up questions
+//  follow_ups: answering the model's follow-up questions (a behavioral story already has a rough
+//              draft by now, written from the telling, and each answer goes into the rewrite)
 //  write:      everything answered; call two (write the story) hasn't run yet
 //  drafted:    a written draft exists
 export type BuilderStage = "core" | "probe" | "follow_ups" | "write" | "drafted";
@@ -140,8 +143,34 @@ export function nextCoreQuestion(
 }
 
 export function nextFollowUpIndex(content: StoryContent): number | undefined {
-  const i = content.followUps?.findIndex((f) => !f.answer?.trim()) ?? -1;
+  const i = content.followUps?.findIndex((f) => isPending(f)) ?? -1;
   return i >= 0 ? i : undefined;
+}
+
+// Follow-ups still waiting for an answer: not answered, and not passed on with "I don't know this".
+export function pendingFollowUps(content: StoryContent): number {
+  return (content.followUps ?? []).filter(isPending).length;
+}
+
+function isPending(f: FollowUp): boolean {
+  return !f.answer?.trim() && !f.skipped;
+}
+
+// A behavioral story gets a rough draft as soon as it's told, before any follow-ups, so the user
+// sees their story take shape and each follow-up visibly improves it. "Tell me about yourself"
+// keeps writing once its questions are done.
+export function writesRoughDraft(content: StoryContent, storyType: StoryType | undefined): boolean {
+  return (
+    storyType?.format !== "intro" &&
+    !content.draft &&
+    !content.followUps &&
+    builderStage(content, storyType) === "probe"
+  );
+}
+
+// The draft is rough while follow-ups on it are still open.
+export function isRoughDraft(content: StoryContent): boolean {
+  return Boolean(content.draft) && nextFollowUpIndex(content) !== undefined;
 }
 
 export function probeRounds(content: StoryContent): number {
@@ -236,6 +265,7 @@ export function parseContent(raw: unknown): StoryContent {
               ...(typeof f.answer === "string" ? { answer: f.answer } : {}),
               ...(typeof f.round === "number" ? { round: f.round } : {}),
               ...(f.source === "practice" ? { source: "practice" as const } : {}),
+              ...(f.skipped === true ? { skipped: true } : {}),
             },
           ]
         : [],

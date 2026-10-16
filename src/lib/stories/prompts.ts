@@ -13,15 +13,15 @@ import {
   STAR_LENGTH,
   STAR_PARTS,
   TAILORED_PARTS,
+  answerableQuestions,
   coreQuestionText,
-  coreQuestions,
   inferredPathQuestion,
   storyParts,
   type StoryType,
 } from "./story-types";
 
 // The two model calls in the story builder (PRD, step 4):
-//   call one (storyProbe): read the answers and ask follow-ups aimed at the gaps, in up to two rounds
+//   call one (storyProbe): read the answers and ask follow-ups aimed at the gaps, in one round (more on request)
 //   call two (storyWrite): write the story from the user's own answers, inventing nothing
 
 const CHECKLIST = `- Situation: where they were, their role, and what was at stake are clear.
@@ -53,13 +53,18 @@ Rules:
 - Never repeat a question they already answered well, including earlier follow-ups.
 - Prioritise: after the light opener, ask the questions that would most improve the answer first.`;
 
-function roundInstructions(round: number): string {
+// A behavioral story arrives as one telling in the user's own words, so the first round asks only
+// about what it left out. Interviewers judge judgment, so the thinking question is never dropped.
+const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what they were thinking at the key moment, the result with a number, what they learned. If what they were thinking at the key moment is missing, one of your questions must ask about it. Put the lightest question first.`;
+
+function roundInstructions(round: number, storyType?: StoryType): string {
+  if (round <= 1 && storyType?.format !== "intro") return TOLD_FIRST_ROUND;
   return round <= 1
     ? "This is the first round of follow-ups. Ask 3 or 4 questions, the lightest first."
     : `This is round ${round}, after they answered your earlier follow-ups. Ask up to 3 more questions only where a missing number, example or reason would still clearly weaken the answer. If the answer is already strong, return an empty list: {"followUps": []}.`;
 }
 
-export const PROBE_SYSTEM = `You are an interview coach helping an experienced professional prepare one behavioral interview story. They have answered a fixed set of questions about one experience. Your job is to find what would make this story stronger and ask follow-up questions that draw it out.
+export const PROBE_SYSTEM = `You are an interview coach helping an experienced professional prepare one behavioral interview story. They told you about one experience in their own words, often as rough notes or out loud, so expect it to be messy and out of order; some stories also have answers to a set of scripted questions. Your job is to find what would make this story stronger and ask follow-up questions that draw it out.
 
 Check the answers against this checklist:
 ${CHECKLIST}
@@ -198,7 +203,7 @@ export function probeSystem(
 ): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
-  return `${base}${tailor}\n\n${roundInstructions(round)}`;
+  return `${base}${tailor}\n\n${roundInstructions(round, storyType)}`;
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
@@ -220,7 +225,7 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
       "",
     );
   }
-  for (const q of coreQuestions(storyType)) {
+  for (const q of answerableQuestions(storyType)) {
     const answer = content.answers[q.id]?.trim();
     if (!answer) continue;
     const question =
@@ -231,6 +236,10 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
   }
   for (const f of content.followUps ?? []) {
     const answer = f.answer?.trim();
+    if (f.skipped && !answer) {
+      lines.push(`Q (follow-up): ${f.question}`, "A: I don't know this one. Leave it out.", "");
+      continue;
+    }
     if (!answer) continue;
     lines.push(`Q (follow-up): ${f.question}`, `A: ${answer}`, "");
   }

@@ -7,14 +7,20 @@ import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
   canStrengthen,
+  gradeIsCurrent,
+  isRoughDraft,
   nextCoreQuestion,
   nextFollowUpIndex,
+  pendingFollowUps,
+  writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
+import { DEFAULT_WHERE_TO_LOOK, questionHelp, type QuestionHelp } from "@/lib/stories/help";
 import {
   MAX_ANSWER_LENGTH,
   MAX_UPLOAD_BYTES,
   UPLOAD_EXTENSIONS,
+  answerableQuestions,
   coreQuestionText,
   coreQuestions,
   getStoryType,
@@ -34,6 +40,7 @@ import {
   inferPath,
   saveAnswer,
   saveFollowUpAnswer,
+  skipFollowUp,
   skipFollowUps,
   writeDraft,
   type BuilderResult,
@@ -70,12 +77,16 @@ const GAP_TO_PART: Record<string, string> = {
   detail: "actions",
 };
 
+// A moment from the story finder that fits this story type, offered as a memory jogger.
+export type JoggerMoment = { moment: string; quote: string; sourceLabel: string };
+
 export function StoryBuilder({
   storyId,
   storyTypeId,
   initialTitle,
   initialContent,
   hasResume = false,
+  moments = [],
   targets,
   afterStory,
   nextUp,
@@ -89,6 +100,8 @@ export function StoryBuilder({
   // Whether the user added a resume on the target jobs page; "Tell me about yourself" reads their
   // career path from it.
   hasResume?: boolean;
+  // Story finder moments for this story type, shown as joggers on the opening question.
+  moments?: JoggerMoment[];
   // What they're preparing for (target jobs, the role they want): the first question gets a hint
   // so they pick a story that fits.
   targets?: BuilderTargets;
@@ -108,6 +121,8 @@ export function StoryBuilder({
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
+  // Text a memory jogger adds to the answer box; `n` makes each tap count.
+  const [insert, setInsert] = useState<{ text: string; n: number } | undefined>();
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
     initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
@@ -120,7 +135,8 @@ export function StoryBuilder({
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
     setError(null);
     startTransition(async () => {
-      for (const step of steps) {
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
         setBusy(step.busy);
         const result = await step.action();
         if (!result.ok) {
@@ -129,24 +145,32 @@ export function StoryBuilder({
         }
         setContent(result.content);
         setTitle(result.title);
-        // A new draft is shown with its score; new questions are answered in the chat.
-        if (step.busy === "writing") setView("story");
+        const next = builderStage(result.content, storyType);
+        // A finished draft is shown with its score; a rough one stays beside the follow-ups.
+        if (step.busy === "writing" && next !== "probe") setView("story");
         if (step.busy === "probing" && nextFollowUpIndex(result.content) !== undefined) {
           setView("build");
         }
+        // Only the last step queued picks what runs next.
+        if (i < steps.length - 1) continue;
         // After the last scripted answer, go straight on to call one; after the last
-        // follow-up, to the next round or straight on to call two.
-        const next = builderStage(result.content, storyType);
+        // follow-up, to the next round or straight on to call two. A behavioral story is
+        // written rough first, then asked about.
         const saved = step.busy === "saving" || step.busy === "reading";
         if (saved && canInferPath(result.content)) {
           // Next up is how they got here: read it from their resume or LinkedIn to confirm.
           steps.push({ busy: "inferring", action: () => inferPath(storyId) });
-        } else if (saved && next === "probe") {
+        } else if (saved && writesRoughDraft(result.content, storyType)) {
+          steps.push({ busy: "writing", action: () => writeDraft(storyId) });
+        } else if ((saved || step.busy === "writing") && next === "probe") {
           steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
         } else if ((saved || step.busy === "probing") && next === "write") {
           steps.push({ busy: "writing", action: () => writeDraft(storyId) });
-        } else if (step.busy === "writing") {
-          // Every new or rewritten draft is graded straight away.
+        } else if (
+          step.busy === "writing" ||
+          (next === "drafted" && !gradeIsCurrent(result.content) && step.busy !== "grading")
+        ) {
+          // Every finished draft is graded straight away, including a rough one the user kept.
           steps.push({ busy: "grading", action: () => gradeDraft(storyId) });
         }
       }
@@ -172,10 +196,11 @@ export function StoryBuilder({
 
   function submitFollowUp(index: number, answer: string) {
     setEditing(null);
-    // Answering the last of the extra questions on a drafted story rewrites it to use them.
-    const unanswered = (content.followUps ?? []).filter((f) => !f.answer?.trim()).length;
+    // Answering the last open question on a drafted story rewrites it to use the answers.
     const rewrite =
-      Boolean(content.draft) && unanswered === 1 && !content.followUps?.[index]?.answer;
+      Boolean(content.draft) &&
+      pendingFollowUps(content) === 1 &&
+      !content.followUps?.[index]?.answer;
     run([
       { busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) },
       ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
@@ -198,6 +223,21 @@ export function StoryBuilder({
     ]);
   }
 
+  // "I don't know this": passes on one question. On the last open one, a drafted story is
+  // rewritten with what this round did add (or just graded, if nothing was added).
+  function skipOne(index: number) {
+    setEditing(null);
+    const round = content.followUps?.[index]?.round ?? 1;
+    const addedThisRound = (content.followUps ?? []).some(
+      (f) => (f.round ?? 1) === round && f.answer?.trim(),
+    );
+    const rewrite = Boolean(content.draft) && pendingFollowUps(content) === 1 && addedThisRound;
+    run([
+      { busy: "saving", action: () => skipFollowUp(storyId, index) },
+      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+    ]);
+  }
+
   function strengthen() {
     run([{ busy: "probing", action: () => askFollowUps(storyId) }]);
   }
@@ -215,8 +255,9 @@ export function StoryBuilder({
   const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
   const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
-  // With an uploaded answer the remaining scripted questions are skipped.
-  const askedCore = questions.filter(
+  // With an uploaded answer the remaining scripted questions are skipped. Answers to the old
+  // scripted questions (stories started before "tell it your way") are still shown.
+  const askedCore = answerableQuestions(storyType).filter(
     (q) => content.answers[q.id]?.trim() || (!content.imported && q.id === currentCore),
   );
   const canUpload = storyType?.format === "intro" && stage === "core";
@@ -300,11 +341,9 @@ export function StoryBuilder({
             >
               {!content.imported && !content.linkedin && (
                 <li className="text-sm text-slate-500" data-testid="builder-intro">
-                  How this works: answer {questions.length} short questions in plain notes, typed
-                  or spoken. Then I&apos;ll ask a few follow-ups where it&apos;s thin and write
                   {storyType?.format === "intro"
-                    ? " your answer from your words, ready to shape for each target job."
-                    : " the story from your words, ready to grade."}
+                    ? `How this works: answer ${questions.length} short questions in plain notes, typed or spoken. Then I'll ask a few follow-ups where it's thin and write your answer from your words, ready to shape for each target job.`
+                    : "How this works: tell me what happened, your way. Messy notes or a minute of talking is plenty. I'll write a rough draft straight away, then ask a few questions about what's missing to make it stronger."}
                 </li>
               )}
 
@@ -343,6 +382,21 @@ export function StoryBuilder({
                     }
                     answer={content.answers[q.id]}
                     hint={content.answers[q.id]?.trim() ? undefined : hints[q.id]}
+                    help={
+                      content.answers[q.id]?.trim()
+                        ? undefined
+                        : questionHelp(q.id === "start" && storyType?.format !== "intro" ? "telling" : q.part)
+                    }
+                    joggers={
+                      q.id === "start" && !content.answers[q.id]?.trim() && !seed ? (
+                        <Joggers
+                          storyType={storyType}
+                          moments={moments}
+                          disabled={busy !== null}
+                          onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                        />
+                      ) : undefined
+                    }
                     source={
                       content.roleMap?.seeded?.includes(q.id)
                         ? "From your role map"
@@ -375,13 +429,25 @@ export function StoryBuilder({
                     {opensRound && !fromPractice && (
                       <CoachLine>
                         {round === 1
-                          ? "Thanks. A few quick follow-ups, easiest first:"
+                          ? content.draft && storyType?.format !== "intro"
+                            ? "I've written a rough draft. A few quick questions to make it stronger, easiest first:"
+                            : "Thanks. A few quick follow-ups, easiest first:"
                           : "Good. A few more, so the numbers and examples carry it:"}
                       </CoachLine>
                     )}
                     <Exchange
                       question={f.question}
                       answer={f.answer}
+                      skipped={f.skipped && !f.answer?.trim()}
+                      improves={
+                        !fromPractice && content.draft ? partLabelForGap(f.gap, storyType) : undefined
+                      }
+                      help={index === currentFollowUp ? questionHelp(f.gap) : undefined}
+                      onDontKnow={
+                        index === currentFollowUp && !fromPractice
+                          ? () => skipOne(index)
+                          : undefined
+                      }
                       isEditing={editing?.kind === "followUp" && editing.index === index}
                       disabled={busy !== null}
                       onEdit={() => setEditing({ kind: "followUp", index })}
@@ -399,7 +465,13 @@ export function StoryBuilder({
                 </Thinking>
               )}
               {busy === "probing" && <Thinking>Reading your answers…</Thinking>}
-              {busy === "writing" && <Thinking>Writing your story from your answers…</Thinking>}
+              {busy === "writing" && (
+                <Thinking>
+                  {writesRoughDraft(content, storyType)
+                    ? "Writing a rough draft from what you told me…"
+                    : "Writing your story from your answers…"}
+                </Thinking>
+              )}
               {busy === "grading" && <Thinking>Grading your story…</Thinking>}
             </ol>
 
@@ -424,6 +496,8 @@ export function StoryBuilder({
                   <Composer
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
+                    insert={insert}
+                    rows={currentCore === "start" && storyType?.format !== "intro" ? 6 : 3}
                     disabled={busy !== null}
                     submitLabel="Next"
                     onSubmit={(text) => submitCore(currentCore, text)}
@@ -474,12 +548,21 @@ export function StoryBuilder({
           </section>
 
           <aside className="flex flex-col gap-4">
-            <AnswerChecklist
-              content={content}
-              storyType={storyType}
-              currentCore={currentCore}
-              onShowStory={() => setView("story")}
-            />
+            {storyType?.format === "intro" ? (
+              <AnswerChecklist
+                content={content}
+                storyType={storyType}
+                currentCore={currentCore}
+                onShowStory={() => setView("story")}
+              />
+            ) : (
+              <DraftSoFar
+                content={content}
+                storyType={storyType}
+                writing={busy === "writing"}
+                onShowStory={() => setView("story")}
+              />
+            )}
             {beside}
             {storyType?.format === "intro" && (canUpload || content.roleMap) && (
               <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
@@ -698,12 +781,13 @@ function progressLabel(
 ) {
   switch (stage) {
     case "core":
-      return `Question ${coreAnswered + 1} of ${coreTotal}`;
+      return coreTotal === 1 ? "Tell it your way" : `Question ${coreAnswered + 1} of ${coreTotal}`;
     case "probe":
       return "Questions done";
     case "follow_ups": {
       const total = content.followUps?.length ?? 0;
-      return `Follow-up ${(nextFollowUpIndex(content) ?? 0) + 1} of ${total}`;
+      const label = `Follow-up ${(nextFollowUpIndex(content) ?? 0) + 1} of ${total}`;
+      return content.draft ? `Rough draft · ${label}` : label;
     }
     case "write":
       return "Ready to write";
@@ -718,11 +802,265 @@ function seedHint(seed: NonNullable<StoryContent["seed"]>): string {
   return `${from}I've started it with this moment${seed.question ? `, ${seed.question.replace(/\?$/, "")}` : ""}. Make it your own: where you were, your role and what was going on.`;
 }
 
+// Under the current question: a made-up example of a strong answer, and for follow-ups, "I don't
+// know this" with where to look and a way to skip it.
+function QuestionHelpRow({
+  help,
+  disabled,
+  onDontKnow,
+}: {
+  help?: QuestionHelp;
+  disabled: boolean;
+  onDontKnow?: () => void;
+}) {
+  const [open, setOpen] = useState<null | "example" | "unsure">(null);
+  const toggle = (which: "example" | "unsure") => setOpen((o) => (o === which ? null : which));
+  // The chat scrolls on its own; bring what just opened into view.
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [open]);
+  return (
+    <div ref={ref} className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="question-help">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {help?.example && (
+          <button
+            type="button"
+            onClick={() => toggle("example")}
+            aria-expanded={open === "example"}
+            className="font-medium text-ink-800 hover:underline"
+            data-testid="show-example"
+          >
+            Show me a good answer
+          </button>
+        )}
+        {onDontKnow && (
+          <button
+            type="button"
+            onClick={() => toggle("unsure")}
+            aria-expanded={open === "unsure"}
+            className="font-medium text-ink-800 hover:underline"
+            data-testid="dont-know"
+          >
+            I don&apos;t know this
+          </button>
+        )}
+      </div>
+      {open === "example" && help?.example && (
+        <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200">
+          <span className="font-semibold text-slate-900">An example, not your facts: </span>
+          {help.example}
+        </p>
+      )}
+      {open === "unsure" && onDontKnow && (
+        <div className="flex flex-col items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200">
+          <p>{help?.whereToLook ?? DEFAULT_WHERE_TO_LOOK}</p>
+          <p>A rough answer or a labelled estimate is fine. Or skip it and I&apos;ll leave it out.</p>
+          <button
+            type="button"
+            onClick={onDontKnow}
+            disabled={disabled}
+            className="rounded-xl px-3 py-1.5 font-medium text-ink-800 ring-1 ring-ink-800/30 hover:bg-white disabled:opacity-50"
+            data-testid="skip-one"
+          >
+            Skip this question
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Under the opening question of a behavioral story: a few kinds of moment to jog their memory, and
+// moments the story finder read from their resume or LinkedIn. A tap starts the answer with it.
+function Joggers({
+  storyType,
+  moments,
+  disabled,
+  onPick,
+}: {
+  storyType: StoryType | undefined;
+  moments: JoggerMoment[];
+  disabled: boolean;
+  onPick: (text: string) => void;
+}) {
+  const general: readonly string[] = storyType?.joggers ?? [];
+  if (general.length === 0 && moments.length === 0) return null;
+  const chip =
+    "rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50";
+  return (
+    <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="joggers">
+      {moments.length > 0 && (
+        <>
+          <p className="text-sm text-slate-600">
+            From {moments[0].sourceLabel || "your resume"}, one of these might fit:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {moments.map((m) => (
+              <button
+                key={m.moment}
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick(`${m.moment}. `)}
+                className={chip}
+                title={m.quote ? `"${m.quote}"` : undefined}
+              >
+                {m.moment}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {general.length > 0 && (
+        <>
+          <p className="text-sm text-slate-600">
+            {moments.length > 0 ? "Or think of:" : "Stuck on which one? Think of:"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {general.map((j) => (
+              <button
+                key={j}
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick(`${j}: `)}
+                className={chip}
+              >
+                {j}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Beside the chat for a behavioral story: how it works until there's a draft, then the rough draft
+// itself, with the part the current question improves marked.
+function DraftSoFar({
+  content,
+  storyType,
+  writing,
+  onShowStory,
+}: {
+  content: StoryContent;
+  storyType: StoryType | undefined;
+  writing: boolean;
+  onShowStory: () => void;
+}) {
+  const draft = content.draft;
+  if (!draft) {
+    const told = Boolean(content.answers.start?.trim());
+    const steps = [
+      "Tell it your way: notes or talking",
+      "I write a rough draft",
+      "A few questions to make it stronger",
+      "Your story, with its score",
+    ];
+    const current = writing ? 1 : told ? 2 : 0;
+    return (
+      <section
+        className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+        data-testid="draft-so-far"
+      >
+        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">How this works</h2>
+        <ol className="mt-3 flex flex-col gap-2 text-sm">
+          {steps.map((step, i) => (
+            <li key={step} className="flex items-center gap-2">
+              <span
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                  i < current
+                    ? "border-ink-800 bg-ink-800"
+                    : i === current
+                      ? "border-ink-800"
+                      : "border-slate-300"
+                }`}
+              />
+              <span className={i <= current ? "text-slate-900" : "text-slate-500"}>{step}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    );
+  }
+  const rough = isRoughDraft(content);
+  const current = nextFollowUpIndex(content);
+  const gap = current !== undefined ? content.followUps?.[current]?.gap : undefined;
+  const parts = storyParts(storyType);
+  const marked = gap ? partForGap(gap, parts) : undefined;
+  const pending = pendingFollowUps(content);
+  return (
+    <section
+      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+      data-testid="draft-so-far"
+    >
+      <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
+        {rough ? "Your rough draft" : "Your story"}
+      </h2>
+      {rough && (
+        <p className="mt-1 text-sm text-slate-600">
+          {pending === 1 ? "One question left" : `${pending} questions left`}, then I&apos;ll
+          rewrite it with your answers.
+        </p>
+      )}
+      <div className="mt-3 flex max-h-[28rem] flex-col gap-2 overflow-y-auto text-sm leading-relaxed text-slate-700">
+        {parts.map((p) =>
+          draft.parts[p.id]?.trim() ? (
+            <p
+              key={p.id}
+              className={
+                p.id === marked ? "-mx-2 rounded-lg bg-accent-50 px-2 py-1 ring-1 ring-accent-300" : ""
+              }
+              data-testid={p.id === marked ? "draft-part-marked" : undefined}
+            >
+              {p.id === marked && (
+                <span className="block text-xs font-semibold uppercase tracking-wide text-ink-700">
+                  {p.label}: this question improves it
+                </span>
+              )}
+              {draft.parts[p.id]}
+            </p>
+          ) : p.id === marked ? (
+            <p key={p.id} className="-mx-2 rounded-lg bg-accent-50 px-2 py-1 text-slate-500 ring-1 ring-accent-300">
+              {p.label}: missing so far. This question fills it in.
+            </p>
+          ) : null,
+        )}
+      </div>
+      {!rough && (
+        <button
+          type="button"
+          onClick={onShowStory}
+          className="mt-3 text-sm font-medium text-ink-800 hover:underline"
+        >
+          See your story and its score →
+        </button>
+      )}
+    </section>
+  );
+}
+
+// The story part a follow-up's gap lands in.
+function partForGap(gap: string, parts: readonly StoryPart[]): string {
+  return parts.find((p) => p.id === gap)?.id ?? GAP_TO_PART[gap] ?? parts[0].id;
+}
+
+function partLabelForGap(gap: string, storyType: StoryType | undefined): string | undefined {
+  const parts = storyParts(storyType);
+  if (!gap || (!parts.some((p) => p.id === gap) && !GAP_TO_PART[gap])) return undefined;
+  return parts.find((p) => p.id === partForGap(gap, parts))?.label;
+}
+
 function Exchange({
   question,
   answer,
   hint,
   source,
+  skipped,
+  improves,
+  help,
+  joggers,
+  onDontKnow,
   isEditing,
   disabled,
   onEdit,
@@ -733,6 +1071,16 @@ function Exchange({
   answer: string | undefined;
   // A nudge under the question, e.g. which target job the story should fit.
   hint?: string;
+  // Passed on with "I don't know this".
+  skipped?: boolean;
+  // The part of the draft this follow-up makes stronger, e.g. "Result".
+  improves?: string;
+  // "Show me a good answer", and where to look when they don't know.
+  help?: QuestionHelp;
+  // Memory joggers under the opening question.
+  joggers?: React.ReactNode;
+  // "I don't know this": passes on the question.
+  onDontKnow?: () => void;
   // Where a prefilled answer came from, e.g. "From your LinkedIn".
   source?: string;
   isEditing: boolean;
@@ -743,11 +1091,33 @@ function Exchange({
 }) {
   return (
     <li className="flex flex-col gap-2">
+      {improves && (
+        <p className="pl-1 text-xs font-semibold uppercase tracking-wide text-ink-700">
+          Improves: {improves}
+        </p>
+      )}
       <CoachBubble>{question}</CoachBubble>
       {hint && (
         <p className="max-w-[90%] pl-1 text-sm text-slate-600" data-testid="question-hint">
           {hint}
         </p>
+      )}
+      {joggers}
+      {!answer && !skipped && !isEditing && (help || onDontKnow) && (
+        <QuestionHelpRow help={help} disabled={disabled} onDontKnow={onDontKnow} />
+      )}
+      {skipped && !isEditing && (
+        <div className="flex flex-col items-end gap-1">
+          <p className="text-sm italic text-slate-500">Skipped: I&apos;ll leave this out.</p>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={disabled}
+            className="text-xs font-medium text-slate-500 hover:text-ink-800 disabled:opacity-50"
+          >
+            Answer it after all
+          </button>
+        </div>
       )}
       {isEditing ? (
         <Composer
@@ -779,6 +1149,8 @@ function Exchange({
 
 function Composer({
   initial,
+  insert,
+  rows = 3,
   disabled,
   submitLabel,
   onSubmit,
@@ -787,6 +1159,9 @@ function Composer({
   skipLabel,
 }: {
   initial: string;
+  // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
+  insert?: { text: string; n: number };
+  rows?: number;
   disabled: boolean;
   submitLabel: string;
   onSubmit: (answer: string) => void;
@@ -803,6 +1178,14 @@ function Composer({
     ref.current?.focus({ preventScroll: true });
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, []);
+
+  // A tapped jogger is added to whatever is typed so far (state adjusted during render, not in an
+  // effect, so it lands in one pass).
+  const [inserted, setInserted] = useState(insert?.n);
+  if (insert && insert.n !== inserted) {
+    setInserted(insert.n);
+    setText((t) => (t.trim() ? `${t.trimEnd()}\n${insert.text}` : insert.text));
+  }
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;
 
@@ -828,7 +1211,7 @@ function Composer({
             onSubmit(text);
           }
         }}
-        rows={3}
+        rows={rows}
         maxLength={MAX_ANSWER_LENGTH}
         placeholder="Type or tap Talk. Plain notes are fine."
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
@@ -1213,7 +1596,7 @@ function notesForPart(
   return [
     // An uploaded answer isn't split by part until the story is written; show it at the top.
     part.id === parts[0].id ? (content.imported?.text ?? "") : "",
-    ...coreQuestions(storyType)
+    ...answerableQuestions(storyType)
       .filter((q) => q.part === part.id)
       .map((q) => content.answers[q.id] ?? ""),
     ...(content.followUps ?? [])

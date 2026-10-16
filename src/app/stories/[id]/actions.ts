@@ -19,6 +19,7 @@ import {
   nextCoreQuestion,
   probeRounds,
   skipRemainingFollowUps,
+  writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
@@ -29,6 +30,7 @@ import { readLinkedInPdf, readUploadedAnswer } from "@/lib/stories/upload";
 import {
   MAX_ANSWER_LENGTH,
   REQUIRED_STORY_TYPE_ID,
+  answerableQuestions,
   coreQuestions,
   getStoryType,
 } from "@/lib/stories/story-types";
@@ -51,7 +53,8 @@ export async function saveAnswer(
   if (typeof text !== "string") return text;
 
   return withStory(storyId, async (story) => {
-    const questions = coreQuestions(getStoryType(story.storyType));
+    // Earlier answers to the old scripted questions can still be edited.
+    const questions = answerableQuestions(getStoryType(story.storyType));
     if (!questions.some((q) => q.id === questionId)) return fail("Unknown question.");
     const content = {
       ...story.content,
@@ -80,6 +83,23 @@ export async function saveFollowUpAnswer(
       ...story.content,
       followUps: followUps.map((f, i) => (i === index ? { ...f, answer: text } : f)),
       nothingMoreToAsk: false,
+    };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// "I don't know this": passes on one follow-up. It's kept, marked, so the coach doesn't ask it again.
+export async function skipFollowUp(storyId: string, index: number): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const followUps = story.content.followUps ?? [];
+    if (!Number.isInteger(index) || index < 0 || index >= followUps.length) {
+      return fail("Unknown follow-up question.");
+    }
+    if (followUps[index].answer?.trim()) return fail("That question already has an answer.");
+    const content = {
+      ...story.content,
+      followUps: followUps.map((f, i) => (i === index ? { ...f, skipped: true } : f)),
     };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
@@ -231,7 +251,7 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
-      probeDone: asked.length === 0 || round >= maxProbeRounds(storyType),
+      probeDone: asked.length === 0 || round >= maxProbeRounds(),
       nothingMoreToAsk: asked.length === 0,
     };
     await updateStory(storyId, { content });
@@ -239,11 +259,14 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
   });
 }
 
-// Call two. Writes the story, or rewrites it if a draft already exists.
+// Call two. Writes the story, or rewrites it if a draft already exists. A behavioral story gets
+// a rough draft straight after the telling, before the follow-ups.
 export async function writeDraft(storyId: string): Promise<BuilderResult> {
   return withStory(storyId, async (story) => {
-    const stage = builderStage(story.content, getStoryType(story.storyType));
-    if (stage !== "write" && stage !== "drafted")
+    const storyType = getStoryType(story.storyType);
+    const stage = builderStage(story.content, storyType);
+    const rough = writesRoughDraft(story.content, storyType);
+    if (stage !== "write" && stage !== "drafted" && !rough)
       return fail("Answer the remaining questions first.");
 
     const { title, draft } = await writeStory(

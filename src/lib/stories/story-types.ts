@@ -10,6 +10,7 @@ export const STORY_TYPES = [
     blurb: "The opener in almost every interview: your career in about a minute.",
     themes: ["introduction", "career story", "motivation"],
     opening: "",
+    joggers: [],
   },
   {
     id: "major_project",
@@ -18,7 +19,13 @@ export const STORY_TYPES = [
     blurb: "The work you'd most want an interviewer to hear about.",
     themes: ["impact", "ownership", "execution"],
     opening:
-      "Think of a major project or customer you're proud of. Where were you working, what was your role, and what was the situation when it started?",
+      "Tell me about a major project or customer you're proud of, start to finish: where you were, what you did, and how it turned out.",
+    joggers: [
+      "A launch or rollout you led",
+      "A customer you won, saved or grew",
+      "Something you built that people still use",
+      "A project that was behind when you joined",
+    ],
   },
   {
     id: "difficult_stakeholder",
@@ -27,7 +34,13 @@ export const STORY_TYPES = [
     blurb: "Someone who pushed back, and how you moved them.",
     themes: ["influence", "conflict", "communication"],
     opening:
-      "Think of a stakeholder who was hard to work with. Who were they, what was your role, and what was going on when things got difficult?",
+      "Tell me about a stakeholder who was hard to work with, start to finish: who they were, what went wrong between you, what you did, and how it ended.",
+    joggers: [
+      "Someone senior who said no",
+      "A customer who escalated",
+      "A peer team that kept blocking you",
+      "A person who disagreed with your plan",
+    ],
   },
   {
     id: "went_wrong",
@@ -36,7 +49,13 @@ export const STORY_TYPES = [
     blurb: "A miss or a failure, and what you did about it.",
     themes: ["failure", "resilience", "learning"],
     opening:
-      "Think of a time something went wrong on your watch. What was your role, and what was the situation before it went wrong?",
+      "Tell me about a time something went wrong on your watch, start to finish: what happened, what you did about it, and how it ended.",
+    joggers: [
+      "A deadline that slipped",
+      "A launch or release that broke",
+      "A deal or customer you lost",
+      "A call you got wrong",
+    ],
   },
   {
     id: "prioritization",
@@ -45,7 +64,13 @@ export const STORY_TYPES = [
     blurb: "Too much to do, and how you chose what came first.",
     themes: ["prioritization", "judgment", "time management"],
     opening:
-      "Think of a time you had more work than time. What was your role, and what was competing for your attention?",
+      "Tell me about a time you had more work than time, start to finish: what was competing for your attention, what you chose, and how it turned out.",
+    joggers: [
+      "Two urgent asks at once",
+      "A quarter with too many projects",
+      "A time you said no to someone",
+      "Work you dropped on purpose",
+    ],
   },
   {
     id: "cross_team",
@@ -54,7 +79,13 @@ export const STORY_TYPES = [
     blurb: "Getting something done with people outside your team.",
     themes: ["collaboration", "influence", "cross-functional"],
     opening:
-      "Think of a time you had to get something done with another team. Which teams were involved, what was your role, and what was the situation at the start?",
+      "Tell me about a time you had to get something done with another team, start to finish: who was involved, what you did, and how it turned out.",
+    joggers: [
+      "A project that needed another team's time",
+      "A handoff that kept breaking",
+      "Getting a team you didn't manage on board",
+      "A shared goal with different priorities",
+    ],
   },
   {
     id: "defining_success",
@@ -63,7 +94,13 @@ export const STORY_TYPES = [
     blurb: "What good looks like in your job, shown through one example.",
     themes: ["impact", "metrics", "role fit"],
     opening:
-      "Think of a stretch of work that shows what success looks like in your role. What was your role, and what did success need to look like at the start?",
+      "Tell me about a stretch of work that shows what success looks like in your role, start to finish: what good needed to look like, what you did, and how it turned out.",
+    joggers: [
+      "Your best quarter or year",
+      "A goal you set and hit",
+      "A time you changed how success was measured",
+      "Work your manager held up as an example",
+    ],
   },
 ] as const;
 
@@ -89,8 +126,18 @@ export const STAR_PARTS = [
   { id: "reflection", label: "What you learned" },
 ] as const satisfies readonly StoryPart[];
 
-// The same core questions for every behavioral story.
+// A behavioral story starts with one open question: tell it your way, as messy notes or out loud
+// (tester data, Oct 16: eight scripted questions before seeing a word, and every behavioral story
+// was dropped). The follow-ups then ask only about what the telling left out. The id stays "start"
+// so earlier first answers still count.
 export const STAR_QUESTIONS = [
+  { id: "start", part: "situation", text: "" }, // replaced by the story type's opening question
+] as const satisfies readonly CoreQuestion[];
+
+// The eight scripted questions behavioral stories used to ask one by one. Stories started before
+// "tell it your way" may have answers to them; they're still shown, edited and read by the coach and
+// writer, but no new story is asked them.
+export const LEGACY_STAR_QUESTIONS = [
   { id: "start", part: "situation", text: "" }, // replaced by the story type's opening question
   {
     id: "stakes",
@@ -192,11 +239,22 @@ export function coreQuestions(storyType: StoryType | undefined): readonly CoreQu
   return storyType?.format === "intro" ? INTRO_QUESTIONS : STAR_QUESTIONS;
 }
 
+// Every question this story may hold an answer to, in order: the core questions plus, for a
+// behavioral story, the old scripted ones it was started with.
+export function answerableQuestions(storyType: StoryType | undefined): readonly CoreQuestion[] {
+  return storyType?.format === "intro"
+    ? INTRO_QUESTIONS
+    : [...STAR_QUESTIONS, ...LEGACY_STAR_QUESTIONS.filter((q) => q.id !== "start")];
+}
+
 export function coreQuestionText(questionId: string, storyType: StoryType | undefined) {
   if (questionId === "start" && storyType?.format !== "intro") {
-    return storyType?.opening || "What was the situation at the start, and what was your role?";
+    return (
+      storyType?.opening ||
+      "Tell me what happened, start to finish: where you were, what you did, and how it turned out."
+    );
   }
-  return coreQuestions(storyType).find((q) => q.id === questionId)?.text ?? "";
+  return answerableQuestions(storyType).find((q) => q.id === questionId)?.text ?? "";
 }
 
 // Spoken length that suits each format, in words (at about 150 words a minute). The max is a hard
