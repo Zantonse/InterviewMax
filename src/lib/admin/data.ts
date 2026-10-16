@@ -2,6 +2,8 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSignalKind } from "@/lib/signals/kinds";
+import type { StoredSignal } from "@/lib/signals/visits";
 import { parseContent, type StoryContent } from "@/lib/stories/content";
 import { isUsageEvent, type UsageEvent } from "@/lib/usage/events";
 import { isAdminEmail } from "./access";
@@ -14,6 +16,7 @@ import type { EventFirst, UserProgress } from "./metrics";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TIMELINE_LIMIT = 500;
+const SIGNALS_LIMIT = 1000;
 const RECENT_VIEWS = 20;
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
@@ -137,6 +140,24 @@ export async function userTimeline(admin: Admin, userId: string): Promise<Timeli
   if (error) throw new Error(`Couldn't load this user's timeline: ${error.message}`);
   return (data as { event: string; created_at: string; estimated: boolean }[]).flatMap((row) =>
     isUsageEvent(row.event) ? [{ event: row.event, at: row.created_at, estimated: row.estimated }] : [],
+  );
+}
+
+// The user's most recent confusion signals (pages, rage and dead clicks, errors, abandoned forms).
+export async function userSignals(admin: Admin, userId: string): Promise<StoredSignal[]> {
+  if (!UUID_RE.test(userId)) return [];
+  const { data, error } = await admin.supabase
+    .from("ui_signals")
+    .select("kind, path, target, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(SIGNALS_LIMIT);
+  if (error) throw new Error(`Couldn't load this user's clicks: ${error.message}`);
+  return (data as { kind: string; path: string; target: string; created_at: string }[]).flatMap(
+    (row) =>
+      isSignalKind(row.kind)
+        ? [{ kind: row.kind, path: row.path, target: row.target, at: row.created_at }]
+        : [],
   );
 }
 

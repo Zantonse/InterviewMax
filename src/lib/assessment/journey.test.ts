@@ -106,6 +106,13 @@ describe("gradeJourney", () => {
     expect(gradeJourney({ ...READY, stories: "some" }, { hasJob: true }).next.id).toBe("stories");
   });
 
+  it("without a posting to paste, starts with About me rather than asking for one", () => {
+    // Andrew's answers: a kind of role in mind, no posting yet.
+    const grade = gradeJourney({ ...NEW_SEARCH, targetJob: "role", aboutMe: "rough" });
+    expect(grade.next.id).toBe("aboutMe");
+    expect(grade.gaps.map((g) => g.id)).toEqual(["aboutMe", "numbers", "job"]);
+  });
+
   it("shows at most three gaps", () => {
     const grade = gradeJourney({ ...NEW_SEARCH, targetJob: "role", aboutMe: "rough" });
     expect(grade.gaps.length).toBeLessThanOrEqual(3);

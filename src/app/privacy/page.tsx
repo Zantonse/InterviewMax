@@ -79,6 +79,13 @@ export default function PrivacyPage() {
           keep you signed in, and remembers a couple of display choices (like a folded sidebar) in
           your browser.
         </p>
+        <p>
+          While you&apos;re signed in, the app also notes signs that a step is confusing: which pages
+          you open and leave from, repeated or unanswered clicks, error messages shown, and forms
+          you started but didn&apos;t send. These notes name the page and the button or field (for
+          example &ldquo;the date field on Add a job&rdquo;), never what you typed or what&apos;s on
+          the screen. They stay in our own database; no outside analytics service sees them.
+        </p>
       </PolicySection>
 
       <PolicySection title="Why we use it">
@@ -86,7 +93,8 @@ export default function PrivacyPage() {
           <li>To run the features you use: building, writing, tailoring and grading your stories.</li>
           <li>
             To see how far people get through the app (activity only, such as &ldquo;finished a
-            story&rdquo; and when), so we can fix the steps where people get stuck.
+            story&rdquo; and when, and the signs of confusion above), so we can fix the steps where
+            people get stuck.
           </li>
           <li>
             To coach you: the founder can read your stories to give you feedback (see who sees it,
@@ -133,7 +141,7 @@ export default function PrivacyPage() {
         </PolicyList>
         <p>
           Inside InterviewMax, the admin page shows the founder, who is also the coach, which steps
-          each person has done and when. To coach you, the founder can also read your stories: your
+          each person has done and when, and where they seemed to get stuck. To coach you, the founder can also read your stories: your
           answers, the follow-up questions, the written story and its grade. Uploads (resumes,
           LinkedIn PDFs and interview transcripts) are not shown there. Every look at the admin page,
           and every story opened, is logged. Beyond that, the people who run the database only reach

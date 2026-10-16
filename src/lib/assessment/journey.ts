@@ -159,11 +159,10 @@ export function gradeJourney(answers: Answers, known: KnownProgress = {}): Journ
         : [];
 
   // Value first: with a posting in hand and time to spare, the likely questions come first. With
-  // an interview days away, About me is the fastest win. With no job in mind yet, About me is the
-  // step that needs no posting.
-  const ordered = urgent
-    ? [...aboutMe, ...stories, ...job]
-    : answers.targetJob === "unsure"
+  // an interview days away, About me is the fastest win. Without a posting to paste (only a kind
+  // of role, or nothing in mind yet), About me is the step that needs no posting.
+  const ordered =
+    urgent || answers.targetJob !== "posting"
       ? [...aboutMe, ...stories, ...job]
       : [...job, ...aboutMe, ...stories];
   const gaps = ordered.slice(0, MAX_GAPS);

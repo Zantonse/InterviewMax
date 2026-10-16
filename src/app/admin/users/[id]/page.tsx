@@ -10,8 +10,11 @@ import {
   listUserStories,
   logAdminView,
   requireAdmin,
+  userSignals,
   userTimeline,
 } from "@/lib/admin/data";
+import { FRICTION_KINDS, SIGNAL_LABELS } from "@/lib/signals/kinds";
+import { groupVisits, type Visit } from "@/lib/signals/visits";
 import { hasDraft } from "@/lib/stories/content";
 import { TIERS } from "@/lib/stories/grading";
 import { getStoryType } from "@/lib/stories/story-types";
@@ -52,10 +55,11 @@ async function UserContent({ params }: { params: PageProps<"/admin/users/[id]">[
   const { id } = await params;
   if (!isUserId(id)) notFound();
   await logAdminView(admin, "user", id);
-  const [users, timeline, stories] = await Promise.all([
+  const [users, timeline, stories, signals] = await Promise.all([
     listUserProgress(admin),
     userTimeline(admin, id),
     listUserStories(admin, id),
+    userSignals(admin, id),
   ]);
   const user = users.find((u) => u.id === id);
   if (!user) notFound();
@@ -129,6 +133,15 @@ async function UserContent({ params }: { params: PageProps<"/admin/users/[id]">[
       </div>
 
       <div className="mt-6">
+        <Card
+          title="Where they got stuck"
+          note="Each visit, newest first: pages opened, rage clicks, clicks that did nothing, errors and forms left unsent. No typed text is recorded."
+        >
+          <Visits visits={groupVisits(signals)} />
+        </Card>
+      </div>
+
+      <div className="mt-6">
         <Card title="Timeline" note="Newest first. Estimated times come from before tracking started.">
           {timeline.length === 0 ? (
             <p className="text-sm text-slate-600">No activity recorded yet.</p>
@@ -148,5 +161,65 @@ async function UserContent({ params }: { params: PageProps<"/admin/users/[id]">[
         </Card>
       </div>
     </>
+  );
+}
+
+function Visits({ visits }: { visits: Visit[] }) {
+  if (visits.length === 0) {
+    return <p className="text-sm text-slate-600">No clicks recorded yet.</p>;
+  }
+  return (
+    <div className="space-y-3" data-testid="admin-visits">
+      {visits.map((visit, i) => {
+        const minutes = Math.max(
+          1,
+          Math.round((Date.parse(visit.end) - Date.parse(visit.start)) / 60_000),
+        );
+        return (
+          <details key={visit.start} open={i === 0} className="rounded-2xl ring-1 ring-slate-200">
+            <summary className="cursor-pointer px-4 py-3 text-sm">
+              <span className="font-semibold text-slate-900">{formatWhen(visit.start)}</span>
+              <span className="text-slate-500">
+                {" · "}
+                {minutes} min · {visit.pages} {visit.pages === 1 ? "page" : "pages"}
+              </span>
+              {visit.friction > 0 ? (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                  {visit.friction} {visit.friction === 1 ? "sign" : "signs"} of trouble
+                </span>
+              ) : (
+                <span className="ml-2 text-xs text-slate-400">no trouble seen</span>
+              )}
+            </summary>
+            <ol className="space-y-1 border-t border-slate-100 px-4 py-3 text-sm">
+              {visit.signals.map((s, j) => {
+                const trouble = FRICTION_KINDS.has(s.kind);
+                return (
+                  <li
+                    key={j}
+                    className={`flex flex-wrap gap-x-3 rounded px-1 ${trouble ? "bg-amber-50" : ""}`}
+                  >
+                    <span className="w-20 shrink-0 tabular-nums text-slate-500">
+                      {new Date(s.at).toISOString().slice(11, 19)}
+                    </span>
+                    <span className={trouble ? "font-semibold text-amber-900" : "text-slate-800"}>
+                      {SIGNAL_LABELS[s.kind]}
+                    </span>
+                    <span className="break-all font-mono text-xs leading-5 text-slate-600">
+                      {s.path}
+                    </span>
+                    {s.target && (
+                      <span className="break-all font-mono text-xs leading-5 text-slate-400">
+                        {s.target}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        );
+      })}
+    </div>
   );
 }
