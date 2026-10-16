@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 // Small pieces shared by the admin pages.
@@ -17,6 +18,31 @@ export function Card({
       {note && <p className="mt-1 text-sm text-slate-500">{note}</p>}
       <div className="mt-4">{children}</div>
     </section>
+  );
+}
+
+export function AdminTabs({ current }: { current: "overview" | "analytics" }) {
+  const tabs = [
+    { key: "overview", label: "Users and funnel", href: "/admin" },
+    { key: "analytics", label: "Analytics", href: "/admin/analytics" },
+  ] as const;
+  return (
+    <nav aria-label="Admin sections" className="mt-4 flex gap-6 border-b border-slate-200">
+      {tabs.map((t) => (
+        <Link
+          key={t.key}
+          href={t.href}
+          aria-current={t.key === current ? "page" : undefined}
+          className={`-mb-px border-b-2 pb-2 text-sm font-semibold ${
+            t.key === current
+              ? "border-ink-800 text-ink-900"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 

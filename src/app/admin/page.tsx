@@ -20,7 +20,7 @@ import {
   type UserProgress,
 } from "@/lib/admin/metrics";
 import { EVENT_LABELS } from "@/lib/usage/events";
-import { Card, SetupNeeded, Stat, formatDay, formatWhen } from "./ui";
+import { AdminTabs, Card, SetupNeeded, Stat, formatDay, formatWhen } from "./ui";
 
 export const metadata: Metadata = {
   title: "Admin · InterviewMax",
@@ -35,7 +35,8 @@ export default function AdminPage() {
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Admin</h1>
-        <p className="mt-2 max-w-2xl text-slate-600">
+        <AdminTabs current="overview" />
+        <p className="mt-4 max-w-2xl text-slate-600">
           Who is using InterviewMax and how far they get. Open a user to read their stories for
           coaching; uploads are never shown. Every visit and every story opened is logged.
         </p>
@@ -137,9 +138,9 @@ async function AdminContent() {
           {views.map((v, i) => (
             <li key={i}>
               {formatWhen(v.at)} · {v.adminEmail} ·{" "}
-              {v.view === "user" && v.subjectUserId
-                ? `user ${userLabel(users, v.subjectUserId)}`
-                : "overview"}
+              {v.subjectUserId && (v.view === "user" || v.view.startsWith("story:"))
+                ? `${v.view === "user" ? "user" : "a story of"} ${userLabel(users, v.subjectUserId)}`
+                : v.view}
             </li>
           ))}
         </ul>
