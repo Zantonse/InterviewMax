@@ -511,3 +511,39 @@ describe("tell it your way", () => {
     expect(probeSystem(aboutMe, 1)).toMatch(/Ask 3 or 4 questions/);
   });
 });
+
+describe("tap options on follow-ups", () => {
+  it("keeps 2 to 4 short starters and drops any with a number", () => {
+    const [ownership, result] = parseProbe(
+      JSON.stringify({
+        followUps: [
+          {
+            question: "What was your part?",
+            gap: "ownership",
+            options: ["I led it.", "I did the hands-on work", "One of a few", "I advised", "Other"],
+          },
+          { question: "How many users?", gap: "result", options: ["About 50", "Hundreds"] },
+        ],
+      }),
+    );
+    expect(ownership.options).toEqual([
+      "I led it",
+      "I did the hands-on work",
+      "One of a few",
+      "I advised",
+    ]);
+    // One option left after dropping the figure isn't a choice, so none are kept.
+    expect(result.options).toBeUndefined();
+  });
+
+  it("asks the coach for options on kind-of-thing questions only, and keeps them when saved", () => {
+    expect(probeSystem(stakeholder, 1)).toMatch(/Tap options/);
+    expect(probeSystem(aboutMe, 1)).toMatch(/Never put a number, a name, or a fact/);
+    const content = answeredContent();
+    content.followUps = [
+      { question: "What was at stake?", gap: "situation", round: 1, options: ["A deal", "A deadline"] },
+    ];
+    const saved = parseContent(JSON.parse(JSON.stringify(content)));
+    expect(saved.followUps?.[0].options).toEqual(["A deal", "A deadline"]);
+  });
+});

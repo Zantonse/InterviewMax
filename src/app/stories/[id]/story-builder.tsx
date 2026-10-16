@@ -443,6 +443,15 @@ export function StoryBuilder({
                         !fromPractice && content.draft ? partLabelForGap(f.gap, storyType) : undefined
                       }
                       help={index === currentFollowUp ? questionHelp(f.gap) : undefined}
+                      joggers={
+                        index === currentFollowUp && f.options?.length ? (
+                          <TapOptions
+                            options={f.options}
+                            disabled={busy !== null}
+                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                          />
+                        ) : undefined
+                      }
                       onDontKnow={
                         index === currentFollowUp && !fromPractice
                           ? () => skipOne(index)
@@ -507,6 +516,7 @@ export function StoryBuilder({
                 <Composer
                   key={`follow-up-${currentFollowUp}`}
                   initial=""
+                  insert={insert}
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
@@ -931,6 +941,37 @@ function Joggers({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Under a follow-up about a kind of thing (their part, the stakes, the kind of result): the coach's
+// starters. A tap puts one in the answer box to finish in their own words.
+function TapOptions({
+  options,
+  disabled,
+  onPick,
+}: {
+  options: string[];
+  disabled: boolean;
+  onPick: (text: string) => void;
+}) {
+  return (
+    <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="tap-options">
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <button
+            key={o}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(`${o}. `)}
+            className="rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50"
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-500">Tap one to start, then add a sentence in your words.</p>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { ChatMessage } from "@/lib/ai/types";
 import { type StoryNumber, numbersTranscript } from "@/lib/numbers/checklist";
 import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
-import type { FollowUp, StoryContent } from "./content";
+import { cleanOptions, type FollowUp, type StoryContent } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import {
   INTRO_LENGTH,
@@ -51,7 +51,9 @@ Rules:
 - Ask one thing per question, in one or two short sentences. Keep it conversational.
 - When they gave a figure with an unsure hedge ("maybe 100 accounts", "I think 20%"), ask once where they could confirm it, or whether to leave it out.
 - Never repeat a question they already answered well, including earlier follow-ups.
-- Prioritise: after the light opener, ask the questions that would most improve the answer first.`;
+- Prioritise: after the light opener, ask the questions that would most improve the answer first.
+
+Tap options: a blank box is where people stall, so give a question 3 or 4 tap options when its answer is a kind of thing: their part (led it, did the hands-on work, one of a few, advised), what was at stake, the kind of result, how big it was, the kind of lesson. Each option is a short starter of 2 to 8 words that they tap and then finish in their own words, covering the realistic range for this story. Never put a number, a name, or a fact they didn't give in an option, and never write the answer for them. When the question asks for a number, a specific example, what they did, or what they were thinking, give no options: "options": [].`;
 
 // A behavioral story arrives as one telling in the user's own words, so the first round asks only
 // about what it left out. Interviewers judge judgment, so the thinking question is never dropped.
@@ -72,7 +74,7 @@ ${CHECKLIST}
 ${PROBE_RULES}
 
 Reply with JSON only, no other text:
-{"followUps": [{"question": "…", "gap": "one of ${GAPS.join(", ")}"}]}`;
+{"followUps": [{"question": "…", "gap": "one of ${GAPS.join(", ")}", "options": ["…"]}]}`;
 
 // Shared by every writer. Tester feedback (Oct 13): drafts rambled and hedged ("maybe 100 accounts").
 export const TIGHT_RULES = `Keep it tight:
@@ -121,7 +123,7 @@ ${INTRO_CHECKLIST}
 ${PROBE_RULES}
 
 Reply with JSON only, no other text:
-{"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}"}]}`;
+{"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}", "options": ["…"]}]}`;
 
 // How an introduction earns attention (tester feedback): it lands the one most important thing,
 // fast, and leaves the evidence for the follow-up questions it invites.
@@ -354,11 +356,15 @@ export function parseProbe(text: string, round = 1): FollowUp[] {
 
   const followUps = list
     .filter(isRecord)
-    .map((f) => ({
-      question: typeof f.question === "string" ? f.question.trim() : "",
-      gap: typeof f.gap === "string" ? f.gap.trim().toLowerCase() : "",
-      round,
-    }))
+    .map((f) => {
+      const options = cleanOptions(f.options);
+      return {
+        question: typeof f.question === "string" ? f.question.trim() : "",
+        gap: typeof f.gap === "string" ? f.gap.trim().toLowerCase() : "",
+        round,
+        ...(options.length ? { options } : {}),
+      };
+    })
     .filter((f) => f.question)
     .slice(0, round <= 1 ? 5 : 3);
   // A later round may say the answer is strong enough; the first must ask something.
