@@ -21,9 +21,10 @@ export default function NewStoryPage() {
           Which story do you want to build?
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Pick one. I&apos;ll ask you a few short questions about it, then two or three follow-ups,
-          and write it from your answers. &ldquo;Tell me about yourself&rdquo; is a good place to
-          start, since most interviews open with it, but you can build them in any order.
+          Pick one and tell me what happened, your way: rough notes or a minute of talking. I&apos;ll
+          write a rough draft straight away, then ask a few questions to make it stronger.
+          &ldquo;Tell me about yourself&rdquo; is a good place to start, since most interviews open
+          with it, but you can build them in any order.
         </p>
 
         <Link

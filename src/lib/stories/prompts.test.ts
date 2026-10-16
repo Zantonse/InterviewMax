@@ -4,7 +4,11 @@ import {
   builderStage,
   canProbeAgain,
   canStrengthen,
+  isRoughDraft,
   MAX_STRENGTHEN_ROUNDS,
+  nextFollowUpIndex,
+  pendingFollowUps,
+  writesRoughDraft,
   emptyContent,
   maxProbeRounds,
   skipRemainingFollowUps,
@@ -59,7 +63,12 @@ describe("story types", () => {
     ]);
     const partIds = storyParts(aboutMe).map((p) => p.id);
     for (const q of coreQuestions(aboutMe)) expect(partIds).toContain(q.part);
-    expect(coreQuestions(stakeholder)).toHaveLength(8);
+    // A behavioral story opens with one "tell it your way" question.
+    expect(coreQuestions(stakeholder).map((q) => q.id)).toEqual(["start"]);
+    expect(coreQuestionText("start", stakeholder)).toMatch(/^Tell me about a stakeholder/);
+    for (const type of STORY_TYPES.filter((t) => t.format === "star")) {
+      expect(type.joggers.length).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 
@@ -75,16 +84,8 @@ describe("builderStage", () => {
     expect(builderStage(answered, stakeholder)).toBe("follow_ups");
 
     answered.followUps[0].answer = "12";
-    // A second round is due once the first follow-ups are answered.
-    expect(builderStage(answered, stakeholder)).toBe("probe");
-    expect(canProbeAgain(answered)).toBe(true);
-
-    answered.followUps.push({ question: "Out of how many?", gap: "result", round: 2 });
-    expect(probeRounds(answered)).toBe(2);
-    expect(builderStage(answered, stakeholder)).toBe("follow_ups");
-
-    answered.followUps[1].answer = "40";
-    answered.probeDone = true;
+    // One round of follow-ups, then it's written.
+    expect(canProbeAgain(answered)).toBe(false);
     expect(builderStage(answered, stakeholder)).toBe("write");
 
     answered.draft = {
@@ -147,8 +148,23 @@ describe("prompts", () => {
   it("builds a transcript with the story type's opening question", () => {
     const transcript = answersTranscript(answeredContent(), stakeholder);
     expect(transcript).toContain("Story type: A difficult stakeholder");
-    expect(transcript).toContain("Think of a stakeholder who was hard to work with");
-    expect(transcript).toContain("A: answer to lesson");
+    expect(transcript).toContain("Tell me about a stakeholder who was hard to work with");
+    expect(transcript).toContain("A: answer to start");
+  });
+
+  it("still reads answers to the old scripted questions", () => {
+    const content = answeredContent();
+    content.answers.lesson = "Ask earlier";
+    const transcript = answersTranscript(content, stakeholder);
+    expect(transcript).toContain("What did you learn, and what would you do differently");
+    expect(transcript).toContain("A: Ask earlier");
+  });
+
+  it("tells the coach about questions the user passed on", () => {
+    const content = answeredContent();
+    content.followUps = [{ question: "How many users?", gap: "result", round: 1, skipped: true }];
+    expect(answersTranscript(content, stakeholder)).toContain("I don't know this one");
+    expect(allAnswerText(content)).not.toContain("I don't know");
   });
 
   it("uses the intro questions and prompts for Tell me about yourself", () => {
@@ -253,13 +269,13 @@ describe("LinkedIn profile", () => {
 });
 
 describe("review rounds", () => {
-  it("keeps a story drafted before rounds existed drafted, with a second round on offer", () => {
+  it("keeps a story drafted before rounds existed drafted", () => {
     const content = answeredContent(aboutMe);
     content.followUps = [{ question: "Q?", gap: "highlight", answer: "A" }];
     content.draft = { parts: { present: "P" }, untracedNumbers: [], model: "m", writtenAt: "" };
     expect(builderStage(content, aboutMe)).toBe("drafted");
     expect(probeRounds(content)).toBe(1);
-    expect(canProbeAgain(content)).toBe(true);
+    expect(canProbeAgain(content)).toBe(false);
 
     const saved = parseContent(
       JSON.parse(
@@ -432,9 +448,8 @@ describe("Tell me about yourself for one job", () => {
 });
 
 describe("shorter About me and skipping follow-ups", () => {
-  it("gives About me one follow-up round before the draft and other stories two", () => {
-    expect(maxProbeRounds(aboutMe)).toBe(1);
-    expect(maxProbeRounds(stakeholder)).toBe(2);
+  it("gives every story one follow-up round before the draft is final", () => {
+    expect(maxProbeRounds()).toBe(1);
   });
 
   it("drops unanswered follow-ups and goes on to writing", () => {
@@ -457,5 +472,42 @@ describe("shorter About me and skipping follow-ups", () => {
     content.followUps = [{ question: "More?", gap: "highlight", round: 2 }];
     expect(builderStage(content, aboutMe)).toBe("follow_ups");
     expect(builderStage(skipRemainingFollowUps(content), aboutMe)).toBe("drafted");
+  });
+});
+
+describe("tell it your way", () => {
+  it("writes a rough draft of a behavioral story straight after the telling", () => {
+    const content = answeredContent();
+    expect(writesRoughDraft(content, stakeholder)).toBe(true);
+    // About me keeps asking its follow-ups before writing.
+    expect(writesRoughDraft(answeredContent(aboutMe), aboutMe)).toBe(false);
+
+    content.draft = { parts: { situation: "S" }, untracedNumbers: [], model: "m", writtenAt: "" };
+    expect(writesRoughDraft(content, stakeholder)).toBe(false);
+    // Then the follow-ups are asked about it.
+    expect(builderStage(content, stakeholder)).toBe("probe");
+
+    content.followUps = [
+      { question: "What was at stake?", gap: "situation", round: 1 },
+      { question: "How many?", gap: "result", round: 1 },
+    ];
+    expect(builderStage(content, stakeholder)).toBe("follow_ups");
+    expect(isRoughDraft(content)).toBe(true);
+
+    content.followUps[0].answer = "The renewal";
+    content.followUps[1].skipped = true;
+    expect(pendingFollowUps(content)).toBe(0);
+    expect(nextFollowUpIndex(content)).toBeUndefined();
+    expect(isRoughDraft(content)).toBe(false);
+    expect(builderStage(content, stakeholder)).toBe("drafted");
+    expect(parseContent(JSON.parse(JSON.stringify(content))).followUps?.[1].skipped).toBe(true);
+  });
+
+  it("asks only about what the telling left out, and always about their thinking", () => {
+    const system = probeSystem(stakeholder, 1);
+    expect(system).toMatch(/in their own words/);
+    expect(system).toMatch(/Ask 2 to 5 questions, only about what the telling doesn't already cover/);
+    expect(system).toMatch(/one of your questions must ask about it/);
+    expect(probeSystem(aboutMe, 1)).toMatch(/Ask 3 or 4 questions/);
   });
 });

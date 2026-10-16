@@ -14,6 +14,8 @@ import { getStory, listStories, type StoryRecord } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { loadBuilderTargets } from "@/lib/stories/targets-data";
 import { isToughType } from "@/lib/tough/questions";
+import { SOURCE_LABELS } from "@/lib/finder/content";
+import { getStoryFinder } from "@/lib/finder/data";
 import { NumbersCard } from "./numbers-card";
 import { StoryBuilder } from "./story-builder";
 
@@ -47,13 +49,19 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.
-  const [prep, jobs, stories, checklist, targets] = await Promise.all([
+  const [prep, jobs, stories, checklist, targets, finder] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
     intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
+    intro ? null : getStoryFinder().catch(() => null),
   ]);
+  // Story finder moments for this story type become memory joggers on the opening question.
+  const moments = (finder?.moments ?? [])
+    .filter((m) => m.storyType === story.storyType)
+    .slice(0, 3)
+    .map((m) => ({ moment: m.moment, quote: m.quote, sourceLabel: SOURCE_LABELS[m.source] }));
   const resume = Boolean(prep.resume);
   return (
     <StoryBuilder
@@ -62,6 +70,7 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
       initialTitle={story.title}
       initialContent={story.content}
       hasResume={resume}
+      moments={moments}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
       nextUp={
