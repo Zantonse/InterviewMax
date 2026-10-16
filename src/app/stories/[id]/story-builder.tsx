@@ -425,7 +425,7 @@ export function StoryBuilder({
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
                     disabled={busy !== null}
-                    submitLabel={inferredNow ? "That's right" : "Next"}
+                    submitLabel="Next"
                     onSubmit={(text) => submitCore(currentCore, text)}
                   />
                 </>

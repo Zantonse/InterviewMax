@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 // Craig's admin panel (PRD v0.3): every user with their progress, the funnel and both
-// time-to-value numbers. Activity only: no story text, answers or uploads are read or shown.
+// time-to-value numbers. Activity only here; a user's stories open from their own page.
 export default function AdminPage() {
   return (
     <div className="flex flex-1 flex-col">
@@ -36,8 +36,8 @@ export default function AdminPage() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Admin</h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Who is using InterviewMax and how far they get. Activity only: story text, answers and
-          uploads are never shown here. Every visit to this page is logged.
+          Who is using InterviewMax and how far they get. Open a user to read their stories for
+          coaching; uploads are never shown. Every visit and every story opened is logged.
         </p>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <AdminContent />

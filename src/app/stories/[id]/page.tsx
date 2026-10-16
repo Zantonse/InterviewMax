@@ -90,6 +90,9 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
 // "Tell me about yourself" is built per target job, company first; each job's version lives on its
 // job page.
 function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryContent }) {
+  // The first job without its own version gets the main button: the general "why this next role"
+  // stays generic until it's rebuilt around one company.
+  const next = jobs.find((job) => !content.tailored?.[job.id]?.draft);
   return (
     <section
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
@@ -99,8 +102,9 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
         Next: make it company-first for each job
       </h2>
       <p className="mt-2 text-sm text-slate-600">
-        This is your general answer. For each job, I&apos;ll rebuild it around what that company
-        most needs to hear.
+        This is your general answer, so &ldquo;why this next role&rdquo; can only be general. For
+        each job, tell me in a line why you want that company, and I&apos;ll rebuild it around what
+        they most need to hear.
       </p>
       {jobs.length === 0 ? (
         <p className="mt-3 text-sm text-slate-600">
@@ -110,21 +114,34 @@ function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryConte
           to get started.
         </p>
       ) : (
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {jobs.map((job) => (
-            <li key={job.id}>
-              <Link
-                href={`/jobs/${job.id}#about-me`}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
-              >
-                {job.company || job.title}
-                {content.tailored?.[job.id]?.draft && (
-                  <span className="text-xs text-slate-500">written</span>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          {next && (
+            <Link
+              href={`/jobs/${next.id}#about-me`}
+              className="mt-3 inline-flex rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900"
+              data-testid="tailor-next"
+            >
+              Write it for {next.company || next.title} →
+            </Link>
+          )}
+          {jobs.length > 1 || !next ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {jobs.map((job) => (
+                <li key={job.id}>
+                  <Link
+                    href={`/jobs/${job.id}#about-me`}
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
+                  >
+                    {job.company || job.title}
+                    {content.tailored?.[job.id]?.draft && (
+                      <span className="text-xs text-slate-500">written</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </>
       )}
     </section>
   );
