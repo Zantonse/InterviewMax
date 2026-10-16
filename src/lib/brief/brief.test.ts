@@ -205,3 +205,46 @@ describe("storyReminder and firstSentence", () => {
     expect(storyReminder(CONFLICT_STARTED)).toBe("");
   });
 });
+
+describe("questions to ask in the brief", () => {
+  const ask = (id: string, question: string, audience: string, saved: boolean) => ({
+    id,
+    question,
+    audience: audience as "peer",
+    why: "",
+    saved,
+  });
+
+  it("shows saved questions grouped by audience and counts the unsaved ones", () => {
+    const brief = buildBrief({
+      job: {
+        ...JOB,
+        questionsToAsk: {
+          model: "m",
+          generatedAt: "",
+          questions: [
+            ask("a1", "How do launches get picked?", "hiring_manager", true),
+            ask("a2", "What's next in the process?", "recruiter", true),
+            ask("a3", "Unsaved one?", "peer", false),
+          ],
+        },
+      },
+      stories: [],
+      numbers: null,
+    });
+    expect(brief.ask.groups).toEqual([
+      { audience: "recruiter", label: "Recruiter", questions: ["What's next in the process?"] },
+      {
+        audience: "hiring_manager",
+        label: "Hiring manager",
+        questions: ["How do launches get picked?"],
+      },
+    ]);
+    expect(brief.ask.unsaved).toBe(1);
+  });
+
+  it("is empty for a job with none", () => {
+    const brief = buildBrief({ job: JOB, stories: [], numbers: null });
+    expect(brief.ask).toEqual({ groups: [], unsaved: 0 });
+  });
+});

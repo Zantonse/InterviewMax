@@ -186,14 +186,47 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
           )}
 
           <Section title="Questions to ask them" testId="brief-ask">
-            <ul className="list-disc space-y-1 pl-5 text-slate-800">
-              {STARTER_QUESTIONS.map((q) => (
-                <li key={q}>{q}</li>
-              ))}
-            </ul>
-            <p className="mt-2 text-sm print:text-xs text-slate-500 print:hidden">
-              Good for any interview. Questions written for this job are coming.
-            </p>
+            {brief.ask.groups.length > 0 ? (
+              <div className="space-y-3 print:space-y-2">
+                {brief.ask.groups.map((g) => (
+                  <div key={g.audience}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {g.label}
+                    </p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-800">
+                      {g.questions.map((q) => (
+                        <li key={q}>{q}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                <p className="text-sm print:text-xs text-slate-500 print:hidden">
+                  <Link href={`/jobs/${job.id}#ask`} className="text-ink-800 underline">
+                    Edit your questions
+                  </Link>
+                </p>
+              </div>
+            ) : (
+              <>
+                <ul className="list-disc space-y-1 pl-5 text-slate-800">
+                  {STARTER_QUESTIONS.map((q) => (
+                    <li key={q}>{q}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-sm print:text-xs text-slate-500 print:hidden">
+                  Good for any interview.{" "}
+                  <Link
+                    href={`/jobs/${job.id}#ask`}
+                    className="font-semibold text-ink-800 underline"
+                  >
+                    {brief.ask.unsaved > 0
+                      ? `Save some of the ${brief.ask.unsaved} written for ${company}`
+                      : `Get questions written for ${company}`}
+                  </Link>{" "}
+                  and they&apos;ll show here instead.
+                </p>
+              </>
+            )}
           </Section>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import "server-only";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { parseQuestionsToAsk, type QuestionsToAsk } from "@/lib/ask/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import {
   parseOverview,
@@ -22,6 +23,8 @@ export type TargetJob = {
   description: string;
   likelyQuestions: LikelyQuestions | null;
   interviewReports: string;
+  // Questions to ask the interviewer: suggestions, the user's own, and which are saved.
+  questionsToAsk: QuestionsToAsk | null;
   // The next interview for this job, as YYYY-MM-DD, when the user has set one.
   interviewDate: string | null;
   createdAt: string;
@@ -38,12 +41,13 @@ type Row = {
   job_description: string | null;
   likely_questions: unknown;
   interview_reports: string | null;
+  questions_to_ask: unknown;
   interview_date: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, interview_date, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, interview_date, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -55,6 +59,7 @@ function toJob(row: Row): TargetJob {
     description: row.job_description ?? "",
     likelyQuestions: parseLikelyQuestions(row.likely_questions),
     interviewReports: row.interview_reports ?? "",
+    questionsToAsk: parseQuestionsToAsk(row.questions_to_ask),
     interviewDate: row.interview_date,
     createdAt: row.created_at,
   };
@@ -157,6 +162,20 @@ export async function saveJobQuestions(
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the questions: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Saves (or clears, with null) the questions the user will ask at the end of interviews for a job.
+export async function saveQuestionsToAsk(id: string, value: QuestionsToAsk | null): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ questions_to_ask: value })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save your questions: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 
