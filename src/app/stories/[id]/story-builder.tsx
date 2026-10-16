@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
 import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
@@ -15,7 +16,13 @@ import {
   writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
-import { DEFAULT_WHERE_TO_LOOK, questionHelp, type QuestionHelp } from "@/lib/stories/help";
+import {
+  DEFAULT_WHERE_TO_LOOK,
+  ESTIMATE_STARTERS,
+  asksForNumber,
+  questionHelp,
+  type QuestionHelp,
+} from "@/lib/stories/help";
 import {
   MAX_ANSWER_LENGTH,
   MAX_UPLOAD_BYTES,
@@ -457,6 +464,11 @@ export function StoryBuilder({
                           ? () => skipOne(index)
                           : undefined
                       }
+                      onEstimate={
+                        index === currentFollowUp && !fromPractice && asksForNumber(f.question, f.gap)
+                          ? (text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))
+                          : undefined
+                      }
                       isEditing={editing?.kind === "followUp" && editing.index === index}
                       disabled={busy !== null}
                       onEdit={() => setEditing({ kind: "followUp", index })}
@@ -818,10 +830,13 @@ function QuestionHelpRow({
   help,
   disabled,
   onDontKnow,
+  onEstimate,
 }: {
   help?: QuestionHelp;
   disabled: boolean;
   onDontKnow?: () => void;
+  // Set when the question asks for a number: starts the answer as a labelled estimate.
+  onEstimate?: (text: string) => void;
 }) {
   const [open, setOpen] = useState<null | "example" | "unsure">(null);
   const toggle = (which: "example" | "unsure") => setOpen((o) => (o === which ? null : which));
@@ -852,7 +867,7 @@ function QuestionHelpRow({
             className="font-medium text-ink-800 hover:underline"
             data-testid="dont-know"
           >
-            I don&apos;t know this
+            {onEstimate ? "I don't remember the number" : "I don't know this"}
           </button>
         )}
       </div>
@@ -864,8 +879,41 @@ function QuestionHelpRow({
       )}
       {open === "unsure" && onDontKnow && (
         <div className="flex flex-col items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200">
-          <p>{help?.whereToLook ?? DEFAULT_WHERE_TO_LOOK}</p>
-          <p>A rough answer or a labelled estimate is fine. Or skip it and I&apos;ll leave it out.</p>
+          {onEstimate ? (
+            <>
+              <p>
+                No need for the exact figure. A rough estimate works in an interview, as long as
+                you say it&apos;s an estimate. Tap one to start, then fill in your best guess:
+              </p>
+              <div className="flex flex-wrap gap-2" data-testid="estimate-starters">
+                {ESTIMATE_STARTERS.map((starter) => (
+                  <button
+                    key={starter}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      onEstimate(`${starter} `);
+                      setOpen(null);
+                    }}
+                    className="rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50"
+                  >
+                    {starter}
+                  </button>
+                ))}
+              </div>
+              <p>
+                Want the real figure later? Check a dashboard, a performance review or an old
+                email. Or skip it and I&apos;ll leave it out.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>{help?.whereToLook ?? DEFAULT_WHERE_TO_LOOK}</p>
+              <p>
+                A rough answer or a labelled estimate is fine. Or skip it and I&apos;ll leave it out.
+              </p>
+            </>
+          )}
           <button
             type="button"
             onClick={onDontKnow}
@@ -1102,6 +1150,7 @@ function Exchange({
   help,
   joggers,
   onDontKnow,
+  onEstimate,
   isEditing,
   disabled,
   onEdit,
@@ -1122,6 +1171,8 @@ function Exchange({
   joggers?: React.ReactNode;
   // "I don't know this": passes on the question.
   onDontKnow?: () => void;
+  // For a number question: starts the answer as a labelled estimate.
+  onEstimate?: (text: string) => void;
   // Where a prefilled answer came from, e.g. "From your LinkedIn".
   source?: string;
   isEditing: boolean;
@@ -1145,7 +1196,12 @@ function Exchange({
       )}
       {joggers}
       {!answer && !skipped && !isEditing && (help || onDontKnow) && (
-        <QuestionHelpRow help={help} disabled={disabled} onDontKnow={onDontKnow} />
+        <QuestionHelpRow
+          help={help}
+          disabled={disabled}
+          onDontKnow={onDontKnow}
+          onEstimate={onEstimate}
+        />
       )}
       {skipped && !isEditing && (
         <div className="flex flex-col items-end gap-1">
@@ -1498,24 +1554,12 @@ function StoryPanel({
   const draft = content.draft;
   const parts = storyParts(storyType);
   const storyTypeLabel = storyType?.label;
-  const [copied, setCopied] = useState(false);
   // A written story reads as one script to say aloud; the parts view is for checking what went where.
   const [showParts, setShowParts] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
   const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
   // At an interview pace of about 150 words a minute.
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
-
-  async function copy() {
-    if (!draft) return;
-    try {
-      await navigator.clipboard.writeText(paragraphs.join("\n\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked; the text is still on screen to select.
-    }
-  }
 
   return (
     <section
@@ -1535,13 +1579,10 @@ function StoryPanel({
           </h2>
         </div>
         {draft && (
-          <button
-            type="button"
-            onClick={copy}
+          <CopyButton
+            text={paragraphs.join("\n\n")}
             className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
+          />
         )}
       </div>
 

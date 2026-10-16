@@ -28,9 +28,12 @@ Find:
    - question: the interviewer's words, copied exactly from the transcript. Keep it short; if the question is long, copy the key sentence.
    - theme: one of ${QUESTION_THEMES.map((t) => t.id).join(", ")}, or "other" for technical, case or role-knowledge questions.
    - probes: up to ${MAX_PROBES} follow-up questions the interviewer asked about that answer, each copied exactly. These show what the interviewer wanted more of.
-   - landed: "strong", "mixed" or "weak" for how the candidate's answer came across to the interviewer, judged from what they said and how the interviewer reacted (probing for something missing, moving on quickly, or saying it was helpful).
+   - landed: how the candidate's answer came across to the interviewer, judged from what they said and how the interviewer reacted (probing for something missing, moving on quickly, or saying it was helpful). Use this scale:
+     "strong": answered what was asked, with specifics; the interviewer moved on satisfied or said it helped.
+     "mixed": got the gist across but left out something the interviewer wanted, so they probed for it; fixable by adding the missing piece.
+     "weak": missed the question or stayed vague; the interviewer pressed hard or dropped the topic.
    - evidence: a short span of the candidate's answer, copied exactly, that shows why it landed that way.
-   - note: one sentence on why, naming what worked or what was missing. Don't state any number that isn't in the transcript.
+   - note: one sentence on why it got that rating, naming what worked or what was missing and, when there is one, the interviewer's reaction that shows it (e.g. "They asked twice for the result, because the answer stopped at what you did."). Don't state any number that isn't in the transcript.
    - gaps: what the answer was missing, from: ${ANSWER_GAPS.map((g) => `${g.id} (${g.label.toLowerCase()})`).join(", ")}. Empty for a strong answer.
 2. lookingFor: up to ${MAX_LOOKING_FOR} things this interviewer clearly cared about (e.g. "measurable results", "handling pushback from execs"), each with quote: the interviewer's words, copied exactly, that show it.
 3. summary: one sentence on what this interview focused on.

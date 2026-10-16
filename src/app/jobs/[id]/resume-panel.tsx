@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
+import { COPY_FAILED, copyText } from "@/lib/clipboard";
 import {
   FITS,
   GOOD_SET_STORIES,
@@ -71,12 +72,11 @@ export function ResumePanel({
     set && change(set.bullets.map((b) => (b.id === id ? { ...b, ...patch } : b)));
 
   async function copy(key: string, text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       setCopied(key);
       setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
-    } catch {
-      setError("Copying didn't work in this browser. Select the text and copy it instead.");
+    } else {
+      setError(COPY_FAILED);
     }
   }
 

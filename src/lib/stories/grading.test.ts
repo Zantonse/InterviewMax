@@ -76,7 +76,7 @@ describe("quick checks", () => {
     expect(quickChecks(d, aboutMe).find((c) => c.id === "number")?.pass).toBe(true);
     const short = quickChecks(d, aboutMe).find((c) => c.id === "length");
     expect(short?.pass).toBe(false);
-    expect(short?.detail).toContain("aim for 150 to 225 words");
+    expect(short?.detail).toContain("aim for 120 to 225 words");
   });
 
   it("flags an introduction that lists too many figures, but not a STAR story", () => {
@@ -328,8 +328,8 @@ describe("cutting the fluff", () => {
     expect(grade.fixes[0]).toContain("Firm up");
   });
 
-  it("holds Tell me about yourself to 60 to 90 seconds and a story to about two minutes", () => {
-    expect(lengthRange(aboutMe)).toEqual({ min: 150, max: 225 });
+  it("holds Tell me about yourself to about a minute (90 seconds at most) and a story to about two minutes", () => {
+    expect(lengthRange(aboutMe)).toEqual({ min: 120, max: 225 });
     expect(lengthRange(stakeholder)).toEqual({ min: 180, max: 300 });
   });
 

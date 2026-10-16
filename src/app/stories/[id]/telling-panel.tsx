@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CopyButton } from "@/components/copy-button";
 import { AiNotice } from "@/components/ai-notice";
 import { AnswerComposer } from "@/components/practice/answer-composer";
 import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
@@ -108,7 +109,6 @@ function Coached({
   onAddDetail: (answer: string) => void;
 }) {
   const [version, setVersion] = useState<VersionId>("short");
-  const [copied, setCopied] = useState(false);
   const beats = telling.versions[version];
   const hook = telling.hooks[telling.hookIndex] ?? telling.hooks[0];
   const text = versionText(telling, version);
@@ -119,16 +119,6 @@ function Coached({
     gradeIsCurrent(content) && content.grade?.thinking?.level !== "shown"
       ? content.grade?.thinking
       : undefined;
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked; the text is still on screen to select.
-    }
-  }
 
   return (
     <div className="mt-2 flex flex-col gap-6">
@@ -199,13 +189,10 @@ function Coached({
             {VERSIONS.find((v) => v.id === version)?.note}. About{" "}
             {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)} spoken.
           </span>
-          <button
-            type="button"
-            onClick={copy}
+          <CopyButton
+            text={text}
             className="rounded-full px-3 py-1 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
+          />
         </div>
         <p className="mt-2 text-xs text-slate-500">
           <PauseMark /> pause for a beat · <strong className="text-slate-900">bold</strong> stress

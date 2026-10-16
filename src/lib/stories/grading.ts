@@ -63,7 +63,7 @@ export const INTRO_CRITERIA = [
     id: "present",
     label: "Where you are now",
     question:
-      "Does it open with a short headline of who you are today (role and scope, in a sentence or so), saving the details for later?",
+      "Does it open from your current or most recent role with a short, casual headline of who you are today (role and scope, in a sentence or so), saving the details for later?",
   },
   {
     id: "path",
@@ -79,18 +79,19 @@ export const INTRO_CRITERIA = [
   {
     id: "strengths",
     label: "What you're known for",
-    question: "Is there something specific you're known for, backed by an example?",
+    question: "Is there something specific you're known for, backed by a short example rather than a step-by-step story?",
   },
   {
     id: "next",
     label: "Why this next role",
     question:
-      "Is it clear what you want next, why now, and how it follows from your path, in words specific enough to personalize to each company rather than generic?",
+      "Is it clear what you want next, why now, and how it follows from your path, in your own words rather than generic ones?",
   },
   {
     id: "thread",
     label: "One clear thread",
-    question: "Does one thread tie the answer together, without detours that dilute it?",
+    question:
+      "Does one thread tie the answer together, flowing from one point to the next with natural transitions and no jumps or detours?",
   },
 ] as const satisfies readonly Criterion[];
 
@@ -107,7 +108,7 @@ export const CHECKS = [
   { id: "filler", label: "No filler or vague phrases" },
   { id: "hedged", label: "No unsure figures" },
   // "Tell me about yourself" only.
-  { id: "focus", label: "A few key figures, not a list" },
+  { id: "focus", label: "One or two key figures, not a list" },
 ] as const;
 
 export type CheckId = (typeof CHECKS)[number]["id"];
@@ -532,8 +533,10 @@ ${
   intro
     ? `For "Tell me about yourself", judge it as an opening, not the whole case. It should land the single most important thing about the candidate and why it matters, then stop:
 - A long opening that walks through role details is a weakness; a one-line headline ("I lead AI enablement for the whole SE org") with the details saved for later is a strength.
-- More than two or three metrics is a weakness, not a strength: the extra figures belong in follow-up answers. Say which ones to keep and which to save.
-- "Why this next role" should be ready to personalize to each company: what the company is going through and why the candidate fits that moment (for example, a company in an AI transformation versus a startup that needs revenue fast). When it is generic, the improve line should say to personalize it to each company, on each target job's page.
+- It should sound high level and conversational, starting from the current or most recent role. A step-by-step account of how they did something belongs in a behavioral story, not here: score it down under "thread" and say to save it.
+- More than one or two metrics is a weakness, not a strength: the extra figures belong in follow-up answers. Say which ones to keep and which to save.
+- An abrupt jump from one point to the next (no bridge between them) is a weakness under "thread"; quote where it jumps.
+- "Why this next role" should be clear and in their own words. Don't ask them to diagnose a company's challenges in it; that's optional and done per job, on each target job's page.
 
 `
     : ""

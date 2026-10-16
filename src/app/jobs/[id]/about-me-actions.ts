@@ -70,6 +70,37 @@ export async function writeTailoredIntro(jobId: string, whyCompany: string): Pro
   }
 }
 
+// The closing line: the safe one about the role, or the bolder one about the company. The picked
+// one goes in parts.why_here, so practice, the brief and the resume read it like any other script.
+export async function pickTailoredClosing(
+  jobId: string,
+  picked: "role" | "company",
+): Promise<TailorResult> {
+  if (picked !== "role" && picked !== "company") return fail("Pick a closing line.");
+  try {
+    const { storyId } = await requiredStoryStatus();
+    const story = storyId ? await getStory(storyId) : null;
+    const tailored = story?.content.tailored?.[String(jobId)];
+    const draft = tailored?.draft;
+    if (!story || !tailored || !draft?.closings) return fail("Write it for this job first.");
+    const closings = { ...draft.closings, picked };
+    const next: TailoredIntro = {
+      ...tailored,
+      draft: {
+        ...draft,
+        closings,
+        parts: { ...draft.parts, why_here: closings[picked] },
+      },
+    };
+    await saveTailored(story.id, String(jobId), next);
+    return { ok: true, tailored: next };
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Tailored About me: picking the closing failed", err);
+    return fail("Something went wrong. Try again.");
+  }
+}
+
 // Reads the story again just before saving, so answers changed meanwhile aren't overwritten.
 async function saveTailored(storyId: string, jobId: string, tailored: TailoredIntro) {
   const story = await getStory(storyId);
