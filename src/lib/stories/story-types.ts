@@ -161,7 +161,9 @@ export const INTRO_QUESTIONS = [
   {
     id: "known_for",
     part: "strengths",
-    text: "What are you known for? What do colleagues, customers or managers come to you for?",
+    // Concrete on purpose: "what are you known for?" gets a few abstract words; the last time
+    // someone came to them gets an example the story can use.
+    text: "What do people come to you for? Think of the last time a colleague, customer or manager asked for your help: what was it, and what did you do?",
   },
   {
     id: "next",
@@ -172,7 +174,7 @@ export const INTRO_QUESTIONS = [
 
 // The question shown instead of "path" when the path was read from a resume or LinkedIn profile.
 export function inferredPathQuestion(source: "resume" | "linkedin"): string {
-  return `Here's how your path reads from your ${source === "resume" ? "resume" : "LinkedIn profile"}. Is that right? Fix anything that's off, and if you like, add what made you take the move that mattered most.`;
+  return `Here's how your path reads from your ${source === "resume" ? "resume" : "LinkedIn profile"}. Which move mattered most, and why did you make it? Add that below, and fix anything that's off.`;
 }
 
 // "Tell me about yourself" for one target job: three beats, company first.

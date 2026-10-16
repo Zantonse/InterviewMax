@@ -145,7 +145,7 @@ Make it strong, not just accurate:
 
 Write these parts:
 - present: 1 short sentence, the headline: their role and scope today.
-- path: 2 to 3 sentences on the career moves that led here and why, skipping anything that doesn't support the story.
+- path: at most 2 sentences, built on the one move that mattered most and why they made it, in their words. Skip moves that don't support the story; don't retell the resume.
 - highlight: 1 to 2 sentences on the one result that matters most, with their number and its context.
 - strengths: 1 to 2 sentences on what they're known for, proved with a concrete example; no new figure unless it is the one that matters most.
 - next: 1 to 2 sentences on what they want next and why, concrete enough that it can be personalized to each company (what kind of company, at what moment, needs what they bring). It closes the answer and hands back to the interviewer.

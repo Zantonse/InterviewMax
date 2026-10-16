@@ -88,6 +88,10 @@ export default function PrivacyPage() {
             To see how far people get through the app (activity only, such as &ldquo;finished a
             story&rdquo; and when), so we can fix the steps where people get stuck.
           </li>
+          <li>
+            To coach you: the founder can read your stories to give you feedback (see who sees it,
+            below).
+          </li>
           <li>To sign you in and send sign-in emails.</li>
         </PolicyList>
         <p>
@@ -128,10 +132,12 @@ export default function PrivacyPage() {
           </li>
         </PolicyList>
         <p>
-          Inside InterviewMax, the admin page shows the founder activity counts (which steps each
-          person has done, and when), never story text, answers or uploads, and every look at it is
-          logged. The people who run the database can technically reach stored data; we only do so
-          to fix a problem you report, or if the law requires it.
+          Inside InterviewMax, the admin page shows the founder, who is also the coach, which steps
+          each person has done and when. To coach you, the founder can also read your stories: your
+          answers, the follow-up questions, the written story and its grade. Uploads (resumes,
+          LinkedIn PDFs and interview transcripts) are not shown there. Every look at the admin page,
+          and every story opened, is logged. Beyond that, the people who run the database only reach
+          stored data to fix a problem you report, or if the law requires it.
         </p>
       </PolicySection>
 

@@ -2,13 +2,15 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseContent, type StoryContent } from "@/lib/stories/content";
 import { isUsageEvent, type UsageEvent } from "@/lib/usage/events";
 import { isAdminEmail } from "./access";
 import type { EventFirst, UserProgress } from "./metrics";
 
 // The admin panel's only door to the database. Every function here starts with requireAdmin(),
-// and every page view is logged before any data is read. Reads activity and counts only: never
-// story text, answers or uploads.
+// and every page view is logged before any data is read. Reads activity and counts, plus a
+// user's stories for coaching (Craig's call, 2026-10-16; the privacy policy says so). Never
+// uploads (resumes, LinkedIn PDFs, transcripts).
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TIMELINE_LIMIT = 500;
@@ -42,7 +44,8 @@ export async function requireAdmin(): Promise<Admin> {
 // Records an admin page view. Fails closed: if the view can't be logged, nothing is shown.
 export async function logAdminView(
   admin: Admin,
-  view: "overview" | "user",
+  // "story:<id>" records which story was opened.
+  view: "overview" | "user" | `story:${string}`,
   subjectUserId?: string,
 ): Promise<void> {
   const { error } = await admin.supabase.from("admin_views").insert({
@@ -168,4 +171,61 @@ export async function recentAdminViews(admin: Admin): Promise<AdminViewEntry[]> 
     subjectUserId: row.subject_user_id,
     at: row.created_at,
   }));
+}
+
+export type AdminStory = {
+  id: string;
+  title: string;
+  storyType: string | null;
+  content: StoryContent;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type StoryRow = {
+  id: string;
+  title: string;
+  story_type: string | null;
+  content: unknown;
+  created_at: string;
+  updated_at: string;
+};
+
+function toAdminStory(row: StoryRow): AdminStory {
+  return {
+    id: row.id,
+    title: row.title,
+    storyType: row.story_type,
+    content: parseContent(row.content),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+// One user's stories, newest first, for the coach to read. Callers log the view first.
+export async function listUserStories(admin: Admin, userId: string): Promise<AdminStory[]> {
+  if (!isUserId(userId)) return [];
+  const { data, error } = await admin.supabase
+    .from("stories")
+    .select("id, title, story_type, content, created_at, updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(`Couldn't load this user's stories: ${error.message}`);
+  return (data as StoryRow[]).map(toAdminStory);
+}
+
+export async function getUserStory(
+  admin: Admin,
+  userId: string,
+  storyId: string,
+): Promise<AdminStory | null> {
+  if (!isUserId(userId) || !UUID_RE.test(storyId)) return null;
+  const { data, error } = await admin.supabase
+    .from("stories")
+    .select("id, title, story_type, content, created_at, updated_at")
+    .eq("user_id", userId)
+    .eq("id", storyId)
+    .maybeSingle();
+  if (error) throw new Error(`Couldn't load the story: ${error.message}`);
+  return data ? toAdminStory(data as StoryRow) : null;
 }
