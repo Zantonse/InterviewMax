@@ -18,6 +18,7 @@ import {
   insertPracticeSession,
   savePracticeItems,
 } from "@/lib/practice/data";
+import type { VoiceStats } from "@/lib/practice/delivery";
 import type { PracticeContext } from "@/lib/practice/prompts";
 import { hasDraft, probeRounds } from "@/lib/stories/content";
 import { getStory, listStories, updateStory } from "@/lib/stories/data";
@@ -60,6 +61,7 @@ export async function answerPractice(
   index: number,
   answer: string,
   seconds: number | null,
+  voice: VoiceStats | null = null,
 ): Promise<PracticeResult> {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return fail("Say or type an answer first.");
@@ -75,11 +77,27 @@ export async function answerPractice(
       typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0
         ? Math.min(Math.round(seconds), 60 * 30)
         : undefined;
+    // Talk time can't be longer than the recording; pauses are a count, kept sane.
+    const talk =
+      measured && voice && Number.isFinite(voice.talkSeconds) && voice.talkSeconds > 0
+        ? Math.min(Math.round(voice.talkSeconds), measured)
+        : undefined;
+    const pauses =
+      measured && voice && Number.isInteger(voice.longPauses) && voice.longPauses >= 0
+        ? Math.min(voice.longPauses, 200)
+        : undefined;
     const answered: PracticeItem = {
       ...item,
       turns: item.turns.map((t, i) =>
         i === turn
-          ? { question: t.question, ...(t.gap ? { gap: t.gap } : {}), answer: text, ...(measured ? { seconds: measured } : {}) }
+          ? {
+              question: t.question,
+              ...(t.gap ? { gap: t.gap } : {}),
+              answer: text,
+              ...(measured ? { seconds: measured } : {}),
+              ...(talk ? { talkSeconds: talk } : {}),
+              ...(pauses !== undefined ? { longPauses: pauses } : {}),
+            }
           : t,
       ),
     };

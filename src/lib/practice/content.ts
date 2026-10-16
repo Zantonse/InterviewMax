@@ -4,6 +4,7 @@ import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import { countWords } from "@/lib/stories/grading";
 import { findNumbers, untracedNumbers } from "@/lib/stories/numbers";
 import { INTRO_LENGTH, STAR_LENGTH } from "@/lib/stories/story-types";
+import { type Delivery, parseDelivery } from "./delivery";
 
 // Practice mode (PRD v0.3, P0): the user answers a target job's likely questions out loud, a
 // skeptical interviewer asks one or two follow-ups aimed at the weakest part, and each answer gets
@@ -61,6 +62,10 @@ export type PracticeTurn = {
   answer?: string;
   // Seconds of talking, when it was recorded with the mic. Missing when typed.
   seconds?: number;
+  // Recorded answers only, measured from the audio: time from first word to last less long
+  // pauses, and how many long pauses there were (delivery feedback).
+  talkSeconds?: number;
+  longPauses?: number;
 };
 
 export type Closeness = "close" | "partly" | "drifted" | "no_story";
@@ -105,6 +110,9 @@ export type PracticeFeedback = {
   numbersLeftOut: string[];
   timing: Timing;
   newFacts: NewFact[];
+  // Pace, filler words and long pauses, worked out in code. Missing when nothing was said with
+  // Talk, and on feedback given before delivery feedback existed.
+  delivery?: Delivery;
   model: string;
   givenAt: string;
 };
@@ -309,6 +317,8 @@ export function parseItems(raw: unknown): PracticeItem[] {
                   ...(typeof t.gap === "string" ? { gap: t.gap } : {}),
                   ...(typeof t.answer === "string" ? { answer: t.answer } : {}),
                   ...(typeof t.seconds === "number" ? { seconds: t.seconds } : {}),
+                  ...(typeof t.talkSeconds === "number" ? { talkSeconds: t.talkSeconds } : {}),
+                  ...(typeof t.longPauses === "number" ? { longPauses: t.longPauses } : {}),
                 },
               ]
             : [],
@@ -337,6 +347,7 @@ const CLOSENESS: readonly Closeness[] = ["close", "partly", "drifted", "no_story
 export function parseStoredFeedback(raw: unknown): PracticeFeedback | undefined {
   if (!isRecord(raw) || typeof raw.summary !== "string" || !isRecord(raw.timing)) return undefined;
   const t = raw.timing;
+  const delivery = parseDelivery(raw.delivery);
   return {
     summary: raw.summary,
     closeness: CLOSENESS.find((c) => c === raw.closeness) ?? "no_story",
@@ -359,6 +370,7 @@ export function parseStoredFeedback(raw: unknown): PracticeFeedback | undefined 
             : [],
         )
       : [],
+    ...(delivery ? { delivery } : {}),
     model: str(raw.model),
     givenAt: str(raw.givenAt),
   };
