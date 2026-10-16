@@ -297,6 +297,38 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
               className={INPUT}
             />
           </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-level`}>
+              Level
+              <select
+                id={`${id}-level`}
+                name="level"
+                defaultValue=""
+                className={INPUT}
+                data-testid="add-job-level"
+              >
+                <option value="">Guess from the title</option>
+                {LEVELS.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-date`}>
+              Interview date <span className="font-normal text-slate-500">(if you have one)</span>
+              <input
+                id={`${id}-date`}
+                type="date"
+                name="interviewDate"
+                className={INPUT}
+                data-testid="add-job-date"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-slate-500">
+            With a date, I&apos;ll plan your prep day by day. You can add or change it later.
+          </p>
           {state?.error && <ErrorLine>{state.error}</ErrorLine>}
           <div className="flex flex-wrap gap-3">
             <button type="submit" disabled={pending} className={PRIMARY}>

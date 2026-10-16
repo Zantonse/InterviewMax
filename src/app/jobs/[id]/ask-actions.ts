@@ -5,13 +5,16 @@ import { ModelError } from "@/lib/ai";
 import { parseAskList, type QuestionsToAsk } from "@/lib/ask/content";
 import { suggestQuestionsToAsk } from "@/lib/ask/suggest";
 import { getJob, saveQuestionsToAsk } from "@/lib/jobs/data";
+import { trackEvent } from "@/lib/usage/track";
 
 export type AskResult = { ok: true; value: QuestionsToAsk | null } | { ok: false; error: string };
 
 // Suggests questions to ask the interviewer for one job (a model call). Saved questions stay.
 export async function suggestAsk(jobId: string): Promise<AskResult> {
   try {
-    return { ok: true, value: await suggestQuestionsToAsk(String(jobId)) };
+    const value = await suggestQuestionsToAsk(String(jobId));
+    await trackEvent("questions_to_ask_made");
+    return { ok: true, value };
   } catch (err) {
     unstable_rethrow(err);
     console.error("Questions to ask: suggesting failed", err);

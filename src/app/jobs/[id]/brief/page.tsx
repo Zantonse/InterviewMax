@@ -9,6 +9,7 @@ import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { daysUntil, todayIn } from "@/lib/prep/plan";
 import { listStories } from "@/lib/stories/data";
 import { BriefView } from "./brief-view";
+import { trackEvent } from "@/lib/usage/track";
 
 export const metadata: Metadata = { title: "Pre-interview brief · InterviewMax" };
 
@@ -36,6 +37,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/brief">["para
     headers(),
   ]);
   if (!job) notFound();
+  await trackEvent("brief_opened");
   const brief = buildBrief({ job, stories, numbers });
   const today = todayIn(requestHeaders.get("x-vercel-ip-timezone"));
   const days =

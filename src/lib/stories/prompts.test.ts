@@ -6,6 +6,8 @@ import {
   canStrengthen,
   MAX_STRENGTHEN_ROUNDS,
   emptyContent,
+  maxProbeRounds,
+  skipRemainingFollowUps,
   probeRounds,
   parseContent,
   type StoryContent,
@@ -426,5 +428,34 @@ describe("Tell me about yourself for one job", () => {
     expect(Object.keys(content.tailored ?? {})).toEqual(["job1", "job2"]);
     expect(content.tailored?.job1.draft?.parts.who).toBe("W");
     expect(content.tailored?.job2.draft).toBeUndefined();
+  });
+});
+
+describe("shorter About me and skipping follow-ups", () => {
+  it("gives About me one follow-up round before the draft and other stories two", () => {
+    expect(maxProbeRounds(aboutMe)).toBe(1);
+    expect(maxProbeRounds(stakeholder)).toBe(2);
+  });
+
+  it("drops unanswered follow-ups and goes on to writing", () => {
+    const content = answeredContent(aboutMe);
+    content.followUps = [
+      { question: "Q1?", gap: "highlight", answer: "A1", round: 1 },
+      { question: "Q2?", gap: "strengths", round: 1 },
+      { question: "Q3?", gap: "next", answer: "  ", round: 1 },
+    ];
+    expect(builderStage(content, aboutMe)).toBe("follow_ups");
+    const skipped = skipRemainingFollowUps(content);
+    expect(skipped.followUps?.map((f) => f.question)).toEqual(["Q1?"]);
+    expect(skipped.probeDone).toBe(true);
+    expect(builderStage(skipped, aboutMe)).toBe("write");
+  });
+
+  it("keeps a drafted story drafted when its extra questions are skipped", () => {
+    const content = answeredContent(aboutMe);
+    content.draft = { parts: { present: "P" }, untracedNumbers: [], model: "m", writtenAt: "" };
+    content.followUps = [{ question: "More?", gap: "highlight", round: 2 }];
+    expect(builderStage(content, aboutMe)).toBe("follow_ups");
+    expect(builderStage(skipRemainingFollowUps(content), aboutMe)).toBe("drafted");
   });
 });

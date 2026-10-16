@@ -26,6 +26,7 @@ import { draftText } from "@/lib/stories/grading";
 import { answersTranscript } from "@/lib/stories/prompts";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { tailoredText } from "@/lib/stories/tailored";
+import { trackEvent } from "@/lib/usage/track";
 
 export type PracticeResult =
   | { ok: true; items: PracticeItem[]; finishedAt: string | null }
@@ -45,6 +46,7 @@ export async function startPractice(_prev: StartState, formData: FormData): Prom
     const items = pickQuestions(job.likelyQuestions.questions, await listStories());
     if (items.length === 0) return { error: "This job has no likely questions to practice yet." };
     id = await insertPracticeSession({ targetJobId: job.id, items });
+    await trackEvent("practice_started");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Practice: starting a round failed", err);
@@ -103,6 +105,7 @@ export async function answerPractice(
     };
     const items = replace(session.items, index, answered);
     await savePracticeItems(session.id, items, session.finishedAt);
+    await trackEvent("practice_answered");
     return advance({ ...session, items }, index);
   });
 }

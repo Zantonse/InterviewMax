@@ -13,11 +13,12 @@ import {
   writeStory,
 } from "@/lib/stories/builder";
 import {
-  MAX_PROBE_ROUNDS,
   builderStage,
   canStrengthen,
+  maxProbeRounds,
   nextCoreQuestion,
   probeRounds,
+  skipRemainingFollowUps,
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
@@ -80,6 +81,15 @@ export async function saveFollowUpAnswer(
       followUps: followUps.map((f, i) => (i === index ? { ...f, answer: text } : f)),
       nothingMoreToAsk: false,
     };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// "Skip the rest": drops the unanswered follow-ups so the story can be written from what's there.
+export async function skipFollowUps(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const content = skipRemainingFollowUps(story.content);
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
@@ -221,7 +231,7 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
-      probeDone: asked.length === 0 || round >= MAX_PROBE_ROUNDS,
+      probeDone: asked.length === 0 || round >= maxProbeRounds(storyType),
       nothingMoreToAsk: asked.length === 0,
     };
     await updateStory(storyId, { content });

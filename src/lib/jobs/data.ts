@@ -98,7 +98,10 @@ export async function insertJob(input: {
   title: string;
   company: string | null;
   level: LevelId;
+  // True when the user picked the level rather than leaving it to the title.
+  levelConfirmed?: boolean;
   description: string;
+  interviewDate?: string | null;
 }): Promise<string> {
   await getCurrentUser();
   const supabase = await createClient();
@@ -108,7 +111,9 @@ export async function insertJob(input: {
       title: input.title,
       company: input.company,
       level: input.level,
+      level_confirmed: input.levelConfirmed ?? false,
       job_description: input.description,
+      interview_date: input.interviewDate ?? null,
     })
     .select("id")
     .single();

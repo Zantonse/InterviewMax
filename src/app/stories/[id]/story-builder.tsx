@@ -34,6 +34,7 @@ import {
   inferPath,
   saveAnswer,
   saveFollowUpAnswer,
+  skipFollowUps,
   writeDraft,
   type BuilderResult,
 } from "./actions";
@@ -178,6 +179,22 @@ export function StoryBuilder({
     run([
       { busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) },
       ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+    ]);
+  }
+
+  // Drops the unanswered follow-ups. Without a draft, the chain goes on to write it; on a drafted
+  // story, it's rewritten only if this round's answers added something.
+  function skipRest() {
+    setEditing(null);
+    const round = Math.max(0, ...(content.followUps ?? []).map((f) => f.round ?? 1));
+    const addedThisRound = (content.followUps ?? []).some(
+      (f) => (f.round ?? 1) === round && f.answer?.trim(),
+    );
+    run([
+      { busy: "saving", action: () => skipFollowUps(storyId) },
+      ...(content.draft && addedThisRound
+        ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }]
+        : []),
     ]);
   }
 
@@ -419,6 +436,8 @@ export function StoryBuilder({
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
+                  onSkip={skipRest}
+                  skipLabel={content.draft ? "Skip the rest" : "Skip the rest and write it"}
                 />
               ) : busy ? null : stage === "probe" ? (
                 <ActionLine
@@ -764,12 +783,16 @@ function Composer({
   submitLabel,
   onSubmit,
   onCancel,
+  onSkip,
+  skipLabel,
 }: {
   initial: string;
   disabled: boolean;
   submitLabel: string;
   onSubmit: (answer: string) => void;
   onCancel?: () => void;
+  onSkip?: () => void;
+  skipLabel?: string;
 }) {
   const [text, setText] = useState(initial);
   const [talking, setTalking] = useState(false);
@@ -823,6 +846,17 @@ function Composer({
             </span>
           )}
         </div>
+        {onSkip && !talking && (
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={disabled}
+            className="rounded-xl px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+            data-testid="skip-follow-ups"
+          >
+            {skipLabel ?? "Skip the rest"}
+          </button>
+        )}
         {onCancel && (
           <button
             type="button"

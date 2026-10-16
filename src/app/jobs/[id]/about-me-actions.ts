@@ -11,6 +11,7 @@ import { getStory, updateStory } from "@/lib/stories/data";
 import { requiredStoryStatus } from "@/lib/stories/required";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH } from "@/lib/stories/tailored";
+import { trackEvent } from "@/lib/usage/track";
 
 export type TailorResult = { ok: true; tailored: TailoredIntro } | { ok: false; error: string };
 
@@ -57,6 +58,7 @@ export async function writeTailoredIntro(jobId: string, whyCompany: string): Pro
     );
     const tailored = { whyCompany: why, draft };
     await saveTailored(story.id, job.id, tailored);
+    await trackEvent("about_me_tailored");
     return { ok: true, tailored };
   } catch (err) {
     unstable_rethrow(err);
