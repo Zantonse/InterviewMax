@@ -1,3 +1,4 @@
+import { savedByAudience, type AudienceId, type QuestionsToAsk } from "@/lib/ask/content";
 import type { LikelyQuestion } from "@/lib/questions/content";
 import { coverageFor } from "@/lib/questions/coverage";
 import { getTheme } from "@/lib/questions/themes";
@@ -36,6 +37,7 @@ type JobLike = {
   title: string;
   company: string | null;
   likelyQuestions: { questions: LikelyQuestion[] } | null;
+  questionsToAsk?: QuestionsToAsk | null;
 };
 
 export type BriefIntro = {
@@ -68,6 +70,13 @@ export type BriefQuestion = {
 
 export type BriefNumber = { id: string; label: string; value: string };
 
+// The questions the user saved to ask at the end, grouped by who they suit.
+export type BriefAsk = {
+  groups: { audience: AudienceId; label: string; questions: string[] }[];
+  // Suggestions on the job page not saved yet, so the brief can point there.
+  unsaved: number;
+};
+
 export type BriefTough = { id: string; question: string; answer: string; href: string };
 
 export type Brief = {
@@ -80,6 +89,7 @@ export type Brief = {
   // Likely questions with no written story, most likely first.
   gaps: BriefQuestion[];
   tough: BriefTough[];
+  ask: BriefAsk;
 };
 
 export function buildBrief(input: {
@@ -104,6 +114,7 @@ export function buildBrief(input: {
     numbers: keyNumbers(input.numbers, usedTypes),
     gaps: questions.filter((q) => !q.story?.drafted),
     tough: toughAnswers(stories),
+    ask: askFor(job.questionsToAsk?.questions ?? []),
   };
 }
 
@@ -219,6 +230,18 @@ function toughAnswers(stories: StoryLike[]): BriefTough[] {
   });
 }
 
+// The saved questions to ask, by audience, and how many suggestions are still unsaved.
+function askFor(questions: QuestionsToAsk["questions"]): BriefAsk {
+  return {
+    groups: savedByAudience(questions).map((g) => ({
+      audience: g.audience,
+      label: g.label,
+      questions: g.questions.map((q) => q.question),
+    })),
+    unsaved: questions.filter((q) => !q.saved).length,
+  };
+}
+
 // The one-minute warm-up: About me, three numbers, then the top questions with their stories, one
 // card at a time, to read or say out loud.
 export type WarmUpCard =
@@ -247,8 +270,8 @@ export function storyParagraphs(content: StoryContent, storyType: string | null)
   return parts.map((p) => draft.parts[p.id]?.trim()).filter((p): p is string => Boolean(p));
 }
 
-// Questions worth asking at the end of any interview, until the brief has ones tailored to each
-// job (PRD P1, "Questions to ask the interviewer").
+// Questions worth asking at the end of any interview, shown until the user saves some written for
+// the job (see src/lib/ask).
 export const STARTER_QUESTIONS = [
   "What would success look like in the first 90 days?",
   "What's the biggest challenge the team is facing right now?",

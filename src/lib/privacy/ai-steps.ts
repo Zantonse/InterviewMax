@@ -67,6 +67,11 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Likely questions",
     sends: "The job posting and any interview reports you pasted",
   },
+  askQuestions: {
+    feature: "Questions to ask the interviewer",
+    sends:
+      "The job posting, what its interviewers look for, any interview reports you pasted and the questions you already have",
+  },
   transcriptRead: {
     feature: "Reviewing a past interview",
     sends: "The transcript you upload or paste",

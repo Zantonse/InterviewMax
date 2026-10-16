@@ -52,6 +52,9 @@ export const STEP_MODELS = {
   // Likely questions: predict one target job's behavioral questions from the themes, its posting
   // and any interview reports the user pasted.
   likelyQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Questions to ask the interviewer: five to eight questions for the end of one target job's
+  // interviews, drawn from its posting and level, each marked with who in the loop it suits.
+  askQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },

@@ -14,11 +14,12 @@ import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { removeJob } from "../actions";
 import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
+import { AskPanel } from "./ask-panel";
 import { TailoredIntroPanel } from "./tailored-intro";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
 
-// Predicting questions, writing About me for this job and removing a job (which reads the remaining jobs again) are model calls.
+// Predicting questions, suggesting questions to ask, writing About me for this job and removing a job (which reads the remaining jobs again) are model calls.
 export const maxDuration = 120;
 
 export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
@@ -197,6 +198,20 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 . Then come back here to shape it for this job.
               </p>
             )}
+          </section>
+          <section
+            id="ask"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Questions to ask them
+            </h2>
+            <p className="mb-4 text-sm text-slate-600">
+              Every interview ends with &ldquo;Any questions for us?&rdquo;. Questions drawn from
+              this posting show you&apos;ve done the work. Save the ones you like and they go in
+              your brief.
+            </p>
+            <AskPanel jobId={job.id} initial={job.questionsToAsk} />
           </section>
           {read && read.focus.length > 0 && (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
