@@ -3,6 +3,7 @@
 import { useActionState, useId, useState } from "react";
 import { MAX_ROLE_NAME_LENGTH, MAX_VALUE_LENGTH, OTHER_ROLE } from "@/lib/numbers/checklist";
 import type { NumberItem } from "@/lib/numbers/families";
+import { CANT_FIND_STEPS, ESTIMATE_EXAMPLES } from "@/lib/numbers/sources";
 import { chooseRole, saveNumbers, type FormState } from "./actions";
 
 const INPUT =
@@ -90,11 +91,14 @@ export function NumbersForm({
   const [state, action, pending] = useActionState<FormState, FormData>(saveNumbers, null);
   const [guided, setGuided] = useState(() => !items.some((item) => values[item.id]?.trim()));
   const [step, setStep] = useState(0);
+  // The one number whose "I don't know this" help is open.
+  const [helpFor, setHelpFor] = useState<string | null>(null);
   const id = useId();
   const last = step === items.length - 1;
 
   function go(to: number) {
     setStep(to);
+    setHelpFor(null);
     // Keeps typing flowing: the next box takes the cursor.
     requestAnimationFrame(() => document.getElementById(`${id}-${items[to]?.id}`)?.focus());
   }
@@ -140,6 +144,21 @@ export function NumbersForm({
             <p className="mt-0.5 text-sm text-slate-500">
               <span className="font-medium text-slate-700">Where to find it:</span> {item.where}
             </p>
+            <button
+              type="button"
+              onClick={() => setHelpFor(helpFor === item.id ? null : item.id)}
+              aria-expanded={helpFor === item.id}
+              className="mt-1 text-sm font-medium text-ink-800 hover:underline"
+              data-testid="number-dont-know"
+            >
+              I don&apos;t know this
+            </button>
+            {helpFor === item.id && (
+              <CantFindHelp
+                onSkip={guided && !last ? () => go(step + 1) : () => setHelpFor(null)}
+                skipLabel={guided && !last ? "Skip to the next one" : "Leave it blank"}
+              />
+            )}
             <input
               id={`${id}-${item.id}`}
               name={`value:${item.id}`}
@@ -197,6 +216,41 @@ export function NumbersForm({
         )}
       </div>
     </form>
+  );
+}
+
+// Under one number: what to try when its usual place doesn't have it, and that a labelled
+// estimate is fine. Blank numbers are never made up later, so skipping is always safe.
+function CantFindHelp({ onSkip, skipLabel }: { onSkip: () => void; skipLabel: string }) {
+  return (
+    <div
+      className="mt-2 flex flex-col items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 ring-1 ring-slate-200"
+      data-testid="number-help"
+    >
+      <ul className="list-disc space-y-1 pl-5">
+        {CANT_FIND_STEPS.map((tip) => (
+          <li key={tip}>{tip}</li>
+        ))}
+      </ul>
+      <p>
+        A labelled estimate is fine, like{" "}
+        {ESTIMATE_EXAMPLES.map((e, i) => (
+          <span key={e}>
+            {i > 0 && (i === ESTIMATE_EXAMPLES.length - 1 ? " or " : ", ")}
+            <span className="font-medium text-slate-900">&ldquo;{e}&rdquo;</span>
+          </span>
+        ))}
+        . Or skip it and I&apos;ll leave it out.
+      </p>
+      <button
+        type="button"
+        onClick={onSkip}
+        className="rounded-xl px-3 py-1.5 font-medium text-ink-800 ring-1 ring-ink-800/30 hover:bg-white"
+        data-testid="number-skip"
+      >
+        {skipLabel}
+      </button>
+    </div>
   );
 }
 

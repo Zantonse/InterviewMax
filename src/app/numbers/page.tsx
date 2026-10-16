@@ -14,6 +14,7 @@ import {
 } from "@/lib/numbers/checklist";
 import { getNumbersChecklist } from "@/lib/numbers/data";
 import { NUMBERS_FAMILIES, getNumbersFamily, guessFamily } from "@/lib/numbers/families";
+import { NUMBER_SOURCES } from "@/lib/numbers/sources";
 import { type StoryRecord, listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 import { NumbersForm, RoleForm } from "./forms";
@@ -87,7 +88,8 @@ async function NumbersContent() {
   const items = checklistItems(checklist);
   return (
     <>
-      <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
+      <WhereToLook openByDefault={filledCount(checklist) === 0} />
+      <section className="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
             {checklistRole(checklist)}
@@ -133,4 +135,43 @@ async function suggestRole(): Promise<{ familyId: string; roleName: string }> {
   ]);
   if (guess) return { familyId: guess, roleName: "" };
   return { familyId: OTHER_ROLE, roleName: map?.roleName ?? "" };
+}
+
+// The places people usually find their numbers, across every role. Open for someone who hasn't
+// filled any in yet, so they can gather a few sources before starting; one tap away after that.
+function WhereToLook({ openByDefault }: { openByDefault: boolean }) {
+  return (
+    <details
+      open={openByDefault}
+      className="group mt-8 rounded-3xl bg-white/70 p-5 ring-1 ring-black/5 sm:p-6"
+      data-testid="numbers-sources"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-ink-800 [&::-webkit-details-marker]:hidden">
+        Where to find your numbers
+        <span aria-hidden className="text-xs transition group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+      <p className="mt-2 text-sm text-slate-600">
+        Most numbers are already written down somewhere. Open two or three of these before you
+        start, and the list goes quickly.
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {NUMBER_SOURCES.map((group) => (
+          <div key={group.title}>
+            <h3 className="text-sm font-semibold text-slate-900">{group.title}</h3>
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-600">
+              {group.places.map((place) => (
+                <li key={place}>{place}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-sm text-slate-600">
+        Can&apos;t find one? A labelled estimate like &ldquo;about 30&rdquo; is fine, and a blank
+        is fine too. I&apos;ll never fill one in for you.
+      </p>
+    </details>
+  );
 }
