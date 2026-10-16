@@ -2,6 +2,7 @@ import "server-only";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseQuestionsToAsk, type QuestionsToAsk } from "@/lib/ask/content";
+import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import {
   parseOverview,
@@ -25,6 +26,8 @@ export type TargetJob = {
   interviewReports: string;
   // Questions to ask the interviewer: suggestions, the user's own, and which are saved.
   questionsToAsk: QuestionsToAsk | null;
+  // Resume bullets for this job, written from the user's finished stories.
+  resumeBullets: ResumeSet | null;
   // The next interview for this job, as YYYY-MM-DD, when the user has set one.
   interviewDate: string | null;
   createdAt: string;
@@ -42,12 +45,13 @@ type Row = {
   likely_questions: unknown;
   interview_reports: string | null;
   questions_to_ask: unknown;
+  resume_bullets: unknown;
   interview_date: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, interview_date, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, interview_date, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -60,6 +64,7 @@ function toJob(row: Row): TargetJob {
     likelyQuestions: parseLikelyQuestions(row.likely_questions),
     interviewReports: row.interview_reports ?? "",
     questionsToAsk: parseQuestionsToAsk(row.questions_to_ask),
+    resumeBullets: parseResumeSet(row.resume_bullets),
     interviewDate: row.interview_date,
     createdAt: row.created_at,
   };
@@ -176,6 +181,20 @@ export async function saveQuestionsToAsk(id: string, value: QuestionsToAsk | nul
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save your questions: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Saves (or clears, with null) the resume bullet set for a job.
+export async function saveResumeBullets(id: string, value: ResumeSet | null): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ resume_bullets: value })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save your resume bullets: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

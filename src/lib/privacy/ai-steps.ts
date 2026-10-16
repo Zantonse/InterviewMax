@@ -72,6 +72,11 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     sends:
       "The job posting, what its interviewers look for, any interview reports you pasted and the questions you already have",
   },
+  resumeBullets: {
+    feature: "Resume bullets for a job",
+    sends:
+      "Your written stories and the answers behind them, your numbers, your About me, your resume and that job’s posting",
+  },
   transcriptRead: {
     feature: "Reviewing a past interview",
     sends: "The transcript you upload or paste",
