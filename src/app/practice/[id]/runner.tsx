@@ -13,6 +13,7 @@ import {
   formatDuration,
   itemStep,
 } from "@/lib/practice/content";
+import { roundDeliveryNote } from "@/lib/practice/delivery";
 import {
   type PracticeResult,
   answerPractice,
@@ -169,8 +170,8 @@ export function PracticeRunner({
             <AnswerComposer
               key={`${view}-${item.turns.length}`}
               disabled={busy !== null}
-              onSubmit={(answer, seconds) =>
-                run(() => answerPractice(sessionId, view, answer, seconds), nextBusy)
+              onSubmit={(answer, seconds, voice) =>
+                run(() => answerPractice(sessionId, view, answer, seconds, voice), nextBusy)
               }
               extra={
                 item.turns.length === 1 ? (
@@ -289,6 +290,9 @@ function Summary({
   onOpen: (i: number) => void;
 }) {
   const answered = items.filter((i) => i.feedback);
+  const delivery = roundDeliveryNote(
+    answered.flatMap((i) => (i.feedback?.delivery ? [i.feedback.delivery] : [])),
+  );
   return (
     <section
       className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
@@ -301,6 +305,12 @@ function Summary({
         Tap a question to read its feedback again. Fix what was missing in the story, then run
         another round.
       </p>
+      {delivery && (
+        <p className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700" data-testid="practice-round-delivery">
+          <span className="font-semibold text-slate-900">How you said it: </span>
+          {delivery}
+        </p>
+      )}
       <ol className="mt-4 space-y-2">
         {items.map((it, i) => (
           <li key={i}>

@@ -7,9 +7,18 @@ import {
   timingNote,
   timingVerdict,
 } from "@/lib/practice/content";
+import {
+  type Delivery,
+  fillerLevel,
+  fillerNote,
+  paceNote,
+  paceVerdict,
+  pauseNote,
+} from "@/lib/practice/delivery";
 
 // Feedback on one practice answer: how it landed, how close it stayed to the saved story, what was
-// missing, and the time spoken against the target. New details the user said can be added to the
+// missing, the time spoken against the target, and how it was said (pace, filler words, long
+// pauses) when it was said with Talk. New details the user said can be added to the
 // story, one tap each, once they've read them. No score: practice is for rehearsal, not grading.
 export function FeedbackCard({
   feedback,
@@ -57,6 +66,16 @@ export function FeedbackCard({
           </dd>
         </div>
       </dl>
+
+      {feedback.delivery ? (
+        <DeliveryNotes delivery={feedback.delivery} />
+      ) : (
+        feedback.timing.measured === false && (
+          <p className="mt-3 text-xs text-slate-500">
+            Answer with Talk to get feedback on your pace and filler words.
+          </p>
+        )
+      )}
 
       {feedback.landed.length > 0 && (
         <div className="mt-4">
@@ -133,5 +152,43 @@ export function FeedbackCard({
         </div>
       )}
     </section>
+  );
+}
+
+// How the answer was said: pace, filler words and long pauses. Worked out in code from the
+// recording and the transcript; no score.
+function DeliveryNotes({ delivery }: { delivery: Delivery }) {
+  const paceOk = delivery.wpm === null || paceVerdict(delivery.wpm) === "ok";
+  const fillersOk = fillerLevel(delivery) === "few";
+  const pauses = pauseNote(delivery);
+  return (
+    <div className="mt-4" data-testid="practice-delivery">
+      <h4 className="text-sm font-semibold text-slate-900">How you said it</h4>
+      <dl className="mt-2 grid gap-3 text-sm sm:grid-cols-2">
+        <div className="rounded-xl bg-slate-50 p-3">
+          <dt className="font-semibold text-slate-900">Pace</dt>
+          <dd
+            className={`mt-1 ${paceOk ? "text-slate-700" : "text-amber-800"}`}
+            data-testid="practice-pace"
+          >
+            {paceNote(delivery)}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3">
+          <dt className="font-semibold text-slate-900">Filler words</dt>
+          <dd
+            className={`mt-1 ${fillersOk ? "text-slate-700" : "text-amber-800"}`}
+            data-testid="practice-fillers"
+          >
+            {fillerNote(delivery)}
+          </dd>
+        </div>
+      </dl>
+      {pauses && <p className="mt-2 text-sm text-slate-700">{pauses}</p>}
+      <p className="mt-2 text-xs text-slate-500">
+        From your recording and its transcript. Speech-to-text often drops “um” and “uh”, so
+        those can be undercounted.
+      </p>
+    </div>
   );
 }

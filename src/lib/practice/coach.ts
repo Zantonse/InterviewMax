@@ -8,6 +8,7 @@ import {
   spokenText,
   timingFor,
 } from "./content";
+import { deliveryFor } from "./delivery";
 import {
   PRACTICE_FEEDBACK_SYSTEM,
   PRACTICE_PROBE_SYSTEM,
@@ -30,12 +31,13 @@ export async function askFollowUp(ctx: PracticeContext): Promise<ProbeResult> {
   return parseProbe(text.text);
 }
 
-// Feedback on one practice question. Timing and the figures left out are worked out in code; the
-// model reads the exchange against the saved story. New facts are kept only when their quote is in
-// what the user said and their numbers are in the quote.
+// Feedback on one practice question. Timing, delivery and the figures left out are worked out in
+// code; the model reads the exchange against the saved story. New facts are kept only when their
+// quote is in what the user said and their numbers are in the quote.
 export async function giveFeedback(ctx: PracticeContext, theme: string): Promise<PracticeFeedback> {
   const spoken = spokenText(ctx);
   const timing = timingFor(ctx.turns[0], theme);
+  const delivery = deliveryFor(ctx.turns);
   const leftOut = ctx.reference ? numbersLeftOut(ctx.reference.script, spoken) : [];
   const result = await call(
     "practiceFeedback",
@@ -48,6 +50,7 @@ export async function giveFeedback(ctx: PracticeContext, theme: string): Promise
     newFacts: checkNewFacts(parsed.newFacts, spoken),
     numbersLeftOut: leftOut,
     timing,
+    ...(delivery ? { delivery } : {}),
     model: result.model,
     givenAt: new Date().toISOString(),
   };

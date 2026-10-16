@@ -14,6 +14,7 @@ import {
   encodeWav,
   level,
 } from "@/lib/voice/wav";
+import { LONG_PAUSE_SECONDS, type VoiceStats } from "@/lib/practice/delivery";
 
 // Mic mode (PRD P0): talk instead of typing wherever the user answers. The browser records plain
 // audio and sends it in pieces of up to 45 seconds; each piece is written down on the server and
@@ -49,6 +50,13 @@ type Session = {
   pieceSamples: number;
   pieceLoudest: number;
   totalSamples: number;
+  // For delivery feedback: where the first and last speech were, the quiet run since the last
+  // speech, and the long pauses between words so far (all in samples).
+  firstSpeech: number | null;
+  lastSpeech: number;
+  quietRun: number;
+  pausedSamples: number;
+  longPauses: number;
 };
 
 function canRecord() {
@@ -74,8 +82,9 @@ export function MicButton({
   disabled?: boolean;
   // Told when recording starts and when the last piece is back, so a form can hold Send until then.
   onActiveChange?: (active: boolean) => void;
-  // Told how many seconds were recorded, each time the user stops (practice mode times answers).
-  onRecorded?: (seconds: number) => void;
+  // Told how many seconds were recorded, each time the user stops (practice mode times answers),
+  // with the talking time and long pauses measured from the audio level.
+  onRecorded?: (seconds: number, voice: VoiceStats) => void;
 }) {
   const supported = useSyncExternalStore<boolean | null>(noSubscribe, canRecord, unknownOnServer);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -169,7 +178,13 @@ export function MicButton({
 
   const stop = useCallback(() => {
     if (!session.current) return;
-    onRecordedRef.current?.(session.current.totalSamples / SAMPLE_RATE);
+    const s = session.current;
+    const talkSamples =
+      s.firstSpeech === null ? 0 : s.lastSpeech - s.firstSpeech - s.pausedSamples;
+    onRecordedRef.current?.(s.totalSamples / SAMPLE_RATE, {
+      talkSeconds: Math.max(0, talkSamples) / SAMPLE_RATE,
+      longPauses: s.longPauses,
+    });
     cutPiece();
     release();
     setLoud(0);
@@ -231,6 +246,11 @@ export function MicButton({
         pieceSamples: 0,
         pieceLoudest: 0,
         totalSamples: 0,
+        firstSpeech: null,
+        lastSpeech: 0,
+        quietRun: 0,
+        pausedSamples: 0,
+        longPauses: 0,
       };
       session.current = s;
       next.current = 0;
@@ -245,6 +265,17 @@ export function MicButton({
         s.pieceSamples += samples.length;
         s.totalSamples += samples.length;
         s.pieceLoudest = Math.max(s.pieceLoudest, now);
+        if (now >= PAUSE_LEVEL) {
+          if (s.firstSpeech === null) s.firstSpeech = s.totalSamples - samples.length;
+          else if (s.quietRun >= LONG_PAUSE_SECONDS * SAMPLE_RATE) {
+            s.longPauses += 1;
+            s.pausedSamples += s.quietRun;
+          }
+          s.quietRun = 0;
+          s.lastSpeech = s.totalSamples;
+        } else if (s.firstSpeech !== null) {
+          s.quietRun += samples.length;
+        }
         setLoud(now);
         setSeconds(Math.floor(s.totalSamples / SAMPLE_RATE));
 

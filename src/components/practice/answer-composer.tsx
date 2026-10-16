@@ -3,12 +3,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { MicButton } from "@/components/mic-button";
 import { MAX_PRACTICE_ANSWER_LENGTH, formatDuration } from "@/lib/practice/content";
+import type { VoiceStats } from "@/lib/practice/delivery";
 import { appendSpoken } from "@/lib/voice/text";
 
 // Where a practice answer is given: tap Talk and say it, or type it. The words appear as the user
 // talks, so they can fix a transcription slip before sending. Recorded time is added up across
-// every Talk, so the feedback can say how long the answer took; a typed answer is timed from its
-// words. Shared by practice mode and any other rehearsal (e.g. the tough-questions coach).
+// every Talk, so the feedback can say how long the answer took and how it was delivered (pace,
+// pauses); a typed answer is timed from its words. Shared by practice mode and any other rehearsal (e.g. the tough-questions coach).
 export function AnswerComposer({
   disabled,
   submitLabel = "Send answer",
@@ -19,13 +20,14 @@ export function AnswerComposer({
   disabled: boolean;
   submitLabel?: string;
   placeholder?: string;
-  onSubmit: (answer: string, seconds: number | null) => void;
+  onSubmit: (answer: string, seconds: number | null, voice: VoiceStats | null) => void;
   // Shown beside the send button, e.g. "Skip this question".
   extra?: React.ReactNode;
 }) {
   const [text, setText] = useState("");
   const [talking, setTalking] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [voice, setVoice] = useState<VoiceStats>({ talkSeconds: 0, longPauses: 0 });
   const ref = useRef<HTMLTextAreaElement>(null);
   const fieldId = useId();
 
@@ -35,7 +37,7 @@ export function AnswerComposer({
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;
   const send = () => {
-    if (canSubmit) onSubmit(text, seconds > 0 ? seconds : null);
+    if (canSubmit) onSubmit(text, seconds > 0 ? seconds : null, seconds > 0 ? voice : null);
   };
 
   return (
@@ -51,7 +53,13 @@ export function AnswerComposer({
         <MicButton
           disabled={disabled}
           onActiveChange={setTalking}
-          onRecorded={(s) => setSeconds((total) => total + s)}
+          onRecorded={(s, v) => {
+            setSeconds((total) => total + s);
+            setVoice((total) => ({
+              talkSeconds: total.talkSeconds + v.talkSeconds,
+              longPauses: total.longPauses + v.longPauses,
+            }));
+          }}
           onText={(spoken) =>
             setText((t) => appendSpoken(t, spoken, MAX_PRACTICE_ANSWER_LENGTH))
           }
