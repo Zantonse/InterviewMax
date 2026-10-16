@@ -3,8 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { startStory } from "@/app/stories/new/actions";
 import { getJob } from "@/lib/jobs/data";
+import { coverageFor } from "@/lib/questions/coverage";
 import { getTheme } from "@/lib/questions/themes";
+import { listStories, type StoryRecord } from "@/lib/stories/data";
+import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
 import { getTranscript } from "@/lib/transcripts/data";
 import { removeTranscript } from "../actions";
@@ -42,7 +46,10 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
   const { id } = await params;
   const transcript = await getTranscript(id);
   if (!transcript) notFound();
-  const job = transcript.targetJobId ? await getJob(transcript.targetJobId) : null;
+  const [job, stories] = await Promise.all([
+    transcript.targetJobId ? getJob(transcript.targetJobId) : null,
+    listStories(),
+  ]);
   const analysis = transcript.analysis;
 
   return (
@@ -71,11 +78,12 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
                 What they asked, and how it landed
               </h2>
               <p className="mb-4 text-sm text-slate-600">
-                In the order they asked. Every quote is from your transcript.
+                In the order they asked. Every quote is from your transcript. Each behavioral
+                question links to the story that answers it, or the one to build.
               </p>
               <ol className="space-y-3" data-testid="asked-list">
                 {analysis.asked.map((q, i) => (
-                  <AskedItem key={q.question} q={q} n={i + 1} />
+                  <AskedItem key={q.question} q={q} n={i + 1} stories={stories} />
                 ))}
               </ol>
             </section>
@@ -136,8 +144,9 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
   );
 }
 
-function AskedItem({ q, n }: { q: AskedQuestion; n: number }) {
+function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: StoryRecord[] }) {
   const landed = LANDED_STYLES[q.landed];
+  const coverage = q.theme ? coverageFor(q.theme, stories) : undefined;
   return (
     <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
       <p className="font-semibold text-slate-900">
@@ -173,6 +182,26 @@ function AskedItem({ q, n }: { q: AskedQuestion; n: number }) {
           </ul>
         </div>
       )}
+      {coverage?.kind === "story" ? (
+        <p className="mt-2 text-sm">
+          <Link href={`/stories/${coverage.storyId}`} className="font-medium text-ink-800 hover:underline">
+            {coverage.drafted ? "Next time, answer with" : "In progress"}: {coverage.title} →
+          </Link>
+        </p>
+      ) : coverage?.kind === "build" ? (
+        <form action={startStory} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-slate-500">No story for this yet.</span>
+          <button
+            type="submit"
+            name="storyType"
+            value={coverage.storyType}
+            className="font-medium text-ink-800 hover:underline"
+            data-testid="asked-build-story"
+          >
+            Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+          </button>
+        </form>
+      ) : null}
     </li>
   );
 }

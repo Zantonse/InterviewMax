@@ -115,8 +115,19 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
     if ((await listJobs()).length >= MAX_JOBS) {
       return { error: `You can keep up to ${MAX_JOBS} target jobs. Remove one to add another.` };
     }
-    id = await insertJob({ title, company, level: suggestLevel(title), description });
+    const level = formData.get("level");
+    const date = formData.get("interviewDate");
+    const interviewDate = isDate(date) ? date : null;
+    id = await insertJob({
+      title,
+      company,
+      level: isLevel(level) ? level : suggestLevel(title),
+      levelConfirmed: isLevel(level),
+      description,
+      interviewDate,
+    });
     await trackEvent("job_added");
+    if (interviewDate) await trackEvent("prep_plan_set");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Target jobs: adding a job failed", err);

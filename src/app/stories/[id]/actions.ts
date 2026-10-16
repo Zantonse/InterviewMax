@@ -13,11 +13,12 @@ import {
   writeStory,
 } from "@/lib/stories/builder";
 import {
-  MAX_PROBE_ROUNDS,
   builderStage,
   canStrengthen,
+  maxProbeRounds,
   nextCoreQuestion,
   probeRounds,
+  skipRemainingFollowUps,
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
@@ -80,6 +81,15 @@ export async function saveFollowUpAnswer(
       followUps: followUps.map((f, i) => (i === index ? { ...f, answer: text } : f)),
       nothingMoreToAsk: false,
     };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// "Skip the rest": drops the unanswered follow-ups so the story can be written from what's there.
+export async function skipFollowUps(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const content = skipRemainingFollowUps(story.content);
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
@@ -153,6 +163,33 @@ export async function importLinkedIn(storyId: string, formData: FormData): Promi
   });
 }
 
+// "Tell me about yourself" only: fill in the scripted questions the resume on the target jobs page
+// already answers, as LinkedIn uploads do. Answers the user already gave are kept; sentences that
+// don't trace back to the resume are dropped (see prefillFromProfile).
+export async function prefillFromResume(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    if (storyType?.format !== "intro") return fail("Resume fill-in is for Tell me about yourself.");
+    if (builderStage(story.content, storyType) !== "core") {
+      return fail("This story is already past the questions.");
+    }
+    const resume = await resumeText();
+    if (!resume) return fail("Add your resume on the target jobs page first.");
+
+    const prefill = await prefillFromProfile(resume, "resume");
+    const answers = { ...story.content.answers };
+    const prefilled: string[] = [];
+    for (const q of coreQuestions(storyType)) {
+      if (answers[q.id]?.trim() || !prefill[q.id]) continue;
+      answers[q.id] = prefill[q.id];
+      prefilled.push(q.id);
+    }
+    const content = { ...story.content, answers, resumePrefill: { prefilled } };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
 // "Tell me about yourself" only: when the next question is how they got here, read the path from
 // their resume or LinkedIn profile and show it back to confirm, instead of asking them to list
 // their career moves cold. Does nothing when there's no document to read or it shows no path.
@@ -221,7 +258,7 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
-      probeDone: asked.length === 0 || round >= MAX_PROBE_ROUNDS,
+      probeDone: asked.length === 0 || round >= maxProbeRounds(storyType),
       nothingMoreToAsk: asked.length === 0,
     };
     await updateStory(storyId, { content });

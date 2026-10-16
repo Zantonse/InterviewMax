@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { emptyContent } from "@/lib/stories/content";
 import { insertStory, listStories } from "@/lib/stories/data";
 import { getToughQuestion, toughStoryType } from "@/lib/tough/questions";
+import { trackEvent } from "@/lib/usage/track";
 
 // Starts the coach for one tough question, or opens the answer already started for it: each
 // question has one answer in the bank.
@@ -21,5 +22,6 @@ export async function startTough(formData: FormData) {
     themes: ["tough question"],
     content: emptyContent(),
   });
+  await trackEvent("tough_question_started");
   redirect(`/tough-questions/${id}`);
 }

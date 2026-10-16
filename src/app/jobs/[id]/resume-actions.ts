@@ -10,13 +10,16 @@ import { parseBullets, type ResumeBullet, type ResumeSet } from "@/lib/resume/co
 import { allAnswerText } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { untracedNumbers } from "@/lib/stories/numbers";
+import { trackEvent } from "@/lib/usage/track";
 
 export type ResumeResult = { ok: true; value: ResumeSet } | { ok: false; error: string };
 
 // Writes the resume bullets for one job from the user's finished stories (a model call).
 export async function buildResume(jobId: string): Promise<ResumeResult> {
   try {
-    return { ok: true, value: await buildResumeSet(String(jobId)) };
+    const value = await buildResumeSet(String(jobId));
+    await trackEvent("resume_bullets_made");
+    return { ok: true, value };
   } catch (err) {
     unstable_rethrow(err);
     console.error("Resume enhancer: writing failed", err);

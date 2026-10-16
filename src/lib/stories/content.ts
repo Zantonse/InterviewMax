@@ -17,8 +17,14 @@ export type FollowUp = {
 };
 
 // The review asks follow-ups in up to two rounds: the first always asks, the second only when the
-// answers are still thin.
+// answers are still thin. "Tell me about yourself" is short, so it gets one round before the draft;
+// "Ask me more to make it stronger" is there for more.
 export const MAX_PROBE_ROUNDS = 2;
+export const MAX_INTRO_PROBE_ROUNDS = 1;
+
+export function maxProbeRounds(storyType: StoryType | undefined): number {
+  return storyType?.format === "intro" ? MAX_INTRO_PROBE_ROUNDS : MAX_PROBE_ROUNDS;
+}
 
 // Once a story is drafted, "Ask me more to make it stronger" runs further rounds on request, up to
 // this many rounds in all (a backstop, not a target).
@@ -97,6 +103,9 @@ export type StoryContent = {
   answers: Record<string, string>;
   imported?: ImportedAnswer;
   linkedin?: LinkedInProfile;
+  // "Tell me about yourself" only: the questions filled in from the resume on the target jobs page.
+  // The resume itself stays there; only which answers came from it is kept here.
+  resumePrefill?: { prefilled: string[] };
   // "Tell me about yourself" only: the user's map of their role (see src/lib/roles).
   roleMap?: RoleMap;
   inferredPath?: InferredPath;
@@ -145,6 +154,16 @@ export function probeRounds(content: StoryContent): number {
 // Whether the review can run another round of follow-ups.
 export function canProbeAgain(content: StoryContent): boolean {
   return !content.probeDone && probeRounds(content) < MAX_PROBE_ROUNDS;
+}
+
+// Drops the follow-ups the user hasn't answered and stops asking more, so the story can be written
+// (or rewritten) from what they've given. Answered follow-ups are kept.
+export function skipRemainingFollowUps(content: StoryContent): StoryContent {
+  return {
+    ...content,
+    followUps: (content.followUps ?? []).filter((f) => f.answer?.trim()),
+    probeDone: true,
+  };
 }
 
 // Whether a drafted story can be sent back for another round of questions.
@@ -207,6 +226,12 @@ export function parseContent(raw: unknown): StoryContent {
       prefilled: Array.isArray(raw.linkedin.prefilled)
         ? raw.linkedin.prefilled.filter((id): id is string => typeof id === "string")
         : [],
+    };
+  }
+
+  if (isRecord(raw.resumePrefill) && Array.isArray(raw.resumePrefill.prefilled)) {
+    content.resumePrefill = {
+      prefilled: raw.resumePrefill.prefilled.filter((id): id is string => typeof id === "string"),
     };
   }
 

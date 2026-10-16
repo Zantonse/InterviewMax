@@ -7,6 +7,7 @@ import { getJob } from "@/lib/jobs/data";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { listStories } from "@/lib/stories/data";
 import { WarmUp } from "./warm-up";
+import { trackEvent } from "@/lib/usage/track";
 
 export const metadata: Metadata = { title: "One-minute warm-up · InterviewMax" };
 
@@ -35,6 +36,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/warm-up">["pa
     getNumbersChecklistSafely(),
   ]);
   if (!job) notFound();
+  await trackEvent("warm_up_opened");
   const brief = buildBrief({ job, stories, numbers });
   const cards = warmUpCards(brief);
   const exit = `/jobs/${job.id}/brief`;

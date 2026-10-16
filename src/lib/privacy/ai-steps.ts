@@ -8,8 +8,8 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     sends: "Your answers for that story, plus the job and numbers it draws on",
   },
   storyPrefill: {
-    feature: "Filling in “Tell me about yourself” from LinkedIn",
-    sends: "The text of the LinkedIn PDF you upload",
+    feature: "Filling in “Tell me about yourself” from LinkedIn or your resume",
+    sends: "The text of the LinkedIn PDF you upload, or your resume when you ask",
   },
   roleMap: {
     feature: "Map my role (roles without a ready-made map)",

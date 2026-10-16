@@ -157,12 +157,12 @@ Also give it a short title (at most 8 words) for their story bank, e.g. "From su
 Reply with JSON only, no other text:
 {"title": "…", "parts": {${INTRO_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
-// Fills in the "Tell me about yourself" questions a LinkedIn profile already answers.
-export const PREFILL_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They uploaded their LinkedIn profile. Answer each question below from the profile only, written in the first person as notes they could have typed themselves.
+// Fills in the "Tell me about yourself" questions a LinkedIn profile or resume already answers.
+export const PREFILL_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They gave you their LinkedIn profile or resume (both called "the profile" below). Answer each question below from the profile only, written in the first person as notes they could have typed themselves.
 
 The hard rule: use only what the profile says. Copy every number exactly as written in the profile, and never add, round, estimate or combine figures: don't total up years of experience or count roles yourself. If the profile doesn't answer a question, return an empty string for it; don't guess.
 
-Fill in as much as the profile honestly supports. Where a question asks for several things and the profile covers only some (for example, the career moves but not why they made them), answer the part it covers and leave the rest for them to add. The headline, About section, experience entries and skills usually answer the questions about their current role, career path, results and what they're known for. What they want next is usually not in a profile, so leave it empty unless the profile states it.
+Fill in as much as the profile honestly supports. Where a question asks for several things and the profile covers only some (for example, the career moves but not why they made them), answer the part it covers and leave the rest for them to add. The headline, About or summary section, experience entries and skills usually answer the questions about their current role, career path, results and what they're known for. What they want next is usually not in a profile, so leave it empty unless the profile states it.
 
 Questions:
 ${INTRO_QUESTIONS.map((q) => `- ${q.id}: ${q.text}`).join("\n")}
@@ -170,8 +170,12 @@ ${INTRO_QUESTIONS.map((q) => `- ${q.id}: ${q.text}`).join("\n")}
 Reply with JSON only, no other text:
 {"answers": {${INTRO_QUESTIONS.map((q) => `"${q.id}": "…"`).join(", ")}}}`;
 
-export function prefillMessages(profileText: string): ChatMessage[] {
-  return [{ role: "user", content: `Here is my LinkedIn profile.\n\n${profileText}` }];
+export function prefillMessages(
+  profileText: string,
+  source: "linkedin" | "resume" = "linkedin",
+): ChatMessage[] {
+  const lead = source === "resume" ? "Here is my resume." : "Here is my LinkedIn profile.";
+  return [{ role: "user", content: `${lead}\n\n${profileText}` }];
 }
 
 // Answers keyed by question id, keeping only known questions with a non-empty answer.

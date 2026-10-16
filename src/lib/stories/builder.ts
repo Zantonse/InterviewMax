@@ -73,8 +73,11 @@ export async function probeStory(
 // "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Sentences with
 // a number that isn't in the profile are dropped (not the whole answer: a tenure the model added up
 // shouldn't cost the rest), and a question left with nothing is asked as usual.
-export async function prefillFromProfile(profileText: string): Promise<Record<string, string>> {
-  const { text } = await call("storyPrefill", PREFILL_SYSTEM, prefillMessages(profileText));
+export async function prefillFromProfile(
+  profileText: string,
+  source: "linkedin" | "resume" = "linkedin",
+): Promise<Record<string, string>> {
+  const { text } = await call("storyPrefill", PREFILL_SYSTEM, prefillMessages(profileText, source));
   const answers = parsePrefill(text);
   return Object.fromEntries(
     Object.entries(answers).flatMap(([id, answer]) => {

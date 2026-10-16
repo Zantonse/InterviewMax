@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
 import { getJob } from "@/lib/jobs/data";
+import { predictAfterTranscript } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
 import { analyzeTranscript } from "@/lib/transcripts/analyze";
 import {
@@ -13,8 +14,14 @@ import {
   MAX_TRANSCRIPT_LENGTH,
   MIN_TRANSCRIPT_LENGTH,
 } from "@/lib/transcripts/content";
-import { deleteTranscript, insertTranscript, listTranscripts } from "@/lib/transcripts/data";
+import {
+  deleteTranscript,
+  getTranscript,
+  insertTranscript,
+  listTranscripts,
+} from "@/lib/transcripts/data";
 import { readTranscriptFile } from "@/lib/transcripts/read-file";
+import { trackEvent } from "@/lib/usage/track";
 
 export type FormState = { error?: string } | null;
 
@@ -67,6 +74,7 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
       fileName,
       transcript: text,
     });
+    await trackEvent("transcript_added");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Transcripts: adding a transcript failed", err);
@@ -75,6 +83,7 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
 
   try {
     await analyzeTranscript(id);
+    await predictAfterTranscript({ targetJobId: jobId, company });
   } catch (err) {
     unstable_rethrow(err);
     // The transcript is saved; its page says it hasn't been reviewed and offers to try again.
@@ -85,7 +94,10 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
 
 export async function reviewAgain(_prev: FormState, formData: FormData): Promise<FormState> {
   try {
-    await analyzeTranscript(String(formData.get("transcriptId") ?? ""));
+    const id = String(formData.get("transcriptId") ?? "");
+    await analyzeTranscript(id);
+    const transcript = await getTranscript(id);
+    if (transcript) await predictAfterTranscript(transcript);
   } catch (err) {
     unstable_rethrow(err);
     console.error("Transcripts: reviewing failed", err);

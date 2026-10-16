@@ -12,6 +12,15 @@ export const USAGE_EVENTS = [
   "story_graded",
   "about_me_finished",
   "prep_plan_set",
+  "transcript_added",
+  "practice_started",
+  "practice_answered",
+  "tough_question_started",
+  "about_me_tailored",
+  "questions_to_ask_made",
+  "resume_bullets_made",
+  "brief_opened",
+  "warm_up_opened",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
@@ -27,6 +36,15 @@ export const EVENT_LABELS: Record<UsageEvent, string> = {
   story_graded: "Got a story graded",
   about_me_finished: "Finished About me",
   prep_plan_set: "Set an interview date",
+  transcript_added: "Added a past interview",
+  practice_started: "Started a practice round",
+  practice_answered: "Answered a practice question",
+  tough_question_started: "Started a tough question",
+  about_me_tailored: "Wrote About me for a job",
+  questions_to_ask_made: "Got questions to ask",
+  resume_bullets_made: "Got resume bullets",
+  brief_opened: "Opened a pre-interview brief",
+  warm_up_opened: "Opened the warm-up",
 };
 
 export function isUsageEvent(value: unknown): value is UsageEvent {
