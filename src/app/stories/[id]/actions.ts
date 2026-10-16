@@ -33,6 +33,8 @@ import {
 } from "@/lib/stories/story-types";
 import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { coachTelling } from "@/lib/telling/coach";
+import { canTell } from "@/lib/telling/content";
 import { trackEvent } from "@/lib/usage/track";
 
 export type BuilderResult =
@@ -262,6 +264,69 @@ export async function gradeDraft(storyId: string): Promise<BuilderResult> {
     const content = { ...story.content, grade };
     await updateStory(storyId, { content });
     await trackEvent("story_graded");
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// How to tell it: coaches the current draft for telling out loud. Runs on request, and again after
+// the user adds a vivid detail or rewrites the story. Never touches the draft or its grade.
+export async function coachDraft(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    if (!story.content.draft) return fail("Write the story first, then I'll coach you on telling it.");
+    if (!canTell(storyType)) return fail("Tell me about yourself is shaped per job on each job page.");
+    const [numbers, targets] = await Promise.all([
+      storyNumbers(story.storyType),
+      loadBuilderTargets(storyType),
+    ]);
+    const telling = await coachTelling({
+      title: story.title,
+      content: story.content,
+      storyType,
+      targets,
+      extraAnswers: numbers.flatMap((n) => (n.value ? [n.value] : [])).join("\n"),
+    });
+    const content = { ...story.content, telling };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// How to tell it: the user picks which hook opens the story.
+export async function pickHook(storyId: string, index: number): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const telling = story.content.telling;
+    if (!telling) return fail("Coach the story first.");
+    if (!Number.isInteger(index) || index < 0 || index >= telling.hooks.length) {
+      return fail("Unknown opening.");
+    }
+    const content = { ...story.content, telling: { ...telling, hookIndex: index } };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// How to tell it: the user's answer to the coach's question for a vivid detail. Saved as an
+// answered follow-up, so the coach (run again next) and any rewrite can use it as their own words.
+export async function addVividDetail(storyId: string, answer: string): Promise<BuilderResult> {
+  const text = cleanAnswer(answer);
+  if (typeof text !== "string") return text;
+  return withStory(storyId, async (story) => {
+    const detail = story.content.telling?.detail;
+    if (!detail || !("ask" in detail)) return fail("Coach the story first.");
+    const content = {
+      ...story.content,
+      followUps: [
+        ...(story.content.followUps ?? []),
+        {
+          question: detail.ask,
+          gap: "detail",
+          answer: text,
+          round: Math.max(1, probeRounds(story.content)),
+        },
+      ],
+    };
+    await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
 }

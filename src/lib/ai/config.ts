@@ -37,6 +37,9 @@ export const STEP_MODELS = {
   // Tough-questions coach: a short, honest answer to one awkward question (why leaving, a gap,
   // salary…) from the user's answers about their situation. Numbers checked in code.
   toughAnswer: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
+  // How to tell it: turn a written story into one told out loud (two hooks, a 30-second and a
+  // 2-minute version in beats). Facts and figures checked in code; the delivery cues are code.
+  storyTell: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
   // Target jobs: read the resume and every job posting together (what they share, how each differs).
