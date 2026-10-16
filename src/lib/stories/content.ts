@@ -17,7 +17,28 @@ export type FollowUp = {
   // "I don't know this": the user passed on this one question. It isn't asked again in this round,
   // and the coach is told so it doesn't ask again later.
   skipped?: boolean;
+  // Tap options the coach suggested for a "kind of thing" question (their part, the stakes, the
+  // kind of result): short starters the user taps and then finishes in their own words.
+  options?: string[];
 };
+
+// Tap options are starters, not answers: 2 to 4 short ones, and never a figure, because a tapped
+// option counts as the user's words and every number in a story must come from them.
+export const MAX_OPTIONS = 4;
+const MAX_OPTION_LENGTH = 60;
+
+export function cleanOptions(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const options = raw.flatMap((o) => {
+    const text = typeof o === "string" ? o.trim().replace(/[.\s]+$/, "") : "";
+    const key = text.toLowerCase();
+    if (!text || text.length > MAX_OPTION_LENGTH || /\d/.test(text) || seen.has(key)) return [];
+    seen.add(key);
+    return [text];
+  });
+  return options.length >= 2 ? options.slice(0, MAX_OPTIONS) : [];
+}
 
 // The review asks one round of follow-ups before the story is final (tester feedback, Oct 16: a
 // second round is where people stopped answering). "Ask me more to make it stronger" is there for
@@ -266,6 +287,7 @@ export function parseContent(raw: unknown): StoryContent {
               ...(typeof f.round === "number" ? { round: f.round } : {}),
               ...(f.source === "practice" ? { source: "practice" as const } : {}),
               ...(f.skipped === true ? { skipped: true } : {}),
+              ...(cleanOptions(f.options).length ? { options: cleanOptions(f.options) } : {}),
             },
           ]
         : [],
