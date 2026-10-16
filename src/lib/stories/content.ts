@@ -103,9 +103,6 @@ export type StoryContent = {
   answers: Record<string, string>;
   imported?: ImportedAnswer;
   linkedin?: LinkedInProfile;
-  // "Tell me about yourself" only: the questions filled in from the resume on the target jobs page.
-  // The resume itself stays there; only which answers came from it is kept here.
-  resumePrefill?: { prefilled: string[] };
   // "Tell me about yourself" only: the user's map of their role (see src/lib/roles).
   roleMap?: RoleMap;
   inferredPath?: InferredPath;
@@ -226,12 +223,6 @@ export function parseContent(raw: unknown): StoryContent {
       prefilled: Array.isArray(raw.linkedin.prefilled)
         ? raw.linkedin.prefilled.filter((id): id is string => typeof id === "string")
         : [],
-    };
-  }
-
-  if (isRecord(raw.resumePrefill) && Array.isArray(raw.resumePrefill.prefilled)) {
-    content.resumePrefill = {
-      prefilled: raw.resumePrefill.prefilled.filter((id): id is string => typeof id === "string"),
     };
   }
 

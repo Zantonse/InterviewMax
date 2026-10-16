@@ -458,11 +458,4 @@ describe("shorter About me and skipping follow-ups", () => {
     expect(builderStage(content, aboutMe)).toBe("follow_ups");
     expect(builderStage(skipRemainingFollowUps(content), aboutMe)).toBe("drafted");
   });
-
-  it("keeps which answers came from the resume", () => {
-    const saved = parseContent(
-      JSON.parse(JSON.stringify({ ...emptyContent(), resumePrefill: { prefilled: ["now", 3] } })),
-    );
-    expect(saved.resumePrefill).toEqual({ prefilled: ["now"] });
-  });
 });

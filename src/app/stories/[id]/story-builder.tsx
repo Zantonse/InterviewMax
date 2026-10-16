@@ -32,7 +32,6 @@ import {
   importLinkedIn,
   importPreparedAnswer,
   inferPath,
-  prefillFromResume,
   saveAnswer,
   saveFollowUpAnswer,
   skipFollowUps,
@@ -108,7 +107,6 @@ export function StoryBuilder({
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
-  const [readingResume, setReadingResume] = useState(false);
   const [, startTransition] = useTransition();
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
@@ -209,15 +207,8 @@ export function StoryBuilder({
     run([{ busy: "saving", action: () => importPreparedAnswer(storyId, formData) }]);
   }
 
-  function fillFromResume() {
-    setEditing(null);
-    setReadingResume(true);
-    run([{ busy: "reading", action: () => prefillFromResume(storyId) }]);
-  }
-
   function submitLinkedIn(formData: FormData) {
     setEditing(null);
-    setReadingResume(false);
     run([{ busy: "reading", action: () => importLinkedIn(storyId, formData) }]);
   }
 
@@ -229,9 +220,6 @@ export function StoryBuilder({
     (q) => content.answers[q.id]?.trim() || (!content.imported && q.id === currentCore),
   );
   const canUpload = storyType?.format === "intro" && stage === "core";
-  // With a resume on file, About me can start from it instead of a blank page.
-  const canFillFromResume =
-    canUpload && hasResume && !content.resumePrefill && !content.linkedin && !content.imported;
   const inferredNow = currentCore === "path" ? content.inferredPath : undefined;
   // A moment picked in the story finder fills in the first answer, for the user to make their own.
   const seed = content.seed && storyType?.format !== "intro" ? content.seed : undefined;
@@ -334,15 +322,6 @@ export function StoryBuilder({
                 </li>
               )}
 
-              {content.resumePrefill && (
-                <CoachLine>
-                  I read your resume
-                  {content.resumePrefill.prefilled.length > 0
-                    ? " and filled in what it answers. Edit anything that's off, and add what it can't say."
-                    : ", but it didn't answer these questions directly."}
-                </CoachLine>
-              )}
-
               {content.linkedin && (
                 <CoachLine>
                   I read your LinkedIn profile
@@ -369,11 +348,9 @@ export function StoryBuilder({
                         ? "From your role map"
                         : content.linkedin?.prefilled.includes(q.id)
                           ? "From your LinkedIn"
-                          : content.resumePrefill?.prefilled.includes(q.id)
-                            ? "From your resume"
-                            : inferred
-                              ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
-                              : undefined
+                          : inferred
+                            ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
+                            : undefined
                     }
                     isEditing={editing?.kind === "core" && editing.id === q.id}
                     disabled={busy !== null}
@@ -415,11 +392,7 @@ export function StoryBuilder({
                 );
               })}
 
-              {busy === "reading" && (
-                <Thinking>
-                  {readingResume ? "Reading your resume…" : "Reading your LinkedIn profile…"}
-                </Thinking>
-              )}
+              {busy === "reading" && <Thinking>Reading your LinkedIn profile…</Thinking>}
               {busy === "inferring" && (
                 <Thinking>
                   Reading your path from your {hasResume ? "resume" : "LinkedIn profile"}…
@@ -438,21 +411,6 @@ export function StoryBuilder({
               )}
               {currentCore && !content.imported ? (
                 <>
-                  {!busy && canFillFromResume && (
-                    <div className="mb-3 rounded-2xl bg-ink-50 p-4" data-testid="fill-from-resume">
-                      <p className="text-sm text-slate-700">
-                        Your resume already answers some of these. I can fill those in for you to
-                        check and add to.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={fillFromResume}
-                        className="mt-2 rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ink-900"
-                      >
-                        Fill in from my resume
-                      </button>
-                    </div>
-                  )}
                   {!busy && canInferPath(content) && (
                     <button
                       type="button"
