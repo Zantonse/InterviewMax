@@ -9,17 +9,19 @@ import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
 import { currentItemIndex } from "@/lib/practice/content";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
+import { MAX_STORIES, changedStories, isFinishedStory } from "@/lib/resume/content";
 import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { removeJob } from "../actions";
 import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { AskPanel } from "./ask-panel";
+import { ResumePanel } from "./resume-panel";
 import { TailoredIntroPanel } from "./tailored-intro";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
 
-// Predicting questions, suggesting questions to ask, writing About me for this job and removing a job (which reads the remaining jobs again) are model calls.
+// Predicting questions, suggesting questions to ask, writing About me or resume bullets for this job and removing a job (which reads the remaining jobs again) are model calls.
 export const maxDuration = 120;
 
 export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
@@ -61,6 +63,11 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     practiced: rounds.some((r) => r.finishedAt),
   });
   const lastRound = rounds[0];
+  // The stories the resume bullets read: the newest finished ones, as when they're written.
+  const finished = stories
+    .filter(isFinishedStory)
+    .slice(0, MAX_STORIES)
+    .map((s) => ({ id: s.id, draftWrittenAt: s.content.draft!.writtenAt }));
 
   return (
     <>
@@ -198,6 +205,25 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 . Then come back here to shape it for this job.
               </p>
             )}
+          </section>
+          <section
+            id="resume"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Resume bullets for this job
+            </h2>
+            <p className="mb-4 text-sm text-slate-600">
+              Your stories, turned into bullets for the resume you already have: what you did and
+              what came of it, best fit for this job first. Every number comes from your own
+              answers, so your resume and your interview tell the same story.
+            </p>
+            <ResumePanel
+              jobId={job.id}
+              initial={job.resumeBullets}
+              finishedCount={finished.length}
+              changedCount={job.resumeBullets ? changedStories(job.resumeBullets, finished) : 0}
+            />
           </section>
           <section
             id="ask"

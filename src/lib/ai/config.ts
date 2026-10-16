@@ -55,6 +55,9 @@ export const STEP_MODELS = {
   // Questions to ask the interviewer: five to eight questions for the end of one target job's
   // interviews, drawn from its posting and level, each marked with who in the loop it suits.
   askQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Resume enhancer: resume bullets from the user's finished stories for one target job, marked
+  // for fit, plus a two-line summary from its About me. Figures and role names checked in code.
+  resumeBullets: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
