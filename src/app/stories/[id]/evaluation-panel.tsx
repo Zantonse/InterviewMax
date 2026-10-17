@@ -216,8 +216,11 @@ export function EvaluationPanel({
           <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
           <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks">
             {CHECKS.filter(
-              // Some checks apply to one format only ("A few key figures" is for About me).
-              (k) => k.id !== "focus" || !grade || grade.checks.some((c) => c.id === k.id),
+              // Some checks apply to one format only ("A few key figures" is for About me), and
+              // "In your own words" only to drafts written since it was measured.
+              (k) =>
+                (k.id !== "focus" && k.id !== "own_words") ||
+                (grade ? grade.checks.some((c) => c.id === k.id) : k.id === "focus"),
             ).map((k) => {
               const result = grade?.checks.find((c) => c.id === k.id);
               return (

@@ -277,7 +277,8 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
     const content = { ...story.content, draft };
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
-    await trackEvent("story_finished");
+    // A rough draft only means the story was told; it's finished once written after the follow-ups.
+    await trackEvent(rough ? "story_told" : "story_finished");
     if (story.storyType === REQUIRED_STORY_TYPE_ID) await trackEvent("about_me_finished");
     return { ok: true, content, title: newTitle };
   });

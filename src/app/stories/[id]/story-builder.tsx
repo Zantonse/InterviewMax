@@ -77,6 +77,7 @@ const GAP_TO_PART: Record<string, string> = {
   ownership: "role",
   role: "role",
   actions: "actions",
+  obstacle: "actions",
   decision: "actions",
   result: "result",
   reflection: "reflection",

@@ -58,6 +58,9 @@ export type StoryDraft = {
   parts: Record<string, string>;
   // Numbers in the draft that don't appear anywhere in the user's answers. Should be empty.
   untracedNumbers: string[];
+  // Share of the draft, 0 to 1, in the user's own phrasing (see own-words.ts). Missing on drafts
+  // written before it was measured.
+  ownWords?: number;
   model: string;
   writtenAt: string;
 };
@@ -358,6 +361,7 @@ export function parseContent(raw: unknown): StoryContent {
       untracedNumbers: Array.isArray(raw.draft.untracedNumbers)
         ? raw.draft.untracedNumbers.filter((n): n is string => typeof n === "string")
         : [],
+      ...(typeof raw.draft.ownWords === "number" ? { ownWords: raw.draft.ownWords } : {}),
       model: typeof raw.draft.model === "string" ? raw.draft.model : "",
       writtenAt: typeof raw.draft.writtenAt === "string" ? raw.draft.writtenAt : "",
     };

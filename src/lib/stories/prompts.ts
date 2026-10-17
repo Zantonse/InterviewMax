@@ -27,11 +27,12 @@ import {
 const CHECKLIST = `- Situation: where they were, their role, and what was at stake are clear.
 - Ownership: their own actions are separated from the team's ("I", not only "we").
 - Actions: concrete steps, not generalities.
+- Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
 - Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
 - Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
 - Reflection: a specific lesson or something they'd do differently.`;
 
-const GAPS = ["situation", "ownership", "actions", "decision", "result", "reflection"] as const;
+const GAPS = ["situation", "ownership", "actions", "obstacle", "decision", "result", "reflection"] as const;
 
 // How the reviews ask. Interviewers remember numbers and specifics, so the coach still gets them,
 // but like an autobiographer drawing out a life story, not an interrogator: curious questions about
@@ -57,7 +58,7 @@ Tap options: a blank box is where people stall, so give a question 3 or 4 tap op
 
 // A behavioral story arrives as one telling in the user's own words, so the first round asks only
 // about what it left out. Interviewers judge judgment, so the thinking question is never dropped.
-const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what they were thinking at the key moment, the result with a number, what they learned. If what they were thinking at the key moment is missing, one of your questions must ask about it. Put the lightest question first.`;
+const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what made it hard, what they were thinking at the key moment, the result with a number, what they learned. If what they were thinking at the key moment is missing, one of your questions must ask about it. Put the lightest question first.`;
 
 function roundInstructions(round: number, storyType?: StoryType): string {
   if (round <= 1 && storyType?.format !== "intro") return TOLD_FIRST_ROUND;
@@ -90,6 +91,11 @@ export const VOICE_RULES = `Sound like a person, not a report:
 - Talk to the listener: contractions, a mix of short and longer sentences, the way someone talks across a table to a person they'd like to work with. No corporate summary voice ("drove alignment", "delivered value", "spearheaded").
 - Make it flow: each sentence follows from the one before, and a move to a new point gets a short spoken bridge ("That's how I ended up…", "So when…", "Which is why…"). A listener should never feel a jump.`;
 
+// Edit, don't rewrite (tester feedback, Oct 16: rewrites read as robotic). A coach works from the
+// person's own telling and edits it into shape; how much of the draft is in their words is measured
+// in code (own-words.ts), and a draft that's mostly the model's phrasing is sent back.
+const EDIT_RULES = `Work as their editor, not a ghostwriter. Their telling and follow-up answers are the raw material: keep their sentences and phrases wherever they work, and shape the story by cutting, reordering and joining them. Write new words only for the bridges between points and to fix what wouldn't make sense said aloud. Fix typos and grammar, but don't polish their wording into something they wouldn't say. A good test: they should be able to point at almost every line and say "I said that".`;
+
 export const WRITE_SYSTEM = `You are an interview coach writing a behavioral interview story for an experienced professional, from their own answers.
 
 The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
@@ -100,12 +106,14 @@ ${TIGHT_RULES}
 
 ${VOICE_RULES}
 
+${EDIT_RULES}
+
 Make it strong, not just accurate: put their most impressive numbers where they land hardest, use every relevant figure and concrete example they gave (including in their follow-up answers), and cut details that dilute the story. Prefer concrete verbs over filler and clichés, while keeping their voice.
 
 Write these parts:
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took. At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- actions: 3 to 5 sentences on the steps they took, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
 - result: 1 to 2 sentences on the outcome, with their number.
 - reflection: 1 to 2 sentences on what they learned or would do differently.
 
@@ -157,6 +165,8 @@ Write in the first person, in plain spoken English the user could say aloud at t
 ${TIGHT_RULES}
 
 ${VOICE_RULES}
+
+${EDIT_RULES}
 
 ${INTRO_FOCUS_RULES}
 
@@ -348,7 +358,13 @@ export type WriteRetry = {
   words?: { count: number; max: number };
   // Set when an introduction used more figures than it should.
   figures?: { found: string[]; max: number };
+  // Set when too little of the draft is in the user's own words (see own-words.ts).
+  ownWords?: { share: number; min: number };
 };
+
+function percent(share: number): string {
+  return `${Math.round(share * 100)}%`;
+}
 
 export function retryMessages(retry: WriteRetry): ChatMessage[] {
   const asks: string[] = [];
@@ -360,6 +376,11 @@ export function retryMessages(retry: WriteRetry): ChatMessage[] {
   if (retry.words) {
     asks.push(
       `It's ${retry.words.count} words, over the ${retry.words.max}-word limit. Cut it to at most ${retry.words.max - 20} words: drop the weakest detail and any sentence that repeats or pads, and keep the strongest numbers.`,
+    );
+  }
+  if (retry.ownWords) {
+    asks.push(
+      `Only ${percent(retry.ownWords.share)} of it uses my own phrasing. Rework it from my answers: keep my sentences and phrases, and cut and reorder them instead of rewording them. New words only for bridges.`,
     );
   }
   if (retry.figures) {
