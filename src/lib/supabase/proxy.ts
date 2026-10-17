@@ -2,12 +2,22 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseEnv } from "./env";
 
-// Paths a signed-out visitor may open: sign-in, the policies, and the page shown after an
-// account is deleted.
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/ai-usage", "/account-deleted"];
+// Paths a signed-out visitor may open: the public homepage, sign-in, the policies, and the page
+// shown after an account is deleted.
+const PUBLIC_PATHS = ["/welcome", "/login", "/auth", "/privacy", "/ai-usage", "/account-deleted"];
 
 export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+// A signed-out visitor to / sees the public homepage at the same address; signed in, / is the
+// dashboard.
+export function landingRewrite(request: NextRequest, from: NextResponse) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/welcome";
+  const response = NextResponse.rewrite(url);
+  from.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  return response;
 }
 
 // Refreshes the Supabase session cookie on every request and sends
@@ -36,6 +46,8 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
   const { pathname } = request.nextUrl;
+
+  if (!signedIn && pathname === "/") return landingRewrite(request, response);
 
   if (!signedIn && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();

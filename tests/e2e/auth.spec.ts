@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("signed-out visitors are sent to sign in", async ({ page }) => {
+test("signed-out visitors see the public homepage, which links to sign in", async ({ page }) => {
   await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", { name: "Behavioral interview stories that land." }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Build stories that land." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to InterviewMax" })).toBeVisible();
   await expect(page.getByLabel("Work or personal email")).toBeVisible();
   await expect(page.getByRole("button", { name: "Email me a sign-in link" })).toBeVisible();
 });

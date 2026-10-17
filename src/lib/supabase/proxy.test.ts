@@ -7,6 +7,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/auth/confirm")).toBe(true);
   });
 
+  it("lets anyone read the public homepage", () => {
+    expect(isPublicPath("/welcome")).toBe(true);
+  });
+
   it("lets anyone read the policies and the account-deleted page", () => {
     expect(isPublicPath("/privacy")).toBe(true);
     expect(isPublicPath("/ai-usage")).toBe(true);

@@ -5,8 +5,12 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 // Sign-in choices when Auth0 signs people in. Each goes straight to that provider through
 // Auth0's /auth/login route, which forwards every other query parameter to Auth0 (so the email
 // form's login_hint pre-fills the address on Auth0's code page). The connection names are
-// Auth0's defaults; "email" is Auth0's passwordless email connection, set to send a code.
-type Connection = "google-oauth2" | "linkedin" | "email";
+// Auth0's defaults; "Username-Password-Authentication" is Auth0's email-and-password database
+// (Auth0's own page handles the password, sign-up and resets); "email" is Auth0's passwordless
+// email connection, set to send a code.
+type Connection = "google-oauth2" | "linkedin" | typeof PASSWORD | "email";
+
+const PASSWORD = "Username-Password-Authentication";
 
 const LAST_USED_KEY = "interviewmax:last-sign-in";
 
@@ -15,8 +19,10 @@ const SOCIAL: { connection: Connection; label: string; Logo: () => React.ReactEl
   { connection: "linkedin", label: "LinkedIn", Logo: LinkedInLogo },
 ];
 
-function loginHref(connection: Connection) {
+function loginHref(connection: Connection, signUp = false) {
   const params = new URLSearchParams({ connection, returnTo: "/" });
+  // Opens Auth0's page on its sign-up tab instead of sign-in.
+  if (signUp) params.set("screen_hint", "signup");
   return `/auth/login?${params}`;
 }
 
@@ -59,41 +65,63 @@ export function Auth0Buttons() {
         </a>
       ))}
 
-      <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-wide text-slate-400">
-        <span className="h-px flex-1 bg-slate-200" />
-        or get a code by email
-        <span className="h-px flex-1 bg-slate-200" />
-      </div>
+      <a
+        href={loginHref(PASSWORD)}
+        onClick={() => start(PASSWORD)}
+        aria-disabled={busy}
+        className={`relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+          busy && opening !== PASSWORD ? "pointer-events-none opacity-50" : ""
+        }`}
+      >
+        <KeyIcon />
+        {opening === PASSWORD ? "One moment…" : "Sign in with email and password"}
+        {lastUsed === PASSWORD && !busy && <LastUsed />}
+      </a>
 
-      {/* A plain GET form to /auth/login, so it works before the page's JavaScript loads. */}
-      <form action="/auth/login" method="get" onSubmit={() => start("email")} className="flex flex-col gap-3">
-        <input type="hidden" name="connection" value="email" />
-        <input type="hidden" name="returnTo" value="/" />
-        <label htmlFor="login_hint" className="flex items-center justify-between text-sm font-medium text-slate-700">
-          Work or personal email
-          {lastUsed === "email" && !busy && <LastUsed inline />}
-        </label>
-        <input
-          id="login_hint"
-          name="login_hint"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="you@example.com"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
-        />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-xl bg-ink-800 px-4 py-3 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
+      <details className="group" open={lastUsed === "email" || undefined}>
+        <summary className="cursor-pointer list-none text-center text-sm font-medium text-ink-700 hover:underline [&::-webkit-details-marker]:hidden">
+          No password? Email me a one-time code instead
+        </summary>
+        {/* A plain GET form to /auth/login, so it works before the page's JavaScript loads. */}
+        <form
+          action="/auth/login"
+          method="get"
+          onSubmit={() => start("email")}
+          className="mt-3 flex flex-col gap-3"
         >
-          {opening === "email" ? "One moment…" : "Email me a sign-in code"}
-        </button>
-      </form>
+          <input type="hidden" name="connection" value="email" />
+          <input type="hidden" name="returnTo" value="/" />
+          <label htmlFor="login_hint" className="text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            id="login_hint"
+            name="login_hint"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 disabled:opacity-60"
+          >
+            {opening === "email" ? "One moment…" : "Email me a code"}
+          </button>
+        </form>
+      </details>
 
-      <p className="mt-2 text-center text-xs leading-relaxed text-slate-500">
-        New here? Any of these creates your account. Already use InterviewMax? Sign in with the
-        same email address and your stories will be waiting.
+      <p className="mt-4 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
+        New to InterviewMax?{" "}
+        <a
+          href={loginHref(PASSWORD, true)}
+          onClick={() => start(PASSWORD)}
+          className="font-semibold text-ink-800 hover:underline"
+        >
+          Create an account
+        </a>
       </p>
     </div>
   );
@@ -106,22 +134,29 @@ function noSubscribe() {
 function readLastUsed(): Connection | null {
   try {
     const saved = localStorage.getItem(LAST_USED_KEY);
-    return saved === "google-oauth2" || saved === "linkedin" || saved === "email" ? saved : null;
+    return saved === "google-oauth2" || saved === "linkedin" || saved === PASSWORD || saved === "email"
+      ? saved
+      : null;
   } catch {
     // Storage blocked (private window): just don't show the hint.
     return null;
   }
 }
 
-function LastUsed({ inline = false }: { inline?: boolean }) {
+function LastUsed() {
   return (
-    <span
-      className={`rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900 ${
-        inline ? "" : "absolute right-3"
-      }`}
-    >
+    <span className="absolute right-3 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900">
       Last used
     </span>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
+      <circle cx="8" cy="15" r="4" />
+      <path d="M10.85 12.15 19 4M18 5l2 2M15 8l2 2" />
+    </svg>
   );
 }
 
