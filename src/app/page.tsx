@@ -242,6 +242,12 @@ async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
       >
         All {job.likelyQuestions.questions.length} questions →
       </Link>
+      <Link
+        href="/questions"
+        className="mt-2 block text-sm font-semibold text-ink-800 hover:underline"
+      >
+        Browse the question library →
+      </Link>
     </Card>
   );
 }
