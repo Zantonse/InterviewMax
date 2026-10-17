@@ -3,9 +3,9 @@
 import { useActionState, useId, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
+  MAX_FILE_TEXT_LENGTH,
   MAX_SPEAKER_LENGTH,
   MAX_TITLE_LENGTH,
-  MAX_TRANSCRIPT_LENGTH,
   TRANSCRIPT_EXTENSIONS,
 } from "@/lib/transcripts/content";
 import { SPEAKER_LABELS, type SpeakerRole, type SpeakerTurn } from "@/lib/transcripts/speakers";
@@ -48,7 +48,10 @@ export function AddTranscriptForm({
           className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:font-semibold file:text-ink-900"
         />
         <span className="mt-1 block text-xs font-normal text-slate-500">
-          PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export.
+          PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export. Several
+          interviews in one file? Head each one &ldquo;Interview 1&rdquo;, &ldquo;Interview 2&rdquo;
+          and I&apos;ll review them separately. A job description or feedback notes in the file
+          are left out.
         </span>
         <AiNotice purpose="find what the interviewers asked and probed" className="mt-1" />
       </label>
@@ -58,7 +61,7 @@ export function AddTranscriptForm({
           id={`${id}-text`}
           name="text"
           rows={6}
-          maxLength={MAX_TRANSCRIPT_LENGTH}
+          maxLength={MAX_FILE_TEXT_LENGTH}
           placeholder="Both sides of the conversation. No speaker names? That's fine, I'll mark who said what."
           className={INPUT}
         />

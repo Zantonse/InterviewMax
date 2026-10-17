@@ -11,6 +11,9 @@ import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
 import { getTranscript } from "@/lib/transcripts/data";
+import { leftOutNote } from "@/lib/transcripts/split";
+import { surenessFor, type Sureness } from "@/lib/transcripts/sure";
+import { getToughQuestion, toughForAsked } from "@/lib/tough/questions";
 import { roundLabel } from "@/lib/bank/content";
 import { listMySharedQuestions, type MySharedQuestion } from "@/lib/bank/data";
 import { leaveOutQuestion, removeTranscript, withdrawQuestions } from "../actions";
@@ -48,7 +51,7 @@ const LANDED_STYLES: Record<Landed, { label: string; className: string; meaning:
   },
 };
 
-export default function TranscriptPage({ params }: PageProps<"/transcripts/[id]">) {
+export default function TranscriptPage({ params, searchParams }: PageProps<"/transcripts/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
@@ -57,15 +60,24 @@ export default function TranscriptPage({ params }: PageProps<"/transcripts/[id]"
           ← All past interviews
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
-          <TranscriptContent params={params} />
+          <TranscriptContent params={params} searchParams={searchParams} />
         </Suspense>
       </main>
     </div>
   );
 }
 
-async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[id]">["params"] }) {
+async function TranscriptContent({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/transcripts/[id]">["params"];
+  searchParams: PageProps<"/transcripts/[id]">["searchParams"];
+}) {
   const { id } = await params;
+  // Just added from a file that also held a job description or feedback notes (see addTranscript).
+  const { left } = await searchParams;
+  const leftNote = leftOutNote(typeof left === "string" ? left.split(",") : []);
   const transcript = await getTranscript(id);
   if (!transcript) notFound();
   const [job, stories, shared] = await Promise.all([
@@ -76,6 +88,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
   const analysis = transcript.analysis;
   // Labelled by the app because the transcript had no speaker names: the user can fix who said what.
   const turns = transcript.speaker === AUTO_SPEAKER ? turnsFromLabelled(transcript.transcript) : [];
+  const sure = analysis ? surenessFor(transcript) : null;
 
   return (
     <>
@@ -86,6 +99,11 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
         )}
       </h1>
       {analysis?.summary && <p className="mt-2 max-w-2xl text-slate-600">{analysis.summary}</p>}
+      {leftNote && (
+        <p className="mt-3 max-w-2xl rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="left-out-note">
+          {leftNote}
+        </p>
+      )}
       {job && (
         <p className="mt-1 text-sm text-slate-500">
           For{" "}
@@ -162,6 +180,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
               </ul>
             </section>
           )}
+          {sure && <SurenessCard sure={sure} />}
           {analysis && (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <p className="mb-4 text-sm text-slate-600">
@@ -199,6 +218,8 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
 function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: StoryRecord[] }) {
   const landed = LANDED_STYLES[q.landed];
   const coverage = q.theme ? coverageFor(q.theme, stories) : undefined;
+  // Screening questions (salary, why you're looking) aren't behavioral, but have a coach of their own.
+  const tough = q.theme ? undefined : toughForAsked(q.question);
   return (
     <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
       <p className="font-semibold text-slate-900">
@@ -238,6 +259,13 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
             ))}
           </ul>
         </div>
+      )}
+      {tough && (
+        <p className="mt-2 text-sm">
+          <Link href="/tough-questions" className="font-medium text-ink-800 hover:underline" data-testid="asked-tough">
+            Prepare &ldquo;{getToughQuestion(tough)?.label}&rdquo; in Tough questions →
+          </Link>
+        </p>
       )}
       {coverage?.kind === "story" ? (
         <p className="mt-2 text-sm">
@@ -385,6 +413,45 @@ function SharedQuestions({
           </form>
         </>
       )}
+    </section>
+  );
+}
+
+// How sure you sounded, counted in your own words (see sure.ts).
+function SurenessCard({ sure }: { sure: Sureness }) {
+  return (
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="sureness">
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">How sure you sounded</h2>
+      <p className="text-sm text-slate-700">
+        {sure.hedgeCount === 0
+          ? "No hedges in your answers. You stated what you did."
+          : `${sure.hedgeCount} ${sure.hedgeCount === 1 ? "hedge" : "hedges"} in ${sure.words.toLocaleString("en-US")} words of your answers, about ${sure.per100} every 100 words.`}
+      </p>
+      {sure.hedges.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5 text-xs">
+          {sure.hedges.slice(0, 6).map((h) => (
+            <li key={h.phrase} className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+              &ldquo;{h.phrase}&rdquo; × {h.count}
+            </li>
+          ))}
+        </ul>
+      )}
+      {sure.lostCount > 0 && (
+        <p className="mt-3 text-sm text-slate-700">
+          You lost your place {sure.lostCount === 1 ? "once" : `${sure.lostCount} times`} (asked for the
+          question again, or said you blanked). A story you&apos;ve built and practiced is easier to find
+          under pressure.
+        </p>
+      )}
+      {sure.many && (
+        <p className="mt-3 text-sm text-slate-700">
+          That many hedges can make work you led sound like work you watched. Say what you did:
+          &ldquo;What I did was…&rdquo; instead of &ldquo;I think I kind of…&rdquo;.
+        </p>
+      )}
+      <p className="mt-3 text-xs text-slate-500">
+        Counted in your turns only. Speech-to-text can add or drop a few.
+      </p>
     </section>
   );
 }
