@@ -7,12 +7,14 @@ import { QuestionList } from "@/components/question-list";
 import { StepStrip } from "@/components/step-strip";
 import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
+import { jobFolder } from "@/lib/jobs/folder";
 import { currentItemIndex } from "@/lib/practice/content";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
 import { MAX_STORIES, changedStories, isFinishedStory } from "@/lib/resume/content";
 import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
+import { listTranscriptsForPrep } from "@/lib/transcripts/data";
 import { removeJob } from "../actions";
 import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { AskPanel } from "./ask-panel";
@@ -42,13 +44,17 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
 async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const [job, { overview, resume }, stories, rounds] = await Promise.all([
+  const [job, { overview, resume }, stories, rounds, transcripts] = await Promise.all([
     getJob(id),
     getJobsPrep(),
     listStories(),
     listPracticeSessionsSafely(id),
+    listTranscriptsForPrep(),
   ]);
   if (!job) notFound();
+  // This job's folder: the stories that answer its questions and its past interviews.
+  const folder = jobFolder(job.likelyQuestions?.questions, stories);
+  const interviews = transcripts.filter((t) => t.targetJobId === job.id);
   const read = overview?.jobs[job.id];
   // "Tell me about yourself": the drafted one if there is one (stories are newest first).
   const introType = getStoryType(REQUIRED_STORY_TYPE_ID);
@@ -77,6 +83,38 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
       </h1>
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
       <StepStrip label={`Your prep for ${job.title}`} steps={steps} />
+      <nav
+        aria-label="In this job's folder"
+        className="mt-4 flex flex-wrap gap-2 text-sm"
+        data-testid="job-folder"
+      >
+        <FolderTab
+          href="#questions"
+          label="Likely questions"
+          note={folder.total ? `${folder.answered} of ${folder.total} have a story` : "Not yet"}
+        />
+        <FolderTab href="#stories" label="Stories" note={String(folder.stories.length)} />
+        <FolderTab href="#past-interviews" label="Past interviews" note={String(interviews.length)} />
+        <FolderTab
+          href="#about-me"
+          label="About me"
+          note={intro?.content.tailored?.[job.id]?.draft ? "Written" : "To do"}
+        />
+        {job.likelyQuestions && (
+          <FolderTab
+            href="#practice"
+            label="Practice"
+            note={`${rounds.length} ${rounds.length === 1 ? "round" : "rounds"}`}
+          />
+        )}
+        <FolderTab href="#resume" label="Resume" note={job.resumeBullets ? "Written" : "To do"} />
+        <FolderTab
+          href="#ask"
+          label="Questions to ask"
+          note={job.questionsToAsk?.questions.length ? "Ready" : "To do"}
+        />
+        <FolderTab href={`/jobs/${job.id}/brief`} label="Brief" note="One page" />
+      </nav>
       <div
         className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5"
         data-testid="job-brief"
@@ -122,13 +160,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 posting and any interview reports you paste, and match each to your stories.
               </p>
             )}
-            <p className="mt-4 text-sm text-slate-500">
-              Had an earlier round for this job?{" "}
-              <Link href="/transcripts" className="font-semibold text-ink-800 underline">
-                Add its transcript
-              </Link>{" "}
-              and predict again: questions they asked you before go to the top.
-            </p>
             <div className="mt-4">
               <PredictForm
                 jobId={job.id}
@@ -136,6 +167,91 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 predicted={Boolean(job.likelyQuestions)}
               />
             </div>
+          </section>
+          <section
+            id="stories"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            data-testid="job-stories"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Your stories for this job
+            </h2>
+            {folder.stories.length > 0 ? (
+              <>
+                <p className="mb-4 text-sm text-slate-600">
+                  The stories that answer this job&apos;s likely questions.
+                  {folder.toBuild > 0 &&
+                    ` ${folder.toBuild} ${folder.toBuild === 1 ? "question still needs" : "questions still need"} a story: see Likely questions.`}
+                </p>
+                <ul className="space-y-3">
+                  {folder.stories.map((s) => (
+                    <li key={s.storyId} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+                      <Link
+                        href={`/stories/${s.storyId}`}
+                        className="font-semibold text-ink-800 hover:underline"
+                      >
+                        {s.title}
+                      </Link>
+                      {!s.drafted && (
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                          In progress
+                        </span>
+                      )}
+                      <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+                        {s.questions.map((q) => (
+                          <li key={q}>Answers: {q}</li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-slate-600">
+                {job.likelyQuestions
+                  ? "None of your stories answers this job's likely questions yet. Each question above links to the story to build."
+                  : "Once I've predicted this job's questions, the stories that answer them show up here."}
+              </p>
+            )}
+          </section>
+          <section
+            id="past-interviews"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            data-testid="job-interviews"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Past interviews for this job
+            </h2>
+            {interviews.length > 0 ? (
+              <ul className="mb-4 space-y-2">
+                {interviews.map((t) => (
+                  <li key={t.id}>
+                    <Link
+                      href={`/transcripts/${t.id}`}
+                      className="font-semibold text-ink-800 hover:underline"
+                    >
+                      {t.title}
+                    </Link>
+                    <span className="ml-2 text-sm text-slate-500">
+                      {t.analysis
+                        ? `${t.analysis.asked.length} questions asked`
+                        : "Not reviewed yet"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-4 text-slate-600">
+                Had a round for this job already? Add its transcript: questions they asked you
+                before go to the top of your likely questions.
+              </p>
+            )}
+            <Link
+              href={`/transcripts?job=${job.id}`}
+              className="text-sm font-semibold text-ink-800 hover:underline"
+            >
+              Add an interview for this job →
+            </Link>
           </section>
           {job.likelyQuestions && (
             <section
@@ -329,5 +445,18 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </div>
       </div>
     </>
+  );
+}
+
+// One entry in the strip that shows what's in this job's folder, with where it stands.
+function FolderTab({ href, label, note }: { href: string; label: string; note: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-baseline gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-800/30"
+    >
+      <span className="font-semibold text-slate-900">{label}</span>
+      <span className="text-slate-500">{note}</span>
+    </Link>
   );
 }

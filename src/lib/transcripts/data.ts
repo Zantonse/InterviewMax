@@ -128,6 +128,25 @@ export async function saveAnalysis(id: string, analysis: TranscriptAnalysis): Pr
   if (!data?.length) throw new Error("Transcript not found.");
 }
 
+// The transcript with speaker labels added (see speakers.ts), and which label is the user's. The
+// old review no longer matches the text, so it's cleared until the review runs again.
+export async function saveLabelledTranscript(
+  id: string,
+  transcript: string,
+  speaker: string,
+): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Transcript not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("interview_transcripts")
+    .update({ transcript, speaker, analysis: null })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save who said what: ${error.message}`);
+  if (!data?.length) throw new Error("Transcript not found.");
+}
+
 export async function deleteTranscript(id: string): Promise<void> {
   if (!UUID_RE.test(id)) throw new Error("Transcript not found.");
   await getCurrentUser();

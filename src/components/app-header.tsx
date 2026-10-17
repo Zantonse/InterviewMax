@@ -3,6 +3,8 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { isAdminEmail } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth";
+import { listJobs } from "@/lib/jobs/data";
+import { folderLabel } from "@/lib/jobs/folder";
 import { listStories } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
 import { NavIcon, type NavIconName } from "./nav-icons";
@@ -77,6 +79,10 @@ export function AppHeader() {
             </Suspense>
           </ul>
 
+          <Suspense fallback={null}>
+            <JobFolders />
+          </Suspense>
+
           <div className="mt-6 nav-collapsed:hidden">
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-ink-300">
               Stories
@@ -108,6 +114,32 @@ async function AdminLink() {
         <NavIcon name="shield" />
       </NavLink>
     </li>
+  );
+}
+
+// Each target job as a folder: its page holds everything for that role. Hidden with no jobs.
+async function JobFolders() {
+  let jobs;
+  try {
+    jobs = await listJobs();
+  } catch (error) {
+    unstable_rethrow(error);
+    return null;
+  }
+  if (jobs.length === 0) return null;
+  return (
+    <div className="mt-6 nav-collapsed:hidden">
+      <p className="px-3 text-xs font-semibold uppercase tracking-wider text-ink-300">Your jobs</p>
+      <ul className="mt-2 space-y-0.5" data-testid="nav-jobs">
+        {jobs.map((job) => (
+          <li key={job.id}>
+            <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
+              <NavIcon name="folder" />
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

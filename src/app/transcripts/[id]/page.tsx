@@ -12,7 +12,8 @@ import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
 import { getTranscript } from "@/lib/transcripts/data";
 import { removeTranscript } from "../actions";
-import { PendingButton, ReviewAgainButton } from "../forms";
+import { AUTO_SPEAKER, turnsFromLabelled } from "@/lib/transcripts/speakers";
+import { PendingButton, ReviewAgainButton, SpeakerTurnsEditor } from "../forms";
 
 export const metadata: Metadata = { title: "Past interview · InterviewMax" };
 
@@ -70,6 +71,8 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
     listStories(),
   ]);
   const analysis = transcript.analysis;
+  // Labelled by the app because the transcript had no speaker names: the user can fix who said what.
+  const turns = transcript.speaker === AUTO_SPEAKER ? turnsFromLabelled(transcript.transcript) : [];
 
   return (
     <>
@@ -114,6 +117,23 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
               </p>
               <ReviewAgainButton transcriptId={transcript.id} reviewed={false} />
             </section>
+          )}
+          {turns.length > 0 && (
+            <details
+              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              data-testid="who-said-what"
+            >
+              <summary className="cursor-pointer">
+                <span className="text-sm font-bold uppercase tracking-wide text-ink-800">
+                  Who said what
+                </span>
+                <span className="mt-1 block text-sm text-slate-600">
+                  Your transcript had no speaker names, so I marked each turn as the interviewer or
+                  you. Open this to check, and tap a label to fix it.
+                </span>
+              </summary>
+              <SpeakerTurnsEditor transcriptId={transcript.id} turns={turns} />
+            </details>
           )}
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
             <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">

@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Past interviews · InterviewMax" };
 // Adding a transcript reviews it, which is a long model call.
 export const maxDuration = 300;
 
-export default function TranscriptsPage() {
+export default function TranscriptsPage({ searchParams }: PageProps<"/transcripts">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
@@ -41,14 +41,21 @@ export default function TranscriptsPage() {
           ]}
         />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
-          <TranscriptsContent />
+          <TranscriptsContent searchParams={searchParams} />
         </Suspense>
       </main>
     </div>
   );
 }
 
-async function TranscriptsContent() {
+async function TranscriptsContent({
+  searchParams,
+}: {
+  searchParams: PageProps<"/transcripts">["searchParams"];
+}) {
+  // From a job's page: "Add a transcript" opens the form with that job picked.
+  const { job: jobParam } = await searchParams;
+  const jobId = typeof jobParam === "string" ? jobParam : "";
   const [transcripts, jobs, stories] = await Promise.all([
     listTranscripts(),
     listJobs(),
@@ -61,7 +68,7 @@ async function TranscriptsContent() {
     return (
       <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="Add your first interview" className="lg:col-span-2">
-          <AddTranscriptForm jobs={jobOptions} />
+          <AddTranscriptForm jobs={jobOptions} jobId={jobId} />
         </Card>
         <Card title="Where to find one">
           <ul className="list-disc space-y-2 pl-5 text-slate-700">
@@ -123,12 +130,15 @@ async function TranscriptsContent() {
         )}
 
         {transcripts.length < MAX_TRANSCRIPTS && (
-          <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <details
+            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            open={Boolean(jobId) || undefined}
+          >
             <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
-              <AddTranscriptForm jobs={jobOptions} />
+              <AddTranscriptForm jobs={jobOptions} jobId={jobId} />
             </div>
           </details>
         )}

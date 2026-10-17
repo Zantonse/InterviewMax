@@ -6,7 +6,7 @@ import { ModelError } from "@/lib/ai";
 import { getJob } from "@/lib/jobs/data";
 import { predictAfterTranscript } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
-import { analyzeTranscript } from "@/lib/transcripts/analyze";
+import { analyzeTranscript, labelSpeakers } from "@/lib/transcripts/analyze";
 import {
   MAX_SPEAKER_LENGTH,
   MAX_TITLE_LENGTH,
@@ -19,7 +19,15 @@ import {
   getTranscript,
   insertTranscript,
   listTranscripts,
+  saveLabelledTranscript,
 } from "@/lib/transcripts/data";
+import {
+  AUTO_SPEAKER,
+  labelledTranscript,
+  relabel,
+  turnsFromLabelled,
+  type SpeakerRole,
+} from "@/lib/transcripts/speakers";
 import { readTranscriptFile } from "@/lib/transcripts/read-file";
 import { trackEvent } from "@/lib/usage/track";
 
@@ -82,6 +90,14 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
   }
 
   try {
+    // With no speaker names, mark who said what first; the review reads the labelled version.
+    await labelSpeakers(id);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Transcripts: marking who said what failed", err);
+  }
+
+  try {
     await analyzeTranscript(id);
     await predictAfterTranscript({ targetJobId: jobId, company });
   } catch (err) {
@@ -108,6 +124,42 @@ export async function reviewAgain(_prev: FormState, formData: FormData): Promise
           : err instanceof Error
             ? err.message
             : "The transcript couldn't be reviewed. Try again.",
+    };
+  }
+  refresh();
+  return null;
+}
+
+// The user's fixes to who said what, one speaker per turn in order, then the review runs again.
+export async function relabelTranscript(
+  transcriptId: string,
+  speakers: SpeakerRole[],
+): Promise<FormState> {
+  try {
+    const transcript = await getTranscript(String(transcriptId));
+    if (!transcript) return { error: "That transcript wasn't found." };
+    const turns = turnsFromLabelled(transcript.transcript);
+    if (turns.length === 0) return { error: "This transcript isn't split into turns." };
+    const roles = Array.isArray(speakers)
+      ? speakers.map((s): SpeakerRole => (s === "me" ? "me" : "interviewer"))
+      : [];
+    await saveLabelledTranscript(
+      transcript.id,
+      labelledTranscript(relabel(turns, roles)),
+      AUTO_SPEAKER,
+    );
+    await analyzeTranscript(transcript.id);
+    await predictAfterTranscript(transcript);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Transcripts: relabelling failed", err);
+    return {
+      error:
+        err instanceof ModelError
+          ? "Saved. The review didn't finish, so try Review again in a moment."
+          : err instanceof Error
+            ? err.message
+            : "That didn't save. Try again.",
     };
   }
   refresh();

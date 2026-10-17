@@ -6,6 +6,7 @@ const PATHS = {
   bolt: "M13 3 5 14h6l-1 7 8-11h-6z",
   chart: "M4 20V4m0 16h16M8 16v-4m4 4V8m4 8v-6",
   plus: "M12 5v14M5 12h14",
+  folder: "M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z",
   signout: "M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4m-4-4h11",
   menu: "M4 6h16M4 12h16M4 18h16",
   close: "M6 6l12 12M18 6 6 18",

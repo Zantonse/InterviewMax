@@ -61,6 +61,14 @@ export const STEP_MODELS = {
   // Past interviews: read one real interview transcript for what was asked and probed, and how
   // each answer landed. Every finding is quoted from the transcript and checked in code.
   transcriptRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Past interviews: split a transcript with no speaker names into interviewer and candidate
+  // turns, by copying each turn's first words (code cuts the text there; it is never rewritten).
+  transcriptSpeakers: {
+    provider: "openrouter",
+    model: "anthropic/claude-opus-5.5",
+    effort: "low",
+    maxTokens: 16000,
+  },
   // Practice mode: a skeptical interviewer asks one follow-up at a time, aimed at the weakest part
   // of a spoken answer. Kept light: the user is waiting between answers.
   practiceProbe: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
