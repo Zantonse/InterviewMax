@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { NavIcon } from "./nav-icons";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { NavIcon, type NavIconName } from "./nav-icons";
 
 // The sidebar frame. On wide screens it's fixed to the left; on phones it's a drawer opened from
 // the top bar, and following any link inside it closes it.
@@ -138,5 +138,80 @@ export function CollapseButton() {
       </span>
       <span className="nav-collapsed:sr-only">Collapse</span>
     </button>
+  );
+}
+
+export type NavGroupId = "jobs" | "stories" | "practice";
+
+function listOf(value: string | undefined) {
+  return (value ?? "").split(" ").filter(Boolean);
+}
+
+// A sidebar heading whose sub-items fold away. Whether it's open is worked out in CSS (globals.css):
+// open on one of its pages, otherwise as you last left it (kept in localStorage, reapplied before
+// first paint by app-header.tsx). Collapsed to icons, only the sub-items
+// with icons show.
+export function NavGroup({
+  id,
+  label,
+  icon,
+  children,
+}: {
+  id: NavGroupId;
+  label: string;
+  icon: NavIconName;
+  children: ReactNode;
+}) {
+  const button = useRef<HTMLButtonElement>(null);
+  const childrenId = `nav-group-${id}`;
+
+  const isOpen = () => {
+    const el = document.getElementById(childrenId);
+    return !!el && getComputedStyle(el).display !== "none";
+  };
+
+  // Screen readers hear whether it's open; only the browser knows, so it's set after load.
+  useEffect(() => {
+    button.current?.setAttribute("aria-expanded", String(isOpen()));
+  });
+
+  const toggle = () => {
+    const open = !isOpen();
+    const d = document.documentElement.dataset;
+    const opened = listOf(d.navOpen).filter((g) => g !== id);
+    const closed = listOf(d.navClosed).filter((g) => g !== id);
+    (open ? opened : closed).push(id);
+    d.navOpen = opened.join(" ");
+    d.navClosed = closed.join(" ");
+    try {
+      localStorage.setItem("imx-nav-open", d.navOpen);
+      localStorage.setItem("imx-nav-closed", d.navClosed);
+    } catch {}
+    button.current?.setAttribute("aria-expanded", String(open));
+  };
+
+  return (
+    <li data-nav-group={id}>
+      <button
+        type="button"
+        ref={button}
+        onClick={toggle}
+        aria-controls={childrenId}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[0.9375rem] font-medium text-ink-100 transition hover:bg-white/5 hover:text-white nav-collapsed:hidden"
+      >
+        <NavIcon name={icon} />
+        <span className="flex-1 truncate">{label}</span>
+        <span data-nav-chevron className="text-ink-300 transition-transform">
+          <NavIcon name="chevron" />
+        </span>
+      </button>
+      <ul
+        id={childrenId}
+        data-nav-children
+        className="mt-0.5 mb-1 ml-5 space-y-0.5 border-l border-white/10 pl-2 nav-collapsed:m-0 nav-collapsed:border-0 nav-collapsed:p-0"
+      >
+        {children}
+      </ul>
+    </li>
   );
 }

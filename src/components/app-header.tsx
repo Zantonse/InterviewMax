@@ -8,30 +8,33 @@ import { folderLabel } from "@/lib/jobs/folder";
 import { listStories } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
 import { NavIcon, type NavIconName } from "./nav-icons";
-import { CollapseButton, NavLink, NavShell } from "./nav-shell";
+import { CollapseButton, NavGroup, NavLink, NavShell } from "./nav-shell";
 
-// The sections reached from every page. Stories live on the home page and are listed below these.
-const NAV: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
+// The pages reached from every page. The rest sit in folding groups below these (Jobs, Stories,
+// Practice) so the sidebar stays short.
+const TOP: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
   { href: "/profile", label: "Your profile", icon: "user" },
-  { href: "/jobs", label: "Target jobs", icon: "briefcase" },
+];
+
+const PRACTICE: readonly { href: string; label: string; icon: NavIconName }[] = [
   { href: "/questions", label: "Question library", icon: "book" },
   { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
   { href: "/transcripts", label: "Past interviews", icon: "chat" },
-  { href: "/numbers", label: "Your numbers", icon: "chart" },
 ];
 
-const RECENT_STORIES = 8;
+const RECENT_STORIES = 6;
 
-// Read before first paint so a collapsed sidebar doesn't open wide and then snap shut.
-const RESTORE_COLLAPSED = `try{if(localStorage.getItem("imx-nav")==="collapsed")document.documentElement.dataset.nav="collapsed"}catch(e){}`;
+// Read before first paint so a collapsed sidebar doesn't open wide and then snap shut, and the
+// groups you opened or closed (NavGroup) don't flicker.
+const RESTORE_NAV = `try{var d=document.documentElement.dataset;if(localStorage.getItem("imx-nav")==="collapsed")d.nav="collapsed";d.navOpen=localStorage.getItem("imx-nav-open")||"";d.navClosed=localStorage.getItem("imx-nav-closed")||""}catch(e){}`;
 
 // The app's navigation: a left sidebar on wide screens (collapsible to icons) and a top bar with a
 // menu drawer on phones. Kept under its old name so every page that renders it gets the sidebar.
 export function AppHeader() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: RESTORE_COLLAPSED }} />
+      <script dangerouslySetInnerHTML={{ __html: RESTORE_NAV }} />
       <NavShell>
         <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-4 nav-collapsed:px-0 nav-collapsed:justify-center">
           <Link
@@ -57,42 +60,59 @@ export function AppHeader() {
             <NavIcon name="plus" />
             <span className="nav-collapsed:sr-only">Build a story</span>
           </Link>
-          <Link
-            href="/jobs/new"
-            title="Add a target job"
-            className="mt-2 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10"
-          >
-            <NavIcon name="briefcase" />
-            <span className="nav-collapsed:sr-only">Add a target job</span>
-          </Link>
         </div>
 
         <nav aria-label="Sections" className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 nav-collapsed:px-2">
           <ul className="space-y-1">
-            {NAV.map((item) => (
+            {TOP.map((item) => (
               <li key={item.href}>
                 <NavLink href={item.href} exact={item.exact} label={item.label}>
                   <NavIcon name={item.icon} />
                 </NavLink>
               </li>
             ))}
+
+            <NavGroup id="jobs" label="Jobs" icon="briefcase">
+              <li>
+                <NavLink href="/jobs" exact label="All target jobs" compact>
+                  <NavIcon name="briefcase" />
+                </NavLink>
+              </li>
+              <Suspense fallback={null}>
+                <JobFolders />
+              </Suspense>
+              <li className="nav-collapsed:hidden">
+                <NavLink href="/jobs/new" label="Add a job" compact>
+                  <NavIcon name="plus" />
+                </NavLink>
+              </li>
+            </NavGroup>
+
+            <NavGroup id="stories" label="Stories" icon="pen">
+              <li>
+                <NavLink href="/numbers" label="Your numbers" compact>
+                  <NavIcon name="chart" />
+                </NavLink>
+              </li>
+              <Suspense fallback={<StoriesSkeleton />}>
+                <RecentStories />
+              </Suspense>
+            </NavGroup>
+
+            <NavGroup id="practice" label="Practice" icon="mic">
+              {PRACTICE.map((item) => (
+                <li key={item.href}>
+                  <NavLink href={item.href} label={item.label} compact>
+                    <NavIcon name={item.icon} />
+                  </NavLink>
+                </li>
+              ))}
+            </NavGroup>
+
             <Suspense fallback={null}>
               <AdminLink />
             </Suspense>
           </ul>
-
-          <Suspense fallback={null}>
-            <JobFolders />
-          </Suspense>
-
-          <div className="mt-6 nav-collapsed:hidden">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-ink-300">
-              Stories
-            </p>
-            <Suspense fallback={<StoriesSkeleton />}>
-              <RecentStories />
-            </Suspense>
-          </div>
         </nav>
 
         <div className="border-t border-white/10 px-3 py-3 nav-collapsed:px-2">
@@ -119,7 +139,7 @@ async function AdminLink() {
   );
 }
 
-// Each target job as a folder: its page holds everything for that role. Hidden with no jobs.
+// Each target job as a folder: its page holds everything for that role.
 async function JobFolders() {
   let jobs;
   try {
@@ -128,59 +148,52 @@ async function JobFolders() {
     unstable_rethrow(error);
     return null;
   }
-  if (jobs.length === 0) return null;
-  return (
-    <div className="mt-6 nav-collapsed:hidden">
-      <p className="px-3 text-xs font-semibold uppercase tracking-wider text-ink-300">Your jobs</p>
-      <ul className="mt-2 space-y-0.5" data-testid="nav-jobs">
-        {jobs.map((job) => (
-          <li key={job.id}>
-            <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
-              <NavIcon name="folder" />
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+  return jobs.map((job) => (
+    <li key={job.id} className="nav-collapsed:hidden" data-testid="nav-job">
+      <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
+        <NavIcon name="folder" />
+      </NavLink>
+    </li>
+  ));
 }
 
+// Your latest stories; the full list is on the home page. Hidden when the sidebar is icons only.
 async function RecentStories() {
   let stories;
   try {
     stories = await listStories();
   } catch (error) {
     unstable_rethrow(error);
-    return <p className="mt-2 px-3 text-sm text-ink-300">Couldn&apos;t load your stories.</p>;
+    return <li className="px-3 py-1.5 text-sm text-ink-300 nav-collapsed:hidden">Couldn&apos;t load your stories.</li>;
   }
   if (stories.length === 0) {
-    return <p className="mt-2 px-3 text-sm text-ink-300">No stories yet.</p>;
+    return <li className="px-3 py-1.5 text-sm text-ink-300 nav-collapsed:hidden">No stories yet.</li>;
   }
   const shown = stories.slice(0, RECENT_STORIES);
   return (
-    <ul className="mt-2 space-y-0.5" data-testid="nav-stories">
+    <>
       {shown.map((story) => (
-        <li key={story.id}>
+        <li key={story.id} className="nav-collapsed:hidden" data-testid="nav-story">
           <NavLink href={storyHref(story)} label={story.title || "Untitled story"} compact />
         </li>
       ))}
       {stories.length > shown.length && (
-        <li>
+        <li className="nav-collapsed:hidden">
           <Link href="/" className="block px-3 py-1.5 text-sm text-ink-300 hover:text-white">
             All {stories.length} stories →
           </Link>
         </li>
       )}
-    </ul>
+    </>
   );
 }
 
 function StoriesSkeleton() {
   return (
-    <div className="mt-2 space-y-2 px-3">
+    <li className="space-y-2 px-3 py-1.5 nav-collapsed:hidden">
       <span className="block h-4 w-4/5 animate-pulse rounded bg-white/10" />
       <span className="block h-4 w-3/5 animate-pulse rounded bg-white/10" />
-    </div>
+    </li>
   );
 }
 
