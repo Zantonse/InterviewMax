@@ -259,15 +259,16 @@ export function coreQuestionText(questionId: string, storyType: StoryType | unde
 
 // Spoken length that suits each format, in words (at about 150 words a minute). The max is a hard
 // limit: the writer is told it, and a draft over it is sent back to be cut (see builder.ts).
-//   "Tell me about yourself", general or for one job: 60 to 90 seconds
+//   "Tell me about yourself", general or for one job: about a minute, 90 seconds at most
 //   a behavioral story: about two minutes
-export const INTRO_LENGTH = { min: 150, max: 225 };
+export const INTRO_LENGTH = { min: 120, max: 225 };
 export const STAR_LENGTH = { min: 180, max: 300 };
 
 // An introduction leads with the one figure that matters most and saves the rest for follow-up
-// questions (tester feedback: a list of metrics buries the point). More than this is flagged, and
-// the writer is sent back to cut.
-export const INTRO_MAX_FIGURES = 3;
+// questions (tester feedback: a list of metrics buries the point; Oct 16: keep it high level, not
+// numbers-heavy). Two allows one result with its context ("120% of a $2M quota"). More than this is
+// flagged, and the writer is sent back to cut.
+export const INTRO_MAX_FIGURES = 2;
 
 export const MAX_ANSWER_LENGTH = 4000;
 

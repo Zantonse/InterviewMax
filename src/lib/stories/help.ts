@@ -96,3 +96,20 @@ export function questionHelp(key: string | undefined): QuestionHelp | undefined 
 // Generic, for gaps without their own advice.
 export const DEFAULT_WHERE_TO_LOOK =
   "If it's a number, check a dashboard, a performance review or an old email, or ask a former manager. A labelled estimate is fine. If you really don't know, skip it and I'll leave it out.";
+
+// Number questions stall people who don't remember the figure (tester feedback, Oct 16: "spend
+// before and after" when they never knew it exactly). These starters turn "I don't know" into a
+// labelled estimate in one tap; the user finishes the sentence with their own figure.
+const NUMBER_QUESTION_RE =
+  /\b(how (much|many|big|long|often|fast)|what (percent|percentage|share)|number|figure|metric|percent|%|revenue|spend|budget|cost|saved|before and after|from .* to)\b|\$/i;
+
+export function asksForNumber(question: string, gap?: string): boolean {
+  return gap === "result" || NUMBER_QUESTION_RE.test(question);
+}
+
+export const ESTIMATE_STARTERS = [
+  "I don't remember exactly, but roughly",
+  "Somewhere between … and … (my estimate)",
+  "It went from about … to about … (my estimate)",
+  "I can't put a number on it, but what changed was",
+] as const;

@@ -1,13 +1,14 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
 import type { TailoredIntro } from "@/lib/stories/content";
 import { CHECKS, countWords } from "@/lib/stories/grading";
 import { TAILORED_PARTS } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH, tailoredChecks } from "@/lib/stories/tailored";
 import { appendSpoken } from "@/lib/voice/text";
-import { writeTailoredIntro } from "./about-me-actions";
+import { pickTailoredClosing, writeTailoredIntro } from "./about-me-actions";
 
 // "Tell me about yourself" for this job, company first: why this company, in the user's words,
 // then a three-beat answer built around the one proof point this job most needs to hear.
@@ -24,7 +25,7 @@ export function TailoredIntroPanel({
   const [why, setWhy] = useState(initial?.whyCompany ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [copied, setCopied] = useState(false);
+  const [picking, startPicking] = useTransition();
   const [talking, setTalking] = useState(false);
   const fieldId = useId();
 
@@ -45,14 +46,23 @@ export function TailoredIntroPanel({
     });
   }
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(paragraphs.join("\n\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked; the text is still on screen to select.
-    }
+  function pickClosing(picked: "role" | "company") {
+    if (!draft?.closings || draft.closings.picked === picked) return;
+    setError(null);
+    // Show the pick straight away; the saved copy follows.
+    setTailored({
+      ...tailored!,
+      draft: {
+        ...draft,
+        closings: { ...draft.closings, picked },
+        parts: { ...draft.parts, why_here: draft.closings[picked] },
+      },
+    });
+    startPicking(async () => {
+      const result = await pickTailoredClosing(jobId, picked);
+      if (result.ok) setTailored(result.tailored);
+      else setError(result.error);
+    });
   }
 
   return (
@@ -110,13 +120,10 @@ export function TailoredIntroPanel({
               {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
               spoken
             </span>
-            <button
-              type="button"
-              onClick={copy}
+            <CopyButton
+              text={paragraphs.join("\n\n")}
               className="rounded-full px-3 py-1.5 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
-            >
-              {copied ? "Copied" : "Copy"}
-            </button>
+            />
           </div>
           <div
             className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800"
@@ -126,9 +133,17 @@ export function TailoredIntroPanel({
               <p key={i}>{text}</p>
             ))}
           </div>
+          {draft.closings && (
+            <ClosingPicker
+              company={company}
+              closings={draft.closings}
+              disabled={pending || picking}
+              onPick={pickClosing}
+            />
+          )}
           {failed.length === 0 ? (
             <p className="text-sm font-medium text-ink-800">
-              ✓ Under 90 seconds, a few key figures all from your answers, no filler or unsure
+              ✓ Under 90 seconds, one or two key figures all from your answers, no filler or unsure
               figures.
             </p>
           ) : (
@@ -147,6 +162,61 @@ export function TailoredIntroPanel({
         </div>
       )}
     </div>
+  );
+}
+
+// The closing line is optional territory: a career coach called tailoring it to a company's
+// challenges a gamble (tester feedback, Oct 16). The safe one is picked by default.
+function ClosingPicker({
+  company,
+  closings,
+  disabled,
+  onPick,
+}: {
+  company: string;
+  closings: { role: string; company: string; picked: "role" | "company" };
+  disabled: boolean;
+  onPick: (picked: "role" | "company") => void;
+}) {
+  const options = [
+    { id: "role", label: "About the role", hint: "Safe with any interviewer", text: closings.role },
+    {
+      id: "company",
+      label: `About ${company}`,
+      hint: "Bolder: some interviewers love it, some find it presumptuous",
+      text: closings.company,
+    },
+  ] as const;
+  return (
+    <fieldset className="flex flex-col gap-2" data-testid="closing-picker">
+      <legend className="text-sm font-semibold text-slate-800">How to end it</legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map((o) => {
+          const picked = closings.picked === o.id;
+          return (
+            <label
+              key={o.id}
+              className={`flex cursor-pointer flex-col gap-1 rounded-xl p-3 text-sm ring-1 ${
+                picked ? "bg-ink-50 ring-ink-800/40" : "bg-white ring-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="closing"
+                  checked={picked}
+                  disabled={disabled}
+                  onChange={() => onPick(o.id)}
+                />
+                <span className="font-semibold text-slate-900">{o.label}</span>
+              </span>
+              <span className="text-xs text-slate-500">{o.hint}</span>
+              <span className="text-slate-700">{o.text}</span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 

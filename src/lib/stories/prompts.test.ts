@@ -331,6 +331,26 @@ describe("autobiographer, not interrogator", () => {
     expect(writeMessages(content, aboutMe)[0].content).not.toContain("TikTok");
   });
 
+  it("gives the About me writer the target jobs to hint at, but not a behavioral story's", () => {
+    const targets = {
+      jobs: [
+        {
+          title: "Data governance lead",
+          company: "Commerce Bank",
+          level: "senior",
+          focus: ["Driving adoption without authority"],
+          questions: [],
+        },
+      ],
+    };
+    const intro = writeMessages(answeredContent(aboutMe), aboutMe, undefined, [], targets);
+    expect(intro[0].content).toContain("Driving adoption without authority");
+    const story = writeMessages(answeredContent(), stakeholder, undefined, [], targets);
+    expect(story[0].content).not.toContain("Driving adoption without authority");
+    expect(writeSystem(aboutMe)).toMatch(/most recent role/);
+    expect(writeSystem(stakeholder)).toMatch(/Keep the user's own words/);
+  });
+
   it("shows an inferred path back as a question to confirm", () => {
     const content = answeredContent(aboutMe);
     content.inferredPath = { text: "SE at TikTok, then PM", source: "resume" };
@@ -404,6 +424,15 @@ describe("Tell me about yourself for one job", () => {
     expect(parsed.angle).toBe("Led with SE plus PM.");
     expect(tailoredText(parsed.parts).split("\n\n")).toHaveLength(3);
     expect(() => parseTailor('{"parts":{}}')).toThrow();
+    expect(parsed.companyClose).toBe("");
+  });
+
+  it("reads the bolder company closing as an alternative, outside the script", () => {
+    const parsed = parseTailor(
+      '{"angle":"","parts":{"who":"I build sales products.","proof":"Took activation from 6 weeks to instant.","why_here":"That mix is what draws me to this role."},"companyClose":"Your agent launch is the kind of work I want next."}',
+    );
+    expect(parsed.companyClose).toBe("Your agent launch is the kind of work I want next.");
+    expect(tailoredText(parsed.parts)).not.toContain("agent launch");
   });
 
   it("checks length, numbers and hedges like any story", () => {

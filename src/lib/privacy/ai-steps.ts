@@ -25,7 +25,7 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   storyWrite: {
     feature: "Writing your story",
-    sends: "Your answers for that story, plus the job and numbers it draws on",
+    sends: "Your answers for that story, plus the numbers it draws on and, for About me, what your target jobs look for",
   },
   storyTailor: {
     feature: "About me for one job",
@@ -80,6 +80,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   transcriptRead: {
     feature: "Reviewing a past interview",
     sends: "The transcript you upload or paste",
+  },
+  transcriptSpeakers: {
+    feature: "Marking who said what in a past interview",
+    sends: "The transcript you upload or paste, when it has no speaker names, and the job’s title",
   },
   practiceProbe: {
     feature: "Practice mode follow-up questions",

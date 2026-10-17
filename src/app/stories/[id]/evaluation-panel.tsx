@@ -23,6 +23,16 @@ const TIER_STYLES: Record<Tier, string> = {
   strong: "bg-emerald-700 text-white",
 };
 
+// The legend under the tier, in words that match how the tier is worked out (tierFor in grading.ts).
+const TIER_MEANINGS: Record<Tier, string> = {
+  not_yet:
+    "A key part is missing or thin, or the result has no number from your answers. An interviewer would be left guessing.",
+  good_enough:
+    "Every part is there and an interviewer could follow it. Fine to use; the fixes make it stick.",
+  strong:
+    "Every part is solid or better and all the quick checks pass. Ready to say out loud.",
+};
+
 const THINKING_STYLES: Record<ThinkingLevel, string> = {
   shown: "bg-emerald-100 text-emerald-900",
   partly: "bg-amber-100 text-amber-900",
@@ -311,6 +321,20 @@ function Summary({ grade }: { grade: StoryGrade }) {
           </li>
         ))}
       </ol>
+      <details className="text-sm text-slate-600" data-testid="tier-legend">
+        <summary className="cursor-pointer font-medium text-ink-800">What the levels mean</summary>
+        <ul className="mt-1 flex flex-col gap-1">
+          {TIERS.map((t) => (
+            <li key={t.id}>
+              <span className="font-semibold text-slate-800">{t.label}:</span> {TIER_MEANINGS[t.id]}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1">
+          Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
+          with why it got that score.
+        </p>
+      </details>
       {grade.summary && <p className="text-slate-800">{grade.summary}</p>}
       {grade.strengths.length > 0 && (
         <div data-testid="strengths">

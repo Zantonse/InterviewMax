@@ -93,6 +93,11 @@ export type TailoredIntro = {
 export type TailoredDraft = {
   // Keyed by TAILORED_PARTS ids.
   parts: Record<string, string>;
+  // The closing line comes two ways (tester feedback, Oct 16: a coach called tailoring it to the
+  // company's challenges a gamble): a safe one about the role, and a bolder one about the company.
+  // parts.why_here holds the one picked, so everything that reads the script uses it. Missing on
+  // drafts written before.
+  closings?: { role: string; company: string; picked: "role" | "company" };
   // One line on the angle the writer chose for this job.
   angle: string;
   untracedNumbers: string[];
@@ -308,7 +313,7 @@ export function parseContent(raw: unknown): StoryContent {
       if (!isRecord(t) || typeof t.whyCompany !== "string") continue;
       tailored[jobId] = { whyCompany: t.whyCompany };
       if (isRecord(t.draft) && isRecord(t.draft.parts)) {
-        tailored[jobId].draft = {
+        const draft: TailoredDraft = {
           parts: stringEntries(t.draft.parts),
           angle: typeof t.draft.angle === "string" ? t.draft.angle : "",
           untracedNumbers: Array.isArray(t.draft.untracedNumbers)
@@ -317,6 +322,16 @@ export function parseContent(raw: unknown): StoryContent {
           model: typeof t.draft.model === "string" ? t.draft.model : "",
           writtenAt: typeof t.draft.writtenAt === "string" ? t.draft.writtenAt : "",
         };
+        const c = t.draft.closings;
+        if (
+          isRecord(c) &&
+          typeof c.role === "string" &&
+          typeof c.company === "string" &&
+          (c.picked === "role" || c.picked === "company")
+        ) {
+          draft.closings = { role: c.role, company: c.company, picked: c.picked };
+        }
+        tailored[jobId].draft = draft;
       }
     }
     if (Object.keys(tailored).length > 0) content.tailored = tailored;

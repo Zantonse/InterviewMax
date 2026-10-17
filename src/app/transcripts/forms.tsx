@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
   MAX_SPEAKER_LENGTH,
@@ -8,7 +8,8 @@ import {
   MAX_TRANSCRIPT_LENGTH,
   TRANSCRIPT_EXTENSIONS,
 } from "@/lib/transcripts/content";
-import { addTranscript, reviewAgain, type FormState } from "./actions";
+import { SPEAKER_LABELS, type SpeakerRole, type SpeakerTurn } from "@/lib/transcripts/speakers";
+import { addTranscript, relabelTranscript, reviewAgain, type FormState } from "./actions";
 import { AiNotice } from "@/components/ai-notice";
 
 const INPUT =
@@ -20,8 +21,11 @@ const SECONDARY =
 
 export function AddTranscriptForm({
   jobs,
+  jobId = "",
 }: {
   jobs: { id: string; title: string; company: string | null }[];
+  // Picked up front when adding from a job's page.
+  jobId?: string;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addTranscript, null);
   const id = useId();
@@ -48,7 +52,7 @@ export function AddTranscriptForm({
           name="text"
           rows={6}
           maxLength={MAX_TRANSCRIPT_LENGTH}
-          placeholder="Both sides of the conversation, with who said what if you have it."
+          placeholder="Both sides of the conversation. No speaker names? That's fine, I'll mark who said what."
           className={INPUT}
         />
       </label>
@@ -86,7 +90,12 @@ export function AddTranscriptForm({
         {jobs.length > 0 && (
           <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-job`}>
             For one of your target jobs?
-            <select id={`${id}-job`} name="jobId" defaultValue="" className={INPUT}>
+            <select
+              id={`${id}-job`}
+              name="jobId"
+              defaultValue={jobs.some((j) => j.id === jobId) ? jobId : ""}
+              className={INPUT}
+            >
               <option value="">No, a different job</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
@@ -123,6 +132,88 @@ export function ReviewAgainButton({
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
     </form>
   );
+}
+
+// Who said what, for a transcript labelled automatically. Tap a turn's label to flip it; saving
+// runs the review again on the corrected transcript.
+export function SpeakerTurnsEditor({
+  transcriptId,
+  turns,
+}: {
+  transcriptId: string;
+  turns: SpeakerTurn[];
+}) {
+  const initial = turns.map((t) => t.speaker);
+  const [speakers, setSpeakers] = useState<SpeakerRole[]>(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const changed = speakers.some((s, i) => s !== initial[i]);
+
+  function flip(i: number) {
+    setSpeakers((list) => list.map((s, j) => (j === i ? (s === "me" ? "interviewer" : "me") : s)));
+  }
+
+  function save() {
+    setError(null);
+    startTransition(async () => {
+      const result = await relabelTranscript(transcriptId, speakers);
+      if (result?.error) setError(result.error);
+    });
+  }
+
+  return (
+    <div className="mt-4 space-y-3" data-testid="speaker-turns">
+      <ol className="space-y-2">
+        {turns.map((t, i) => {
+          const me = speakers[i] === "me";
+          return (
+            <li key={i} className={`flex gap-3 ${me ? "flex-row-reverse text-right" : ""}`}>
+              <button
+                type="button"
+                onClick={() => flip(i)}
+                disabled={pending}
+                title="Tap to switch who said this"
+                className={`h-fit shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 transition disabled:opacity-60 ${
+                  me
+                    ? "bg-ink-800 text-white ring-ink-800"
+                    : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                {me ? "You" : SPEAKER_LABELS.interviewer} ⇄
+              </button>
+              <p
+                className={`min-w-0 whitespace-pre-line rounded-2xl px-3 py-2 text-sm ${
+                  me ? "bg-ink-50 text-slate-800" : "bg-slate-50 text-slate-700"
+                }`}
+              >
+                {preview(t.text)}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="sticky bottom-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={save}
+          disabled={!changed || pending}
+          className={PRIMARY}
+        >
+          {pending ? "Saving and reviewing…" : "Save and review again"}
+        </button>
+        {!changed && !pending && (
+          <span className="text-sm text-slate-500">Looks right? Nothing to do.</span>
+        )}
+        {error && <ErrorLine>{error}</ErrorLine>}
+      </div>
+    </div>
+  );
+}
+
+// Long answers are shortened in the list: enough to tell who's talking.
+function preview(text: string): string {
+  const t = text.trim();
+  return t.length > 280 ? `${t.slice(0, 280).trimEnd()}…` : t;
 }
 
 export function PendingButton({

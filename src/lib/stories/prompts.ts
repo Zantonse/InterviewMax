@@ -45,7 +45,7 @@ Never ask for a list or a summary of their career ("your 2 or 3 key moves", "wal
 
 Rules:
 - Push for numbers. Every claim that could be measured should be: a result needs the context that makes it impressive (percent of quota or target, rank out of how many, before and after); something they built or led needs reach (how many people, teams or customers use it); an improvement needs size (hours or days saved, percent faster, revenue or deals it touched); scope needs size (team, accounts, territory). When an answer has a bare number like "sold 4.3M", ask for the comparison that gives it weight.
-- When they may not know a number offhand, say where they could find it (a CRM or dashboard, a performance review, their manager, an old email or award announcement) and that a labelled estimate is fine. Never suggest or guess a number yourself.
+- Ask for numbers as a ballpark, never an exact figure: "roughly how much…", "about how many…". For before-and-after, a rough change is enough ("about half", "from days to hours"). People stall on figures they don't remember (tester feedback), so say a rough estimate is fine, and where they could check it if they want (a CRM or dashboard, a performance review, their manager, an old email or award announcement). Never suggest or guess a number yourself.
 - Push for specifics. When an answer is generic ("people come to me for AI", "I improved engagements"), ask for one concrete example: what exactly, for whom, and what changed.
 - Push for the why. Ask what drove a decision or a career move when it isn't clear.
 - Ask one thing per question, in one or two short sentences. Keep it conversational.
@@ -82,6 +82,14 @@ export const TIGHT_RULES = `Keep it tight:
 - No filler or puffery: no "really", "truly", "passionate", "the kind of", "world-class", "a wide range of", "leveraged", "helped with".
 - Say figures with confidence. If the user was unsure of a figure ("maybe 100 accounts", "I think 20%"), leave it out unless the answer needs it; if you keep it, keep their exact words so it can be flagged for them to firm up. Never firm it up yourself, and never add hedges of your own ("it's still early", "maybe").`;
 
+// Shared by every writer. Tester feedback (Oct 16): drafts read as robotic, with no feeling and no
+// sense of the person behind them, and the rewrite lost what the user actually said.
+export const VOICE_RULES = `Sound like a person, not a report:
+- Keep the user's own words. Reuse their phrases, nicknames and turns of phrase wherever they work (if they said "the data guy" or "we were drowning in tickets", keep it), and tidy only what wouldn't make sense spoken. They should recognise themselves in every line.
+- Let real feeling show where they gave it: what worried them, what surprised them, what they enjoyed or were proud of. One or two moments like that make it human. Never invent a feeling they didn't express.
+- Talk to the listener: contractions, a mix of short and longer sentences, the way someone talks across a table to a person they'd like to work with. No corporate summary voice ("drove alignment", "delivered value", "spearheaded").
+- Make it flow: each sentence follows from the one before, and a move to a new point gets a short spoken bridge ("That's how I ended up…", "So when…", "Which is why…"). A listener should never feel a jump.`;
+
 export const WRITE_SYSTEM = `You are an interview coach writing a behavioral interview story for an experienced professional, from their own answers.
 
 The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
@@ -89,6 +97,8 @@ The hard rule: use only facts and figures the user gave. Never add, round, infla
 Write in the first person, in plain spoken English the user could say aloud, as if answering the interviewer. Use "I" for what they did themselves and "we" only for the team. Aim for about 220 to 280 words in total, about two minutes spoken. Never go over ${STAR_LENGTH.max} words: that is a hard limit.
 
 ${TIGHT_RULES}
+
+${VOICE_RULES}
 
 Make it strong, not just accurate: put their most impressive numbers where they land hardest, use every relevant figure and concrete example they gave (including in their follow-up answers), and cut details that dilute the story. Prefer concrete verbs over filler and clichés, while keeping their voice.
 
@@ -122,13 +132,18 @@ ${INTRO_CHECKLIST}
 
 ${PROBE_RULES}
 
+The answer stays high level and uses one or two figures at most, so ask for a number only where the headline result has none, and spend the other questions on the why behind their moves, what they enjoy, and what they want next.
+
 Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}", "options": ["…"]}]}`;
 
 // How an introduction earns attention (tester feedback): it lands the one most important thing,
-// fast, and leaves the evidence for the follow-up questions it invites.
-const INTRO_FOCUS_RULES = `It is an opening, not the whole case. Lead with the single most important thing about them for this audience and why it matters, then stop:
-- Open with a one-line headline of who they are and their scope, e.g. "I lead AI enablement and scale for the entire SE org." Save how the role works for later in the interview.
+// fast, and leaves the evidence for the follow-up questions it invites. Oct 16: a tester's coach
+// preferred his own casual version to a numbers-heavy one; an intro is high level and starts from
+// the most recent role, and stories belong in the behavioral answers.
+const INTRO_FOCUS_RULES = `It is an opening, not the whole case. Keep it high level and casual, the way they'd introduce themselves to a colleague they're meeting for coffee, and lead with the single most important thing about them for this audience, then stop:
+- Start from their current or most recent role, in a one-line headline of who they are and their scope, e.g. "Right now I lead AI enablement for the whole SE org." Save how the role works for later in the interview.
+- Stay at the level of what they do and why it matters. No step-by-step accounts of how they did something ("I sat with one steward at a time…"): that's a behavioral story, and it's what the follow-up questions are for. An example is a short clause, not a scene.
 - Use at most ${INTRO_MAX_FIGURES} figures in the whole answer, ideally one headline result with its context. Pick the figure that matters most and leave the rest out, even strong ones: they are the answers to the follow-up questions this opening invites.`;
 
 export const INTRO_WRITE_SYSTEM = `You are an interview coach writing an experienced professional's answer to "Tell me about yourself", from their own answers.
@@ -137,11 +152,15 @@ The hard rule: use only facts and figures the user gave. Never add, round, infla
 
 If they uploaded a prepared answer, rework it into the parts below, keeping their wording where it already works and adding what their follow-up answers gave.
 
-Write in the first person, in plain spoken English the user could say aloud at the start of an interview. It is a short career pitch, not a life story: present, then past, then where they're heading. Aim for about 150 to 200 words in total, 60 to 90 seconds spoken. Never go over ${INTRO_LENGTH.max} words: that is a hard limit.
+Write in the first person, in plain spoken English the user could say aloud at the start of an interview. It is a short career pitch, not a life story: present, then past, then where they're heading. Aim for about 130 to 180 words in total, about a minute spoken. Never go over ${INTRO_LENGTH.max} words: that is a hard limit.
 
 ${TIGHT_RULES}
 
+${VOICE_RULES}
+
 ${INTRO_FOCUS_RULES}
+
+When they're preparing for target jobs (listed after their answers), let the answer hint at what those jobs look for: choose which of their strengths and which result to mention, and how to describe them, so an interviewer for those jobs hears the fit. Use the jobs' themes in the user's own terms; never name a target company, quote a posting, or claim experience they didn't describe.
 
 Make it strong, not just accurate:
 - Find the one thread that ties their career together and the role they want next, and let every part serve it.
@@ -154,10 +173,10 @@ Write these parts:
 - present: 1 short sentence, the headline: their role and scope today.
 - path: at most 2 sentences, built on the one move that mattered most and why they made it, in their words. Skip moves that don't support the story; don't retell the resume.
 - highlight: 1 to 2 sentences on the one result that matters most, with their number and its context.
-- strengths: 1 to 2 sentences on what they're known for, proved with a concrete example; no new figure unless it is the one that matters most.
+- strengths: 1 to 2 sentences on what they're known for, with a short concrete example as a clause, not a scene; no new figure unless it is the one that matters most.
 - next: 1 to 2 sentences on what they want next and why, concrete enough that it can be personalized to each company (what kind of company, at what moment, needs what they bring). It closes the answer and hands back to the interviewer.
 
-The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
+The parts are said one after another as a single answer, so write them to flow together: each part's first sentence picks up from the end of the one before with a natural spoken bridge (e.g. from what they do now to how they got there: "I got here because…"; from the result to what they're known for: "That's pretty typical of what people come to me for…"). Don't repeat anything between parts.
 
 Also give it a short title (at most 8 words) for their story bank, e.g. "From support lead to solutions architect".
 
@@ -305,11 +324,16 @@ export function writeMessages(
   storyType: StoryType | undefined,
   retry?: WriteRetry,
   numbers: StoryNumber[] = [],
+  targets?: BuilderTargets,
 ): ChatMessage[] {
+  // "Tell me about yourself" hints at what the target jobs look for; a behavioral story is written
+  // from the answers alone (its follow-ups were already aimed at the jobs).
+  const preparing =
+    storyType?.format === "intro" && hasTargets(targets) ? `\n\n${targetsTranscript(targets)}` : "";
   const messages: ChatMessage[] = [
     {
       role: "user",
-      content: `Write my story from these answers.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, false)}`,
+      content: `Write my story from these answers.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, false)}${preparing}`,
     },
   ];
   if (retry) messages.push(...retryMessages(retry));
@@ -426,17 +450,21 @@ The hard rule: use only facts and figures the user gave in their answers. Never 
 
 ${TIGHT_RULES}
 
-Write in the first person, in plain spoken English they could say aloud at the start of the interview. Three beats, said one after another as a single answer with natural transitions:
-- who: 1 short sentence, the headline: who they are and their scope, angled to what this company needs.
-- proof: 2 to 3 sentences on the one result or example that proves it, with their number and the context that makes it land.
-- why_here: 1 to 2 sentences on why this company and this role, personal to this company: name what the company is doing or needs (from the posting or their words) and what they would bring to it, connected to the proof. Never a line that would fit any company. It closes the answer and hands back to the interviewer.
+${VOICE_RULES}
 
-Aim for about 150 to 200 words in total, 60 to 90 seconds spoken. Never go over ${INTRO_LENGTH.max} words: that is a hard limit.
+Write in the first person, in plain spoken English they could say aloud at the start of the interview. Three beats, said one after another as a single answer with natural spoken bridges between them:
+- who: 1 short sentence, the headline: who they are today, starting from their current or most recent role, angled to what this company needs.
+- proof: 2 to 3 sentences on the one result or example that proves it, with their number and the context that makes it land. Keep it high level: what changed and why it mattered, not a step-by-step account.
+- why_here: 1 to 2 sentences that close the answer on why this role, built from their own reasons in their words: what draws them to it and what they'd enjoy bringing, connected to the proof. Keep it safe for any interviewer: it can name the company and the role, but never diagnose the company's problems or presume to know its challenges ("your AI challenges", "you're struggling to…"). It hands back to the interviewer.
+
+Also write companyClose: a bolder alternative to why_here, 1 to 2 sentences that tie their proof to one specific thing the posting says the company is doing or needs. Only from the posting or their words. Some interviewers like this and some hear it as presumptuous, so the user picks which closing to use; make it warm and curious, not a pitch about fixing them.
+
+Aim for about 130 to 180 words in total, about a minute spoken. Never go over ${INTRO_LENGTH.max} words: that is a hard limit.
 
 Also write one short line (at most 25 words), addressed to the user, on the angle you chose and why, e.g. "Led with your SE-to-PM move, because the posting wants someone who can talk to customers and own a roadmap."
 
 Reply with JSON only, no other text:
-{"angle": "…", "parts": {${TAILORED_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
+{"angle": "…", "parts": {${TAILORED_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}, "companyClose": "…"}`;
 
 export type TailorJob = {
   title: string;
@@ -488,7 +516,11 @@ export function tailorMessages(
   return messages;
 }
 
-export function parseTailor(text: string): { angle: string; parts: Record<string, string> } {
+export function parseTailor(text: string): {
+  angle: string;
+  parts: Record<string, string>;
+  companyClose: string;
+} {
   const json = extractJson(text);
   if (!isRecord(json) || !isRecord(json.parts)) {
     throw new Error("The answer came back in an unexpected format.");
@@ -499,7 +531,9 @@ export function parseTailor(text: string): { angle: string; parts: Record<string
   );
   if (TAILORED_PARTS.every((p) => !parts[p.id])) throw new Error("The answer came back empty.");
   const angle = typeof json.angle === "string" ? json.angle.trim().slice(0, 300) : "";
-  return { angle, parts };
+  const companyClose =
+    typeof json.companyClose === "string" ? json.companyClose.trim().slice(0, 600) : "";
+  return { angle, parts, companyClose };
 }
 
 // Reads the user's career path from their resume or LinkedIn profile, so "How did you get here?"

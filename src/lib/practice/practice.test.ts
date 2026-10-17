@@ -141,7 +141,7 @@ describe("timing", () => {
 
   it("works it out from the words when typed, with the intro's shorter target", () => {
     const t = timingFor({ question: "q", answer: "word ".repeat(300) }, "about_you");
-    expect(t).toMatchObject({ seconds: 120, measured: false, min: 60, max: 90 });
+    expect(t).toMatchObject({ seconds: 120, measured: false, min: 48, max: 90 });
     expect(timingVerdict(t)).toBe("long");
     expect(timingNote(t)).toContain("estimated");
   });

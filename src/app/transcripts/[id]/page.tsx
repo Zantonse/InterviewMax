@@ -12,18 +12,38 @@ import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
 import { getTranscript } from "@/lib/transcripts/data";
 import { removeTranscript } from "../actions";
-import { PendingButton, ReviewAgainButton } from "../forms";
+import { AUTO_SPEAKER, turnsFromLabelled } from "@/lib/transcripts/speakers";
+import { PendingButton, ReviewAgainButton, SpeakerTurnsEditor } from "../forms";
 
 export const metadata: Metadata = { title: "Past interview · InterviewMax" };
 
 // Reviewing a transcript is a long model call.
 export const maxDuration = 300;
 
-const LANDED_STYLES: Record<Landed, { label: string; className: string }> = {
-  strong: { label: "Landed well", className: "bg-ink-800 text-white" },
-  mixed: { label: "Partly landed", className: "bg-amber-100 text-amber-900" },
-  weak: { label: "Didn't land", className: "bg-red-100 text-red-900" },
-  unclear: { label: "Not judged", className: "bg-slate-100 text-slate-600" },
+// Best first. "meaning" is the legend (tester feedback, Oct 16: "Partly landed" with no scale
+// didn't say where it sat between good and bad, or why).
+const LANDED_STYLES: Record<Landed, { label: string; className: string; meaning: string }> = {
+  strong: {
+    label: "Landed well",
+    className: "bg-ink-800 text-white",
+    meaning: "Answered what they asked, with specifics. They moved on satisfied or said it helped.",
+  },
+  mixed: {
+    label: "Partly landed",
+    className: "bg-amber-100 text-amber-900",
+    meaning:
+      "Got the gist across but left something out, so they probed for it. Fixable with the missing piece.",
+  },
+  weak: {
+    label: "Didn't land",
+    className: "bg-red-100 text-red-900",
+    meaning: "Missed the question or stayed vague. They pressed hard or gave up on the topic.",
+  },
+  unclear: {
+    label: "Not judged",
+    className: "bg-slate-100 text-slate-600",
+    meaning: "I couldn't quote your answer from the transcript, so I didn't rate it.",
+  },
 };
 
 export default function TranscriptPage({ params }: PageProps<"/transcripts/[id]">) {
@@ -51,6 +71,8 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
     listStories(),
   ]);
   const analysis = transcript.analysis;
+  // Labelled by the app because the transcript had no speaker names: the user can fix who said what.
+  const turns = transcript.speaker === AUTO_SPEAKER ? turnsFromLabelled(transcript.transcript) : [];
 
   return (
     <>
@@ -81,6 +103,7 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
                 In the order they asked. Every quote is from your transcript. Each behavioral
                 question links to the story that answers it, or the one to build.
               </p>
+              <LandedLegend />
               <ol className="space-y-3" data-testid="asked-list">
                 {analysis.asked.map((q, i) => (
                   <AskedItem key={q.question} q={q} n={i + 1} stories={stories} />
@@ -94,6 +117,23 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
               </p>
               <ReviewAgainButton transcriptId={transcript.id} reviewed={false} />
             </section>
+          )}
+          {turns.length > 0 && (
+            <details
+              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              data-testid="who-said-what"
+            >
+              <summary className="cursor-pointer">
+                <span className="text-sm font-bold uppercase tracking-wide text-ink-800">
+                  Who said what
+                </span>
+                <span className="mt-1 block text-sm text-slate-600">
+                  Your transcript had no speaker names, so I marked each turn as the interviewer or
+                  you. Open this to check, and tap a label to fix it.
+                </span>
+              </summary>
+              <SpeakerTurnsEditor transcriptId={transcript.id} turns={turns} />
+            </details>
           )}
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
             <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
@@ -166,7 +206,12 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
           </span>
         ))}
       </p>
-      {q.note && <p className="mt-2 text-sm text-slate-700">{q.note}</p>}
+      {q.note && (
+        <p className="mt-2 text-sm text-slate-700">
+          <span className="font-semibold text-slate-900">Why: </span>
+          {q.note}
+        </p>
+      )}
       {q.evidence && <Quote label="You said">{q.evidence}</Quote>}
       {q.probes.length > 0 && (
         <div className="mt-2">
@@ -203,6 +248,34 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
         </form>
       ) : null}
     </li>
+  );
+}
+
+function LandedLegend() {
+  const scale = (["strong", "mixed", "weak"] as const).map((id) => LANDED_STYLES[id]);
+  return (
+    <details className="mb-4 rounded-2xl bg-slate-50 p-3 text-sm ring-1 ring-black/5" open>
+      <summary className="cursor-pointer font-semibold text-slate-800">
+        How each answer is rated
+      </summary>
+      <p className="mt-2 text-slate-600">
+        Judged from what you said and how the interviewer reacted: whether they moved on, said it
+        helped, or kept probing for something you left out. From best to worst:
+      </p>
+      <ol className="mt-2 space-y-1.5" data-testid="landed-legend">
+        {scale.map((l) => (
+          <li key={l.label} className="flex flex-wrap items-baseline gap-2">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${l.className}`}>
+              {l.label}
+            </span>
+            <span className="text-slate-700">{l.meaning}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-slate-600">
+        Each rating comes with why, the part of your answer it rests on, and what was missing.
+      </p>
+    </details>
   );
 }
 

@@ -103,13 +103,14 @@ export async function writeStory(
   content: StoryContent,
   storyType: StoryType | undefined,
   numbers: StoryNumber[] = [],
+  targets?: BuilderTargets,
 ): Promise<{ title: string; draft: StoryDraft }> {
   const answers = `${allAnswerText(content)}\n${filledValues(numbers)}`;
   const system = writeSystem(storyType);
 
   const { result, value: story, untraced } = await writeChecked({
     write: (retry) =>
-      call("storyWrite", system, writeMessages(content, storyType, retry, numbers)),
+      call("storyWrite", system, writeMessages(content, storyType, retry, numbers, targets)),
     parse: (text) => parseWrite(text, storyType),
     script: (story) => draftText(story.parts, storyType),
     answers,
@@ -203,12 +204,16 @@ export async function tailorIntro(
       ),
     parse: parseTailor,
     script: (t) => tailoredText(t.parts),
+    alsoTraced: (t) => t.companyClose,
     answers,
     maxWords: INTRO_LENGTH.max,
     maxFigures: INTRO_MAX_FIGURES,
   });
   const draft: TailoredDraft = {
     parts: value.parts,
+    ...(value.companyClose && value.parts.why_here
+      ? { closings: { role: value.parts.why_here, company: value.companyClose, picked: "role" } }
+      : {}),
     angle: value.angle,
     untracedNumbers: untraced,
     model: result.model,
@@ -223,6 +228,8 @@ async function writeChecked<T>(input: {
   write: (retry?: WriteRetry) => Promise<{ text: string; model: string }>;
   parse: (text: string) => T;
   script: (value: T) => string;
+  // Text that isn't part of the script but must trace too, e.g. an alternative closing line.
+  alsoTraced?: (value: T) => string;
   answers: string;
   maxWords: number;
   // "Tell me about yourself": more figures than this are sent back to cut.
@@ -232,7 +239,10 @@ async function writeChecked<T>(input: {
   let value = input.parse(result.text);
   for (let attempt = 0; ; attempt++) {
     const script = input.script(value);
-    const untraced = untracedNumbers(script, input.answers);
+    const untraced = untracedNumbers(
+      [script, input.alsoTraced?.(value) ?? ""].join("\n"),
+      input.answers,
+    );
     const count = countWords(script);
     const over = count > input.maxWords;
     const max = input.maxFigures;

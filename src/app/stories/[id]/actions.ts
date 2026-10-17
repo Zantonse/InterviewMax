@@ -269,11 +269,11 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
     if (stage !== "write" && stage !== "drafted" && !rough)
       return fail("Answer the remaining questions first.");
 
-    const { title, draft } = await writeStory(
-      story.content,
-      getStoryType(story.storyType),
-      await storyNumbers(story.storyType),
-    );
+    const [numbers, targets] = await Promise.all([
+      storyNumbers(story.storyType),
+      storyType?.format === "intro" ? loadBuilderTargets(storyType) : undefined,
+    ]);
+    const { title, draft } = await writeStory(story.content, storyType, numbers, targets);
     const content = { ...story.content, draft };
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
