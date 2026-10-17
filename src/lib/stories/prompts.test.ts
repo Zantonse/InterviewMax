@@ -576,3 +576,22 @@ describe("tap options on follow-ups", () => {
     expect(saved.followUps?.[0].options).toEqual(["A deal", "A deadline"]);
   });
 });
+
+describe("deeper pass: edit, don't rewrite, and what made it hard", () => {
+  it("has the writer edit the user's telling instead of rewriting it", () => {
+    expect(writeSystem(stakeholder)).toMatch(/editor, not a ghostwriter/);
+    expect(writeSystem(aboutMe)).toMatch(/editor, not a ghostwriter/);
+  });
+
+  it("asks about the obstacle when the telling has none, and writes it into the actions", () => {
+    expect(probeSystem(stakeholder, 1)).toMatch(/what made it hard/);
+    expect(probeSystem(stakeholder, 1)).toMatch(/obstacle/);
+    expect(writeSystem(stakeholder)).toMatch(/including what made it hard if they said/);
+  });
+
+  it("sends a draft that isn't in their words back to be reworked from their answers", () => {
+    const [, ask] = retryMessages({ previous: "{}", untraced: [], ownWords: { share: 0.12, min: 0.25 } });
+    expect(ask.content).toMatch(/Only 12% of it uses my own phrasing/);
+    expect(ask.content).toMatch(/keep my sentences and phrases/);
+  });
+});

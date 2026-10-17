@@ -22,6 +22,7 @@ import {
   type StoryGrade,
 } from "./grading";
 import { keepTracedSentences, untracedNumbers } from "./numbers";
+import { OWN_WORDS_MIN, ownWordsShare } from "./own-words";
 import {
   PATH_SYSTEM,
   PREFILL_SYSTEM,
@@ -96,8 +97,8 @@ export async function inferCareerPath(source: string): Promise<string> {
 }
 
 // Call two: write the story from the user's answers. Every number in the draft is checked
-// against the answers in code, and its length against the hard limit; if either fails, the model
-// gets up to two chances to fix it. Whatever still doesn't trace is saved on the draft so the
+// against the answers in code, its length against the hard limit, and how much of it is in the
+// user's own words (own-words.ts); if any fails, the model gets up to two chances to fix it. Whatever still doesn't trace is saved on the draft so the
 // builder can flag it. Values from the user's numbers checklist count as their answers.
 export async function writeStory(
   content: StoryContent,
@@ -108,7 +109,7 @@ export async function writeStory(
   const answers = `${allAnswerText(content)}\n${filledValues(numbers)}`;
   const system = writeSystem(storyType);
 
-  const { result, value: story, untraced } = await writeChecked({
+  const { result, value: story, untraced, ownWords } = await writeChecked({
     write: (retry) =>
       call("storyWrite", system, writeMessages(content, storyType, retry, numbers, targets)),
     parse: (text) => parseWrite(text, storyType),
@@ -116,6 +117,7 @@ export async function writeStory(
     answers,
     maxWords: lengthRange(storyType).max,
     ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
+    minOwnWords: OWN_WORDS_MIN,
   });
 
   return {
@@ -123,6 +125,7 @@ export async function writeStory(
     draft: {
       parts: story.parts,
       untracedNumbers: untraced,
+      ...(ownWords !== undefined ? { ownWords } : {}),
       model: result.model,
       writtenAt: new Date().toISOString(),
     },
@@ -222,7 +225,7 @@ export async function tailorIntro(
   return { draft, checks: tailoredChecks(draft) };
 }
 
-// Writes, then checks the numbers and the length in code. Up to two retries: the first fixes
+// Writes, then checks the numbers, the length and (when asked) the share in the user's words in code. Up to two retries: the first fixes
 // whatever failed; the second runs only if it still fails.
 async function writeChecked<T>(input: {
   write: (retry?: WriteRetry) => Promise<{ text: string; model: string }>;
@@ -234,6 +237,8 @@ async function writeChecked<T>(input: {
   maxWords: number;
   // "Tell me about yourself": more figures than this are sent back to cut.
   maxFigures?: number;
+  // Less of the script than this in the user's own words is sent back to rework from their answers.
+  minOwnWords?: number;
 }) {
   let result = await input.write();
   let value = input.parse(result.text);
@@ -248,14 +253,18 @@ async function writeChecked<T>(input: {
     const max = input.maxFigures;
     const figures = max === undefined ? [] : introFigures(script);
     const tooMany = max !== undefined && figures.length > max;
-    if ((untraced.length === 0 && !over && !tooMany) || attempt >= 2) {
-      return { result, value, untraced };
+    const min = input.minOwnWords;
+    const ownWords = min === undefined ? undefined : ownWordsShare(script, input.answers);
+    const borrowed = min !== undefined && ownWords !== undefined && ownWords < min;
+    if ((untraced.length === 0 && !over && !tooMany && !borrowed) || attempt >= 2) {
+      return { result, value, untraced, ownWords };
     }
     result = await input.write({
       previous: result.text,
       untraced,
       ...(over ? { words: { count, max: input.maxWords } } : {}),
       ...(tooMany ? { figures: { found: figures, max } } : {}),
+      ...(borrowed ? { ownWords: { share: ownWords, min } } : {}),
     });
     value = input.parse(result.text);
   }

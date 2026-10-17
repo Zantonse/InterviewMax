@@ -345,3 +345,21 @@ describe("cutting the fluff", () => {
     expect(gradeSystem(aboutMe)).toContain("maybe 100 accounts");
   });
 });
+
+describe("in your own words", () => {
+  it("checks a draft that measured it, and leaves older drafts alone", () => {
+    expect(quickChecks(goodStar, stakeholder).some((c) => c.id === "own_words")).toBe(false);
+    const theirs = quickChecks({ ...goodStar, ownWords: 0.41 }, stakeholder).at(-1);
+    expect(theirs).toMatchObject({ id: "own_words", pass: true });
+    expect(theirs?.detail).toContain("41%");
+    const borrowed = quickChecks({ ...goodStar, ownWords: 0.1 }, stakeholder).at(-1);
+    expect(borrowed).toMatchObject({ id: "own_words", pass: false });
+  });
+
+  it("keeps the measure when the draft is saved and read back", () => {
+    const saved = parseContent(
+      JSON.parse(JSON.stringify({ version: 1, answers: {}, draft: { ...goodStar, ownWords: 0.3 } })),
+    );
+    expect(saved.draft?.ownWords).toBe(0.3);
+  });
+});

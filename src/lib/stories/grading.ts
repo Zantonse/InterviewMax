@@ -2,6 +2,7 @@ import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryDraft } from "./content";
 import { parseStoredFit, type ContentCheck } from "./fit";
 import { findNumbers } from "./numbers";
+import { OWN_WORDS_MIN } from "./own-words";
 import { extractJson } from "./prompts";
 import {
   INTRO_LENGTH,
@@ -109,6 +110,8 @@ export const CHECKS = [
   { id: "hedged", label: "No unsure figures" },
   // "Tell me about yourself" only.
   { id: "focus", label: "One or two key figures, not a list" },
+  // Drafts written since it was measured (see own-words.ts).
+  { id: "own_words", label: "In your own words" },
 ] as const;
 
 export type CheckId = (typeof CHECKS)[number]["id"];
@@ -301,7 +304,7 @@ export function hedgedFigures(text: string): string[] {
 
 // The quick checks on a written draft. Plain code, no model call.
 export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined): CheckResult[] {
-  return checkScript({
+  const checks = checkScript({
     text: draftText(draft.parts, storyType),
     numberText: draft.parts[numberPart(storyType)] ?? "",
     untraced: draft.untracedNumbers,
@@ -309,6 +312,19 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     where: storyType?.format === "intro" ? "your proof point" : "the result",
     ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
   });
+  return draft.ownWords === undefined ? checks : [...checks, ownWordsCheck(draft.ownWords)];
+}
+
+export function ownWordsCheck(share: number): CheckResult {
+  const pct = Math.round(share * 100);
+  return {
+    id: "own_words",
+    pass: share >= OWN_WORDS_MIN,
+    detail:
+      share >= OWN_WORDS_MIN
+        ? `About ${pct}% of it is phrased the way you said it.`
+        : `Only about ${pct}% of it is phrased the way you said it, so it may not sound like you. Rewrite it, or add more in your own words.`,
+  };
 }
 
 // The figures an introduction says, as written, once each. Years ("since 2019") aren't metrics.

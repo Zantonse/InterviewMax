@@ -37,6 +37,7 @@ export const FUNNEL_STEPS: readonly UsageEvent[] = [
   "job_added",
   "likely_questions_shown",
   "story_started",
+  "story_told",
   "story_finished",
   "story_graded",
   "about_me_finished",

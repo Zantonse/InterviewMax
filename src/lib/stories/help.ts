@@ -39,6 +39,12 @@ const HELP: Record<string, QuestionHelp> = {
     whereToLook:
       "Walk through it in order: what you did first, what came next, and what you changed when something didn't work.",
   },
+  obstacle: {
+    example:
+      "\"The hard part was that the customer's IT lead didn't trust us after the last outage, so every fix needed his sign-off, and he wasn't answering emails.\"",
+    whereToLook:
+      "Think of the point where it could have gone wrong: who or what was in the way, or what you were worried about.",
+  },
   decision: {
     example:
       "\"I could delay the launch or cut two features. I cut the features, because the customer cared about the date more than the extras, and I watched sign-ups in week one to know if I'd called it wrong.\"",
