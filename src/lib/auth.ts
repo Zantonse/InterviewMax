@@ -29,6 +29,10 @@ async function getAuth0User(): Promise<CurrentUser> {
   if (!session) {
     redirect("/login");
   }
+  // A new email-and-password account has to confirm its address before it can open a profile.
+  if (session.user.email_verified === false) {
+    redirect("/login?error=verify");
+  }
   // Finds this Auth0 identity's profile, linking it to an existing tester by verified email or
   // making a new one on first sign-in (supabase/migrations/20261014040000_auth0_sign_in.sql).
   const supabase = await createClient();
