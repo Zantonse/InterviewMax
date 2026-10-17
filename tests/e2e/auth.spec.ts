@@ -6,7 +6,7 @@ test("signed-out visitors see the public homepage, which links to sign in", asyn
   await expect(
     page.getByRole("heading", { name: "Behavioral interview stories that land." }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Sign in to InterviewMax" })).toBeVisible();
   await expect(page.getByLabel("Work or personal email")).toBeVisible();
