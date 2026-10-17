@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TranscriptAnalysis } from "@/lib/transcripts/content";
-import { caseKind, caseQuestionsFor } from "./content";
+import { caseKind, caseQuestionsFor, isCaseQuestion } from "./content";
 import { casePracticeMessages, parseCasePracticeReply } from "./prompts";
 
 function analysis(asked: { question: string; theme: TranscriptAnalysis["asked"][number]["theme"] }[]): TranscriptAnalysis {
@@ -85,5 +85,16 @@ describe("case and technical questions", () => {
     expect(fb.missing).toEqual([{ step: "test", tip: "Pilot it in a few stores for 3 months before the chain." }]);
     expect(fb.followUp).toBe("How would you control for weather?");
     expect(() => parseCasePracticeReply("{}", input)).toThrow();
+  });
+});
+
+describe("isCaseQuestion", () => {
+  it("leaves out screening and logistics", () => {
+    expect(isCaseQuestion("Should the battery category add a premium third line?")).toBe(true);
+    expect(isCaseQuestion("How do you use SQL?")).toBe(true);
+    expect(isCaseQuestion("What number are you targeting?")).toBe(false);
+    expect(isCaseQuestion("Are you okay with some travel?")).toBe(false);
+    expect(isCaseQuestion("What's your timeline looking like?")).toBe(false);
+    expect(isCaseQuestion("Do you have any questions for me?")).toBe(false);
   });
 });

@@ -30,6 +30,7 @@ import {
   type StoredProfile,
 } from "@/lib/profile/content";
 import { getStoredProfile, saveStoredProfile } from "@/lib/profile/data";
+import type { Tendency } from "@/lib/profile/tendencies";
 import { fallbackSummary } from "@/lib/profile/prompts";
 import { writeProfileSummary } from "@/lib/profile/summary";
 import { listStories } from "@/lib/stories/data";
@@ -159,6 +160,17 @@ async function ProfileContent() {
         </Card>
       </div>
 
+      <Card title="How you interview">
+        <p className="-mt-2 mb-4 text-sm text-slate-600">
+          Tendencies from your real past interviews, counted from what you and the interviewer said.
+        </p>
+        <ul className="divide-y divide-slate-100" data-testid="profile-tendencies">
+          {result.tendencies.map((t) => (
+            <CriterionRow key={t.id} criterion={t} testPrefix="tendency" />
+          ))}
+        </ul>
+      </Card>
+
       <Card title="What it's based on">
         <ul className="divide-y divide-slate-100" data-testid="profile-criteria">
           {result.criteria.map((c) => (
@@ -250,9 +262,15 @@ function NextStepButton({ step }: { step: NextStep }) {
   );
 }
 
-function CriterionRow({ criterion: c }: { criterion: CriterionResult }) {
+function CriterionRow({
+  criterion: c,
+  testPrefix = "criterion",
+}: {
+  criterion: CriterionResult | Tendency;
+  testPrefix?: string;
+}) {
   return (
-    <li className="py-4 first:pt-0 last:pb-0" data-testid={`criterion-${c.id}`} data-status={c.status}>
+    <li className="py-4 first:pt-0 last:pb-0" data-testid={`${testPrefix}-${c.id}`} data-status={c.status}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-slate-900">{c.label}</h3>
         <StatusPill status={c.status} />
