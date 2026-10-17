@@ -22,6 +22,7 @@ export const USAGE_EVENTS = [
   "brief_opened",
   "warm_up_opened",
   "profile_opened",
+  "questions_shared",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
@@ -47,6 +48,7 @@ export const EVENT_LABELS: Record<UsageEvent, string> = {
   brief_opened: "Opened a pre-interview brief",
   warm_up_opened: "Opened the warm-up",
   profile_opened: "Opened their interviewee profile",
+  questions_shared: "Shared interview questions",
 };
 
 export function isUsageEvent(value: unknown): value is UsageEvent {

@@ -11,9 +11,11 @@ import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
 import { getTranscript } from "@/lib/transcripts/data";
-import { removeTranscript } from "../actions";
+import { roundLabel } from "@/lib/bank/content";
+import { listMySharedQuestions, type MySharedQuestion } from "@/lib/bank/data";
+import { leaveOutQuestion, removeTranscript, withdrawQuestions } from "../actions";
 import { AUTO_SPEAKER, turnsFromLabelled } from "@/lib/transcripts/speakers";
-import { PendingButton, ReviewAgainButton, SpeakerTurnsEditor } from "../forms";
+import { PendingButton, ReviewAgainButton, ShareQuestionsForm, SpeakerTurnsEditor } from "../forms";
 
 export const metadata: Metadata = { title: "Past interview · InterviewMax" };
 
@@ -66,9 +68,10 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
   const { id } = await params;
   const transcript = await getTranscript(id);
   if (!transcript) notFound();
-  const [job, stories] = await Promise.all([
+  const [job, stories, shared] = await Promise.all([
     transcript.targetJobId ? getJob(transcript.targetJobId) : null,
     listStories(),
+    transcript.shareQuestions ? listMySharedQuestionsSafely(transcript.id) : [],
   ]);
   const analysis = transcript.analysis;
   // Labelled by the app because the transcript had no speaker names: the user can fix who said what.
@@ -168,6 +171,15 @@ async function TranscriptContent({ params }: { params: PageProps<"/transcripts/[
               </p>
               <ReviewAgainButton transcriptId={transcript.id} reviewed />
             </section>
+          )}
+          {analysis && (
+            <SharedQuestions
+              transcriptId={transcript.id}
+              sharing={transcript.shareQuestions}
+              round={transcript.round}
+              company={transcript.company}
+              shared={shared}
+            />
           )}
           <form action={removeTranscript}>
             <input type="hidden" name="transcriptId" value={transcript.id} />
@@ -285,5 +297,94 @@ function Quote({ children, label }: { children: React.ReactNode; label?: string 
       {label && <span className="font-semibold text-slate-700">{label}: </span>}
       &ldquo;{children}&rdquo;
     </blockquote>
+  );
+}
+
+async function listMySharedQuestionsSafely(transcriptId: string): Promise<MySharedQuestion[]> {
+  try {
+    return await listMySharedQuestions(transcriptId);
+  } catch (err) {
+    console.error("Transcripts: loading shared questions failed", err);
+    return [];
+  }
+}
+
+const SHARED_STATUS: Record<MySharedQuestion["status"], { label: string; className: string }> = {
+  pending: { label: "Waiting for review", className: "bg-slate-100 text-slate-600" },
+  approved: { label: "Shared", className: "bg-ink-800 text-white" },
+  rejected: { label: "Not shared", className: "bg-amber-100 text-amber-900" },
+};
+
+// Shared question bank: what this interview shares, or the offer to share it.
+function SharedQuestions({
+  transcriptId,
+  sharing,
+  round,
+  company,
+  shared,
+}: {
+  transcriptId: string;
+  sharing: boolean;
+  round: string | null;
+  company: string | null;
+  shared: MySharedQuestion[];
+}) {
+  return (
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="shared-questions">
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+        Question bank
+      </h2>
+      {!sharing ? (
+        <>
+          <p className="mb-4 text-sm text-slate-600">
+            Share the questions you were asked here, so other people preparing for{" "}
+            {company ?? "the same company"} know what to expect. Never your answers or anyone&apos;s
+            name, and each question is checked by hand before anyone sees it.
+          </p>
+          {company ? (
+            <ShareQuestionsForm transcriptId={transcriptId} />
+          ) : (
+            <p className="text-sm text-slate-500">Add the company to this interview to share its questions.</p>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mb-3 text-sm text-slate-600">
+            You&apos;re sharing these questions{company ? ` as asked at ${company}` : ""}
+            {roundLabel(round) ? `, ${roundLabel(round)!.toLowerCase()}` : ""}, with names removed.
+            Leave out any you&apos;d rather keep to yourself.
+          </p>
+          {shared.length === 0 ? (
+            <p className="text-sm text-slate-500">No behavioral questions to share from this interview.</p>
+          ) : (
+            <ul className="space-y-2">
+              {shared.map((q) => (
+                <li key={q.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm ring-1 ring-black/5">
+                  <p className="text-slate-800">{q.question}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${SHARED_STATUS[q.status].className}`}>
+                      {SHARED_STATUS[q.status].label}
+                    </span>
+                    <form action={leaveOutQuestion}>
+                      <input type="hidden" name="transcriptId" value={transcriptId} />
+                      <input type="hidden" name="questionId" value={q.id} />
+                      <PendingButton pendingText="Removing…" className="text-xs font-medium text-slate-500 hover:text-red-700">
+                        Leave out
+                      </PendingButton>
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form action={withdrawQuestions} className="mt-4">
+            <input type="hidden" name="transcriptId" value={transcriptId} />
+            <PendingButton pendingText="Withdrawing…" className="text-sm font-medium text-slate-500 hover:text-red-700">
+              Stop sharing and withdraw them all
+            </PendingButton>
+          </form>
+        </>
+      )}
+    </section>
   );
 }

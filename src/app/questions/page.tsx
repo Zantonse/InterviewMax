@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { askedLabel } from "@/lib/bank/content";
+import { recentSharedQuestions } from "@/lib/bank/data";
 import { listJobs } from "@/lib/jobs/data";
 import { coverageFor } from "@/lib/questions/coverage";
 import { buildLibrary } from "@/lib/questions/library";
@@ -45,9 +47,12 @@ async function LibraryContent() {
     listStories(),
     listTranscriptsForPrep(),
   ]);
+  const companies = [...new Set(jobs.flatMap((j) => (j.company?.trim() ? [j.company.trim()] : [])))];
+  const bank = (await Promise.all(companies.map((c) => recentSharedQuestions(c)))).flat();
   const entries = buildLibrary({
     jobs,
     transcripts: transcripts.map((t) => ({ id: t.id, title: t.title, asked: t.analysis?.asked ?? [] })),
+    bank: bank.map((q) => ({ question: q.question, theme: q.theme, label: askedLabel(q) })),
   });
   const items: LibraryItem[] = entries.map((e) => {
     const coverage = coverageFor(e.theme, stories);

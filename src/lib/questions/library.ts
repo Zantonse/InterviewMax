@@ -98,7 +98,9 @@ export const LIBRARY: readonly LibraryQuestion[] = QUESTION_THEMES.flatMap((them
 export type LibrarySource =
   | { kind: "library"; senior?: boolean }
   | { kind: "job"; jobId: string; title: string }
-  | { kind: "transcript"; transcriptId: string; title: string };
+  | { kind: "transcript"; transcriptId: string; title: string }
+  // Shared question bank: asked recently at a target job's company, e.g. "Asked at Acme, Sep 2026".
+  | { kind: "bank"; label: string };
 
 export type LibraryEntry = {
   question: string;
@@ -116,10 +118,11 @@ export function questionKey(question: string): string {
 }
 
 // The user's own questions first (likely for their jobs, then asked in their past interviews),
-// then the library. The same question from several places is one entry with every source.
+// then those asked recently at their jobs' companies, then the library. The same question from several places is one entry with every source.
 export function buildLibrary(input: {
   jobs: { id: string; title: string; likelyQuestions: { questions: { question: string; theme: QuestionThemeId }[] } | null }[];
   transcripts: { id: string; title: string; asked: { question: string; theme: QuestionThemeId | null }[] }[];
+  bank?: { question: string; theme: QuestionThemeId | null; label: string }[];
 }): LibraryEntry[] {
   const entries = new Map<string, LibraryEntry>();
   const add = (question: string, theme: QuestionThemeId, source: LibrarySource) => {
@@ -138,6 +141,9 @@ export function buildLibrary(input: {
     for (const q of t.asked) {
       if (q.theme) add(q.question, q.theme, { kind: "transcript", transcriptId: t.id, title: t.title });
     }
+  }
+  for (const q of input.bank ?? []) {
+    if (q.theme) add(q.question, q.theme, { kind: "bank", label: q.label });
   }
   for (const q of LIBRARY) {
     add(q.question, q.theme, { kind: "library", ...(q.senior ? { senior: true } : {}) });

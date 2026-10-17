@@ -3,6 +3,12 @@
 import { refresh } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
+import { isRound } from "@/lib/bank/content";
+import {
+  leaveOutSharedQuestion,
+  syncSharedQuestionsSafely,
+  withdrawSharedQuestions,
+} from "@/lib/bank/data";
 import { getJob } from "@/lib/jobs/data";
 import { predictAfterTranscript } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
@@ -20,6 +26,7 @@ import {
   insertTranscript,
   listTranscripts,
   saveLabelledTranscript,
+  saveSharing,
 } from "@/lib/transcripts/data";
 import {
   AUTO_SPEAKER,
@@ -42,6 +49,10 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
   const speaker = clean(formData.get("speaker")).slice(0, MAX_SPEAKER_LENGTH);
   let title = clean(formData.get("title")).slice(0, MAX_TITLE_LENGTH);
   let company = clean(formData.get("company")).slice(0, MAX_TITLE_LENGTH) || null;
+  // Shared question bank: off unless ticked.
+  const share = formData.get("share") === "on";
+  const roundValue = clean(formData.get("round"));
+  const round = isRound(roundValue) ? roundValue : null;
 
   let id: string;
   try {
@@ -81,8 +92,11 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
       speaker,
       fileName,
       transcript: text,
+      shareQuestions: share,
+      round,
     });
     await trackEvent("transcript_added");
+    if (share) await trackEvent("questions_shared");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Transcripts: adding a transcript failed", err);
@@ -99,6 +113,7 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
 
   try {
     await analyzeTranscript(id);
+    await syncSharedQuestionsSafely(id);
     await predictAfterTranscript({ targetJobId: jobId, company });
   } catch (err) {
     unstable_rethrow(err);
@@ -112,6 +127,7 @@ export async function reviewAgain(_prev: FormState, formData: FormData): Promise
   try {
     const id = String(formData.get("transcriptId") ?? "");
     await analyzeTranscript(id);
+    await syncSharedQuestionsSafely(id);
     const transcript = await getTranscript(id);
     if (transcript) await predictAfterTranscript(transcript);
   } catch (err) {
@@ -149,6 +165,7 @@ export async function relabelTranscript(
       AUTO_SPEAKER,
     );
     await analyzeTranscript(transcript.id);
+    await syncSharedQuestionsSafely(transcript.id);
     await predictAfterTranscript(transcript);
   } catch (err) {
     unstable_rethrow(err);
@@ -164,6 +181,42 @@ export async function relabelTranscript(
   }
   refresh();
   return null;
+}
+
+// Shared question bank: turns sharing on for an interview already added, with its round.
+export async function shareQuestions(_prev: FormState, formData: FormData): Promise<FormState> {
+  try {
+    const transcript = await getTranscript(String(formData.get("transcriptId") ?? ""));
+    if (!transcript) return { error: "That transcript wasn't found." };
+    const roundValue = clean(formData.get("round"));
+    await saveSharing(transcript.id, {
+      shareQuestions: true,
+      round: isRound(roundValue) ? roundValue : null,
+    });
+    await syncSharedQuestionsSafely(transcript.id);
+    await trackEvent("questions_shared");
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Transcripts: sharing questions failed", err);
+    return { error: err instanceof Error ? err.message : "That didn't save. Try again." };
+  }
+  refresh();
+  return null;
+}
+
+// Stops sharing and deletes every question already shared from this interview.
+export async function withdrawQuestions(formData: FormData): Promise<void> {
+  await withdrawSharedQuestions(String(formData.get("transcriptId") ?? ""));
+  refresh();
+}
+
+// Leaves one question out of the bank for good.
+export async function leaveOutQuestion(formData: FormData): Promise<void> {
+  await leaveOutSharedQuestion(
+    String(formData.get("transcriptId") ?? ""),
+    String(formData.get("questionId") ?? ""),
+  );
+  refresh();
 }
 
 export async function removeTranscript(formData: FormData): Promise<void> {

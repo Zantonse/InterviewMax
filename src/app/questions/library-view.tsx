@@ -130,6 +130,7 @@ export function LibraryView({
 
 function SourceTag({ source }: { source: LibrarySource }) {
   if (source.kind === "library") return source.senior ? <Tag>Senior roles</Tag> : null;
+  if (source.kind === "bank") return <Tag tone="accent">{source.label}</Tag>;
   if (source.kind === "job") {
     return (
       <Link href={`/jobs/${source.jobId}`} className="hover:underline">

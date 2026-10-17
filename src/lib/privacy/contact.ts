@@ -5,7 +5,7 @@ export function privacyContactEmail(env: Record<string, string | undefined> = pr
   return email.includes("@") ? email : null;
 }
 
-export const POLICY_UPDATED = "October 15, 2026";
+export const POLICY_UPDATED = "October 17, 2026";
 
 // What someone types to confirm deleting their account.
 export const DELETE_CONFIRM_WORD = "delete";
