@@ -21,7 +21,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           Sign in to InterviewMax
         </h1>
         <p className="mt-1 text-slate-600">
-          {auth0 ? "Welcome back. Enter your email to continue." : "We'll email you a sign-in link."}
+          {auth0 ? "We'll email you a sign-in code." : "We'll email you a sign-in link."}
         </p>
         <Suspense fallback={null}>
           <LinkError searchParams={searchParams} auth0={auth0} />
@@ -36,8 +36,6 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 }
 
 const AUTH0_ERRORS: Record<string, string> = {
-  verify:
-    "Confirm your email address first: open the confirmation email we sent when you created your account and click its link. Then sign in again.",
   auth0: "Sign-in didn't finish. Try again, or pick another way to sign in.",
   account:
     "We couldn't open your InterviewMax account after that sign-in. Your email address has to be confirmed by the service you sign in with; try Google or an email code.",

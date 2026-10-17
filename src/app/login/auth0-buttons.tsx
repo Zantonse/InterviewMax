@@ -5,12 +5,9 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 // Sign-in choices when Auth0 signs people in. Each goes straight to that provider through
 // Auth0's /auth/login route, which forwards every other query parameter to Auth0 (so the email
 // form's login_hint pre-fills the address on Auth0's code page). The connection names are
-// Auth0's defaults; "Username-Password-Authentication" is Auth0's email-and-password database
-// (Auth0's own page handles the password, sign-up and resets); "email" is Auth0's passwordless
-// email connection, set to send a code.
-type Connection = "google-oauth2" | "linkedin" | typeof PASSWORD | "email";
-
-const PASSWORD = "Username-Password-Authentication";
+// Auth0's defaults; "email" is Auth0's passwordless email connection, set to send a code (Auth0's
+// Universal Login can't send magic links).
+type Connection = "google-oauth2" | "linkedin" | "email";
 
 const LAST_USED_KEY = "interviewmax:last-sign-in";
 
@@ -19,10 +16,8 @@ const SOCIAL: { connection: Connection; label: string; Logo: () => React.ReactEl
   { connection: "linkedin", label: "LinkedIn", Logo: LinkedInLogo },
 ];
 
-function loginHref(connection: Connection, signUp = false) {
+function loginHref(connection: Connection) {
   const params = new URLSearchParams({ connection, returnTo: "/" });
-  // Opens Auth0's page on its sign-up tab instead of sign-in.
-  if (signUp) params.set("screen_hint", "signup");
   return `/auth/login?${params}`;
 }
 
@@ -49,26 +44,23 @@ export function Auth0Buttons() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Email first: Continue goes to Auth0's password page with the address filled in (Auth0 takes
-          the password, sign-up and resets); the second button sends a one-time code instead. A
-          plain GET form to /auth/login, so it works before the page's JavaScript loads. The buttons
-          are never `disabled`: a disabled submitter drops its connection from the request. */}
+      {/* Email first: Auth0 emails a one-time code and opens its code page with the address
+          filled in. A plain GET form to /auth/login, so it works before the page's JavaScript
+          loads. */}
       <form
         action="/auth/login"
         method="get"
-        onSubmit={(event) => {
-          const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-          start(submitter?.value === "email" ? "email" : PASSWORD);
-        }}
+        onSubmit={() => start("email")}
         className="flex flex-col gap-3"
       >
+        <input type="hidden" name="connection" value="email" />
         <input type="hidden" name="returnTo" value="/" />
         <label
           htmlFor="login_hint"
           className="flex items-center justify-between text-sm font-medium text-slate-700"
         >
           Email
-          {(lastUsed === PASSWORD || lastUsed === "email") && !busy && <LastUsed />}
+          {lastUsed === "email" && !busy && <LastUsed />}
         </label>
         <input
           id="login_hint"
@@ -82,21 +74,10 @@ export function Auth0Buttons() {
         />
         <button
           type="submit"
-          name="connection"
-          value={PASSWORD}
-          aria-disabled={busy}
-          className={`rounded-xl bg-accent-400 px-4 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 ${busy ? "pointer-events-none opacity-60" : ""}`}
+          disabled={busy}
+          className="rounded-xl bg-accent-400 px-4 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
         >
-          {opening === PASSWORD ? "One moment…" : "Continue with password"}
-        </button>
-        <button
-          type="submit"
-          name="connection"
-          value="email"
-          aria-disabled={busy}
-          className={`text-sm font-medium text-ink-700 hover:underline ${busy ? "pointer-events-none opacity-60" : ""}`}
-        >
-          {opening === "email" ? "Sending your code…" : "No password? Email me a one-time code"}
+          {opening === "email" ? "Sending your code…" : "Email me a sign-in code"}
         </button>
       </form>
 
@@ -126,14 +107,7 @@ export function Auth0Buttons() {
       </div>
 
       <p className="mt-4 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
-        New to InterviewMax?{" "}
-        <a
-          href={loginHref(PASSWORD, true)}
-          onClick={() => start(PASSWORD)}
-          className="font-semibold text-ink-800 hover:underline"
-        >
-          Create an account
-        </a>
+        New here? Any of these creates your account.
       </p>
     </div>
   );
@@ -146,9 +120,7 @@ function noSubscribe() {
 function readLastUsed(): Connection | null {
   try {
     const saved = localStorage.getItem(LAST_USED_KEY);
-    return saved === "google-oauth2" || saved === "linkedin" || saved === PASSWORD || saved === "email"
-      ? saved
-      : null;
+    return saved === "google-oauth2" || saved === "linkedin" || saved === "email" ? saved : null;
   } catch {
     // Storage blocked (private window): just don't show the hint.
     return null;
