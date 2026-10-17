@@ -86,6 +86,12 @@ async function JourneyLink() {
           : "Take the 1-minute journey check"}{" "}
         →
       </Link>
+      <span className="mx-2 text-slate-300" aria-hidden>
+        ·
+      </span>
+      <Link href="/profile" className="font-semibold text-ink-800 hover:underline">
+        Your interviewee profile →
+      </Link>
     </p>
   );
 }

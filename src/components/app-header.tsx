@@ -13,6 +13,7 @@ import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 // The sections reached from every page. Stories live on the home page and are listed below these.
 const NAV: readonly { href: string; label: string; icon: NavIconName; exact?: boolean }[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
+  { href: "/profile", label: "Your profile", icon: "user" },
   { href: "/jobs", label: "Target jobs", icon: "briefcase" },
   { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
   { href: "/transcripts", label: "Past interviews", icon: "chat" },
