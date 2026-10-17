@@ -86,6 +86,12 @@ async function JourneyLink() {
           : "Take the 1-minute journey check"}{" "}
         →
       </Link>
+      <span className="mx-2 text-slate-300" aria-hidden>
+        ·
+      </span>
+      <Link href="/profile" className="font-semibold text-ink-800 hover:underline">
+        Your interviewee profile →
+      </Link>
     </p>
   );
 }
@@ -235,6 +241,12 @@ async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
         className="mt-4 inline-block text-sm font-semibold text-ink-800 hover:underline"
       >
         All {job.likelyQuestions.questions.length} questions →
+      </Link>
+      <Link
+        href="/questions"
+        className="mt-2 block text-sm font-semibold text-ink-800 hover:underline"
+      >
+        Browse the question library →
       </Link>
     </Card>
   );

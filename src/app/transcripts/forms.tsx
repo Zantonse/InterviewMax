@@ -9,7 +9,14 @@ import {
   TRANSCRIPT_EXTENSIONS,
 } from "@/lib/transcripts/content";
 import { SPEAKER_LABELS, type SpeakerRole, type SpeakerTurn } from "@/lib/transcripts/speakers";
-import { addTranscript, relabelTranscript, reviewAgain, type FormState } from "./actions";
+import { ROUNDS } from "@/lib/bank/content";
+import {
+  addTranscript,
+  relabelTranscript,
+  reviewAgain,
+  shareQuestions,
+  type FormState,
+} from "./actions";
 import { AiNotice } from "@/components/ai-notice";
 
 const INPUT =
@@ -107,9 +114,75 @@ export function AddTranscriptForm({
           </label>
         )}
       </div>
+      <ShareFields />
       {state?.error && <ErrorLine>{state.error}</ErrorLine>}
       <button type="submit" disabled={pending} className={PRIMARY}>
         {pending ? "Reading the interview…" : "Review this interview"}
+      </button>
+    </form>
+  );
+}
+
+// Shared question bank opt-in: off by default. The round only matters when sharing.
+function ShareFields() {
+  const [share, setShare] = useState(false);
+  const id = useId();
+  return (
+    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+      <label className="flex items-start gap-2 text-sm text-slate-800" htmlFor={`${id}-share`}>
+        <input
+          id={`${id}-share`}
+          type="checkbox"
+          name="share"
+          checked={share}
+          onChange={(e) => setShare(e.target.checked)}
+          className="mt-0.5 size-4 rounded border-slate-300"
+          data-testid="share-questions"
+        />
+        <span>
+          <span className="font-semibold">
+            Share the questions I was asked (no answers, no names)
+          </span>
+          <span className="block text-slate-600">
+            Helps other people preparing for the same company. Only the questions are shared,
+            with names removed and tagged with the company, role, round and month. Each one is
+            checked by hand first, and you can see, leave out or withdraw them on the interview&apos;s
+            page.
+          </span>
+        </span>
+      </label>
+      {share && <RoundSelect />}
+    </div>
+  );
+}
+
+function RoundSelect({ defaultValue = "" }: { defaultValue?: string }) {
+  const id = useId();
+  return (
+    <label className="mt-3 block text-sm font-semibold text-slate-700" htmlFor={`${id}-round`}>
+      Which round was it? <span className="font-normal text-slate-500">(optional)</span>
+      <select id={`${id}-round`} name="round" defaultValue={defaultValue} className={INPUT}>
+        <option value="">Not sure</option>
+        {ROUNDS.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+// For an interview already added: turns sharing on.
+export function ShareQuestionsForm({ transcriptId }: { transcriptId: string }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(shareQuestions, null);
+  return (
+    <form action={action} className="space-y-3" data-testid="share-form">
+      <input type="hidden" name="transcriptId" value={transcriptId} />
+      <RoundSelect />
+      {state?.error && <ErrorLine>{state.error}</ErrorLine>}
+      <button type="submit" disabled={pending} className={SECONDARY}>
+        {pending ? "Sharing…" : "Share the questions (no answers, no names)"}
       </button>
     </form>
   );

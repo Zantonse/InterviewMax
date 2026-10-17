@@ -19,6 +19,7 @@ import {
   type TimeToValue,
   type UserProgress,
 } from "@/lib/admin/metrics";
+import { sharedQuestionCounts } from "@/lib/bank/admin";
 import { EVENT_LABELS } from "@/lib/usage/events";
 import { AdminTabs, Card, SetupNeeded, Stat, formatDay, formatWhen } from "./ui";
 
@@ -57,10 +58,11 @@ async function AdminContent() {
     throw err;
   }
   await logAdminView(admin, "overview");
-  const [users, firsts, views] = await Promise.all([
+  const [users, firsts, views, reviewCounts] = await Promise.all([
     listUserProgress(admin),
     listEventFirsts(admin),
     recentAdminViews(admin),
+    sharedQuestionCounts(admin).catch(() => ({ pending: 0, approved: 0, rejected: 0 })),
   ]);
 
   const steps = funnel(users, firsts);
@@ -115,16 +117,17 @@ async function AdminContent() {
         <UsersTable users={users} />
       </Card>
 
-      <Card
-        title="Review queue"
-        note="Items people choose to share for others will wait here for you to approve, edit or reject."
-      >
+      <Card title="Review queue" note="Items people choose to share for others wait here for you to approve, edit or reject.">
         <ul className="divide-y divide-slate-100 text-sm">
-          {[
-            "Shared question bank",
-            "Consented example answers",
-            "Success stories",
-          ].map((source) => (
+          <li className="flex items-center justify-between py-2.5">
+            <Link href="/admin/review" className="font-medium text-ink-800 hover:underline">
+              Shared question bank
+            </Link>
+            <span className="text-slate-500">
+              {reviewCounts.pending} waiting, {reviewCounts.approved} approved
+            </span>
+          </li>
+          {["Consented example answers", "Success stories"].map((source) => (
             <li key={source} className="flex items-center justify-between py-2.5">
               <span className="font-medium text-slate-800">{source}</span>
               <span className="text-slate-500">Not built yet, nothing to review</span>

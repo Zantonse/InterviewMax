@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { QuestionList } from "@/components/question-list";
+import { AskedRecently, QuestionList } from "@/components/question-list";
+import { forJob } from "@/lib/bank/content";
+import { recentSharedQuestions } from "@/lib/bank/data";
 import { StepStrip } from "@/components/step-strip";
 import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
@@ -52,6 +54,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     listTranscriptsForPrep(),
   ]);
   if (!job) notFound();
+  // Shared question bank: what other people were asked at this company lately.
+  const askedRecently = forJob(await recentSharedQuestions(job.company), job.title);
   // This job's folder: the stories that answer its questions and its past interviews.
   const folder = jobFolder(job.likelyQuestions?.questions, stories);
   const interviews = transcripts.filter((t) => t.targetJobId === job.id);
@@ -159,6 +163,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 I&apos;ll predict the behavioral questions this job is most likely to ask, from the
                 posting and any interview reports you paste, and match each to your stories.
               </p>
+            )}
+            {askedRecently.length > 0 && (
+              <AskedRecently questions={askedRecently} company={job.company ?? ""} stories={stories} />
             )}
             <div className="mt-4">
               <PredictForm

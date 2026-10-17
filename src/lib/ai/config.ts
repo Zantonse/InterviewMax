@@ -75,6 +75,9 @@ export const STEP_MODELS = {
   // Practice mode: feedback on one answer and its follow-ups against the saved story, and the new
   // details worth adding to it (each quoted from what the user said and checked in code).
   practiceFeedback: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Interviewee profile: a short overall assessment in coach tone, written only from the scores and
+  // findings worked out in code. Figures checked in code.
+  profileSummary: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
   // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
   // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).

@@ -144,8 +144,18 @@ export default function PrivacyPage() {
           each person has done and when, and where they seemed to get stuck. To coach you, the founder can also read your stories: your
           answers, the follow-up questions, the written story and its grade. Uploads (resumes,
           LinkedIn PDFs and interview transcripts) are not shown there. Every look at the admin page,
-          and every story opened, is logged. Beyond that, the people who run the database only reach
-          stored data to fix a problem you report, or if the law requires it.
+          and every story opened, is logged. Your interviewee profile is not shown there, only
+          that you opened it. Beyond that, the people who run the database only reach stored data
+          to fix a problem you report, or if the law requires it.
+        </p>
+        <p>
+          If you choose to share the questions from a past interview (it&apos;s off unless you tick
+          it), only the interviewers&apos; questions are shared: never your answers, with names
+          removed, tagged with the company, role, level, round and month. The founder checks each
+          one before it&apos;s shared, and other users with a job at that company then see it as
+          &ldquo;asked recently&rdquo;, without anything that says who shared it. You can leave out
+          any question or withdraw them all from the interview&apos;s page at any time, which
+          deletes them.
         </p>
       </PolicySection>
 

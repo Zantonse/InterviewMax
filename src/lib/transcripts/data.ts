@@ -16,6 +16,11 @@ export type Transcript = {
   fileName: string;
   transcript: string;
   analysis: TranscriptAnalysis | null;
+  // Shared question bank: whether the user shares this interview's questions, which round it
+  // was, and the questions they chose to leave out.
+  shareQuestions: boolean;
+  round: string | null;
+  shareExcluded: string[];
   createdAt: string;
 };
 
@@ -30,11 +35,14 @@ type Row = {
   file_name: string | null;
   transcript: string;
   analysis: unknown;
+  share_questions: boolean | null;
+  interview_round: string | null;
+  share_excluded: string[] | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, target_job_id, title, company, speaker, file_name, transcript, analysis, created_at";
+  "id, target_job_id, title, company, speaker, file_name, transcript, analysis, share_questions, interview_round, share_excluded, created_at";
 
 function toTranscript(row: Row): Transcript {
   return {
@@ -46,6 +54,9 @@ function toTranscript(row: Row): Transcript {
     fileName: row.file_name ?? "",
     transcript: row.transcript,
     analysis: parseAnalysis(row.analysis),
+    shareQuestions: row.share_questions === true,
+    round: row.interview_round ?? null,
+    shareExcluded: Array.isArray(row.share_excluded) ? row.share_excluded : [],
     createdAt: row.created_at,
   };
 }
@@ -93,6 +104,8 @@ export async function insertTranscript(input: {
   speaker: string;
   fileName: string;
   transcript: string;
+  shareQuestions?: boolean;
+  round?: string | null;
 }): Promise<string> {
   if (input.targetJobId && !UUID_RE.test(input.targetJobId)) throw new Error("Job not found.");
   await getCurrentUser();
@@ -106,6 +119,8 @@ export async function insertTranscript(input: {
       speaker: input.speaker || null,
       file_name: input.fileName || null,
       transcript: input.transcript,
+      share_questions: input.shareQuestions === true,
+      interview_round: input.round ?? null,
     })
     .select("id")
     .single();
@@ -153,4 +168,26 @@ export async function deleteTranscript(id: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.from("interview_transcripts").delete().eq("id", id);
   if (error) throw new Error(`Couldn't remove the transcript: ${error.message}`);
+}
+
+// Whether this interview's questions are shared, and which round it was. Turning sharing off
+// keeps the list of left-out questions, in case it's turned on again.
+export async function saveSharing(
+  id: string,
+  patch: { shareQuestions?: boolean; round?: string | null; shareExcluded?: string[] },
+): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Transcript not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("interview_transcripts")
+    .update({
+      ...(patch.shareQuestions !== undefined ? { share_questions: patch.shareQuestions } : {}),
+      ...(patch.round !== undefined ? { interview_round: patch.round } : {}),
+      ...(patch.shareExcluded !== undefined ? { share_excluded: patch.shareExcluded } : {}),
+    })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save your sharing choice: ${error.message}`);
+  if (!data?.length) throw new Error("Transcript not found.");
 }
