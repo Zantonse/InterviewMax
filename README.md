@@ -68,7 +68,7 @@ npm run dev                  # http://localhost:3000
 - `src/lib/bank` – the shared question bank: redaction and checks, sharing from a transcript, the admin review
 - `src/lib/profile` – the interviewee profile: scoring in code, the summary call and its checks, snapshots for change over time
 - `src/lib/usage` – usage events and `trackEvent()`; `src/lib/admin` – who is an admin, the admin panel's reads and its metrics
-- `src/proxy.ts` – refreshes the Supabase or Auth0 session and sends signed-out visitors to `/login`
+- `src/proxy.ts` – refreshes the Supabase or Auth0 session, shows signed-out visitors the public homepage (`src/app/welcome`) at `/`, and sends them to `/login` from any other page
 - `src/lib/auth0` – the Auth0 client, its proxy, the `AUTH_PROVIDER` switch and Auth0 user deletion
 - `src/lib/supabase` – Supabase clients for server code and the proxy
 - `src/lib/ai` – the model layer (see below)
@@ -141,7 +141,7 @@ New tables must write their owner policies with `(select public.current_user_id(
 Only needed with `AUTH_PROVIDER=auth0`. Uses [`@auth0/nextjs-auth0`](https://github.com/auth0/nextjs-auth0) v4 and Supabase [third-party auth for Auth0](https://supabase.com/docs/guides/auth/third-party/auth0): Supabase trusts the Auth0 ID token, so row-level security still limits each user to their own rows.
 
 1. Auth0 → Applications: a **Regular Web Application**. Allowed Callback URLs: `<site>/auth/callback`; Allowed Logout URLs and Allowed Web Origins: `<site>`, for localhost, production and the preview you test on. Copy its domain, client ID and secret into the `AUTH0_*` variables.
-2. Auth0 → Authentication: turn on Google, LinkedIn (each asking for the email address) and Passwordless → Email set to send a **code**, not a link, so work mail scanners can't use it up. Enable them all for the application. The buttons on `/login` use the connection names `google-oauth2`, `linkedin` and `email`.
+2. Auth0 → Authentication: turn on Google, LinkedIn (each asking for the email address) and Passwordless → Email set to send a **code**, not a link, so work mail scanners can't use it up. Enable them all for the application. The buttons on `/login` use the connection names `google-oauth2`, `linkedin` and `email`; the email box is the main way in.
 3. Auth0 → Actions → Triggers → post-login: an action that gives InterviewMax's ID tokens the `role` claim Supabase needs (Auth0 drops it from access tokens, so the app sends Supabase the ID token):
 
    ```js

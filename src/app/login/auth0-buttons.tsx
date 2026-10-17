@@ -5,7 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 // Sign-in choices when Auth0 signs people in. Each goes straight to that provider through
 // Auth0's /auth/login route, which forwards every other query parameter to Auth0 (so the email
 // form's login_hint pre-fills the address on Auth0's code page). The connection names are
-// Auth0's defaults; "email" is Auth0's passwordless email connection, set to send a code.
+// Auth0's defaults; "email" is Auth0's passwordless email connection, set to send a code (Auth0's
+// Universal Login can't send magic links).
 type Connection = "google-oauth2" | "linkedin" | "email";
 
 const LAST_USED_KEY = "interviewmax:last-sign-in";
@@ -43,35 +44,23 @@ export function Auth0Buttons() {
 
   return (
     <div className="flex flex-col gap-3">
-      {SOCIAL.map(({ connection, label, Logo }) => (
-        <a
-          key={connection}
-          href={loginHref(connection)}
-          onClick={() => start(connection)}
-          aria-disabled={busy}
-          className={`relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-            busy && opening !== connection ? "pointer-events-none opacity-50" : ""
-          }`}
-        >
-          <Logo />
-          {opening === connection ? `Opening ${label}…` : `Continue with ${label}`}
-          {lastUsed === connection && !busy && <LastUsed />}
-        </a>
-      ))}
-
-      <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-wide text-slate-400">
-        <span className="h-px flex-1 bg-slate-200" />
-        or get a code by email
-        <span className="h-px flex-1 bg-slate-200" />
-      </div>
-
-      {/* A plain GET form to /auth/login, so it works before the page's JavaScript loads. */}
-      <form action="/auth/login" method="get" onSubmit={() => start("email")} className="flex flex-col gap-3">
+      {/* Email first: Auth0 emails a one-time code and opens its code page with the address
+          filled in. A plain GET form to /auth/login, so it works before the page's JavaScript
+          loads. */}
+      <form
+        action="/auth/login"
+        method="get"
+        onSubmit={() => start("email")}
+        className="flex flex-col gap-3"
+      >
         <input type="hidden" name="connection" value="email" />
         <input type="hidden" name="returnTo" value="/" />
-        <label htmlFor="login_hint" className="flex items-center justify-between text-sm font-medium text-slate-700">
-          Work or personal email
-          {lastUsed === "email" && !busy && <LastUsed inline />}
+        <label
+          htmlFor="login_hint"
+          className="flex items-center justify-between text-sm font-medium text-slate-700"
+        >
+          Email
+          {lastUsed === "email" && !busy && <LastUsed />}
         </label>
         <input
           id="login_hint"
@@ -79,21 +68,46 @@ export function Auth0Buttons() {
           type="email"
           required
           autoComplete="email"
+          autoFocus
           placeholder="you@example.com"
           className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
         />
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-ink-800 px-4 py-3 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
+          className="rounded-xl bg-accent-400 px-4 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
         >
-          {opening === "email" ? "One moment…" : "Email me a sign-in code"}
+          {opening === "email" ? "Sending your code…" : "Email me a sign-in code"}
         </button>
       </form>
 
-      <p className="mt-2 text-center text-xs leading-relaxed text-slate-500">
-        New here? Any of these creates your account. Already use InterviewMax? Sign in with the
-        same email address and your stories will be waiting.
+      <div className="flex items-center gap-3 py-1 text-xs text-slate-400">
+        <span className="h-px flex-1 bg-slate-200" />
+        or continue with
+        <span className="h-px flex-1 bg-slate-200" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {SOCIAL.map(({ connection, label, Logo }) => (
+          <a
+            key={connection}
+            href={loginHref(connection)}
+            onClick={() => start(connection)}
+            aria-disabled={busy}
+            aria-label={`Continue with ${label}`}
+            className={`relative flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+              busy && opening !== connection ? "pointer-events-none opacity-50" : ""
+            }`}
+          >
+            <Logo />
+            {opening === connection ? "Opening…" : label}
+            {lastUsed === connection && !busy && <LastUsedDot />}
+          </a>
+        ))}
+      </div>
+
+      <p className="mt-4 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
+        New here? Any of these creates your account.
       </p>
     </div>
   );
@@ -113,13 +127,18 @@ function readLastUsed(): Connection | null {
   }
 }
 
-function LastUsed({ inline = false }: { inline?: boolean }) {
+// The social buttons are too narrow for the label, so they get a dot with the words for screen readers.
+function LastUsedDot() {
   return (
-    <span
-      className={`rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900 ${
-        inline ? "" : "absolute right-3"
-      }`}
-    >
+    <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-accent-500" title="Last used">
+      <span className="sr-only">Last used</span>
+    </span>
+  );
+}
+
+function LastUsed() {
+  return (
+    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900">
       Last used
     </span>
   );
