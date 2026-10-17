@@ -49,69 +49,81 @@ export function Auth0Buttons() {
 
   return (
     <div className="flex flex-col gap-3">
-      {SOCIAL.map(({ connection, label, Logo }) => (
-        <a
-          key={connection}
-          href={loginHref(connection)}
-          onClick={() => start(connection)}
-          aria-disabled={busy}
-          className={`relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-            busy && opening !== connection ? "pointer-events-none opacity-50" : ""
-          }`}
-        >
-          <Logo />
-          {opening === connection ? `Opening ${label}…` : `Continue with ${label}`}
-          {lastUsed === connection && !busy && <LastUsed />}
-        </a>
-      ))}
-
-      <a
-        href={loginHref(PASSWORD)}
-        onClick={() => start(PASSWORD)}
-        aria-disabled={busy}
-        className={`relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-          busy && opening !== PASSWORD ? "pointer-events-none opacity-50" : ""
-        }`}
+      {/* Email first: Continue goes to Auth0's password page with the address filled in (Auth0 takes
+          the password, sign-up and resets); the second button sends a one-time code instead. A
+          plain GET form to /auth/login, so it works before the page's JavaScript loads. The buttons
+          are never `disabled`: a disabled submitter drops its connection from the request. */}
+      <form
+        action="/auth/login"
+        method="get"
+        onSubmit={(event) => {
+          const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+          start(submitter?.value === "email" ? "email" : PASSWORD);
+        }}
+        className="flex flex-col gap-3"
       >
-        <KeyIcon />
-        {opening === PASSWORD ? "One moment…" : "Sign in with email and password"}
-        {lastUsed === PASSWORD && !busy && <LastUsed />}
-      </a>
-
-      <details className="group" open={lastUsed === "email" || undefined}>
-        <summary className="cursor-pointer list-none text-center text-sm font-medium text-ink-700 hover:underline [&::-webkit-details-marker]:hidden">
-          No password? Email me a one-time code instead
-        </summary>
-        {/* A plain GET form to /auth/login, so it works before the page's JavaScript loads. */}
-        <form
-          action="/auth/login"
-          method="get"
-          onSubmit={() => start("email")}
-          className="mt-3 flex flex-col gap-3"
+        <input type="hidden" name="returnTo" value="/" />
+        <label
+          htmlFor="login_hint"
+          className="flex items-center justify-between text-sm font-medium text-slate-700"
         >
-          <input type="hidden" name="connection" value="email" />
-          <input type="hidden" name="returnTo" value="/" />
-          <label htmlFor="login_hint" className="text-sm font-medium text-slate-700">
-            Email
-          </label>
-          <input
-            id="login_hint"
-            name="login_hint"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 disabled:opacity-60"
+          Email
+          {(lastUsed === PASSWORD || lastUsed === "email") && !busy && <LastUsed />}
+        </label>
+        <input
+          id="login_hint"
+          name="login_hint"
+          type="email"
+          required
+          autoComplete="email"
+          autoFocus
+          placeholder="you@example.com"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
+        />
+        <button
+          type="submit"
+          name="connection"
+          value={PASSWORD}
+          aria-disabled={busy}
+          className={`rounded-xl bg-accent-400 px-4 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 ${busy ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {opening === PASSWORD ? "One moment…" : "Continue with password"}
+        </button>
+        <button
+          type="submit"
+          name="connection"
+          value="email"
+          aria-disabled={busy}
+          className={`text-sm font-medium text-ink-700 hover:underline ${busy ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {opening === "email" ? "Sending your code…" : "No password? Email me a one-time code"}
+        </button>
+      </form>
+
+      <div className="flex items-center gap-3 py-1 text-xs text-slate-400">
+        <span className="h-px flex-1 bg-slate-200" />
+        or continue with
+        <span className="h-px flex-1 bg-slate-200" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {SOCIAL.map(({ connection, label, Logo }) => (
+          <a
+            key={connection}
+            href={loginHref(connection)}
+            onClick={() => start(connection)}
+            aria-disabled={busy}
+            aria-label={`Continue with ${label}`}
+            className={`relative flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-semibold text-slate-900 transition hover:border-ink-400 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+              busy && opening !== connection ? "pointer-events-none opacity-50" : ""
+            }`}
           >
-            {opening === "email" ? "One moment…" : "Email me a code"}
-          </button>
-        </form>
-      </details>
+            <Logo />
+            {opening === connection ? "Opening…" : label}
+            {lastUsed === connection && !busy && <LastUsedDot />}
+          </a>
+        ))}
+      </div>
 
       <p className="mt-4 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
         New to InterviewMax?{" "}
@@ -143,20 +155,20 @@ function readLastUsed(): Connection | null {
   }
 }
 
-function LastUsed() {
+// The social buttons are too narrow for the label, so they get a dot with the words for screen readers.
+function LastUsedDot() {
   return (
-    <span className="absolute right-3 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900">
-      Last used
+    <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-accent-500" title="Last used">
+      <span className="sr-only">Last used</span>
     </span>
   );
 }
 
-function KeyIcon() {
+function LastUsed() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
-      <circle cx="8" cy="15" r="4" />
-      <path d="M10.85 12.15 19 4M18 5l2 2M15 8l2 2" />
-    </svg>
+    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900">
+      Last used
+    </span>
   );
 }
 

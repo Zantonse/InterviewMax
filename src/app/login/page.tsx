@@ -21,7 +21,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           Sign in to InterviewMax
         </h1>
         <p className="mt-1 text-slate-600">
-          {auth0 ? "Welcome back. Pick how you sign in." : "We'll email you a sign-in link."}
+          {auth0 ? "Welcome back. Enter your email to continue." : "We'll email you a sign-in link."}
         </p>
         <Suspense fallback={null}>
           <LinkError searchParams={searchParams} auth0={auth0} />
