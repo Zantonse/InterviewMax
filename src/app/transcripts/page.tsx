@@ -9,6 +9,7 @@ import { getTheme } from "@/lib/questions/themes";
 import { listStories } from "@/lib/stories/data";
 import { MAX_TRANSCRIPTS, gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts } from "@/lib/transcripts/data";
+import { leftOutNote } from "@/lib/transcripts/split";
 import { AddTranscriptForm } from "./forms";
 
 export const metadata: Metadata = { title: "Past interviews · InterviewMax" };
@@ -54,8 +55,11 @@ async function TranscriptsContent({
   searchParams: PageProps<"/transcripts">["searchParams"];
 }) {
   // From a job's page: "Add a transcript" opens the form with that job picked.
-  const { job: jobParam } = await searchParams;
+  const { job: jobParam, added, left } = await searchParams;
   const jobId = typeof jobParam === "string" ? jobParam : "";
+  // After a file with several interviews in it was added (see addTranscript).
+  const addedCount = typeof added === "string" ? Number.parseInt(added, 10) : 0;
+  const leftNote = leftOutNote(typeof left === "string" ? left.split(",") : []);
   const [transcripts, jobs, stories] = await Promise.all([
     listTranscripts(),
     listJobs(),
@@ -87,6 +91,12 @@ async function TranscriptsContent({
   return (
     <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
+        {addedCount > 1 && (
+          <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="added-note">
+            That file had {addedCount} interviews, so I saved and reviewed each one on its own.
+            {leftNote && ` ${leftNote}`}
+          </p>
+        )}
         <ul className="space-y-3" data-testid="transcript-list">
           {transcripts.map((t) => {
             const job = jobs.find((j) => j.id === t.targetJobId);

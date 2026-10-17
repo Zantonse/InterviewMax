@@ -3,7 +3,7 @@ import mammoth from "mammoth";
 import { extractText, getDocumentProxy } from "unpdf";
 import { normalize } from "@/lib/stories/upload";
 import { MAX_UPLOAD_BYTES } from "@/lib/stories/story-types";
-import { MAX_TRANSCRIPT_LENGTH, TRANSCRIPT_EXTENSIONS, captionsToText } from "./content";
+import { MAX_FILE_TEXT_LENGTH, TRANSCRIPT_EXTENSIONS, captionsToText } from "./content";
 
 // Reads the text of an interview transcript from a PDF, Word (.docx), text, or caption file
 // (.vtt or .srt, as Zoom, Teams and Meet export them).
@@ -39,9 +39,10 @@ export async function readTranscriptFile(file: File): Promise<string> {
   if (!text) {
     throw new Error("There's no text in that file. If it's a scanned PDF, paste the text instead.");
   }
-  if (text.length > MAX_TRANSCRIPT_LENGTH) {
+  // Each interview in the file is checked against the per-interview limit once it's split.
+  if (text.length > MAX_FILE_TEXT_LENGTH) {
     throw new Error(
-      `That transcript is over ${MAX_TRANSCRIPT_LENGTH.toLocaleString("en-US")} characters. Upload one interview at a time.`,
+      `That file is over ${MAX_FILE_TEXT_LENGTH.toLocaleString("en-US")} characters. Split it into a few files.`,
     );
   }
   return text;
