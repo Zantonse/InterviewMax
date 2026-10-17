@@ -17,9 +17,11 @@ import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { caseQuestionsFor } from "@/lib/cases/content";
 import { removeJob } from "../actions";
 import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { AskPanel } from "./ask-panel";
+import { CasePanel } from "./case-panel";
 import { ResumePanel } from "./resume-panel";
 import { TailoredIntroPanel } from "./tailored-intro";
 
@@ -59,6 +61,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   // This job's folder: the stories that answer its questions and its past interviews.
   const folder = jobFolder(job.likelyQuestions?.questions, stories);
   const interviews = transcripts.filter((t) => t.targetJobId === job.id);
+  // Case and technical questions real interviewers asked, which no story answers.
+  const cases = caseQuestionsFor(job, transcripts);
   const read = overview?.jobs[job.id];
   // "Tell me about yourself": the drafted one if there is one (stories are newest first).
   const introType = getStoryType(REQUIRED_STORY_TYPE_ID);
@@ -99,6 +103,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         />
         <FolderTab href="#stories" label="Stories" note={String(folder.stories.length)} />
         <FolderTab href="#past-interviews" label="Past interviews" note={String(interviews.length)} />
+        <FolderTab href="#cases" label="Case questions" note={String(cases.length)} />
         <FolderTab
           href="#about-me"
           label="About me"
@@ -259,6 +264,20 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             >
               Add an interview for this job →
             </Link>
+          </section>
+          <section
+            id="cases"
+            className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            data-testid="job-cases"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Case and technical questions
+            </h2>
+            <p className="mb-4 text-sm text-slate-600">
+              The questions no story answers: a business problem to reason through, or a check on a
+              tool. These are the ones your interviewers asked. Practice each with its frame.
+            </p>
+            <CasePanel jobId={job.id} questions={cases} />
           </section>
           {job.likelyQuestions && (
             <section

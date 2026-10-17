@@ -75,6 +75,9 @@ export const STEP_MODELS = {
   // Practice mode: feedback on one answer and its follow-ups against the saved story, and the new
   // details worth adding to it (each quoted from what the user said and checked in code).
   practiceFeedback: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Case practice: feedback on a practice answer to a case or skills question from a past
+  // interview, against a scripted frame, and the follow-up to expect. Figures checked in code.
+  casePractice: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Interviewee profile: a short overall assessment in coach tone, written only from the scores and
   // findings worked out in code. Figures checked in code.
   profileSummary: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },

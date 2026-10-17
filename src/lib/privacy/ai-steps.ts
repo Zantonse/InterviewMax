@@ -93,6 +93,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Practice mode feedback",
     sends: "Your spoken practice answers, the saved story for that question and the job’s title",
   },
+  casePractice: {
+    feature: "Case and technical question practice",
+    sends: "The question, your practice answer and the job’s title",
+  },
   profileSummary: {
     feature: "Your interviewee profile summary",
     sends:
