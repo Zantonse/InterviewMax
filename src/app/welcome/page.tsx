@@ -77,16 +77,18 @@ const FEATURES = [
 export default function WelcomePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="bg-ink-900">
+      {/* Sticky, so Sign in stays one tap away however far down the page someone reads. */}
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-ink-900/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link href="/" className="text-xl" aria-label="InterviewMax home">
             <Wordmark onDark />
           </Link>
           <Link
             href="/login"
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10"
+            className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-ink-900 shadow-sm transition hover:bg-accent-100"
           >
             Sign in
+            <span aria-hidden>→</span>
           </Link>
         </div>
       </header>
@@ -112,9 +114,9 @@ export default function WelcomePage() {
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-xl px-5 py-3 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10"
+                  className="rounded-xl px-5 py-3 font-semibold text-white ring-2 ring-white/70 transition hover:bg-white/10"
                 >
-                  I have an account
+                  Sign in
                 </Link>
               </div>
             </div>
@@ -241,12 +243,20 @@ export default function WelcomePage() {
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
               Build your first story today.
             </h2>
-            <Link
-              href="/login"
-              className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
-            >
-              Get started
-            </Link>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Link
+                href="/login"
+                className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
+              >
+                Get started
+              </Link>
+              <p className="text-ink-100">
+                Already have an account?{" "}
+                <Link href="/login" className="font-semibold text-white underline underline-offset-4">
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </div>
         </section>
       </main>
