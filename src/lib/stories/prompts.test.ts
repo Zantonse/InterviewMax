@@ -14,6 +14,7 @@ import {
   skipRemainingFollowUps,
   probeRounds,
   parseContent,
+  isUntouched,
   type StoryContent,
 } from "./content";
 import {
@@ -593,5 +594,24 @@ describe("deeper pass: edit, don't rewrite, and what made it hard", () => {
     const [, ask] = retryMessages({ previous: "{}", untraced: [], ownWords: { share: 0.12, min: 0.25 } });
     expect(ask.content).toMatch(/Only 12% of it uses my own phrasing/);
     expect(ask.content).toMatch(/keep my sentences and phrases/);
+  });
+});
+
+describe("a story started from an interview question", () => {
+  it("keeps the question and opens with it", async () => {
+    const { coreQuestionText, getStoryType } = await import("./story-types");
+    const content = parseContent({ answers: {}, asked: "  Tell me about a time you failed  " });
+    expect(content.asked).toBe("Tell me about a time you failed");
+    const opening = coreQuestionText("start", getStoryType("went_wrong"), content.asked);
+    expect(opening.startsWith("Tell me about a time you failed. Tell it start to finish")).toBe(true);
+    expect(coreQuestionText("start", getStoryType("went_wrong"))).toBe(
+      getStoryType("went_wrong")?.opening,
+    );
+  });
+
+  it("counts as untouched until the user adds something", () => {
+    expect(isUntouched({ ...emptyContent(), asked: "Q?" })).toBe(true);
+    expect(isUntouched({ ...emptyContent(), answers: { start: "  " } })).toBe(true);
+    expect(isUntouched({ ...emptyContent(), answers: { start: "We lost a deal." } })).toBe(false);
   });
 });

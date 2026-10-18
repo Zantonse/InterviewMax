@@ -7,6 +7,7 @@ import { listJobs } from "@/lib/jobs/data";
 import { folderLabel } from "@/lib/jobs/folder";
 import { listStories } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
+import { BuildStoryLink } from "./build-story-link";
 import { NavIcon, type NavIconName } from "./nav-icons";
 import { CollapseButton, NavLink, NavShell } from "./nav-shell";
 
@@ -49,14 +50,7 @@ export function AppHeader() {
         </div>
 
         <div className="px-3 nav-collapsed:px-2">
-          <Link
-            href="/stories/new"
-            title="Build a story"
-            className="flex items-center justify-center gap-2 rounded-xl bg-accent-400 px-3 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
-          >
-            <NavIcon name="plus" />
-            <span className="nav-collapsed:sr-only">Build a story</span>
-          </Link>
+          <BuildStoryLink />
           <Link
             href="/jobs/new"
             title="Add a target job"

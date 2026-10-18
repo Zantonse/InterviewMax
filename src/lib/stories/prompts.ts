@@ -262,7 +262,7 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
     const question =
       q.id === "path" && content.inferredPath
         ? inferredPathQuestion(content.inferredPath.source)
-        : coreQuestionText(q.id, storyType);
+        : coreQuestionText(q.id, storyType, content.asked);
     lines.push(`Q: ${question}`, `A: ${answer}`, "");
   }
   for (const f of content.followUps ?? []) {
