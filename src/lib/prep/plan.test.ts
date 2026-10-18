@@ -9,6 +9,7 @@ import {
   horizonFor,
   isDate,
   todayIn,
+  planHeading,
   whenLabel,
 } from "./plan";
 
@@ -245,5 +246,14 @@ describe("buildPlan", () => {
     );
     expect(next(plan)?.id).toBe("questions");
     expect(plan.steps[2].done).toBe(false);
+  });
+});
+
+describe("planHeading", () => {
+  it("counts down to the interview in sentence case", () => {
+    expect(planHeading(9, "Okta")).toBe("9 days to your Okta interview");
+    expect(planHeading(21, null)).toBe("3 weeks to your interview");
+    expect(planHeading(1, "Okta")).toBe("Your Okta interview is tomorrow");
+    expect(planHeading(0, null)).toBe("Your interview is today");
   });
 });

@@ -3,11 +3,12 @@ import { headers } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { AddJobForm } from "@/app/jobs/forms";
 import { getAssessmentSafely } from "@/lib/assessment/data";
+import { gradeJourney } from "@/lib/assessment/journey";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
-import { type Plan, type PlanJob, buildPlan, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
+import { buildPlan, focusJob, planHeading, todayIn } from "@/lib/prep/plan";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 
@@ -25,7 +26,7 @@ const ASSESSMENT_WHEN: Record<string, string> = {
 // dots. The interview date on the nearest job sizes the plan (see src/lib/prep/plan.ts). Before the
 // first job, it's a single step instead: paste a job and see its likely questions.
 export async function PrepPath() {
-  let loaded: { plan: Plan; job: PlanJob; nextInterview: string | null } | null;
+  let loaded: Awaited<ReturnType<typeof loadPlan>>;
   try {
     loaded = await loadPlan();
   } catch (err) {
@@ -34,19 +35,18 @@ export async function PrepPath() {
     return null;
   }
   if (!loaded) return <FirstJob />;
-  const { plan, job, nextInterview } = loaded;
+  const { plan, job, nextInterview, journey } = loaded;
   const { steps } = plan;
   const current = steps.findIndex((s) => !s.done);
   // With no interview in view, a finished path steps aside; with one, it says you're ready.
   if (current < 0 && plan.basis === "none") return null;
   const step = current >= 0 ? steps[current] : null;
-  const where = job.company ? ` at ${job.company}` : "";
   const heading =
     plan.basis === "date" && plan.days !== null
-      ? `Plan for your interview ${whenLabel(plan.days)}${where}`
+      ? planHeading(plan.days, job.company)
       : plan.basis === "assessment" && nextInterview
-        ? `Plan for an interview ${ASSESSMENT_WHEN[nextInterview]}`
-        : "Next step";
+        ? `Your plan for an interview ${ASSESSMENT_WHEN[nextInterview]}`
+        : "Your next step";
 
   return (
     <nav
@@ -56,19 +56,18 @@ export async function PrepPath() {
       data-horizon={plan.horizon ?? "none"}
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
-            <span data-testid="plan-heading">{heading}</span>
-            <span
-              className="flex gap-1"
-              aria-label={
-                step ? `Step ${current + 1} of ${steps.length}` : `All ${steps.length} steps done`
-              }
-            >
+        <div className="min-w-0 flex-1 basis-64">
+          <h2 className="text-sm font-semibold text-ink-700" data-testid="plan-heading">
+            {heading}
+          </h2>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold text-slate-900">
+            <span data-testid="plan-step">
+              {step ? `Step ${current + 1} of ${steps.length} · ${step.label}` : "You're ready"}
+            </span>
+            <span className="flex gap-1" aria-hidden>
               {steps.map((s, i) => (
                 <span
                   key={s.id}
-                  title={s.label}
                   className={`size-2 rounded-full ${
                     s.done ? "bg-ink-800" : i === current ? "bg-accent-400" : "bg-ink-100"
                   }`}
@@ -76,27 +75,14 @@ export async function PrepPath() {
               ))}
             </span>
           </p>
-          <p className="mt-1 font-semibold text-slate-900">
-            {step ? (
-              <>
-                {step.label}
-                <span className="font-normal text-slate-500"> · {step.detail}</span>
-              </>
-            ) : (
-              <>
-                You&apos;re ready
-                <span className="font-normal text-slate-500">
-                  {" "}
-                  · Read your brief and do the one-minute warm-up
-                </span>
-              </>
-            )}
+          <p className="mt-0.5 text-sm text-slate-600">
+            {step ? step.detail : "Read your brief and do the one-minute warm-up."}
           </p>
         </div>
         <Link
           href={step ? step.href : `/jobs/${job.id}/brief`}
           aria-current="step"
-          className="shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
+          className="w-full shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-center text-sm font-semibold text-ink-950 transition hover:bg-accent-300 sm:w-auto"
         >
           {step ? "Continue" : "Open your brief"}
         </Link>
@@ -118,6 +104,15 @@ export async function PrepPath() {
             data-testid="plan-brief"
           >
             Your pre-interview brief →
+          </Link>
+        )}
+        {journey !== undefined && (
+          <Link
+            href="/assessment"
+            className="font-semibold text-ink-800 hover:underline"
+            data-testid="journey-link"
+          >
+            {journey ? `Journey check: ${journey}` : "Take the 1-minute journey check"} →
           </Link>
         )}
         {plan.horizon && (
@@ -212,5 +207,13 @@ async function loadPlan() {
       .slice(0, PLAN_SIZE),
     practiced: practice.some((s) => s.targetJobId === job.id && s.finishedAt),
   });
-  return { plan, job, nextInterview };
+  // The journey check's verdict ("Nearly ready"), without its number: the bar gives feedback, not a
+  // score. Undefined before the column exists, null when it hasn't been taken.
+  const journey =
+    assessment === undefined
+      ? undefined
+      : assessment && "answers" in assessment
+        ? gradeJourney(assessment.answers, { hasJob: true }).level
+        : null;
+  return { plan, job, nextInterview, journey };
 }

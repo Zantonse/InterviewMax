@@ -2,7 +2,8 @@ import "server-only";
 import { getCurrentUser } from "@/lib/auth";
 import { getAppMode } from "@/lib/promotion/data";
 import { createClient } from "@/lib/supabase/server";
-import { parseContent, type StoryContent } from "./content";
+import { isUntouched, parseContent, type StoryContent } from "./content";
+import { getStoryType } from "./story-types";
 
 // The one place app code reads and writes stories. Row-level security limits every query to the
 // signed-in user's own rows; each function also checks there is a signed-in user.
@@ -45,7 +46,13 @@ export async function listStories(): Promise<StoryRecord[]> {
     .select(COLUMNS)
     .order("updated_at", { ascending: false });
   if (error) throw new Error(`Couldn't load your stories: ${error.message}`);
-  return (data as Row[]).map(toRecord);
+  // A behavioral story left empty when it was opened isn't one yet, so it's left out of the bank,
+  // the sidebar and coverage. ("Tell me about yourself" is kept: there's one, and it's reused.)
+  return (data as Row[]).map(toRecord).filter((s) => !isAbandoned(s));
+}
+
+function isAbandoned(story: StoryRecord): boolean {
+  return getStoryType(story.storyType)?.format === "star" && isUntouched(story.content);
 }
 
 export async function getStory(id: string): Promise<StoryRecord | null> {

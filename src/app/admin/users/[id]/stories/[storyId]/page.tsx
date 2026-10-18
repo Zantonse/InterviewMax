@@ -133,7 +133,7 @@ async function StoryContent({
                 />
               )}
               {answers.map(([qid, a]) => (
-                <QA key={qid} q={coreQuestionText(qid, storyType) || qid} a={a} />
+                <QA key={qid} q={coreQuestionText(qid, storyType, content.asked) || qid} a={a} />
               ))}
             </ol>
           )}

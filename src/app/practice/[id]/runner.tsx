@@ -12,6 +12,8 @@ import {
   followUpCount,
   formatDuration,
   itemStep,
+  LAYER_LABELS,
+  thinSpots,
 } from "@/lib/practice/content";
 import { roundDeliveryNote } from "@/lib/practice/delivery";
 import {
@@ -26,7 +28,7 @@ import { StartPracticeForm } from "../start-form";
 type Busy = "thinking" | "feedback" | "skipping" | null;
 
 // One practice round, a question at a time: the interviewer asks, the user answers out loud, the
-// interviewer follows up once or twice, then feedback. Everything is saved as it goes, so leaving
+// interviewer drills two or three follow-ups deep, then feedback. Everything is saved as it goes, so leaving
 // and coming back picks up where the user was.
 export function PracticeRunner({
   sessionId,
@@ -120,7 +122,7 @@ export function PracticeRunner({
                 >
                   {i > 0 && (
                     <span className="block text-xs font-bold uppercase tracking-wide text-ink-700">
-                      Follow-up
+                      Follow-up {i}
                     </span>
                   )}
                   {t.question}
@@ -211,6 +213,7 @@ export function PracticeRunner({
       {item.feedback && (
         <FeedbackCard
           feedback={item.feedback}
+          turns={item.turns}
           storyHref={item.storyId ? `/stories/${item.storyId}` : undefined}
           keeping={keeping}
           onKeep={async (factIndex) => {
@@ -293,6 +296,7 @@ function Summary({
   const delivery = roundDeliveryNote(
     answered.flatMap((i) => (i.feedback?.delivery ? [i.feedback.delivery] : [])),
   );
+  const thin = thinSpots(items);
   return (
     <section
       className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
@@ -310,6 +314,27 @@ function Summary({
           <span className="font-semibold text-slate-900">How you said it: </span>
           {delivery}
         </p>
+      )}
+      {thin.length > 0 && (
+        <div className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm" data-testid="practice-thin-spots">
+          <p className="font-semibold text-amber-900">Where your answers got thinner</p>
+          <ul className="mt-1 space-y-1 text-amber-950">
+            {thin.map((t) => (
+              <li key={t.index}>
+                <span className="font-medium">{t.question}</span>
+                {t.layers.map((l, j) => (
+                  <span key={j} className="block pl-3 text-amber-900">
+                    {LAYER_LABELS[l.hold]} at &ldquo;{l.followUp}&rdquo;{l.note ? `: ${l.note}` : ""}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-amber-900">
+            Interviewers now use follow-ups to find what&apos;s real. Add those details to the story,
+            then drill it again.
+          </p>
+        </div>
       )}
       <ol className="mt-4 space-y-2">
         {items.map((it, i) => (

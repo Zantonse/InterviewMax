@@ -49,6 +49,7 @@ export function QuestionList({
                     </Link>
                   ) : coverage?.kind === "build" ? (
                     <form action={startStory} className="flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="asked" value={q.question} />
                       <span className="text-slate-500">No story for this yet.</span>
                       <button
                         type="submit"
@@ -107,6 +108,7 @@ export function AskedRecently({
                 </Link>
               ) : coverage?.kind === "build" ? (
                 <form action={startStory} className="mt-2 text-sm">
+                  <input type="hidden" name="asked" value={q.question} />
                   <button
                     type="submit"
                     name="storyType"

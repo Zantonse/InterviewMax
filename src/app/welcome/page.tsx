@@ -55,7 +55,7 @@ const FEATURES: { icon: NavIconName; title: string; body: string }[] = [
   {
     icon: "grid",
     title: "Coverage at a glance",
-    body: "See which of the ten question themes your stories cover and which one to build next.",
+    body: "See which of the eleven question themes your stories cover, including using AI at work, and which one to build next.",
   },
   {
     icon: "book",
@@ -75,7 +75,7 @@ const FEATURES: { icon: NavIconName; title: string; body: string }[] = [
   {
     icon: "mic",
     title: "Practice mode",
-    body: "Answer out loud, get feedback on what you said and how you said it, then take the follow-up.",
+    body: "Answer out loud and take two or three follow-ups, the way interviewers now dig. Or rehearse a timed AI screen.",
   },
   {
     icon: "briefcase",
@@ -115,6 +115,9 @@ export default function WelcomePage() {
                 at the jobs you&apos;re going for. One story at a time, so it never feels like
                 homework.
               </p>
+              <p className="mt-4 text-xl font-bold text-accent-300" data-testid="home-not-a-script">
+                Not a script. Your story, ready for follow-ups.
+              </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/login"
@@ -129,6 +132,10 @@ export default function WelcomePage() {
                   Sign in
                 </Link>
               </div>
+              <p className="mt-4 text-sm text-ink-100" data-testid="home-prep-only">
+                For preparing only. Nothing runs during your real interview, so nothing can get you
+                disqualified.
+              </p>
             </div>
             <Screenshot
               src="/home/dashboard.webp"
@@ -398,6 +405,10 @@ function FeatureIcon({ name, onDark = false }: { name: NavIconName; onDark?: boo
 const policyLink = "font-semibold text-ink-800 underline";
 
 const FAQ: { q: string; a: ReactNode }[] = [
+  {
+    q: "Does it help me during the interview?",
+    a: "No, and on purpose. InterviewMax is for preparing only: it never listens in or feeds you answers in a real interview. Companies now disqualify candidates for using AI in the room, and a story you built yourself holds up under follow-ups anyway.",
+  },
   {
     q: "How long does a story take?",
     a: "You get a rough draft early, once you've told it your way and answered a few short questions. You can stop at any point and come back to it later.",

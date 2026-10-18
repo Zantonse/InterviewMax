@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { emptyContent, type StoryContent } from "@/lib/stories/content";
 import { STORY_TYPES } from "@/lib/stories/story-types";
-import { MAX_QUESTIONS, parseLikelyQuestions, parseQuestionList } from "./content";
-import { coverageFor } from "./coverage";
+import {
+  MAX_QUESTIONS,
+  type LikelyQuestion,
+  parseLikelyQuestions,
+  parseQuestionList,
+  withAiUseQuestion,
+} from "./content";
+import { coverageFor, questionsToBuild } from "./coverage";
 import {
   LIKELY_QUESTIONS_SYSTEM,
   likelyQuestionsMessages,
@@ -20,9 +26,38 @@ function drafted(): StoryContent {
   };
 }
 
+describe("the AI-use question", () => {
+  const q = (n: number, theme: LikelyQuestion["theme"] = "impact"): LikelyQuestion => ({
+    question: `Question ${n}?`,
+    theme,
+    why: "",
+    source: "common",
+    specific: false,
+  });
+
+  it("goes in fourth when no question covers it, keeping the list at the limit", () => {
+    const full = Array.from({ length: MAX_QUESTIONS }, (_, i) => q(i));
+    const withAi = withAiUseQuestion(full);
+    expect(withAi).toHaveLength(MAX_QUESTIONS);
+    expect(withAi[3]).toMatchObject({ theme: "ai_use", source: "common" });
+    expect(withAi.at(-1)?.question).toBe(`Question ${MAX_QUESTIONS - 2}?`);
+  });
+
+  it("leaves a list that already asks it alone, and an empty list empty", () => {
+    const list = [q(1), q(2, "ai_use")];
+    expect(withAiUseQuestion(list)).toBe(list);
+    expect(withAiUseQuestion([])).toEqual([]);
+  });
+
+  it("shows up on jobs predicted before it existed", () => {
+    const saved = parseLikelyQuestions({ questions: [q(1), q(2)], model: "m" });
+    expect(saved?.questions.map((x) => x.theme)).toEqual(["impact", "impact", "ai_use"]);
+  });
+});
+
 describe("question themes", () => {
-  it("has ten themes, each answered by a real story type", () => {
-    expect(QUESTION_THEMES).toHaveLength(10);
+  it("has eleven themes, each answered by a real story type", () => {
+    expect(QUESTION_THEMES).toHaveLength(11);
     const typeIds = new Set<string>(STORY_TYPES.map((t) => t.id));
     for (const theme of QUESTION_THEMES) {
       expect(theme.storyTypes.length).toBeGreaterThan(0);
@@ -140,5 +175,45 @@ describe("coverageFor", () => {
       storyType: "difficult_stakeholder",
     });
     expect(coverageFor("nonsense", [])).toBeUndefined();
+  });
+});
+
+describe("questionsToBuild", () => {
+  const job = (company: string, interviewDate: string | null, questions: [string, string][]) => ({
+    title: `${company} role`,
+    company,
+    interviewDate,
+    likelyQuestions: { questions: questions.map(([question, theme]) => ({ question, theme })) },
+  });
+
+  it("lists uncovered questions, soonest interview first, without the intro or repeats", () => {
+    const jobs = [
+      job("Later", null, [
+        ["Tell me about yourself.", "about_you"],
+        ["Tell me about a conflict.", "conflict"],
+      ]),
+      job("Soon", "2026-10-20", [
+        ["Tell me about a time you failed.", "failure"],
+        ["Tell me about a conflict.", "conflict"],
+      ]),
+    ];
+    expect(questionsToBuild(jobs, [])).toEqual([
+      { question: "Tell me about a time you failed.", storyType: "went_wrong", job: "Soon" },
+      { question: "Tell me about a conflict.", storyType: "difficult_stakeholder", job: "Soon" },
+    ]);
+  });
+
+  it("skips questions a story already answers and stops at the limit", () => {
+    const story = { id: "s", title: "Lost deal", storyType: "went_wrong", content: emptyContent() };
+    const jobs = [
+      job("Acme", null, [
+        ["Tell me about a time you failed.", "failure"],
+        ["Tell me about a conflict.", "conflict"],
+        ["How do you prioritize?", "prioritization"],
+      ]),
+    ];
+    expect(questionsToBuild(jobs, [story], 1).map((q) => q.question)).toEqual([
+      "Tell me about a conflict.",
+    ]);
   });
 });
