@@ -9,6 +9,7 @@ import { gradeJourney } from "@/lib/assessment/journey";
 import { QuestionList } from "@/components/question-list";
 import { levelLabel } from "@/lib/jobs/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
+import { getAppMode } from "@/lib/promotion/data";
 import { hasDraft } from "@/lib/stories/content";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
@@ -58,8 +59,10 @@ export default function HomePage() {
   );
 }
 
-// A brand-new user starts with the journey check; everyone else gets the home page.
+// A brand-new user starts with the journey check; everyone else gets the home page. In PromotionMax
+// home is the promotion page.
 async function NewUserGate({ children }: { children: React.ReactNode }) {
+  if ((await getAppMode()) === "promotion") redirect("/promotion");
   if (await shouldStartWithAssessment()) redirect("/assessment");
   return <>{children}</>;
 }

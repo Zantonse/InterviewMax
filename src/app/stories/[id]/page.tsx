@@ -10,7 +10,8 @@ import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import type { StoryContent } from "@/lib/stories/content";
-import { getStory, listStories, type StoryRecord } from "@/lib/stories/data";
+import { getCoachSharing, getStory, listStories, type StoryRecord } from "@/lib/stories/data";
+import { shareWithCoach } from "@/app/promotion/actions";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { loadBuilderTargets } from "@/lib/stories/targets-data";
 import { isToughType } from "@/lib/tough/questions";
@@ -49,13 +50,14 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.
-  const [prep, jobs, stories, checklist, targets, finder] = await Promise.all([
+  const [prep, jobs, stories, checklist, targets, finder, sharing] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
     intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
     intro ? null : getStoryFinder().catch(() => null),
+    getCoachSharing(story.id).catch(() => null),
   ]);
   // Story finder moments for this story type become memory joggers on the opening question.
   const moments = (finder?.moments ?? [])
@@ -64,35 +66,38 @@ async function StoryLoader({ params }: { params: PageProps<"/stories/[id]">["par
     .map((m) => ({ moment: m.moment, quote: m.quote, sourceLabel: SOURCE_LABELS[m.source] }));
   const resume = Boolean(prep.resume);
   return (
-    <StoryBuilder
-      storyId={story.id}
-      storyTypeId={story.storyType}
-      initialTitle={story.title}
-      initialContent={story.content}
-      hasResume={resume}
-      moments={moments}
-      targets={targets}
-      afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
-      nextUp={
-        !intro && (
-          <NextUp
-            hasPlan={Boolean(prep.overview)}
-            next={
-              prep.overview
-                ? nextStoryToBuild(prep.overview.storyOrder, stories, story.storyType)
-                : undefined
-            }
+    <>
+      {sharing && <CoachSharing storyId={story.id} shared={sharing.shared} />}
+      <StoryBuilder
+        storyId={story.id}
+        storyTypeId={story.storyType}
+        initialTitle={story.title}
+        initialContent={story.content}
+        hasResume={resume}
+        moments={moments}
+        targets={targets}
+        afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
+        nextUp={
+          !intro && (
+            <NextUp
+              hasPlan={Boolean(prep.overview)}
+              next={
+                prep.overview
+                  ? nextStoryToBuild(prep.overview.storyOrder, stories, story.storyType)
+                  : undefined
+              }
+            />
+          )
+        }
+        menu={<DeleteStoryButton storyId={story.id} title={story.title} />}
+        beside={
+          <NumbersCard
+            role={checklist && checklistRole(checklist)}
+            numbers={numbersForStory(checklist, story.storyType)}
           />
-        )
-      }
-      menu={<DeleteStoryButton storyId={story.id} title={story.title} />}
-      beside={
-        <NumbersCard
-          role={checklist && checklistRole(checklist)}
-          numbers={numbersForStory(checklist, story.storyType)}
-        />
-      }
-    />
+        }
+      />
+    </>
   );
 }
 
@@ -212,5 +217,27 @@ function BuilderSkeleton() {
       <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
       <div className="h-64 rounded-3xl bg-white/80 ring-1 ring-black/5" />
     </div>
+  );
+}
+
+// PromotionMax stories: who can read this one. Hidden from the coach unless shared.
+function CoachSharing({ storyId, shared }: { storyId: string; shared: boolean }) {
+  return (
+    <form
+      action={shareWithCoach}
+      className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-sm text-slate-700"
+      data-testid="coach-sharing"
+    >
+      <input type="hidden" name="storyId" value={storyId} />
+      <input type="hidden" name="shared" value={shared ? "false" : "true"} />
+      <span>
+        {shared
+          ? "Promotion story, shared with your coach."
+          : "Promotion story: private to you. Your coach can't read it."}
+      </span>
+      <button type="submit" className="font-semibold text-ink-800 hover:underline">
+        {shared ? "Make it private again" : "Share with my coach"}
+      </button>
+    </form>
   );
 }

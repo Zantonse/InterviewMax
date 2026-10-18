@@ -294,14 +294,22 @@ function toAdminStory(row: StoryRow): AdminStory {
   };
 }
 
+// PromotionMax stories are about the user's current employer, so the coach only sees one the user
+// chose to share (stories.mode and stories.shared_with_coach). Before those columns exist there are
+// no promotion stories, so the query runs again without the filter.
+const COACH_VISIBLE = "mode.is.null,shared_with_coach.is.true";
+const UNDEFINED_COLUMN = "42703";
+const STORY_COLUMNS = "id, title, story_type, content, created_at, updated_at";
+
 // One user's stories, newest first, for the coach to read. Callers log the view first.
 export async function listUserStories(admin: Admin, userId: string): Promise<AdminStory[]> {
   if (!isUserId(userId)) return [];
-  const { data, error } = await admin.supabase
-    .from("stories")
-    .select("id, title, story_type, content, created_at, updated_at")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+  const select = (filtered: boolean) => {
+    const q = admin.supabase.from("stories").select(STORY_COLUMNS).eq("user_id", userId);
+    return (filtered ? q.or(COACH_VISIBLE) : q).order("updated_at", { ascending: false });
+  };
+  let { data, error } = await select(true);
+  if (error?.code === UNDEFINED_COLUMN) ({ data, error } = await select(false));
   if (error) throw new Error(`Couldn't load this user's stories: ${error.message}`);
   return (data as StoryRow[]).map(toAdminStory);
 }
@@ -312,12 +320,16 @@ export async function getUserStory(
   storyId: string,
 ): Promise<AdminStory | null> {
   if (!isUserId(userId) || !UUID_RE.test(storyId)) return null;
-  const { data, error } = await admin.supabase
-    .from("stories")
-    .select("id, title, story_type, content, created_at, updated_at")
-    .eq("user_id", userId)
-    .eq("id", storyId)
-    .maybeSingle();
+  const select = (filtered: boolean) => {
+    const q = admin.supabase
+      .from("stories")
+      .select(STORY_COLUMNS)
+      .eq("user_id", userId)
+      .eq("id", storyId);
+    return (filtered ? q.or(COACH_VISIBLE) : q).maybeSingle();
+  };
+  let { data, error } = await select(true);
+  if (error?.code === UNDEFINED_COLUMN) ({ data, error } = await select(false));
   if (error) throw new Error(`Couldn't load the story: ${error.message}`);
   return data ? toAdminStory(data as StoryRow) : null;
 }

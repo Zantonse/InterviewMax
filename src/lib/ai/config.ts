@@ -81,6 +81,12 @@ export const STEP_MODELS = {
   // Interviewee profile: a short overall assessment in coach tone, written only from the scores and
   // findings worked out in code. Figures checked in code.
   profileSummary: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // PromotionMax: read a pasted career ladder into the dimensions the target level is judged on,
+  // each quoting the ladder and tied to question themes (checked in code).
+  ladderRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // PromotionMax: the promotion packet (self-review, manager summary, talking points) from the
+  // user's finished stories. Figures checked against the cited stories in code.
+  promotionPacket: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
   // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
   // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).
