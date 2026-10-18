@@ -52,7 +52,7 @@ export async function requireAdmin(): Promise<Admin> {
 export async function logAdminView(
   admin: Admin,
   // "story:<id>" records which story was opened.
-  view: "overview" | "analytics" | "review" | "user" | `story:${string}`,
+  view: "overview" | "analytics" | "review" | "guidelines" | "user" | `story:${string}`,
   subjectUserId?: string,
 ): Promise<void> {
   const { error } = await admin.supabase.from("admin_views").insert({

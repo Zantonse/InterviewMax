@@ -21,20 +21,25 @@ export function Card({
   );
 }
 
-export function AdminTabs({ current }: { current: "overview" | "analytics" | "review" }) {
+export function AdminTabs({
+  current,
+}: {
+  current: "overview" | "analytics" | "review" | "guidelines";
+}) {
   const tabs = [
     { key: "overview", label: "Users and funnel", href: "/admin" },
     { key: "analytics", label: "Analytics", href: "/admin/analytics" },
     { key: "review", label: "Review queue", href: "/admin/review" },
+    { key: "guidelines", label: "Coaching guidelines", href: "/admin/guidelines" },
   ] as const;
   return (
-    <nav aria-label="Admin sections" className="mt-4 flex gap-6 border-b border-slate-200">
+    <nav aria-label="Admin sections" className="mt-4 flex gap-x-6 gap-y-2 overflow-x-auto border-b border-slate-200">
       {tabs.map((t) => (
         <Link
           key={t.key}
           href={t.href}
           aria-current={t.key === current ? "page" : undefined}
-          className={`-mb-px border-b-2 pb-2 text-sm font-semibold ${
+          className={`-mb-px shrink-0 border-b-2 pb-2 text-sm font-semibold whitespace-nowrap ${
             t.key === current
               ? "border-ink-800 text-ink-900"
               : "border-transparent text-slate-500 hover:text-slate-800"

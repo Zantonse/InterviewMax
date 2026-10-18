@@ -5,7 +5,7 @@ import { STEP_MODELS, type Step, type StepModel } from "@/lib/ai/config";
 export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   storyProbe: {
     feature: "Story builder follow-up questions",
-    sends: "Your answers for that story, plus the job and numbers it draws on",
+    sends: "Your answers for that story, plus the job and numbers it draws on, and your coaching style",
   },
   storyPrefill: {
     feature: "Filling in “Tell me about yourself” from LinkedIn",
@@ -91,16 +91,17 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   practiceFeedback: {
     feature: "Practice mode feedback",
-    sends: "Your spoken practice answers, the saved story for that question and the job’s title",
+    sends:
+      "Your spoken practice answers, the saved story for that question, the job’s title and your coaching style",
   },
   casePractice: {
     feature: "Case and technical question practice",
-    sends: "The question, your practice answer and the job’s title",
+    sends: "The question, your practice answer, the job’s title and your coaching style",
   },
   profileSummary: {
     feature: "Your interviewee profile summary",
     sends:
-      "The profile’s results worked out from your stories, grades, numbers, practice and past interviews (story titles, scores and findings)",
+      "The profile’s results worked out from your stories, grades, numbers, practice and past interviews (story titles, scores and findings), and your coaching style",
   },
   transcribe: {
     feature: "Mic mode (speech to text)",
