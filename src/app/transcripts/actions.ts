@@ -166,6 +166,14 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
 export async function reviewAgain(_prev: FormState, formData: FormData): Promise<FormState> {
   try {
     const id = String(formData.get("transcriptId") ?? "");
+    // One saved without marking who said what (no speaker names, and the marking failed or never
+    // ran) gets marked first, so the review and "How sure you sounded" read the user's own turns.
+    try {
+      await labelSpeakers(id);
+    } catch (err) {
+      unstable_rethrow(err);
+      console.error("Transcripts: marking who said what failed", err);
+    }
     await analyzeTranscript(id);
     await syncSharedQuestionsSafely(id);
     const transcript = await getTranscript(id);

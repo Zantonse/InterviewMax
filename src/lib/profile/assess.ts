@@ -23,6 +23,7 @@ import {
   type AnswerGapId,
   type TranscriptAnalysis,
 } from "@/lib/transcripts/content";
+import { interviewTendencies, type Tendency } from "./tendencies";
 
 // The interviewee profile (PRD v0.3, P0): the user as a candidate, from everything the app already
 // knows. Every criterion, readiness label, strength and weakness is worked out here in code, and
@@ -105,6 +106,8 @@ export type ProfileResult = {
   jobs: JobReadiness[];
   strengths: Point[];
   weaknesses: Point[];
+  // How the user tends to interview, from real past interviews (tendencies.ts).
+  tendencies: Tendency[];
   // Nothing to assess yet: no written story, no transcript, no practice.
   empty: boolean;
 };
@@ -131,6 +134,9 @@ type TranscriptLike = {
   title: string;
   targetJobId: string | null;
   analysis: TranscriptAnalysis | null;
+  transcript?: string;
+  speaker?: string;
+  createdAt?: string;
 };
 
 type PracticeLike = { id: string; targetJobId: string; items: PracticeItem[] };
@@ -813,6 +819,37 @@ export function jobReadiness(job: JobLike, stories: StoryLike[]): JobReadiness {
   };
 }
 
+// ---- Tendencies as strengths and weaknesses ----
+
+// Only the tendencies the criteria don't already turn into points: missed results and examples
+// come through "Real interview patterns", and so does the best answer that landed.
+function tendencyPoints(tendencies: Tendency[], points: Points) {
+  const sure = tendencies.find((t) => t.id === "sure");
+  if (sure && sure.citations[0] && (sure.status === "weak" || sure.status === "strong")) {
+    const weak = sure.status === "weak";
+    const point: Point = {
+      criterion: "delivery",
+      text: weak
+        ? `You hedge a lot in real interviews: ${sure.headline.charAt(0).toLowerCase()}${sure.headline.slice(1)}`
+        : `You sound sure in real interviews: ${sure.headline.charAt(0).toLowerCase()}${sure.headline.slice(1)}`,
+      citation: sure.citations[0],
+      weight: weak ? 2.5 : 2,
+    };
+    if (weak) points.weakness({ ...point, next: sure.next });
+    else points.strength(point);
+  }
+  const tested = tendencies.find((t) => t.id === "tested");
+  if (tested?.status === "weak" && tested.citations[0]) {
+    points.weakness({
+      criterion: "patterns",
+      text: `Case and skills questions are a weak spot: ${tested.headline.charAt(0).toLowerCase()}${tested.headline.slice(1)}`,
+      citation: tested.citations[0],
+      next: tested.next,
+      weight: 2.2,
+    });
+  }
+}
+
 // ---- Putting it together ----
 
 class Points {
@@ -845,6 +882,8 @@ export function assessProfile(input: ProfileInput): ProfileResult {
     delivery(practice, transcripts, points),
     readiness(assessment, jobs),
   ];
+  const tendencies = interviewTendencies(transcripts);
+  tendencyPoints(tendencies, points);
   const empty =
     behavioral(stories).length === 0 &&
     !stories.some((s) => hasDraft(s.content)) &&
@@ -855,6 +894,7 @@ export function assessProfile(input: ProfileInput): ProfileResult {
     jobs: jobs.map((j) => jobReadiness(j, stories)),
     strengths: top(points.strengths),
     weaknesses: top(points.weaknesses),
+    tendencies,
     empty,
   };
 }

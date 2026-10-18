@@ -43,6 +43,16 @@ export function caseKind(question: string): CaseKind {
   return SKILL_RE.test(question) ? "skill" : "case";
 }
 
+// Screening and logistics questions the tough-questions coach doesn't cover: the review keeps
+// them now, but they aren't cases to practice.
+const SCREENING_RE =
+  /\b(?:timeline|start date|when (?:could|can) you start|notice period|travel|relocat\w*|on-?site|remote|hybrid|visa|sponsor\w*|salary|compensation|comp\b|pay range|number\b.*\btarget\w*|other (?:interviews|offers)|questions for (?:me|us)|anything (?:else )?(?:you'd like to|to) ask)/i;
+
+// A question with no theme that isn't for the tough-questions coach or plain screening.
+export function isCaseQuestion(question: string): boolean {
+  return !toughForAsked(question) && !SCREENING_RE.test(question);
+}
+
 export const MAX_CASE_QUESTION_LENGTH = 400;
 export const MAX_CASE_ANSWER_LENGTH = 6000;
 
@@ -68,7 +78,7 @@ type TranscriptLike = {
 
 // The non-behavioral questions from past interviews: this job's and this company's first, then
 // (fewer) from interviews elsewhere. Screening questions (salary, why you're looking) are left
-// out: they have the tough-questions coach.
+// out: they have the tough-questions coach, and logistics aren't cases.
 export function caseQuestionsFor(
   job: { id: string; company: string | null },
   transcripts: TranscriptLike[],
@@ -82,7 +92,7 @@ export function caseQuestionsFor(
     if (!t.analysis) continue;
     const same = t.targetJobId === job.id || (Boolean(company) && t.company?.trim().toLowerCase() === company);
     for (const q of t.analysis.asked) {
-      if (q.theme || toughForAsked(q.question)) continue;
+      if (q.theme || !isCaseQuestion(q.question)) continue;
       const key = q.question.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
