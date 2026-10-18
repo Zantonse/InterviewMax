@@ -1,5 +1,6 @@
 import "server-only";
 import { getCurrentUser } from "@/lib/auth";
+import { getAppMode } from "@/lib/promotion/data";
 import { createClient } from "@/lib/supabase/server";
 import { isUntouched, parseContent, type StoryContent } from "./content";
 import { getStoryType } from "./story-types";
@@ -71,6 +72,8 @@ export async function insertStory(input: {
 }): Promise<string> {
   await getCurrentUser();
   const supabase = await createClient();
+  // A story started in PromotionMax is kept from the coach view unless the user shares it.
+  const promotion = (await getAppMode()) === "promotion";
   const { data, error } = await supabase
     .from("stories")
     .insert({
@@ -78,6 +81,7 @@ export async function insertStory(input: {
       story_type: input.storyType,
       themes: [...input.themes],
       content: input.content,
+      ...(promotion ? { mode: "promotion" } : {}),
     })
     .select("id")
     .single();
@@ -107,5 +111,34 @@ export async function deleteStory(id: string): Promise<void> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("stories").delete().eq("id", id).select("id");
   if (error) throw new Error(`Couldn't delete the story: ${error.message}`);
+  if (!data?.length) throw new Error("Story not found.");
+}
+
+// PromotionMax stories only: whether the coach can read it. Null for every other story, or when
+// the columns aren't there yet.
+export async function getCoachSharing(id: string): Promise<{ shared: boolean } | null> {
+  if (!UUID_RE.test(id)) return null;
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("stories")
+    .select("mode, shared_with_coach")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || data?.mode !== "promotion") return null;
+  return { shared: data.shared_with_coach === true };
+}
+
+export async function setCoachSharing(id: string, shared: boolean): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Story not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("stories")
+    .update({ shared_with_coach: shared })
+    .eq("id", id)
+    .eq("mode", "promotion")
+    .select("id");
+  if (error) throw new Error(`Couldn't change who sees the story: ${error.message}`);
   if (!data?.length) throw new Error("Story not found.");
 }

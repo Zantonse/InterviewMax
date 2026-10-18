@@ -9,6 +9,7 @@ import { PrepPath } from "@/components/prep-path";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
+import { getAppMode } from "@/lib/promotion/data";
 import type { LikelyQuestion } from "@/lib/questions/content";
 import { coverageFor } from "@/lib/questions/coverage";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
@@ -48,8 +49,10 @@ export default function HomePage() {
   );
 }
 
-// A brand-new user starts with the journey check; everyone else gets the home page.
+// A brand-new user starts with the journey check; everyone else gets the home page. In PromotionMax
+// home is the promotion page.
 async function NewUserGate({ children }: { children: React.ReactNode }) {
+  if ((await getAppMode()) === "promotion") redirect("/promotion");
   if (await shouldStartWithAssessment()) redirect("/assessment");
   return <>{children}</>;
 }

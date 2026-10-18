@@ -103,6 +103,15 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     sends:
       "The profile’s results worked out from your stories, grades, numbers, practice and past interviews (story titles, scores and findings), and your coaching style",
   },
+  ladderRead: {
+    feature: "PromotionMax: reading your career ladder (beta)",
+    sends: "The career ladder text you paste, with the names you chose to redact replaced",
+  },
+  promotionPacket: {
+    feature: "PromotionMax: your promotion packet (beta)",
+    sends:
+      "Your written stories and the answers behind them, your numbers, your current and target level and your ladder’s dimensions, with the names you chose to redact replaced",
+  },
   transcribe: {
     feature: "Mic mode (speech to text)",
     sends: "The recording of what you say while the mic is on",
