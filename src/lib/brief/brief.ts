@@ -279,3 +279,12 @@ export const STARTER_QUESTIONS = [
   "What do the people who do best here have in common?",
   "What are the next steps, and is there anything you'd like me to expand on?",
 ] as const;
+
+// For an in-person round (PRD, interview trends 2026: Google, Cisco and McKinsey brought them back,
+// largely because of AI cheating). The same for every job, so it's written here, not generated.
+export const IN_PERSON_NOTES = [
+  "Expect no notes and no screen: tell your stories from memory, so warm up with them out loud first.",
+  "Bring a printed copy of your resume, and know the numbers on it without looking.",
+  "Plan to arrive 10 to 15 minutes early, with a photo ID: some companies now check who you are.",
+  "Follow-ups land faster face to face. Pause, then answer the question they asked, with one specific.",
+] as const;

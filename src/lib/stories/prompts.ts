@@ -13,6 +13,7 @@ import {
   STAR_LENGTH,
   STAR_PARTS,
   TAILORED_PARTS,
+  TYPE_FOCUS,
   answerableQuestions,
   coreQuestionText,
   inferredPathQuestion,
@@ -193,6 +194,9 @@ Also give it a short title (at most 8 words) for their story bank, e.g. "From su
 Reply with JSON only, no other text:
 {"title": "…", "parts": {${INTRO_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
+// The AI-use story: the checks, changes and the user's own call are the point, so they stay in.
+const AI_USE_WRITE_NOTE = `This story is about using AI at work. Keep what they checked in the AI's output, what they changed or caught, and the decision they made themselves: put the checks and changes in actions and their own call at the key decision. Say plainly what the AI did and what they did; never make the AI sound like it did more, or less, than they said.`;
+
 // Fills in the "Tell me about yourself" questions a LinkedIn profile already answers.
 export const PREFILL_SYSTEM = `You are an interview coach helping an experienced professional prepare their answer to "Tell me about yourself". They uploaded their LinkedIn profile. Answer each question below from the profile only, written in the first person as notes they could have typed themselves.
 
@@ -234,10 +238,12 @@ export function probeSystem(
 ): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
-  return `${base}${tailor}\n\n${roundInstructions(round, storyType)}`;
+  const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
+  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${roundInstructions(round, storyType)}`;
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
+  if (storyType?.id === "ai_use") return `${WRITE_SYSTEM}\n\n${AI_USE_WRITE_NOTE}`;
   return storyType?.format === "intro" ? INTRO_WRITE_SYSTEM : WRITE_SYSTEM;
 }
 

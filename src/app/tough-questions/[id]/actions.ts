@@ -5,7 +5,17 @@ import { ModelError } from "@/lib/ai";
 import { getJob } from "@/lib/jobs/data";
 import type { StoryContent } from "@/lib/stories/content";
 import { getStory, updateStory, type StoryRecord } from "@/lib/stories/data";
+import { askFollowUp, giveFeedback } from "@/lib/practice/coach";
+import {
+  MAX_PRACTICE_ANSWER_LENGTH,
+  type PracticeItem,
+  itemStep,
+  withAnswer,
+} from "@/lib/practice/content";
+import type { VoiceStats } from "@/lib/practice/delivery";
+import { trackEvent } from "@/lib/usage/track";
 import { writeToughAnswer } from "@/lib/tough/coach";
+import { drillReference, newToughDrill, toughDrill } from "@/lib/tough/drill";
 import {
   MAX_EDITED_ANSWER_LENGTH,
   MAX_TOUGH_ANSWER_LENGTH,
@@ -79,6 +89,90 @@ export async function saveToughEdit(storyId: string, text: string): Promise<Toug
     await updateStory(storyId, { content });
     return { ok: true, content };
   });
+}
+
+// Starts a follow-up drill on the written answer, replacing the last one.
+export async function startToughDrill(storyId: string): Promise<ToughResult> {
+  return withToughStory(storyId, async (story, question) => {
+    if (!story.content.draft?.parts.answer?.trim()) return fail("Write the answer first.");
+    const content = withDrill(story.content, newToughDrill(question));
+    await updateStory(storyId, { content });
+    await trackEvent("tough_drill_started");
+    return { ok: true, content };
+  });
+}
+
+// Saves the user's spoken answer in the drill, then the interviewer pushes back, or gives the
+// feedback once it has no more. The answer is saved before the model call, so a failure loses
+// nothing: continueToughDrill runs it again.
+export async function answerToughDrill(
+  storyId: string,
+  answer: string,
+  seconds: number | null,
+  voice: VoiceStats | null = null,
+): Promise<ToughResult> {
+  const text = typeof answer === "string" ? answer.trim() : "";
+  if (!text) return fail("Say or type an answer first.");
+  if (text.length > MAX_PRACTICE_ANSWER_LENGTH) return fail("That answer is too long.");
+  return withToughStory(storyId, async (story, question) => {
+    const drill = toughDrill(story.content);
+    if (!drill || itemStep(drill) !== "answer") return fail("Start the drill again.");
+    const content = withDrill(story.content, withAnswer(drill, text, seconds, voice));
+    await updateStory(storyId, { content });
+    return advanceDrill(storyId, content, question);
+  });
+}
+
+export async function continueToughDrill(storyId: string): Promise<ToughResult> {
+  return withToughStory(storyId, async (story, question) =>
+    advanceDrill(storyId, story.content, question),
+  );
+}
+
+async function advanceDrill(
+  storyId: string,
+  content: StoryContent,
+  question: NonNullable<ReturnType<typeof getToughQuestion>>,
+): Promise<ToughResult> {
+  const drill = toughDrill(content);
+  if (!drill) return fail("Start the drill again.");
+  const step = itemStep(drill);
+  if (step === "answer" || step === "done") return { ok: true, content };
+  const job = content.tough?.jobId ? await getJob(content.tough.jobId).catch(() => null) : null;
+  const role = job ? { title: job.title, company: job.company, level: job.level } : undefined;
+  let next: PracticeItem = drill;
+  if (step === "probe") {
+    const followUp = await askFollowUp({
+      question: drill.question,
+      role,
+      turns: drill.turns,
+      kind: "tough",
+    });
+    next = followUp
+      ? { ...drill, turns: [...drill.turns, { question: followUp.question, gap: followUp.gap }] }
+      : { ...drill, probeDone: true };
+  }
+  if (itemStep(next) === "feedback") {
+    const feedback = await giveFeedback(
+      {
+        question: drill.question,
+        role,
+        reference: drillReference(question, content),
+        turns: next.turns,
+        kind: "tough",
+      },
+      "tough",
+    );
+    // New details belong in the situation answers, which the user edits on this page.
+    next = { ...next, feedback: { ...feedback, newFacts: [] } };
+  }
+  const saved = withDrill(content, next);
+  await updateStory(storyId, { content: saved });
+  return { ok: true, content: saved };
+}
+
+function withDrill(content: StoryContent, drill: PracticeItem): StoryContent {
+  return { ...content, tough: { ...content.tough, drill } };
 }
 
 function withAnswers(

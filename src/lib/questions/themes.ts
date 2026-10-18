@@ -1,6 +1,6 @@
 import type { StoryTypeId } from "@/lib/stories/story-types";
 
-// The ten behavioral question themes and their question templates (PRD, step 2). Scripted: the
+// The behavioral question themes and their question templates (PRD, step 2). Scripted: the
 // model ranks and tailors questions per job, but every question it returns belongs to one of these
 // themes, and each theme names the story types that answer it.
 
@@ -96,6 +96,16 @@ export const QUESTION_THEMES = [
       "What would you focus on in your first 90 days here?",
     ],
   },
+  {
+    // PRD, interview trends 2026: now asked for most roles, so it's a default likely question.
+    id: "ai_use",
+    label: "Using AI at work",
+    storyTypes: ["ai_use"],
+    templates: [
+      "Tell me about a time you used AI at work.",
+      "How do you check work that AI helped you produce?",
+    ],
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;
@@ -105,6 +115,13 @@ export const QUESTION_THEMES = [
 
 export type QuestionTheme = (typeof QUESTION_THEMES)[number];
 export type QuestionThemeId = QuestionTheme["id"];
+
+// The question every job's likely questions include, for the theme every job now asks about.
+export const AI_USE_QUESTION = {
+  question: "Tell me about a time you used AI at work.",
+  theme: "ai_use",
+  why: "now asked in most interviews",
+} as const;
 
 export function getTheme(id: string | null | undefined): QuestionTheme | undefined {
   return QUESTION_THEMES.find((t) => t.id === id);

@@ -2,8 +2,8 @@ import type { ChatMessage } from "@/lib/ai/types";
 import { levelLabel } from "@/lib/jobs/content";
 import { extractJson } from "@/lib/stories/prompts";
 import { isRecord } from "@/lib/jobs/content";
-import { MAX_QUESTIONS, parseQuestionList, type LikelyQuestion } from "./content";
-import { QUESTION_THEMES } from "./themes";
+import { MAX_QUESTIONS, parseQuestionList, withAiUseQuestion, type LikelyQuestion } from "./content";
+import { AI_USE_QUESTION, QUESTION_THEMES } from "./themes";
 
 // The model call in likely questions ("likelyQuestions"): predict the behavioral questions one
 // target job is most likely to ask, starting from the scripted themes and templates, tailored by
@@ -11,11 +11,11 @@ import { QUESTION_THEMES } from "./themes";
 
 export const LIKELY_QUESTIONS_SYSTEM = `You are an interview coach predicting the behavioral interview questions one specific job is most likely to ask, so the candidate can spend limited prep time on the questions that matter.
 
-Start from these ten themes and their standard questions:
+Start from these ${QUESTION_THEMES.length} themes and their standard questions:
 ${QUESTION_THEMES.map((t) => `- ${t.id} (${t.label}): ${t.templates.join(" | ")}`).join("\n")}
 
 Rules:
-- Return ${MAX_QUESTIONS - 2} to ${MAX_QUESTIONS} questions, most likely first. Always include "Tell me about yourself" (theme about_you).
+- Return ${MAX_QUESTIONS - 2} to ${MAX_QUESTIONS} questions, most likely first. Always include "Tell me about yourself" (theme about_you), and a question on using AI at work (theme ${AI_USE_QUESTION.theme}): interviewers now ask it in most roles, so word it for this job (e.g. "${AI_USE_QUESTION.question}").
 - Tailor the wording to this job: name its real situations (its customers, teams, products, scope) where the posting gives them, so the question sounds like this company's interviewer asked it.
 - Rank by what the posting stresses most (repeated themes, the first responsibilities listed, the level) and by what the interview reports say was actually asked.
 - If interview reports are given, include the behavioral questions they report, marked source "report". Ignore technical, case or coding questions: only behavioral ones belong here.
@@ -94,5 +94,5 @@ export function parseLikelyQuestionsReply(
           : q.source,
   }));
   if (questions.length === 0) throw new Error("No questions came back.");
-  return questions;
+  return withAiUseQuestion(questions);
 }

@@ -137,7 +137,7 @@ export type ShareableQuestion = {
 };
 
 // The behavioral questions in a review, redacted and checked, once each, leaving out the ones the
-// user chose not to share. Questions outside the ten themes (technical, logistics) aren't shared.
+// user chose not to share. Questions outside the themes (technical, logistics) aren't shared.
 export function shareableQuestions(input: {
   asked: { question: string; theme: QuestionThemeId | null }[];
   transcript: string;

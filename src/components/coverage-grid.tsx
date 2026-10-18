@@ -24,7 +24,7 @@ const STATUS: Record<Exclude<ThemeStatus, "empty">, string> = {
   in_progress: "In progress",
 };
 
-// The story bank against the ten question themes, on the home page's story bank card. Covered
+// The story bank against the question themes, on the home page's story bank card. Covered
 // themes open their best story; empty ones start the missing story. Under it, the level mix
 // against the highest level among the target jobs.
 export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: TargetJob[] }) {
