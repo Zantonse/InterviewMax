@@ -289,6 +289,7 @@ function QuestionRow({ q, n }: { q: BriefQuestion; n: number }) {
           </>
         ) : q.buildType ? (
           <form action={startStory} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="asked" value={q.question} />
             <span className="text-amber-800">No story yet.</span>
             <button
               type="submit"

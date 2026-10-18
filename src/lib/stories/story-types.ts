@@ -276,8 +276,27 @@ export function answerableQuestions(storyType: StoryType | undefined): readonly 
     : [...STAR_QUESTIONS, ...LEGACY_STAR_QUESTIONS.filter((q) => q.id !== "start")];
 }
 
-export function coreQuestionText(questionId: string, storyType: StoryType | undefined) {
+// Longest interview question a story can be started from.
+export const MAX_ASKED_LENGTH = 300;
+
+// An interview question from a form or a link, tidied and capped.
+export function cleanAsked(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const text = value.replace(/\s+/g, " ").trim();
+  return text ? text.slice(0, MAX_ASKED_LENGTH) : undefined;
+}
+
+// A behavioral story started from a real interview question opens with that question.
+export function coreQuestionText(
+  questionId: string,
+  storyType: StoryType | undefined,
+  asked?: string,
+) {
   if (questionId === "start" && storyType?.format !== "intro") {
+    if (asked) {
+      const question = /[?.!]$/.test(asked) ? asked : `${asked}.`;
+      return `${question} Tell it start to finish: where you were, what you did, and how it turned out.`;
+    }
     return (
       storyType?.opening ||
       "Tell me what happened, start to finish: where you were, what you did, and how it turned out."

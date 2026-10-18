@@ -1,17 +1,17 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { startStory } from "@/app/stories/new/actions";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
 import { PrepPath } from "@/components/prep-path";
-import { getAssessmentSafely, shouldStartWithAssessment } from "@/lib/assessment/data";
-import { gradeJourney } from "@/lib/assessment/journey";
-import { QuestionList } from "@/components/question-list";
-import { levelLabel } from "@/lib/jobs/content";
+import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { hasDraft } from "@/lib/stories/content";
+import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
+import type { LikelyQuestion } from "@/lib/questions/content";
+import { coverageFor } from "@/lib/questions/coverage";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
-import { storyHref } from "@/lib/tough/questions";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
@@ -25,24 +25,14 @@ export default function HomePage() {
       <AppHeader />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Your interview prep
-          </h1>
-          {/* On wide screens the sidebar has this button. */}
-          <Link
-            href="/stories/new"
-            className="rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 lg:hidden"
-          >
-            Build a story
-          </Link>
-        </div>
+        {/* "Build a story" is in the sidebar (the phone menu on small screens); the plan's Continue is
+            the one main button here. */}
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+          Your interview prep
+        </h1>
 
         <Suspense fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}>
           <NewUserGate>
-            <Suspense fallback={null}>
-              <JourneyLink />
-            </Suspense>
             <Suspense
               fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}
             >
@@ -64,42 +54,12 @@ async function NewUserGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// The journey check stays one tap away: the grade once taken, an invitation otherwise.
-async function JourneyLink() {
-  const assessment = await getAssessmentSafely();
-  // Before the column exists there's nothing to show.
-  if (assessment === undefined) return null;
-  let jobs: TargetJob[];
-  try {
-    jobs = await listJobs();
-  } catch (err) {
-    unstable_rethrow(err);
-    jobs = [];
-  }
-  const taken = assessment && "answers" in assessment ? assessment : null;
-  const grade = taken && gradeJourney(taken.answers, { hasJob: jobs.length > 0 });
-  return (
-    <p className="mt-2 text-sm text-slate-600" data-testid="journey-link">
-      <Link href="/assessment" className="font-semibold text-ink-800 hover:underline">
-        {grade
-          ? `Journey grade: ${grade.score}/100 · ${grade.level}`
-          : "Take the 1-minute journey check"}{" "}
-        →
-      </Link>
-      <span className="mx-2 text-slate-300" aria-hidden>
-        ·
-      </span>
-      <Link href="/profile" className="font-semibold text-ink-800 hover:underline">
-        Your interviewee profile →
-      </Link>
-    </p>
-  );
-}
-
-// The story bank, and beside it the target jobs and their likely questions once there is a job.
-// Before the first job the prep path above asks for one, so the side column stays out of the way.
+// The story bank, and beside it the focus job and its likely questions. Before the first job the
+// prep path above asks for one, and an empty story bank would only be a wall of work under it, so
+// nothing else shows until there's a job or a story.
 async function Dashboard() {
   let jobs: TargetJob[] | null;
+  let stories: StoryRecord[] | null;
   try {
     jobs = await listJobs();
   } catch (err) {
@@ -107,11 +67,25 @@ async function Dashboard() {
     console.error("Home: loading target jobs failed", err);
     jobs = null;
   }
+  try {
+    stories = await listStories();
+  } catch (err) {
+    // A signed-out redirect must still go through.
+    unstable_rethrow(err);
+    // Don't take the whole home page down if the database can't be read.
+    console.error("Home: loading stories failed", err);
+    stories = null;
+  }
+  if (jobs?.length === 0 && stories?.length === 0) return null;
   const bank = (
     <Card className="bg-ink-800 text-white" title="Story bank">
-      <Suspense fallback={<p className="text-5xl font-extrabold opacity-50">…</p>}>
-        <StoryBank jobs={jobs ?? []} />
-      </Suspense>
+      {stories ? (
+        <CoverageGrid stories={stories} jobs={jobs ?? []} />
+      ) : (
+        <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
+          Your stories couldn&apos;t be loaded right now. Try again in a minute.
+        </p>
+      )}
     </Card>
   );
   if (jobs?.length === 0) return <div className="mt-4">{bank}</div>;
@@ -120,12 +94,9 @@ async function Dashboard() {
       <div className="md:col-span-2">{bank}</div>
       <div className="space-y-4">
         {jobs ? (
-          <>
-            <LikelyQuestions jobs={jobs} />
-            <TargetJobs jobs={jobs} />
-          </>
+          <FocusJob jobs={jobs} stories={stories ?? []} />
         ) : (
-          <Card title="Target jobs">
+          <Card title="Your jobs">
             <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>
           </Card>
         )}
@@ -137,118 +108,73 @@ async function Dashboard() {
   );
 }
 
-async function StoryBank({ jobs }: { jobs: TargetJob[] }) {
-  let stories: StoryRecord[];
-  try {
-    stories = await listStories();
-  } catch (err) {
-    // A signed-out redirect must still go through.
-    unstable_rethrow(err);
-    // Don't take the whole home page down if the database can't be read.
-    console.error("Home: loading stories failed", err);
-    return (
-      <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
-        Your stories couldn&apos;t be loaded right now. Try again in a minute.
-      </p>
-    );
-  }
+// The job the plan is working toward, with its top questions and whether a story answers each.
+// The other jobs are in the sidebar.
+async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRecord[] }) {
+  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const job = focusJob(jobs, today);
+  if (!job) return null;
+  const days = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
+  const name = job.company || job.title;
+  const questions = job.likelyQuestions?.questions ?? [];
   return (
-    <>
-      <p className="-mt-1 flex items-baseline gap-2">
-        <span className="text-4xl font-extrabold" data-testid="story-count">
-          {stories.length}
-        </span>
-        <span className="text-ink-100">{stories.length === 1 ? "story" : "stories"}</span>
-      </p>
-      <CoverageGrid stories={stories} jobs={jobs} />
-      {stories.length > 0 && (
-        <ul className="mt-6 divide-y divide-white/15 rounded-2xl bg-white/10">
-          {stories.map((story) => {
-            const drafted = hasDraft(story.content);
-            return (
-              <li key={story.id}>
-                <Link
-                  href={storyHref(story)}
-                  className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-white/10"
-                >
-                  <span className="min-w-0 truncate font-semibold">{story.title}</span>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      drafted ? "bg-white text-ink-900" : "bg-ink-900/60 text-ink-50"
-                    }`}
-                  >
-                    {drafted ? "Draft written" : "In progress"}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </>
-  );
-}
-
-function TargetJobs({ jobs }: { jobs: TargetJob[] }) {
-  return (
-    <Card title="Target jobs">
-      <ul className="space-y-2" data-testid="home-jobs">
-        {jobs.map((job) => (
-          <li key={job.id}>
-            <Link href={`/jobs/${job.id}`} className="block hover:text-ink-800">
-              <span className="block truncate font-semibold">{job.title}</span>
-              <span className="block truncate text-sm text-slate-500">
-                {[job.company, levelLabel(job.level), job.interviewDate && interviewOn(job.interviewDate)]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+    <Card title={days !== null && days >= 0 ? `${name} · interview ${whenLabel(days)}` : name}>
+      <div data-testid="focus-job">
+        {job.company && <p className="-mt-3 mb-3 truncate text-sm text-slate-500">{job.title}</p>}
+        {questions.length > 0 ? (
+          <>
+            <p className="text-sm font-semibold text-slate-700">Most likely questions</p>
+            <ul className="mt-2 space-y-3">
+              {questions.slice(0, 3).map((q) => (
+                <FocusQuestion key={q.question} question={q} stories={stories} />
+              ))}
+            </ul>
+            <Link
+              href={`/jobs/${job.id}`}
+              className="mt-4 inline-block text-sm font-semibold text-ink-800 hover:underline"
+            >
+              All {questions.length} questions for this job →
             </Link>
-          </li>
-        ))}
-      </ul>
+          </>
+        ) : (
+          <Link href={`/jobs/${job.id}`} className="text-sm font-semibold text-ink-800 hover:underline">
+            Open this job →
+          </Link>
+        )}
+      </div>
     </Card>
   );
 }
 
-// "Interview Oct 16": a calendar date, the same wherever the user is.
-function interviewOn(date: string): string {
-  const day = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-  return `Interview ${day}`;
-}
-
-async function LikelyQuestions({ jobs }: { jobs: TargetJob[] }) {
-  const job = jobs.find((j) => j.likelyQuestions);
-  // Until one job has its questions, the prep path's next step is predicting them.
-  if (!job?.likelyQuestions) return null;
-  let stories: StoryRecord[];
-  try {
-    stories = await listStories();
-  } catch (err) {
-    unstable_rethrow(err);
-    console.error("Home: loading stories for likely questions failed", err);
-    stories = [];
-  }
+function FocusQuestion({ question, stories }: { question: LikelyQuestion; stories: StoryRecord[] }) {
+  const coverage = coverageFor(question.theme, stories);
   return (
-    <Card title="Likely questions">
-      <p className="mb-3 text-sm text-slate-500">For {job.title}</p>
-      <QuestionList questions={job.likelyQuestions.questions} stories={stories} limit={3} compact />
-      <Link
-        href={`/jobs/${job.id}`}
-        className="mt-4 inline-block text-sm font-semibold text-ink-800 hover:underline"
-      >
-        All {job.likelyQuestions.questions.length} questions →
-      </Link>
-      <Link
-        href="/questions"
-        className="mt-2 block text-sm font-semibold text-ink-800 hover:underline"
-      >
-        Browse the question library →
-      </Link>
-    </Card>
+    <li className="text-sm">
+      <p className="font-medium text-slate-900">{question.question}</p>
+      {coverage?.kind === "story" ? (
+        <Link
+          href={`/stories/${coverage.storyId}`}
+          className="mt-0.5 inline-block text-slate-600 hover:text-ink-800 hover:underline"
+        >
+          <span aria-hidden className={coverage.drafted ? "text-ink-800" : "text-slate-400"}>
+            {coverage.drafted ? "✓ " : "○ "}
+          </span>
+          {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
+        </Link>
+      ) : coverage?.kind === "build" ? (
+        <form action={startStory} className="mt-0.5">
+          <input type="hidden" name="asked" value={question.question} />
+          <button
+            type="submit"
+            name="storyType"
+            value={coverage.storyType}
+            className="text-ink-800 hover:underline"
+          >
+            No story yet · Build one →
+          </button>
+        </form>
+      ) : null}
+    </li>
   );
 }
 
@@ -289,7 +215,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="text-sm font-bold uppercase tracking-wide opacity-80">{title}</h2>
+      <h2 className="truncate text-lg font-bold">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );

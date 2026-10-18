@@ -8,7 +8,7 @@ import {
   parseQuestionList,
   withAiUseQuestion,
 } from "./content";
-import { coverageFor } from "./coverage";
+import { coverageFor, questionsToBuild } from "./coverage";
 import {
   LIKELY_QUESTIONS_SYSTEM,
   likelyQuestionsMessages,
@@ -175,5 +175,45 @@ describe("coverageFor", () => {
       storyType: "difficult_stakeholder",
     });
     expect(coverageFor("nonsense", [])).toBeUndefined();
+  });
+});
+
+describe("questionsToBuild", () => {
+  const job = (company: string, interviewDate: string | null, questions: [string, string][]) => ({
+    title: `${company} role`,
+    company,
+    interviewDate,
+    likelyQuestions: { questions: questions.map(([question, theme]) => ({ question, theme })) },
+  });
+
+  it("lists uncovered questions, soonest interview first, without the intro or repeats", () => {
+    const jobs = [
+      job("Later", null, [
+        ["Tell me about yourself.", "about_you"],
+        ["Tell me about a conflict.", "conflict"],
+      ]),
+      job("Soon", "2026-10-20", [
+        ["Tell me about a time you failed.", "failure"],
+        ["Tell me about a conflict.", "conflict"],
+      ]),
+    ];
+    expect(questionsToBuild(jobs, [])).toEqual([
+      { question: "Tell me about a time you failed.", storyType: "went_wrong", job: "Soon" },
+      { question: "Tell me about a conflict.", storyType: "difficult_stakeholder", job: "Soon" },
+    ]);
+  });
+
+  it("skips questions a story already answers and stops at the limit", () => {
+    const story = { id: "s", title: "Lost deal", storyType: "went_wrong", content: emptyContent() };
+    const jobs = [
+      job("Acme", null, [
+        ["Tell me about a time you failed.", "failure"],
+        ["Tell me about a conflict.", "conflict"],
+        ["How do you prioritize?", "prioritization"],
+      ]),
+    ];
+    expect(questionsToBuild(jobs, [story], 1).map((q) => q.question)).toEqual([
+      "Tell me about a conflict.",
+    ]);
   });
 });

@@ -14,12 +14,14 @@ import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { GapButton } from "./gap-button";
 
-const STATUS: Record<Exclude<ThemeStatus, "empty">, { label: string; dot: string }> = {
-  strong: { label: "Strong", dot: "bg-green-400" },
-  good_enough: { label: "Good enough", dot: "bg-white" },
-  not_yet: { label: "Not yet", dot: "bg-amber-300" },
-  written: { label: "Not graded", dot: "bg-ink-300" },
-  in_progress: { label: "In progress", dot: "bg-ink-500" },
+// Three looks: a written story is a solid tile with a check and its grade as words, a started one
+// an outlined tile, and an empty theme a dashed "+ Build" (GapButton).
+const STATUS: Record<Exclude<ThemeStatus, "empty">, string> = {
+  strong: "Strong",
+  good_enough: "Good enough",
+  not_yet: "Not yet strong",
+  written: "Not graded yet",
+  in_progress: "In progress",
 };
 
 // The story bank against the question themes, on the home page's story bank card. Covered
@@ -32,15 +34,13 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
   const mix = levelMix(stories, level);
 
   return (
-    <section className="mt-6" aria-labelledby="coverage-heading" data-testid="coverage-grid">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 id="coverage-heading" className="font-semibold">
-          Question themes covered
-        </h3>
-        <p className="text-sm text-ink-100" data-testid="coverage-count">
+    <section aria-labelledby="coverage-heading" data-testid="coverage-grid">
+      <p id="coverage-heading" className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-4xl font-extrabold" data-testid="coverage-count">
           {covered} of {themes.length}
-        </p>
-      </div>
+        </span>
+        <span className="text-ink-100">question themes covered</span>
+      </p>
       <div
         className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15"
         role="progressbar"
@@ -51,6 +51,11 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
       >
         <div className="h-full bg-white" style={{ width: `${(covered / themes.length) * 100}%` }} />
       </div>
+      {stories.length > 0 && (
+        <p className="mt-2 text-sm text-ink-100" data-testid="story-count">
+          From {stories.length} {stories.length === 1 ? "story" : "stories"}.
+        </p>
+      )}
 
       <form action={startStory}>
         <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -62,17 +67,28 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
                   storyType={theme.build ?? ""}
                   storyLabel={getStoryType(theme.build)?.label ?? "a story"}
                 />
+              ) : theme.status === "in_progress" ? (
+                <Link
+                  href={`/stories/${theme.story.id}`}
+                  title={theme.story.title}
+                  className="flex h-full flex-col items-start rounded-xl px-3 py-2 ring-1 ring-white/50 ring-inset transition hover:bg-white/10"
+                >
+                  <span className="text-sm font-semibold">{theme.label}</span>
+                  <span className="mt-0.5 text-xs text-ink-100">{STATUS.in_progress}</span>
+                </Link>
               ) : (
                 <Link
                   href={`/stories/${theme.story.id}`}
                   title={theme.story.title}
-                  className="flex h-full flex-col items-start rounded-xl bg-white/10 px-3 py-2 transition hover:bg-white/20"
+                  className="flex h-full flex-col items-start rounded-xl bg-white px-3 py-2 text-ink-900 transition hover:bg-ink-50"
                 >
-                  <span className="text-sm font-semibold">{theme.label}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-100">
-                    <span className={`size-2 rounded-full ${STATUS[theme.status].dot}`} aria-hidden />
-                    {STATUS[theme.status].label}
+                  <span className="flex w-full items-start justify-between gap-1 text-sm font-semibold">
+                    {theme.label}
+                    <span aria-label="Written" className="text-ink-700">
+                      ✓
+                    </span>
                   </span>
+                  <span className="mt-0.5 text-xs text-ink-700">{STATUS[theme.status]}</span>
                 </Link>
               )}
             </li>

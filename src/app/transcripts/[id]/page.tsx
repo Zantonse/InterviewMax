@@ -275,6 +275,7 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
         </p>
       ) : coverage?.kind === "build" ? (
         <form action={startStory} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <input type="hidden" name="asked" value={q.question} />
           <span className="text-slate-500">No story for this yet.</span>
           <button
             type="submit"
