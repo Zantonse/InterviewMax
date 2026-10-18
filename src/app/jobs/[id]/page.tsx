@@ -18,6 +18,9 @@ import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
 import { caseQuestionsFor } from "@/lib/cases/content";
+import { getCurrentUser } from "@/lib/auth";
+import { canUseCurriculum } from "@/lib/curriculum/access";
+import { progress } from "@/lib/curriculum/content";
 import { removeJob } from "../actions";
 import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { AskPanel } from "./ask-panel";
@@ -48,12 +51,13 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
 async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const [job, { overview, resume }, stories, rounds, transcripts] = await Promise.all([
+  const [job, { overview, resume }, stories, rounds, transcripts, user] = await Promise.all([
     getJob(id),
     getJobsPrep(),
     listStories(),
     listPracticeSessionsSafely(id),
     listTranscriptsForPrep(),
+    getCurrentUser(),
   ]);
   if (!job) notFound();
   // Shared question bank: what other people were asked at this company lately.
@@ -123,6 +127,17 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           note={job.questionsToAsk?.questions.length ? "Ready" : "To do"}
         />
         <FolderTab href={`/jobs/${job.id}/brief`} label="Brief" note="One page" />
+        {canUseCurriculum(user.email) && (
+          <FolderTab
+            href={`/jobs/${job.id}/curriculum`}
+            label="Curriculum"
+            note={
+              job.curriculum
+                ? `Beta · ${progress(job.curriculum.topics).known} of ${job.curriculum.topics.length} known`
+                : "Beta"
+            }
+          />
+        )}
       </nav>
       <div
         className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5"

@@ -2,6 +2,7 @@ import "server-only";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseQuestionsToAsk, type QuestionsToAsk } from "@/lib/ask/content";
+import { parseCurriculum, type Curriculum } from "@/lib/curriculum/content";
 import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import {
@@ -28,6 +29,8 @@ export type TargetJob = {
   questionsToAsk: QuestionsToAsk | null;
   // Resume bullets for this job, written from the user's finished stories.
   resumeBullets: ResumeSet | null;
+  // The curriculum (beta): the topics to know for this job's interviews, and the user's marks.
+  curriculum: Curriculum | null;
   // The next interview for this job, as YYYY-MM-DD, when the user has set one.
   interviewDate: string | null;
   createdAt: string;
@@ -46,12 +49,13 @@ type Row = {
   interview_reports: string | null;
   questions_to_ask: unknown;
   resume_bullets: unknown;
+  curriculum: unknown;
   interview_date: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, interview_date, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -65,6 +69,7 @@ function toJob(row: Row): TargetJob {
     interviewReports: row.interview_reports ?? "",
     questionsToAsk: parseQuestionsToAsk(row.questions_to_ask),
     resumeBullets: parseResumeSet(row.resume_bullets),
+    curriculum: parseCurriculum(row.curriculum),
     interviewDate: row.interview_date,
     createdAt: row.created_at,
   };
@@ -186,6 +191,20 @@ export async function saveQuestionsToAsk(id: string, value: QuestionsToAsk | nul
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save your questions: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Saves (or clears, with null) the curriculum for a job.
+export async function saveCurriculum(id: string, value: Curriculum | null): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ curriculum: value })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the curriculum: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 
