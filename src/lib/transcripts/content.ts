@@ -8,7 +8,8 @@ import type { StoryTypeId } from "@/lib/stories/story-types";
 // isn't in the transcript, so nothing shown is invented. Insights across transcripts are worked
 // out in code (see summarizeTranscripts).
 
-export const MAX_TRANSCRIPTS = 20;
+// A few rounds per company across a full search (tester data, Oct 18: 20 interviews, 11 companies).
+export const MAX_TRANSCRIPTS = 40;
 // About two hours of conversation.
 export const MAX_TRANSCRIPT_LENGTH = 80000;
 // One file can hold several interviews (see split.ts); each must fit MAX_TRANSCRIPT_LENGTH.
