@@ -130,6 +130,9 @@ export type StoryContent = {
   version: 1;
   tough?: ToughMeta;
   seed?: StorySeed;
+  // The interview question the user picked to answer with this story (from a job's likely
+  // questions, the question library or a past interview), asked as the opening question.
+  asked?: string;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -244,6 +247,19 @@ export function hasDraft(content: StoryContent): boolean {
   return Boolean(content.draft);
 }
 
+// Nothing in it from the user yet: no answer, upload, follow-up or draft. Stories used to be saved
+// as soon as their type was tapped, so some were left like this.
+export function isUntouched(content: StoryContent): boolean {
+  return (
+    !Object.values(content.answers).some((a) => a.trim()) &&
+    !content.imported &&
+    !content.linkedin &&
+    !content.seed &&
+    !content.followUps?.length &&
+    !content.draft
+  );
+}
+
 // Every answer the user has typed, as one block of text. Numbers in a draft must trace back to this.
 export function allAnswerText(content: StoryContent): string {
   return [
@@ -339,6 +355,8 @@ export function parseContent(raw: unknown): StoryContent {
     }
     if (Object.keys(tailored).length > 0) content.tailored = tailored;
   }
+
+  if (typeof raw.asked === "string" && raw.asked.trim()) content.asked = raw.asked.trim();
 
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {

@@ -112,6 +112,13 @@ export function whenLabel(days: number): string {
   return `in ${Math.round(days / 7)} weeks`;
 }
 
+// The plan's heading for a dated interview, in sentence case: "9 days to your Okta interview".
+export function planHeading(days: number, company: string | null): string {
+  const interview = company ? `your ${company} interview` : "your interview";
+  if (days <= 1) return `${interview[0].toUpperCase()}${interview.slice(1)} is ${whenLabel(days)}`;
+  return `${whenLabel(days).replace(/^in /, "")} to ${interview}`.replace(/^./, (c) => c.toUpperCase());
+}
+
 // The job with the nearest interview still ahead; with no dates, the first job with likely
 // questions, then the first job. Null with no jobs.
 export function focusJob<J extends PlanJob>(jobs: J[], today: string): J | null {

@@ -83,46 +83,45 @@ export function LibraryView({
       {shown.length === 0 ? (
         <p className="mt-4 text-slate-600">No questions match. Try another theme or search.</p>
       ) : (
-        <form action={startStory}>
-          <ul className="mt-2 space-y-2" data-testid="library-list">
-            {shown.map((item) => (
-              <li
-                key={questionKey(item.question)}
-                className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5"
-              >
-                <p className="font-semibold text-slate-900">{item.question}</p>
-                <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
-                  <Tag>{themes.find((t) => t.id === item.theme)?.label}</Tag>
-                  {item.sources.map((s, i) => (
-                    <SourceTag key={i} source={s} />
-                  ))}
-                </p>
-                <div className="mt-2 text-sm">
-                  {item.coverage.kind === "story" ? (
-                    <Link
-                      href={`/stories/${item.coverage.storyId}`}
+        <ul className="mt-2 space-y-2" data-testid="library-list">
+          {shown.map((item) => (
+            <li
+              key={questionKey(item.question)}
+              className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5"
+            >
+              <p className="font-semibold text-slate-900">{item.question}</p>
+              <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
+                <Tag>{themes.find((t) => t.id === item.theme)?.label}</Tag>
+                {item.sources.map((s, i) => (
+                  <SourceTag key={i} source={s} />
+                ))}
+              </p>
+              <div className="mt-2 text-sm">
+                {item.coverage.kind === "story" ? (
+                  <Link
+                    href={`/stories/${item.coverage.storyId}`}
+                    className="font-medium text-ink-800 hover:underline"
+                  >
+                    {item.coverage.drafted ? "Answer with" : "In progress"}: {item.coverage.title} →
+                  </Link>
+                ) : (
+                  <form action={startStory} className="flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="asked" value={item.question} />
+                    <span className="text-slate-500">No story for this yet.</span>
+                    <button
+                      type="submit"
+                      name="storyType"
+                      value={item.coverage.storyType}
                       className="font-medium text-ink-800 hover:underline"
                     >
-                      {item.coverage.drafted ? "Answer with" : "In progress"}: {item.coverage.title} →
-                    </Link>
-                  ) : (
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-slate-500">No story for this yet.</span>
-                      <button
-                        type="submit"
-                        name="storyType"
-                        value={item.coverage.storyType}
-                        className="font-medium text-ink-800 hover:underline"
-                      >
-                        Build &ldquo;{item.coverage.label}&rdquo; →
-                      </button>
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </form>
+                      Build &ldquo;{item.coverage.label}&rdquo; →
+                    </button>
+                  </form>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

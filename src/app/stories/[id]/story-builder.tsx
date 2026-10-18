@@ -52,6 +52,7 @@ import {
   writeDraft,
   type BuilderResult,
 } from "./actions";
+import { createStory } from "@/app/stories/new/actions";
 import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
@@ -90,6 +91,7 @@ export type JoggerMoment = { moment: string; quote: string; sourceLabel: string 
 
 export function StoryBuilder({
   storyId,
+  newStory,
   storyTypeId,
   initialTitle,
   initialContent,
@@ -101,7 +103,9 @@ export function StoryBuilder({
   menu,
   beside,
 }: {
-  storyId: string;
+  // Null for a new story that isn't saved yet: the first action creates it from newStory.
+  storyId: string | null;
+  newStory?: { storyType: string; asked?: string };
   storyTypeId: string | null;
   initialTitle: string;
   initialContent: StoryContent;
@@ -126,6 +130,9 @@ export function StoryBuilder({
   const [content, setContent] = useState(initialContent);
   const [title, setTitle] = useState(initialTitle);
   const [busy, setBusy] = useState<Busy>(null);
+  // The saved story's id, read when each action runs (a new story gets one with its first answer).
+  const idRef = useRef(storyId);
+  const sid = (): string => idRef.current ?? "";
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
@@ -143,6 +150,18 @@ export function StoryBuilder({
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
     setError(null);
     startTransition(async () => {
+      if (!idRef.current && newStory) {
+        setBusy("saving");
+        const created = await createStory(newStory.storyType, newStory.asked);
+        if (!created.ok) {
+          setError(created.error);
+          setBusy(null);
+          return;
+        }
+        idRef.current = created.id;
+        // The address becomes the saved story's, so a reload or the back button finds it.
+        window.history.replaceState(null, "", `/stories/${created.id}`);
+      }
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         setBusy(step.busy);
@@ -167,19 +186,19 @@ export function StoryBuilder({
         const saved = step.busy === "saving" || step.busy === "reading";
         if (saved && canInferPath(result.content)) {
           // Next up is how they got here: read it from their resume or LinkedIn to confirm.
-          steps.push({ busy: "inferring", action: () => inferPath(storyId) });
+          steps.push({ busy: "inferring", action: () => inferPath(sid()) });
         } else if (saved && writesRoughDraft(result.content, storyType)) {
-          steps.push({ busy: "writing", action: () => writeDraft(storyId) });
+          steps.push({ busy: "writing", action: () => writeDraft(sid()) });
         } else if ((saved || step.busy === "writing") && next === "probe") {
-          steps.push({ busy: "probing", action: () => askFollowUps(storyId) });
+          steps.push({ busy: "probing", action: () => askFollowUps(sid()) });
         } else if ((saved || step.busy === "probing") && next === "write") {
-          steps.push({ busy: "writing", action: () => writeDraft(storyId) });
+          steps.push({ busy: "writing", action: () => writeDraft(sid()) });
         } else if (
           step.busy === "writing" ||
           (next === "drafted" && !gradeIsCurrent(result.content) && step.busy !== "grading")
         ) {
           // Every finished draft is graded straight away, including a rough one the user kept.
-          steps.push({ busy: "grading", action: () => gradeDraft(storyId) });
+          steps.push({ busy: "grading", action: () => gradeDraft(sid()) });
         }
       }
       setBusy(null);
@@ -199,7 +218,7 @@ export function StoryBuilder({
 
   function submitCore(id: string, answer: string) {
     setEditing(null);
-    run([{ busy: "saving", action: () => saveAnswer(storyId, id, answer) }]);
+    run([{ busy: "saving", action: () => saveAnswer(sid(), id, answer) }]);
   }
 
   function submitFollowUp(index: number, answer: string) {
@@ -210,8 +229,8 @@ export function StoryBuilder({
       pendingFollowUps(content) === 1 &&
       !content.followUps?.[index]?.answer;
     run([
-      { busy: "saving", action: () => saveFollowUpAnswer(storyId, index, answer) },
-      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+      { busy: "saving", action: () => saveFollowUpAnswer(sid(), index, answer) },
+      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }] : []),
     ]);
   }
 
@@ -224,9 +243,9 @@ export function StoryBuilder({
       (f) => (f.round ?? 1) === round && f.answer?.trim(),
     );
     run([
-      { busy: "saving", action: () => skipFollowUps(storyId) },
+      { busy: "saving", action: () => skipFollowUps(sid()) },
       ...(content.draft && addedThisRound
-        ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }]
+        ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }]
         : []),
     ]);
   }
@@ -241,23 +260,23 @@ export function StoryBuilder({
     );
     const rewrite = Boolean(content.draft) && pendingFollowUps(content) === 1 && addedThisRound;
     run([
-      { busy: "saving", action: () => skipFollowUp(storyId, index) },
-      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(storyId) }] : []),
+      { busy: "saving", action: () => skipFollowUp(sid(), index) },
+      ...(rewrite ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }] : []),
     ]);
   }
 
   function strengthen() {
-    run([{ busy: "probing", action: () => askFollowUps(storyId) }]);
+    run([{ busy: "probing", action: () => askFollowUps(sid()) }]);
   }
 
   function submitUpload(formData: FormData) {
     setEditing(null);
-    run([{ busy: "saving", action: () => importPreparedAnswer(storyId, formData) }]);
+    run([{ busy: "saving", action: () => importPreparedAnswer(sid(), formData) }]);
   }
 
   function submitLinkedIn(formData: FormData) {
     setEditing(null);
-    run([{ busy: "reading", action: () => importLinkedIn(storyId, formData) }]);
+    run([{ busy: "reading", action: () => importLinkedIn(sid(), formData) }]);
   }
 
   const currentCore = nextCoreQuestion(content, storyType);
@@ -274,7 +293,8 @@ export function StoryBuilder({
   const seed = content.seed && storyType?.format !== "intro" ? content.seed : undefined;
   const seedNow = currentCore === "start" ? seed : undefined;
   const hints: Record<string, string | undefined> = {
-    start: seed ? seedHint(seed) : openingHint(targets, storyType),
+    // Started from a real question, the question itself says what to pick.
+    start: seed ? seedHint(seed) : content.asked ? undefined : openingHint(targets, storyType),
     next: storyType?.format === "intro" ? nextRoleHint(targets) : undefined,
   };
 
@@ -386,7 +406,7 @@ export function StoryBuilder({
                     question={
                       inferred
                         ? inferredPathQuestion(inferred.source)
-                        : coreQuestionText(q.id, storyType)
+                        : coreQuestionText(q.id, storyType, content.asked)
                     }
                     answer={content.answers[q.id]}
                     hint={content.answers[q.id]?.trim() ? undefined : hints[q.id]}
@@ -508,7 +528,7 @@ export function StoryBuilder({
                   {!busy && canInferPath(content) && (
                     <button
                       type="button"
-                      onClick={() => run([{ busy: "inferring", action: () => inferPath(storyId) }])}
+                      onClick={() => run([{ busy: "inferring", action: () => inferPath(sid()) }])}
                       className="mb-2 text-sm font-medium text-ink-800 hover:underline"
                       data-testid="infer-path"
                     >
@@ -546,13 +566,13 @@ export function StoryBuilder({
                         : "That's every question. Next I'll look for gaps."
                   }
                   button="Get follow-up questions"
-                  onClick={() => run([{ busy: "probing", action: () => askFollowUps(storyId) }])}
+                  onClick={() => run([{ busy: "probing", action: () => askFollowUps(sid()) }])}
                 />
               ) : stage === "write" ? (
                 <ActionLine
                   text="That's everything I need."
                   button="Write my story"
-                  onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+                  onClick={() => run([{ busy: "writing", action: () => writeDraft(sid()) }])}
                 />
               ) : stage === "drafted" ? (
                 <ActionLine
@@ -590,7 +610,7 @@ export function StoryBuilder({
             {storyType?.format === "intro" && (canUpload || content.roleMap) && (
               <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <RoleMapCard
-                  storyId={storyId}
+                  storyId={storyId ?? ""}
                   content={content}
                   prominent={
                     canUpload && suggestRoleMap(content.answers[questions[0]?.id], content.roleMap)
@@ -668,7 +688,7 @@ export function StoryBuilder({
                     )}
                     <button
                       type="button"
-                      onClick={() => run([{ busy: "writing", action: () => writeDraft(storyId) }])}
+                      onClick={() => run([{ busy: "writing", action: () => writeDraft(sid()) }])}
                       disabled={busy !== null}
                       className="rounded-xl px-4 py-2 font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50 disabled:opacity-50"
                     >
@@ -693,12 +713,12 @@ export function StoryBuilder({
               storyType={storyType}
               coaching={busy === "coaching"}
               disabled={busy !== null}
-              onCoach={() => run([{ busy: "coaching", action: () => coachDraft(storyId) }])}
-              onPickHook={(i) => run([{ busy: "saving", action: () => pickHook(storyId, i) }])}
+              onCoach={() => run([{ busy: "coaching", action: () => coachDraft(sid()) }])}
+              onPickHook={(i) => run([{ busy: "saving", action: () => pickHook(sid(), i) }])}
               onAddDetail={(answer) =>
                 run([
-                  { busy: "saving", action: () => addVividDetail(storyId, answer) },
-                  { busy: "coaching", action: () => coachDraft(storyId) },
+                  { busy: "saving", action: () => addVividDetail(sid(), answer) },
+                  { busy: "coaching", action: () => coachDraft(sid()) },
                 ])
               }
             />
@@ -711,7 +731,7 @@ export function StoryBuilder({
             storyType={storyType}
             grading={busy === "grading"}
             disabled={busy !== null}
-            onGrade={() => run([{ busy: "grading", action: () => gradeDraft(storyId) }])}
+            onGrade={() => run([{ busy: "grading", action: () => gradeDraft(sid()) }])}
           />
         </div>
       )}
