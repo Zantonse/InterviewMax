@@ -82,6 +82,12 @@ const MORE: Record<QuestionThemeId, (string | [string, "senior"])[]> = {
     "How would you know you were doing well here after six months?",
     ["How do you set goals for a team, and how do you track them?", "senior"],
   ],
+  ai_use: [
+    "Tell me about a time AI got something wrong and you caught it.",
+    "What part of your work do you never hand to AI, and why?",
+    "How has AI changed the way you do your job?",
+    ["How have you helped your team adopt AI safely?", "senior"],
+  ],
 };
 
 export const LIBRARY: readonly LibraryQuestion[] = QUESTION_THEMES.flatMap((theme) => [

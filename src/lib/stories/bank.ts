@@ -4,7 +4,7 @@ import { gradeIsCurrent, hasDraft, type StoryContent } from "./content";
 import { BANK_ROLES } from "./grading";
 import { getStoryType, type StoryTypeId } from "./story-types";
 
-// The story bank at a glance (PRD, step 6): which of the ten question themes the user's stories
+// The story bank at a glance (PRD, step 6): which of the question themes the user's stories
 // cover, and whether the level of their stories fits the target role. Code only, from the stories
 // and their saved grades; no model call.
 

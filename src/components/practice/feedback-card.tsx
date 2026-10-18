@@ -3,7 +3,11 @@
 import Link from "next/link";
 import {
   CLOSENESS_LABELS,
+  LAYER_LABELS,
   type PracticeFeedback,
+  type PracticeTurn,
+  SCREEN_RESULT_LABELS,
+  formatDuration,
   timingNote,
   timingVerdict,
 } from "@/lib/practice/content";
@@ -17,16 +21,20 @@ import {
 } from "@/lib/practice/delivery";
 
 // Feedback on one practice answer: how it landed, how close it stayed to the saved story, what was
-// missing, the time spoken against the target, and how it was said (pace, filler words, long
-// pauses) when it was said with Talk. New details the user said can be added to the
+// missing, how each follow-up answer held up, the time spoken against the target (and, in an AI
+// screen round, against its time limit), and how it was said (pace, filler words, long pauses)
+// when it was said with Talk. New details the user said can be added to the
 // story, one tap each, once they've read them. No score: practice is for rehearsal, not grading.
 export function FeedbackCard({
   feedback,
+  turns = [],
   storyHref,
   keeping,
   onKeep,
 }: {
   feedback: PracticeFeedback;
+  // The exchange, so each follow-up's verdict can name the follow-up it's about.
+  turns?: PracticeTurn[];
   // The saved story, when there is one.
   storyHref?: string;
   // The index of the new fact being added, while it's saving.
@@ -66,6 +74,27 @@ export function FeedbackCard({
           </dd>
         </div>
       </dl>
+
+      {feedback.screen && (
+        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2" data-testid="practice-screen">
+          <div className="rounded-xl bg-slate-50 p-3">
+            <dt className="font-semibold text-slate-900">Time limit</dt>
+            <dd className={`mt-1 ${feedback.screen.withinTime ? "text-slate-700" : "text-amber-800"}`}>
+              {feedback.screen.withinTime
+                ? `Within the ${formatDuration(feedback.screen.limitSeconds)} limit.`
+                : `Over the ${formatDuration(feedback.screen.limitSeconds)} limit: a real screen would have cut you off before the end.`}
+            </dd>
+          </div>
+          <div className="rounded-xl bg-slate-50 p-3">
+            <dt
+              className={`font-semibold ${feedback.screen.result === "reached" ? "text-slate-900" : "text-amber-900"}`}
+            >
+              {SCREEN_RESULT_LABELS[feedback.screen.result]}
+            </dt>
+            <dd className="mt-1 text-slate-700">{feedback.screen.note}</dd>
+          </div>
+        </dl>
+      )}
 
       {feedback.delivery ? (
         <DeliveryNotes delivery={feedback.delivery} />
@@ -109,6 +138,31 @@ export function FeedbackCard({
           <span className="font-semibold text-slate-900">Follow-ups: </span>
           {feedback.followUpsNote}
         </p>
+      )}
+
+      {feedback.layers && feedback.layers.length > 0 && (
+        <div className="mt-3" data-testid="practice-layers">
+          <h4 className="text-sm font-semibold text-slate-900">Under the follow-ups</h4>
+          <ol className="mt-2 space-y-2">
+            {feedback.layers.map((l, i) => (
+              <li
+                key={i}
+                className={`rounded-xl p-3 text-sm ${l.hold === "held" ? "bg-slate-50" : "bg-amber-50"}`}
+                data-hold={l.hold}
+              >
+                <p
+                  className={`font-semibold ${l.hold === "held" ? "text-slate-900" : "text-amber-900"}`}
+                >
+                  Follow-up {i + 1}: {LAYER_LABELS[l.hold]}
+                </p>
+                {turns[i + 1]?.question && (
+                  <p className="mt-0.5 text-xs text-slate-500">&ldquo;{turns[i + 1].question}&rdquo;</p>
+                )}
+                {l.note && <p className="mt-1 text-slate-700">{l.note}</p>}
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {feedback.newFacts.length > 0 && (

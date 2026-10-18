@@ -6,17 +6,46 @@ import {
   type PracticeItem,
   checkNewFacts,
   currentItemIndex,
+  isScreenRound,
   itemStep,
+  mustFollowUp,
+  nextToAnswer,
   numbersLeftOut,
+  type PracticeFeedback,
   parseItems,
   pickQuestions,
+  screenLimitSeconds,
+  thinSpots,
   timingFor,
   timingNote,
   timingVerdict,
+  withAnswer,
 } from "./content";
-import { exchangeTranscript, parseFeedback, parseProbe, probeHints } from "./prompts";
+import {
+  exchangeTranscript,
+  feedbackSystem,
+  parseFeedback,
+  parseProbe,
+  probeHints,
+  probeMessages,
+  probeSystem,
+} from "./prompts";
 
 const WRITTEN = "2026-10-15T00:00:00Z";
+
+const sampleFeedback: PracticeFeedback = {
+  summary: "ok",
+  closeness: "no_story",
+  closenessNote: "",
+  landed: [],
+  missing: [],
+  followUpsNote: "",
+  numbersLeftOut: [],
+  timing: { seconds: 60, measured: false, words: 150, min: 72, max: 120 },
+  newFacts: [],
+  model: "t",
+  givenAt: WRITTEN,
+};
 
 function written(tier?: StoryGrade["tier"], stale = false): StoryContent {
   return {
@@ -106,7 +135,7 @@ describe("a question's steps", () => {
     turns: [{ question: "Tell me about a time you failed." }],
   };
 
-  it("answer, follow-ups up to two, then feedback", () => {
+  it("answer, follow-ups up to three, then feedback", () => {
     expect(itemStep(base)).toBe("answer");
     const answered = { ...base, turns: [{ ...base.turns[0], answer: "I missed a launch." }] };
     expect(itemStep(answered)).toBe("probe");
@@ -120,9 +149,65 @@ describe("a question's steps", () => {
         { question: "b", answer: "y" },
       ],
     };
-    expect(itemStep(two)).toBe("feedback");
+    expect(itemStep(two)).toBe("probe");
+    expect(mustFollowUp(two)).toBe(false);
+    expect(mustFollowUp(answered)).toBe(true);
+    const three = { ...two, turns: [...two.turns, { question: "c", answer: "z" }] };
+    expect(itemStep(three)).toBe("feedback");
     expect(itemStep({ ...answered, probeDone: true })).toBe("feedback");
     expect(itemStep({ ...base, skipped: true })).toBe("done");
+  });
+
+  it("an AI screen question goes straight from the answer to feedback", () => {
+    const screen = { ...base, screen: true, turns: [{ ...base.turns[0], answer: "I missed a launch." }] };
+    expect(itemStep(screen)).toBe("feedback");
+    expect(mustFollowUp(screen)).toBe(false);
+    expect(isScreenRound([screen, { ...base, screen: true }])).toBe(true);
+    expect(isScreenRound([screen, base])).toBe(false);
+    expect(nextToAnswer([screen, { ...base, screen: true }])).toBe(1);
+    expect(nextToAnswer([screen])).toBe(-1);
+    expect(screenLimitSeconds("failure")).toBe(120);
+    expect(screenLimitSeconds("about_you")).toBe(90);
+  });
+
+  it("saves an answer on the open turn with sane timings", () => {
+    const answered = withAnswer(base, "I missed a launch.", 95.4, { talkSeconds: 200, longPauses: 2 });
+    expect(answered.turns[0]).toEqual({
+      question: base.question,
+      answer: "I missed a launch.",
+      seconds: 95,
+      talkSeconds: 95,
+      longPauses: 2,
+    });
+    expect(withAnswer(base, "typed", null, null).turns[0]).toEqual({
+      question: base.question,
+      answer: "typed",
+    });
+  });
+
+  it("lists where answers got thinner under the follow-ups", () => {
+    const item: PracticeItem = {
+      ...base,
+      turns: [
+        { question: base.question, answer: "a" },
+        { question: "Tell me more about the launch.", answer: "b" },
+        { question: "Why that call?", answer: "c" },
+      ],
+      feedback: {
+        ...sampleFeedback,
+        layers: [
+          { hold: "held", note: "New specifics." },
+          { hold: "thinner", note: "Went vague." },
+        ],
+      },
+    };
+    expect(thinSpots([base, item])).toEqual([
+      {
+        index: 1,
+        question: base.question,
+        layers: [{ followUp: "Why that call?", hold: "thinner", note: "Went vague." }],
+      },
+    ]);
   });
 
   it("the round is on the first question not done", () => {
@@ -213,6 +298,47 @@ describe("model replies", () => {
     expect(() => parseFeedback("{}", true)).toThrow();
   });
 
+  it("keeps one layer per follow-up, and the screen result only in a screen round", () => {
+    const text = JSON.stringify({
+      summary: "s",
+      closeness: "close",
+      layers: [
+        { hold: "held", note: "a" },
+        { hold: "thinner", note: "b" },
+        { hold: "nonsense", note: "c" },
+        { hold: "shifted", note: "d" },
+      ],
+      result: "late",
+      resultNote: "Lead with it.",
+    });
+    const drilled = parseFeedback(text, true, { followUps: 2 });
+    expect(drilled.layers.map((l) => l.hold)).toEqual(["held", "thinner"]);
+    expect(drilled.result).toBeUndefined();
+    const screen = parseFeedback(text, true, { screen: true });
+    expect(screen.layers).toEqual([]);
+    expect(screen.result).toBe("late");
+    expect(screen.resultNote).toBe("Lead with it.");
+  });
+
+  it("drills deeper: the first two follow-ups are always asked", () => {
+    const [one] = probeMessages({ question: "Q?", turns: [{ question: "Q?", answer: "A" }] }, []);
+    expect(one.content).toContain("layer 1");
+    const [three] = probeMessages(
+      {
+        question: "Q?",
+        turns: [
+          { question: "Q?", answer: "A" },
+          { question: "a", answer: "b" },
+          { question: "c", answer: "d" },
+        ],
+      },
+      [],
+    );
+    expect(three.content).toContain("only if a clear weak spot is left");
+    expect(probeSystem({ kind: "tough" })).toContain("awkward question");
+    expect(feedbackSystem({ kind: "screen" })).toContain("AI screen");
+  });
+
   it("writes the exchange as a transcript", () => {
     expect(
       exchangeTranscript([
@@ -231,7 +357,14 @@ describe("parseItems", () => {
         theme: "impact",
         reason: "weird",
         turns: [{ question: "Q?", answer: "A", seconds: 30 }, { nope: 1 }],
-        feedback: { summary: "ok", timing: { seconds: 30 }, newFacts: [{ fact: "f", quote: "q", kept: true }] },
+        feedback: {
+          summary: "ok",
+          timing: { seconds: 30 },
+          newFacts: [{ fact: "f", quote: "q", kept: true }],
+          layers: [{ hold: "thinner", note: "n" }, { hold: "bad" }],
+          screen: { limitSeconds: 120, withinTime: true, result: "reached", note: "x" },
+        },
+        screen: true,
       },
       { theme: "impact" },
     ]);
@@ -239,7 +372,14 @@ describe("parseItems", () => {
     expect(items[0]).toMatchObject({
       reason: "gap",
       turns: [{ question: "Q?", answer: "A", seconds: 30 }],
-      feedback: { summary: "ok", closeness: "no_story", newFacts: [{ kept: true }] },
+      screen: true,
+      feedback: {
+        summary: "ok",
+        closeness: "no_story",
+        newFacts: [{ kept: true }],
+        layers: [{ hold: "thinner", note: "n" }],
+        screen: { limitSeconds: 120, withinTime: true, result: "reached" },
+      },
     });
     expect(parseItems("nope")).toEqual([]);
   });

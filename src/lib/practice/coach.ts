@@ -4,49 +4,70 @@ import type { ChatMessage } from "@/lib/ai/types";
 import {
   type PracticeFeedback,
   checkNewFacts,
+  followUpCount,
   numbersLeftOut,
+  screenLimitSeconds,
   spokenText,
   timingFor,
 } from "./content";
 import { deliveryFor } from "./delivery";
 import {
-  PRACTICE_FEEDBACK_SYSTEM,
-  PRACTICE_PROBE_SYSTEM,
   type PracticeContext,
   type ProbeResult,
   feedbackMessages,
+  feedbackSystem,
   parseFeedback,
   parseProbe,
   probeHints,
   probeMessages,
+  probeSystem,
 } from "./prompts";
 
 // The interviewer's next follow-up for a practice question, or null when it has none.
 export async function askFollowUp(ctx: PracticeContext): Promise<ProbeResult> {
   const text = await call(
     "practiceProbe",
-    PRACTICE_PROBE_SYSTEM,
+    probeSystem(ctx),
     probeMessages(ctx, probeHints(spokenText(ctx))),
   );
   return parseProbe(text.text);
 }
 
-// Feedback on one practice question. Timing, delivery and the figures left out are worked out in
-// code; the model reads the exchange against the saved story. New facts are kept only when their
-// quote is in what the user said and their numbers are in the quote.
+// Feedback on one practice question. Timing, delivery, the figures left out and, in an AI screen
+// round, whether the answer fit the time limit are worked out in code; the model reads the
+// exchange against the saved story and says how each follow-up answer held up. New facts are kept
+// only when their quote is in what the user said and their numbers are in the quote.
 export async function giveFeedback(ctx: PracticeContext, theme: string): Promise<PracticeFeedback> {
   const spoken = spokenText(ctx);
   const timing = timingFor(ctx.turns[0], theme);
   const delivery = deliveryFor(ctx.turns);
   const leftOut = ctx.reference ? numbersLeftOut(ctx.reference.script, spoken) : [];
+  const screen = ctx.kind === "screen";
+  const limitSeconds = screen ? screenLimitSeconds(theme) : undefined;
   const result = await call(
     "practiceFeedback",
-    PRACTICE_FEEDBACK_SYSTEM,
-    feedbackMessages(ctx, { timing, numbersLeftOut: leftOut }),
+    feedbackSystem(ctx),
+    feedbackMessages(ctx, { timing, numbersLeftOut: leftOut, limitSeconds }),
   );
-  const parsed = parseFeedback(result.text, Boolean(ctx.reference));
+  const { layers, result: reached, resultNote, ...parsed } = parseFeedback(
+    result.text,
+    Boolean(ctx.reference),
+    { followUps: followUpCount(ctx), screen },
+  );
   return {
     ...parsed,
+    ...(layers.length ? { layers } : {}),
+    ...(limitSeconds
+      ? {
+          screen: {
+            limitSeconds,
+            // A few seconds of grace: a screen cuts off at the limit, not before it.
+            withinTime: timing.seconds <= limitSeconds + 5,
+            result: reached ?? "missing",
+            note: resultNote ?? "",
+          },
+        }
+      : {}),
     newFacts: checkNewFacts(parsed.newFacts, spoken),
     numbersLeftOut: leftOut,
     timing,

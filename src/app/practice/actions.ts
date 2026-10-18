@@ -10,6 +10,7 @@ import {
   currentItemIndex,
   itemStep,
   pickQuestions,
+  withAnswer,
 } from "@/lib/practice/content";
 import {
   type PracticeSession,
@@ -34,19 +35,22 @@ export type PracticeResult =
 
 export type StartState = { error?: string } | null;
 
-// Starts a five-question round for a job: gaps and weaker stories first.
+// Starts a five-question round for a job: gaps and weaker stories first. With mode "screen", an AI
+// screen round: the same questions, timed, with no follow-ups.
 export async function startPractice(_prev: StartState, formData: FormData): Promise<StartState> {
   let id: string;
+  const screen = formData.get("mode") === "screen";
   try {
     const job = await getJob(String(formData.get("jobId") ?? ""));
     if (!job) return { error: "That target job wasn't found." };
     if (!job.likelyQuestions) {
       return { error: "Predict this job's likely questions first, then practice them." };
     }
-    const items = pickQuestions(job.likelyQuestions.questions, await listStories());
-    if (items.length === 0) return { error: "This job has no likely questions to practice yet." };
+    const picked = pickQuestions(job.likelyQuestions.questions, await listStories());
+    if (picked.length === 0) return { error: "This job has no likely questions to practice yet." };
+    const items = screen ? picked.map((i) => ({ ...i, screen: true })) : picked;
     id = await insertPracticeSession({ targetJobId: job.id, items });
-    await trackEvent("practice_started");
+    await trackEvent(screen ? "screen_practice_started" : "practice_started");
   } catch (err) {
     unstable_rethrow(err);
     console.error("Practice: starting a round failed", err);
@@ -57,7 +61,8 @@ export async function startPractice(_prev: StartState, formData: FormData): Prom
 
 // Saves the user's answer to the turn waiting for one, then lets the interviewer decide on a
 // follow-up, or gives feedback once there are no more. The answer is saved before any model call,
-// so a failed call loses nothing: "Try again" runs it again (continuePractice).
+// so a failed call loses nothing: "Try again" runs it again (continuePractice). In an AI screen
+// round nothing follows the answer: feedback comes once every question is answered.
 export async function answerPractice(
   sessionId: string,
   index: number,
@@ -74,38 +79,11 @@ export async function answerPractice(
   }
   return withSession(sessionId, index, async (session, item) => {
     if (itemStep(item) !== "answer") return fail("That question has already been answered.");
-    const turn = item.turns.findIndex((t) => !t.answer?.trim());
-    const measured =
-      typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0
-        ? Math.min(Math.round(seconds), 60 * 30)
-        : undefined;
-    // Talk time can't be longer than the recording; pauses are a count, kept sane.
-    const talk =
-      measured && voice && Number.isFinite(voice.talkSeconds) && voice.talkSeconds > 0
-        ? Math.min(Math.round(voice.talkSeconds), measured)
-        : undefined;
-    const pauses =
-      measured && voice && Number.isInteger(voice.longPauses) && voice.longPauses >= 0
-        ? Math.min(voice.longPauses, 200)
-        : undefined;
-    const answered: PracticeItem = {
-      ...item,
-      turns: item.turns.map((t, i) =>
-        i === turn
-          ? {
-              question: t.question,
-              ...(t.gap ? { gap: t.gap } : {}),
-              answer: text,
-              ...(measured ? { seconds: measured } : {}),
-              ...(talk ? { talkSeconds: talk } : {}),
-              ...(pauses !== undefined ? { longPauses: pauses } : {}),
-            }
-          : t,
-      ),
-    };
+    const answered = withAnswer(item, text, seconds, voice);
     const items = replace(session.items, index, answered);
     await savePracticeItems(session.id, items, session.finishedAt);
     await trackEvent("practice_answered");
+    if (item.screen) return ok({ ...session, items });
     return advance({ ...session, items }, index);
   });
 }
@@ -186,6 +164,8 @@ async function advance(session: PracticeSession, index: number): Promise<Practic
   let next: PracticeItem;
   if (step === "probe") {
     const followUp = await askFollowUp({ question: item.question, role, turns: item.turns });
+    // A missed layer (no follow-up when one was due) just ends the drill early: the user isn't
+    // left waiting on a question that won't come.
     next = followUp
       ? { ...item, turns: [...item.turns, { question: followUp.question, gap: followUp.gap }] }
       : { ...item, probeDone: true };
@@ -208,7 +188,13 @@ async function feedbackFor(
   jobId: string,
 ) {
   return giveFeedback(
-    { question: item.question, role, reference: await referenceFor(item, jobId), turns: item.turns },
+    {
+      question: item.question,
+      role,
+      reference: await referenceFor(item, jobId),
+      turns: item.turns,
+      ...(item.screen ? { kind: "screen" as const } : {}),
+    },
     item.theme,
   );
 }

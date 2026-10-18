@@ -86,13 +86,13 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     sends: "The transcript you upload or paste, when it has no speaker names, and the job’s title",
   },
   practiceProbe: {
-    feature: "Practice mode follow-up questions",
-    sends: "The practice question, your spoken answers to it and the job’s title",
+    feature: "Follow-up questions in practice mode and the tough-questions drill",
+    sends: "The practice question, your spoken answers to it and the job’s title and level",
   },
   practiceFeedback: {
-    feature: "Practice mode feedback",
+    feature: "Feedback in practice mode, AI screen practice and the tough-questions drill",
     sends:
-      "Your spoken practice answers, the saved story for that question, the job’s title and your coaching style",
+      "Your spoken practice answers, the saved story or tough-question answer (and your answers behind it) for that question, the job’s title and your coaching style",
   },
   casePractice: {
     feature: "Case and technical question practice",

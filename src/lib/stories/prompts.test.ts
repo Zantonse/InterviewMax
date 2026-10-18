@@ -134,6 +134,19 @@ describe("parseContent", () => {
   });
 });
 
+describe("the AI-use story", () => {
+  const aiUse = getStoryType("ai_use");
+
+  it("asks what they had the AI do and what they checked and changed", () => {
+    expect(coreQuestionText("start", aiUse)).toMatch(/what you checked or changed/);
+    expect(probeSystem(aiUse)).toMatch(/what they checked in its output/);
+    expect(probeSystem(aiUse)).toMatch(/the call they made themselves/);
+    expect(writeSystem(aiUse)).toMatch(/never make the AI sound like it did more/);
+    expect(probeSystem(stakeholder)).not.toMatch(/using AI at work/);
+    expect(writeSystem(stakeholder)).not.toMatch(/using AI at work/);
+  });
+});
+
 describe("show your thinking", () => {
   it("asks how they thought at the key moment, and has the review and writer draw it out", () => {
     expect(coreQuestionText("choice", stakeholder)).toMatch(/What were you thinking at the key moment/);

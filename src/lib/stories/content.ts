@@ -124,6 +124,9 @@ export type ToughMeta = {
   jobId?: string;
   note?: string;
   edited?: boolean;
+  // The latest follow-up drill on the answer: a practice item, read with toughDrill()
+  // (src/lib/tough/drill.ts). Kept as stored here so this file doesn't depend on practice mode.
+  drill?: unknown;
 };
 
 export type StoryContent = {
@@ -372,6 +375,7 @@ export function parseContent(raw: unknown): StoryContent {
       ...(typeof raw.tough.jobId === "string" ? { jobId: raw.tough.jobId } : {}),
       ...(typeof raw.tough.note === "string" ? { note: raw.tough.note } : {}),
       ...(raw.tough.edited === true ? { edited: true } : {}),
+      ...(isRecord(raw.tough.drill) ? { drill: raw.tough.drill } : {}),
     };
   }
 

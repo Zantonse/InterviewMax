@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { startStory } from "@/app/stories/new/actions";
-import { STARTER_QUESTIONS, type Brief, type BriefQuestion } from "@/lib/brief/brief";
+import {
+  IN_PERSON_NOTES,
+  STARTER_QUESTIONS,
+  type Brief,
+  type BriefQuestion,
+} from "@/lib/brief/brief";
 import { whenLabel } from "@/lib/prep/plan";
 import { getStoryType } from "@/lib/stories/story-types";
 import { PrintButton } from "./print-button";
@@ -229,6 +234,14 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
             )}
           </Section>
         </div>
+
+        <Section title="If this round is in person" testId="brief-in-person">
+          <ul className="list-disc space-y-1 pl-5 text-slate-800">
+            {IN_PERSON_NOTES.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        </Section>
       </div>
     </>
   );

@@ -7,7 +7,13 @@ import { PageGuide } from "@/components/page-guide";
 import { removePractice } from "@/app/practice/actions";
 import { StartPracticeForm } from "@/app/practice/start-form";
 import { getJob } from "@/lib/jobs/data";
-import { REASON_LABELS, currentItemIndex, pickQuestions } from "@/lib/practice/content";
+import {
+  REASON_LABELS,
+  SCREEN_THINK_SECONDS,
+  currentItemIndex,
+  isScreenRound,
+  pickQuestions,
+} from "@/lib/practice/content";
 import { listPracticeSessions } from "@/lib/practice/data";
 import { listStories } from "@/lib/stories/data";
 
@@ -35,7 +41,8 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
   ]);
   if (!job) notFound();
   const round = job.likelyQuestions ? pickQuestions(job.likelyQuestions.questions, stories) : [];
-  const inProgress = sessions.find((s) => !s.finishedAt);
+  const inProgress = sessions.find((s) => !s.finishedAt && !isScreenRound(s.items));
+  const screenInProgress = sessions.find((s) => !s.finishedAt && isScreenRound(s.items));
 
   return (
     <>
@@ -54,8 +61,8 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
         id="practice"
         steps={[
           "Tap Talk and answer each question as you would in the room. Typing works too.",
-          "The interviewer asks one or two follow-ups aimed at the weakest part of your answer.",
-          "Feedback on each answer: how close it stayed to your story, what was missing, and your time.",
+          "The interviewer drills two or three follow-ups deep: tell me more, why that, what would you do differently.",
+          "Feedback on each answer: how close it stayed to your story, where it got thinner under the follow-ups, and your time.",
         ]}
       />
 
@@ -119,6 +126,39 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
         </section>
       )}
 
+      {job.likelyQuestions && (
+        <section
+          className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          data-testid="screen-start"
+        >
+          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+            Practice an AI screen
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Many first rounds are now a one-way interview with a bot: a question on screen,{" "}
+            {SCREEN_THINK_SECONDS} seconds to think, then a time limit to answer, with no reactions
+            and no follow-ups. Practice the same questions that way. Feedback at the end says
+            whether each answer fit the time and got to its result without anyone asking.
+          </p>
+          <div className="mt-4 flex flex-wrap items-start gap-3">
+            {screenInProgress && (
+              <Link
+                href={`/practice/${screenInProgress.id}`}
+                className="rounded-xl bg-ink-800 px-5 py-3 font-semibold text-white hover:bg-ink-900"
+              >
+                Carry on with your screen
+              </Link>
+            )}
+            <StartPracticeForm
+              jobId={job.id}
+              mode="screen"
+              label={screenInProgress ? "Start a new screen" : "Start an AI screen"}
+              secondary
+            />
+          </div>
+        </section>
+      )}
+
       {sessions.length > 0 && (
         <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
           <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">Your rounds</h2>
@@ -138,6 +178,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
                     })}
                   </Link>
                   <span className="text-sm text-slate-600">
+                    {isScreenRound(s.items) ? "AI screen · " : ""}
                     {answered} of {s.items.length} answered{open ? " · in progress" : ""}
                   </span>
                   <form action={removePractice} className="ml-auto">
