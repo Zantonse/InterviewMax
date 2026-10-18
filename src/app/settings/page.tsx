@@ -5,9 +5,11 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PolicyLinks } from "@/components/policy-links";
 import { getCurrentUser } from "@/lib/auth";
+import { getCoachingStyleSafely } from "@/lib/coaching/data";
 import { listJobs } from "@/lib/jobs/data";
 import { listStories } from "@/lib/stories/data";
 import { listTranscripts } from "@/lib/transcripts/data";
+import { CoachingStyleForm } from "./coaching-style-form";
 import { DeleteAccountForm } from "./delete-account-form";
 
 export const metadata: Metadata = { title: "Settings · InterviewMax" };
@@ -24,7 +26,23 @@ export default function SettingsPage() {
           Settings
         </h1>
 
-        <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section
+          className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          aria-labelledby="coaching-style-heading"
+        >
+          <h2 id="coaching-style-heading" className="text-xl font-bold text-slate-900">
+            Coaching style
+          </h2>
+          <p className="mt-2 text-slate-600">
+            How the coach talks to you in follow-up questions, practice feedback and your profile.
+            It changes the tone only: the same gaps get flagged and grades don&apos;t move.
+          </p>
+          <Suspense fallback={<p className="mt-4 h-24 animate-pulse rounded-xl bg-slate-100" />}>
+            <CoachingStyleSection />
+          </Suspense>
+        </section>
+
+        <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-xl font-bold text-slate-900">Your data</h2>
           <p className="mt-2 text-slate-600">
             What you add stays private to you. Parts of it go to AI models to build and grade your
@@ -49,6 +67,10 @@ export default function SettingsPage() {
       </main>
     </div>
   );
+}
+
+async function CoachingStyleSection() {
+  return <CoachingStyleForm initial={await getCoachingStyleSafely()} />;
 }
 
 async function WhatGetsDeleted() {
