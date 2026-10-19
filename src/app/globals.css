@@ -60,6 +60,40 @@
   }
 }
 
+/* Sidebar groups (Jobs, Stories, Practice) fold their sub-items away. A group is open when you're
+   on one of its pages or you opened it; your choice is kept in this browser (see nav-shell.tsx). */
+[data-nav-children] {
+  display: none;
+}
+[data-nav-group]:has(a[aria-current="page"]) > [data-nav-children],
+:root[data-nav-open~="jobs"] [data-nav-group="jobs"] > [data-nav-children],
+:root[data-nav-open~="stories"] [data-nav-group="stories"] > [data-nav-children],
+:root[data-nav-open~="practice"] [data-nav-group="practice"] > [data-nav-children] {
+  display: block;
+}
+[data-nav-group]:has(a[aria-current="page"]) [data-nav-chevron],
+:root[data-nav-open~="jobs"] [data-nav-group="jobs"] [data-nav-chevron],
+:root[data-nav-open~="stories"] [data-nav-group="stories"] [data-nav-chevron],
+:root[data-nav-open~="practice"] [data-nav-group="practice"] [data-nav-chevron] {
+  transform: rotate(90deg);
+}
+:root[data-nav-closed~="jobs"] [data-nav-group="jobs"] > [data-nav-children],
+:root[data-nav-closed~="stories"] [data-nav-group="stories"] > [data-nav-children],
+:root[data-nav-closed~="practice"] [data-nav-group="practice"] > [data-nav-children] {
+  display: none;
+}
+:root[data-nav-closed~="jobs"] [data-nav-group="jobs"] [data-nav-chevron],
+:root[data-nav-closed~="stories"] [data-nav-group="stories"] [data-nav-chevron],
+:root[data-nav-closed~="practice"] [data-nav-group="practice"] [data-nav-chevron] {
+  transform: none;
+}
+/* Collapsed to icons, the groups' headers hide and their icon links show in one list. */
+@media (width >= 64rem) {
+  html[data-nav="collapsed"] [data-nav-children] {
+    display: block !important;
+  }
+}
+
 /* On paper (the pre-interview brief prints on one page) the sidebar is hidden, so drop its room. */
 @media print {
   body:has(#app-nav),

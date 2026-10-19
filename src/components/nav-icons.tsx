@@ -11,6 +11,8 @@ const PATHS = {
   menu: "M4 6h16M4 12h16M4 18h16",
   close: "M6 6l12 12M18 6 6 18",
   collapse: "M15 6l-6 6 6 6",
+  chevron: "M9 6l6 6-6 6",
+  pen: "M4 20h4L19 9l-4-4L4 16zm9-13 4 4",
   book: "M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zm0 13a3 3 0 0 1 3-3h10M9 8h5",
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9a7 7 0 0 1 14 0",
   shield: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z",
