@@ -59,3 +59,35 @@ export function TypeButton({
     </button>
   );
 }
+
+// A likely interview question with no story yet: starts the story that answers it.
+export function QuestionButton({
+  storyType,
+  question,
+  note,
+}: {
+  storyType: string;
+  question: string;
+  note: string;
+}) {
+  const { pending, data } = useFormStatus();
+  const starting = pending && data?.get("asked") === question;
+  return (
+    <button
+      type="submit"
+      name="storyType"
+      value={storyType}
+      disabled={pending}
+      className="group flex h-full w-full items-start justify-between gap-4 rounded-2xl bg-white px-5 py-4 text-left shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:opacity-70"
+      data-testid="question-start"
+    >
+      <span className="min-w-0">
+        <span className="block font-semibold text-slate-900">{question}</span>
+        <span className="mt-1 block text-sm text-slate-500">{starting ? "Opening…" : note}</span>
+      </span>
+      <span className="shrink-0 pt-0.5 text-sm font-semibold text-ink-800 group-hover:underline">
+        Answer it →
+      </span>
+    </button>
+  );
+}

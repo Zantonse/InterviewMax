@@ -225,6 +225,30 @@ export function getToughQuestion(
   return TOUGH_QUESTIONS.find((q) => q.id === id);
 }
 
+// The tough question a real interviewer's question is, when it's one (a recruiter's "do you have
+// a number you're targeting?" is the salary question). Used on past interviews, where these come
+// back as "other" questions with no story to link to. Checked in order: most specific first.
+const ASKED_AS: { id: ToughQuestionId; pattern: RegExp }[] = [
+  { id: "let_go", pattern: /\b(?:laid off|layoffs?|let go|were you fired)\b/i },
+  { id: "gap", pattern: /\b(?:gap in|gap on your|employment gap|since you left|time off between)\b/i },
+  {
+    id: "salary",
+    pattern:
+      /\b(?:salary|compensation|comp band|pay range|base pay|number (?:you're |you are )?(?:trying to )?target|what (?:are you|do you) (?:looking for|expect) (?:in|for) pay)\b/i,
+  },
+  {
+    id: "why_leaving",
+    pattern:
+      /\b(?:why (?:are|were|did) you (?:leaving|looking|leave)|why do you want to leave|looking to make a move|why are you on the market)\b/i,
+  },
+  { id: "many_moves", pattern: /\b(?:so many (?:moves|jobs|roles)|job[- ]hopp)/i },
+  { id: "weakness", pattern: /\bweakness(?:es)?\b/i },
+];
+
+export function toughForAsked(question: string): ToughQuestionId | undefined {
+  return ASKED_AS.find((a) => a.pattern.test(question))?.id;
+}
+
 // Where a story in the bank opens: tough answers have their own page.
 export function storyHref(story: { id: string; storyType: string | null }): string {
   return isToughType(story.storyType) ? `/tough-questions/${story.id}` : `/stories/${story.id}`;

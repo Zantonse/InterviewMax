@@ -143,7 +143,10 @@ export default function PrivacyPage() {
           Inside InterviewMax, the admin page shows the founder, who is also the coach, which steps
           each person has done and when, and where they seemed to get stuck. To coach you, the founder can also read your stories: your
           answers, the follow-up questions, the written story and its grade. Uploads (resumes,
-          LinkedIn PDFs and interview transcripts) are not shown there. Every look at the admin page,
+          LinkedIn PDFs and interview transcripts) are not shown there, and neither are stories
+          started in PromotionMax (beta), which are about where you work now, unless you share one
+          from its page. In PromotionMax you can also list names (customers, internal projects) that
+          are swapped for neutral words before anything is sent to an AI model. Every look at the admin page,
           and every story opened, is logged. Your interviewee profile is not shown there, only
           that you opened it. Beyond that, the people who run the database only reach stored data
           to fix a problem you report, or if the law requires it.

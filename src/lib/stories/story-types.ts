@@ -1,6 +1,6 @@
 // The story types that seed the bank (PRD, step 4), and the scripted questions the builder asks.
 // No model call is involved here. "Tell me about yourself" is a career introduction, so it has its
-// own questions and parts; the six behavioral types share the STAR-style ones.
+// own questions and parts; the behavioral types share the STAR-style ones.
 
 export const STORY_TYPES = [
   {
@@ -102,7 +102,36 @@ export const STORY_TYPES = [
       "Work your manager held up as an example",
     ],
   },
+  {
+    // PRD, interview trends 2026: "Tell me about a time you used AI at work" is now a standard
+    // question, and interviewers listen for verification habits (what you checked and changed)
+    // and distrust inflated AI claims.
+    id: "ai_use",
+    format: "star",
+    label: "A time you used AI at work",
+    blurb: "What you had it do, what you checked and changed, and what you decided yourself.",
+    themes: ["AI at work", "judgment", "verification"],
+    opening:
+      "Tell me about a time you used AI at work, start to finish: what you were trying to get done, what you had the AI do, what you checked or changed in what it gave you, and how it turned out.",
+    joggers: [
+      "A first draft AI wrote that you reworked",
+      "Research or analysis you sped up with AI",
+      "A time the AI got something wrong and you caught it",
+      "A workflow or tool you set up for your team",
+    ],
+  },
 ] as const;
+
+// Extra things the builder's follow-ups check for, by story type, on top of the checklist.
+export const TYPE_FOCUS: Partial<Record<StoryTypeId, string>> = {
+  ai_use: `This is a story about using AI at work. Interviewers asking it want to hear judgment and verification habits, and they get suspicious of inflated AI claims. Make sure the story shows, in the user's own words:
+- what exactly they used the AI for (the task and the tool, if they named one), and what they did themselves;
+- what they checked in its output and how (facts, numbers, sources, code, tone), and anything it got wrong that they caught;
+- what they changed, rewrote or threw away;
+- the call they made themselves, that the AI didn't make for them;
+- the result in real terms (time saved, quality, what it unlocked), with a ballpark number.
+If any of the checks, changes or their own decision is missing, one of your questions must ask about it. Never suggest that the AI did more than they said.`,
+};
 
 export type StoryTypeId = (typeof STORY_TYPES)[number]["id"];
 export type StoryType = (typeof STORY_TYPES)[number];
@@ -247,8 +276,27 @@ export function answerableQuestions(storyType: StoryType | undefined): readonly 
     : [...STAR_QUESTIONS, ...LEGACY_STAR_QUESTIONS.filter((q) => q.id !== "start")];
 }
 
-export function coreQuestionText(questionId: string, storyType: StoryType | undefined) {
+// Longest interview question a story can be started from.
+export const MAX_ASKED_LENGTH = 300;
+
+// An interview question from a form or a link, tidied and capped.
+export function cleanAsked(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const text = value.replace(/\s+/g, " ").trim();
+  return text ? text.slice(0, MAX_ASKED_LENGTH) : undefined;
+}
+
+// A behavioral story started from a real interview question opens with that question.
+export function coreQuestionText(
+  questionId: string,
+  storyType: StoryType | undefined,
+  asked?: string,
+) {
   if (questionId === "start" && storyType?.format !== "intro") {
+    if (asked) {
+      const question = /[?.!]$/.test(asked) ? asked : `${asked}.`;
+      return `${question} Tell it start to finish: where you were, what you did, and how it turned out.`;
+    }
     return (
       storyType?.opening ||
       "Tell me what happened, start to finish: where you were, what you did, and how it turned out."

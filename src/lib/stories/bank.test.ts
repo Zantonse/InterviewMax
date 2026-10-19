@@ -46,7 +46,7 @@ const story = (id: string, storyType: string, content = emptyContent()) => ({
 describe("themeCoverage", () => {
   it("marks every theme empty with no stories, naming the type to build", () => {
     const themes = themeCoverage([]);
-    expect(themes).toHaveLength(10);
+    expect(themes).toHaveLength(11);
     expect(themes.every((t) => t.status === "empty")).toBe(true);
     expect(themes.find((t) => t.id === "conflict")?.build).toBe("difficult_stakeholder");
   });

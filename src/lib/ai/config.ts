@@ -55,6 +55,9 @@ export const STEP_MODELS = {
   // Questions to ask the interviewer: five to eight questions for the end of one target job's
   // interviews, drawn from its posting and level, each marked with who in the loop it suits.
   askQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Job curriculum (beta): the topics to know for one target job's interviews, by area, from its
+  // posting and level. Quotes from the posting checked in code.
+  jobCurriculum: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Resume enhancer: resume bullets from the user's finished stories for one target job, marked
   // for fit, plus a two-line summary from its About me. Figures and role names checked in code.
   resumeBullets: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
@@ -75,9 +78,18 @@ export const STEP_MODELS = {
   // Practice mode: feedback on one answer and its follow-ups against the saved story, and the new
   // details worth adding to it (each quoted from what the user said and checked in code).
   practiceFeedback: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Case practice: feedback on a practice answer to a case or skills question from a past
+  // interview, against a scripted frame, and the follow-up to expect. Figures checked in code.
+  casePractice: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Interviewee profile: a short overall assessment in coach tone, written only from the scores and
   // findings worked out in code. Figures checked in code.
   profileSummary: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // PromotionMax: read a pasted career ladder into the dimensions the target level is judged on,
+  // each quoting the ladder and tied to question themes (checked in code).
+  ladderRead: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // PromotionMax: the promotion packet (self-review, manager summary, talking points) from the
+  // user's finished stories. Figures checked against the cited stories in code.
+  promotionPacket: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Mic mode: write down what the user said. A speech-to-text model, not a chat model, called
   // through OpenRouter's /audio/transcriptions (the Claude API has no speech to text). Whisper
   // Large V3: about 3 cents an hour of talking, good with noisy audio (picked Oct 14).

@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { getJob } from "@/lib/jobs/data";
+import { isScreenRound } from "@/lib/practice/content";
 import { getPracticeSession } from "@/lib/practice/data";
 import { getStory } from "@/lib/stories/data";
 import { tellingIsCurrent } from "@/lib/telling/content";
 import { PracticeRunner } from "./runner";
+import { ScreenRunner } from "./screen-runner";
 
 export const metadata: Metadata = { title: "Practice · InterviewMax" };
 
@@ -36,6 +38,28 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
     openersFor(session.items.flatMap((item) => (item.storyId ? [item.storyId] : []))),
   ]);
   if (!job) notFound();
+  if (isScreenRound(session.items)) {
+    return (
+      <>
+        <Link
+          href={`/jobs/${job.id}/practice`}
+          className="text-sm font-medium text-ink-800 hover:underline"
+        >
+          ← Practice for {job.title}
+        </Link>
+        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          AI screen practice
+        </h1>
+        <p className="mt-2 max-w-2xl text-slate-600">
+          {job.title}
+          {job.company ? ` at ${job.company}` : ""}. Like a one-way interview with a bot: each
+          question gives you thinking time, then a time limit. Nobody reacts or follows up, so each
+          answer has to get to its result on its own.
+        </p>
+        <ScreenRunner sessionId={session.id} jobId={job.id} initialItems={session.items} />
+      </>
+    );
+  }
   return (
     <>
       <Link
@@ -50,7 +74,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
       <p className="mt-2 max-w-2xl text-slate-600">
         {job.title}
         {job.company ? ` at ${job.company}` : ""}. Answer each question as you would in the room;
-        the interviewer follows up on the weakest part.
+        the interviewer drills two or three follow-ups into the weakest part.
       </p>
       <PracticeRunner sessionId={session.id} jobId={job.id} initialItems={session.items} openers={openers} />
     </>

@@ -11,6 +11,8 @@ import type { StoryTypeId } from "@/lib/stories/story-types";
 export const MAX_TRANSCRIPTS = 20;
 // About two hours of conversation.
 export const MAX_TRANSCRIPT_LENGTH = 80000;
+// One file can hold several interviews (see split.ts); each must fit MAX_TRANSCRIPT_LENGTH.
+export const MAX_FILE_TEXT_LENGTH = MAX_TRANSCRIPT_LENGTH * 3;
 // Shorter than this is a note, not a transcript.
 export const MIN_TRANSCRIPT_LENGTH = 300;
 export const MAX_TITLE_LENGTH = 200;
@@ -32,6 +34,8 @@ export const ANSWER_GAPS = [
   { id: "result", label: "A clear result" },
   { id: "numbers", label: "Numbers" },
   { id: "reflection", label: "What you learned" },
+  // Asked for a time they did something, answered in general or with what they would do.
+  { id: "example", label: "A real example" },
   { id: "concise", label: "Getting to the point" },
   { id: "relevance", label: "Answering the question asked" },
 ] as const;

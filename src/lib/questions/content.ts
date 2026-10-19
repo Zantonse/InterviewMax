@@ -1,5 +1,5 @@
 import { isRecord } from "@/lib/jobs/content";
-import { getTheme, type QuestionThemeId } from "./themes";
+import { AI_USE_QUESTION, getTheme, type QuestionThemeId } from "./themes";
 
 // Likely questions (PRD, step 2): a short ranked list per target job, kept on
 // target_jobs.likely_questions. The interview reports the user pasted are kept beside it.
@@ -59,9 +59,22 @@ export function parseQuestionList(raw: unknown): LikelyQuestion[] {
   return result;
 }
 
+// "Tell me about a time you used AI at work" is a default likely question (PRD, interview trends
+// 2026). When the list has no question on that theme, it goes in fourth (after the openers and the
+// questions this job stresses most), and the list stays at MAX_QUESTIONS by dropping the last.
+// Applied on read too, so jobs predicted before it existed get it without predicting again.
+export function withAiUseQuestion(questions: LikelyQuestion[]): LikelyQuestion[] {
+  if (questions.length === 0 || questions.some((q) => q.theme === AI_USE_QUESTION.theme)) {
+    return questions;
+  }
+  const at = Math.min(3, questions.length);
+  const added: LikelyQuestion = { ...AI_USE_QUESTION, source: "common", specific: false };
+  return [...questions.slice(0, at), added, ...questions.slice(at)].slice(0, MAX_QUESTIONS);
+}
+
 export function parseLikelyQuestions(raw: unknown): LikelyQuestions | null {
   if (!isRecord(raw)) return null;
-  const questions = parseQuestionList(raw.questions);
+  const questions = withAiUseQuestion(parseQuestionList(raw.questions));
   if (questions.length === 0) return null;
   return {
     questions,

@@ -13,6 +13,7 @@ import {
 } from "@/lib/tough/questions";
 import { appendSpoken } from "@/lib/voice/text";
 import { saveToughAnswers, saveToughEdit, writeTough, type ToughResult } from "./actions";
+import { ToughDrill } from "./drill";
 
 // The coach for one tough question: the user's situation on the left, the answer to say on the
 // right once it's written.
@@ -232,6 +233,12 @@ export function ToughCoach({
               Say it out loud a few times until you can do it without reading. Then stop talking:
               a short, calm answer tells them the topic is closed.
             </p>
+            <ToughDrill
+              storyId={storyId}
+              content={content}
+              onContent={setContent}
+              disabled={busy}
+            />
           </>
         )}
       </section>
