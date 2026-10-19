@@ -26,6 +26,7 @@ export const USAGE_EVENTS = [
   "questions_shared",
   "screen_practice_started",
   "tough_drill_started",
+  "curriculum_made",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
@@ -55,6 +56,7 @@ export const EVENT_LABELS: Record<UsageEvent, string> = {
   questions_shared: "Shared interview questions",
   screen_practice_started: "Started an AI screen practice",
   tough_drill_started: "Drilled a tough question",
+  curriculum_made: "Got a job curriculum",
 };
 
 export function isUsageEvent(value: unknown): value is UsageEvent {
