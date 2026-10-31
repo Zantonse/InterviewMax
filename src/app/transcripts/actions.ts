@@ -252,6 +252,19 @@ export async function shareQuestions(_prev: FormState, formData: FormData): Prom
   return null;
 }
 
+// Interview timeline: sets which round an interview was, without touching whether it's shared.
+// A shared interview's questions carry the round, so they're synced again.
+export async function setRound(formData: FormData): Promise<void> {
+  const transcript = await getTranscript(String(formData.get("transcriptId") ?? ""));
+  if (!transcript) return;
+  const roundValue = clean(formData.get("round"));
+  const round = isRound(roundValue) ? roundValue : null;
+  if (round === transcript.round) return;
+  await saveSharing(transcript.id, { round });
+  if (transcript.shareQuestions) await syncSharedQuestionsSafely(transcript.id);
+  refresh();
+}
+
 // Stops sharing and deletes every question already shared from this interview.
 export async function withdrawQuestions(formData: FormData): Promise<void> {
   await withdrawSharedQuestions(String(formData.get("transcriptId") ?? ""));
