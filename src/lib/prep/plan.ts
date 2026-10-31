@@ -47,6 +47,8 @@ export type PlanJob = {
   company: string | null;
   interviewDate: string | null;
   likelyQuestions: { questions: { theme: string }[] } | null;
+  // Set once the interview process has finished; such jobs aren't picked for the plan.
+  outcome?: string | null;
 };
 
 export type PlanInput = {
@@ -121,7 +123,9 @@ export function planHeading(days: number, company: string | null): string {
 
 // The job with the nearest interview still ahead; with no dates, the first job with likely
 // questions, then the first job. Null with no jobs.
-export function focusJob<J extends PlanJob>(jobs: J[], today: string): J | null {
+export function focusJob<J extends PlanJob>(all: J[], today: string): J | null {
+  // A finished process needs no prep; with every job finished there's no focus job.
+  const jobs = all.filter((j) => !j.outcome);
   const upcoming = jobs
     .filter((j) => j.interviewDate && daysUntil(j.interviewDate, today) >= 0)
     .sort((a, b) => a.interviewDate!.localeCompare(b.interviewDate!));

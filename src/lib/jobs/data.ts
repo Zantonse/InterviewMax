@@ -5,6 +5,7 @@ import { parseQuestionsToAsk, type QuestionsToAsk } from "@/lib/ask/content";
 import { parseCurriculum, type Curriculum } from "@/lib/curriculum/content";
 import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
+import { isOutcome, type OutcomeId } from "./outcome";
 import {
   parseOverview,
   parseResume,
@@ -33,6 +34,11 @@ export type TargetJob = {
   curriculum: Curriculum | null;
   // The next interview for this job, as YYYY-MM-DD, when the user has set one.
   interviewDate: string | null;
+  // How the interview process ended; null while it's still in progress.
+  outcome: OutcomeId | null;
+  roundReached: number | null;
+  roundName: string;
+  finishedOn: string | null;
   createdAt: string;
 };
 
@@ -51,11 +57,15 @@ type Row = {
   resume_bullets: unknown;
   curriculum: unknown;
   interview_date: string | null;
+  outcome: string | null;
+  round_reached: number | null;
+  round_name: string | null;
+  finished_on: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, outcome, round_reached, round_name, finished_on, created_at";
 
 function toJob(row: Row): TargetJob {
   return {
@@ -71,6 +81,10 @@ function toJob(row: Row): TargetJob {
     resumeBullets: parseResumeSet(row.resume_bullets),
     curriculum: parseCurriculum(row.curriculum),
     interviewDate: row.interview_date,
+    outcome: isOutcome(row.outcome) ? row.outcome : null,
+    roundReached: row.round_reached,
+    roundName: row.round_name ?? "",
+    finishedOn: row.finished_on,
     createdAt: row.created_at,
   };
 }
@@ -158,6 +172,33 @@ export async function setInterviewDate(id: string, date: string | null): Promise
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the interview date: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Marks a job's interview process finished (outcome, round reached, its name, the day), or with
+// null reopens it as still in progress.
+export async function setJobOutcome(
+  id: string,
+  value: { outcome: OutcomeId; roundReached: number | null; roundName: string; finishedOn: string | null } | null,
+): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update(
+      value
+        ? {
+            outcome: value.outcome,
+            round_reached: value.roundReached,
+            round_name: value.roundName || null,
+            finished_on: value.finishedOn,
+          }
+        : { outcome: null, round_reached: null, round_name: null, finished_on: null },
+    )
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the outcome: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

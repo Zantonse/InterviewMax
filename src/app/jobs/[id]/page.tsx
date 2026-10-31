@@ -22,7 +22,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { canUseCurriculum } from "@/lib/curriculum/access";
 import { progress } from "@/lib/curriculum/content";
 import { removeJob } from "../actions";
-import { InterviewDateForm, LevelForm, PendingButton, PredictForm } from "../forms";
+import { InterviewDateForm, JobOutcomeForm, LevelForm, PendingButton, PredictForm } from "../forms";
+import { outcomeSummary } from "@/lib/jobs/outcome";
 import { AskPanel } from "./ask-panel";
 import { CasePanel } from "./case-panel";
 import { ResumePanel } from "./resume-panel";
@@ -429,6 +430,40 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </div>
 
         <div className="space-y-4">
+          <section
+            id="outcome"
+            className={`scroll-mt-6 rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${
+              job.outcome === "offer" ? "bg-emerald-50" : "bg-white"
+            }`}
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Interview process
+            </h2>
+            {job.outcome ? (
+              <p className="mb-4 font-semibold text-slate-900" data-testid="job-outcome">
+                Finished: {outcomeSummary(job)}
+                {job.finishedOn && (
+                  <span className="block text-sm font-normal text-slate-600">
+                    on {job.finishedOn}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="mb-4 text-sm text-slate-600">
+                When the interviews here are over, mark how it went and the round you reached.
+                Finished jobs stay here but don&apos;t count toward your job limit.
+              </p>
+            )}
+            <JobOutcomeForm
+              // A saved change remounts the form, so it closes back to the summary.
+              key={`${job.outcome}-${job.roundReached}-${job.roundName}-${job.finishedOn}`}
+              jobId={job.id}
+              outcome={job.outcome}
+              roundReached={job.roundReached}
+              roundName={job.roundName}
+              finishedOn={job.finishedOn}
+            />
+          </section>
           <section
             id="interview-date"
             className="scroll-mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"

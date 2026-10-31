@@ -8,6 +8,7 @@ import {
   MAX_TITLE_LENGTH,
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
+import { MAX_ROUND, MAX_ROUND_NAME_LENGTH, OUTCOMES } from "@/lib/jobs/outcome";
 import { POSTING_FILE_ACCEPT, postingFileKind } from "@/lib/jobs/posting-file";
 import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
@@ -19,6 +20,7 @@ import {
   readJobPostingFile,
   rereadJobs,
   saveInterviewDate,
+  saveJobOutcome,
   saveResume,
   type FormState,
 } from "./actions";
@@ -527,6 +529,129 @@ export function InterviewDateForm({ jobId, date }: { jobId: string; date: string
           Clear
         </button>
       )}
+    </form>
+  );
+}
+
+// Marks the interview process for a job finished: the outcome, the round reached and what that
+// round was, and the day. The same form edits it later; "Still interviewing" reopens it.
+export function JobOutcomeForm({
+  jobId,
+  outcome,
+  roundReached,
+  roundName,
+  finishedOn,
+}: {
+  jobId: string;
+  outcome: string | null;
+  roundReached: number | null;
+  roundName: string;
+  finishedOn: string | null;
+}) {
+  const id = useId();
+  const finished = Boolean(outcome);
+  const [editing, setEditing] = useState(false);
+  if (finished && !editing) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => setEditing(true)} className={SECONDARY}>
+          Edit
+        </button>
+        <form action={saveJobOutcome}>
+          <input type="hidden" name="jobId" value={jobId} />
+          <input type="hidden" name="intent" value="reopen" />
+          <PendingButton
+            pendingText="Reopening…"
+            className="text-sm font-medium text-slate-500 hover:text-ink-800"
+          >
+            Still interviewing? Reopen
+          </PendingButton>
+        </form>
+      </div>
+    );
+  }
+  return (
+    <form
+      action={saveJobOutcome}
+      className="space-y-3"
+      data-testid="job-outcome-form"
+    >
+      <input type="hidden" name="jobId" value={jobId} />
+      <input type="hidden" name="wasOpen" value={finished ? "0" : "1"} />
+      <fieldset>
+        <legend className="text-sm font-semibold text-slate-700">How did it end?</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {OUTCOMES.map((o) => (
+            <label
+              key={o.id}
+              className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-800 ring-1 ring-slate-300 has-[:checked]:bg-ink-50 has-[:checked]:ring-2 has-[:checked]:ring-ink-700"
+            >
+              <input
+                type="radio"
+                name="outcome"
+                value={o.id}
+                required
+                defaultChecked={outcome === o.id}
+                className="accent-ink-800"
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="flex flex-wrap gap-3">
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-round`}>
+          Round you reached
+          <select
+            id={`${id}-round`}
+            name="round"
+            defaultValue={roundReached ?? ""}
+            className={INPUT}
+          >
+            <option value="">Not sure</option>
+            {Array.from({ length: MAX_ROUND }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                Round {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-date`}>
+          Finished on
+          <input
+            id={`${id}-date`}
+            type="date"
+            name="finishedOn"
+            defaultValue={finishedOn ?? ""}
+            className={INPUT}
+          />
+        </label>
+      </div>
+      <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-name`}>
+        What was that round? <span className="font-normal text-slate-500">(optional)</span>
+        <input
+          id={`${id}-name`}
+          name="roundName"
+          maxLength={MAX_ROUND_NAME_LENGTH}
+          defaultValue={roundName}
+          placeholder="e.g. Onsite loop, hiring manager, final panel"
+          className={INPUT}
+        />
+      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <PendingButton pendingText="Saving…">
+          {finished ? "Save changes" : "Mark finished"}
+        </PendingButton>
+        {finished && (
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="text-sm font-medium text-slate-500 hover:text-ink-800"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }
