@@ -2,7 +2,7 @@
 
 A guided path that turns an experienced candidate's own work history into metric-backed behavioral interview stories aimed at the jobs they're targeting.
 
-Live: [interview-max-mauve.vercel.app](https://interview-max-mauve.vercel.app). Product spec: [PRD v0.3](https://claude.ai/code/artifact/3178b97a-ea69-472a-b407-c4f511895d27). What shipped and why: [docs/build-diary.md](docs/build-diary.md).
+Live: [interview-max-self.vercel.app](https://interview-max-self.vercel.app). Product spec: [PRD v0.3](https://claude.ai/code/artifact/3178b97a-ea69-472a-b407-c4f511895d27). What shipped and why: [docs/build-diary.md](docs/build-diary.md).
 
 Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email sign-in, row-level security), Vercel, Vitest and Playwright. Model calls go through our own thin layer over OpenRouter, the Claude API and the OpenAI API.
 
