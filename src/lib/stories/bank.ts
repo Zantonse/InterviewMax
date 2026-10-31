@@ -98,6 +98,7 @@ export type LevelMix = {
 
 // What each target level needs from the bank, scope by scope.
 export const LEVEL_NEEDS: Record<LevelId, { role: BankRole; needed: number }[]> = {
+  entry: [{ role: "hands-on proof", needed: 1 }],
   mid: [{ role: "team-level impact", needed: 1 }],
   senior: [
     { role: "organization-level impact", needed: 1 },
@@ -139,15 +140,19 @@ export function levelMix(stories: StoryLike[], level: LevelId | undefined): Leve
 
 // The highest level among the user's target jobs: the bank should hold up for the hardest one.
 export function targetLevel(jobs: { level: string | null }[]): LevelId | undefined {
-  const order: LevelId[] = ["principal", "senior", "mid"];
+  const order: LevelId[] = ["principal", "senior", "mid", "entry"];
   return order.find((l) => jobs.some((j) => j.level === l));
 }
 
 // "one organization-level story, two needed" (or "or above" for the lower scopes).
 export function needLabel(need: LevelNeed): string {
+  const noun = need.have === 1 ? "story" : "stories";
+  // Any graded story reaches the lowest scope, so it needs no scope words.
+  if (need.role === BANK_ROLES[0]) {
+    return `${countWord(need.have)} graded ${noun}, ${countWord(need.needed)} needed`;
+  }
   const scope = need.role.replace(" impact", "");
   const top = need.role === BANK_ROLES[BANK_ROLES.length - 1];
-  const noun = need.have === 1 ? "story" : "stories";
   return `${countWord(need.have)} ${scope}${top ? "" : " or above"} ${noun}, ${countWord(need.needed)} needed`;
 }
 

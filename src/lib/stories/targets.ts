@@ -81,6 +81,11 @@ export function jobName(job: {
 
 // The scope of story each level's interviewers expect, for the follow-ups and the hint.
 const LEVEL_SCOPE: Record<LevelId, { probe: string; hint: string }> = {
+  entry: {
+    probe:
+      "Entry level: interviewers want to see how they learn, take ownership of their part and work with others. School, internships, part-time jobs, volunteering and side projects all count. Ask what they did themselves, what they learned and what they would do differently.",
+    hint: "an example where you took ownership of your part, from work, school or a project",
+  },
   mid: {
     probe:
       "Mid-level: interviewers want hands-on depth and clear ownership of a result. Ask what they did themselves and how well it worked.",
@@ -106,7 +111,7 @@ function levelOf(job: TargetJobBrief): LevelId | undefined {
 
 // The most senior level among the jobs: a story that shows that scope serves the others too.
 function topLevel(jobs: TargetJobBrief[]): LevelId | undefined {
-  const order: LevelId[] = ["principal", "senior", "mid"];
+  const order: LevelId[] = ["principal", "senior", "mid", "entry"];
   return order.find((l) => jobs.some((j) => levelOf(j) === l));
 }
 
@@ -146,7 +151,7 @@ export function targetsTranscript(targets: BuilderTargets): string {
 // Added to the follow-up instructions when there are targets.
 const TARGET_RULES = `Tailor to what they're preparing for. Their target jobs and the role they want are listed after their answers.
 - Aim your questions at what those jobs' interviewers will look for and at the likely questions this story should answer, where their answers don't show it yet. When a question is aimed at a job, say so in a few words so they know why you ask ("Stripe's role leans on enterprise deals, so: how big was the largest account here?"). Do this for at most two questions; the rest stay plain.
-- Draw out the scope their target level expects (see "Scope to draw out"), in their own story: who they led or influenced, how far the work reached.
+- Draw out the scope their target level expects (see "Scope to draw out"), in their own story: what that level looks for, such as who they led or influenced and how far the work reached, or for entry level what they owned and learned.
 - Ask; never assume they have the experience a job asks for. If the story doesn't touch something a job needs, ask once whether it does, lightly, and don't push if it doesn't.
 - Never ask about the company or the job itself, and never quote the posting at them. The questions are still about their own story.
 - With several jobs, favour what they share; ask about one job's particular need only when it's what the story could prove best.`;
