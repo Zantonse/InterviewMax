@@ -30,6 +30,8 @@ import { ResumePanel } from "./resume-panel";
 import { JobTabs } from "./job-tabs";
 import { RESTORE_TAB } from "./tabs";
 import { TailoredIntroPanel } from "./tailored-intro";
+import { InterviewTimeline } from "./timeline";
+import { buildTimeline } from "@/lib/transcripts/timeline";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
 
@@ -68,6 +70,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   // This job's folder: the stories that answer its questions and its past interviews.
   const folder = jobFolder(job.likelyQuestions?.questions, stories);
   const interviews = transcripts.filter((t) => t.targetJobId === job.id);
+  // Interview timeline: this job's rounds in order, from its transcripts and any at the company.
+  const timeline = buildTimeline(job, transcripts);
   // Case and technical questions real interviewers asked, which no story answers.
   const cases = caseQuestionsFor(job, transcripts);
   const read = overview?.jobs[job.id];
@@ -450,6 +454,11 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             finishedOn={job.finishedOn}
           />
         </section>
+        <InterviewTimeline
+          jobId={job.id}
+          timeline={timeline}
+          finished={job.outcome ? outcomeSummary(job) : null}
+        />
         <section
           id="past-interviews"
           className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"

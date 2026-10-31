@@ -14,6 +14,7 @@ import {
   addTranscript,
   relabelTranscript,
   reviewAgain,
+  setRound,
   shareQuestions,
   type FormState,
 } from "./actions";
@@ -314,5 +315,57 @@ function ErrorLine({ children }: { children: React.ReactNode }) {
     <p className="text-sm font-medium text-red-700" role="alert">
       {children}
     </p>
+  );
+}
+
+// Interview timeline: picks which round an interview was. Saves as soon as a round is picked.
+export function RoundPicker({
+  transcriptId,
+  round,
+  guessed,
+}: {
+  transcriptId: string;
+  round: string | null;
+  guessed: boolean;
+}) {
+  const id = useId();
+  const [pending, start] = useTransition();
+  const save = (value: string) => {
+    const form = new FormData();
+    form.set("transcriptId", transcriptId);
+    form.set("round", value);
+    start(() => setRound(form));
+  };
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2 text-xs text-slate-600">
+      <label className="inline-flex items-center gap-2" htmlFor={`${id}-round`}>
+        {guessed ? "Guessed from the title." : round ? "Change round" : "Which round was it?"}
+        <select
+          id={`${id}-round`}
+          defaultValue={round ?? ""}
+          disabled={pending}
+          data-testid="timeline-round"
+          onChange={(e) => save(e.target.value)}
+          className="rounded-lg border-0 bg-white px-2 py-1 text-xs text-slate-900 ring-1 ring-slate-300 focus:ring-2 focus:ring-ink-700 focus:outline-none disabled:opacity-60"
+        >
+          <option value="">Not sure</option>
+          {ROUNDS.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {guessed && round && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => save(round)}
+          className="font-semibold text-ink-800 hover:underline disabled:opacity-60"
+        >
+          That&apos;s right
+        </button>
+      )}
+    </span>
   );
 }
