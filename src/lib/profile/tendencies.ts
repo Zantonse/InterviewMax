@@ -26,7 +26,20 @@ export type Tendency = {
   headline: string;
   details: string[];
   citations: Citation[];
+  // Where to go to improve this.
   next?: NextStep;
+  // "Skills they test" only: each named tool, its detail line and where to practice it.
+  skills?: SkillLink[];
+};
+
+export type SkillLink = {
+  name: string;
+  // The line in details this skill shows as.
+  detail: string;
+  // The target job of the most recent interview it came up in, if that interview has one.
+  jobId: string | null;
+  // That job's case & skills questions, or the jobs list without a job.
+  href: string;
 };
 
 export type TendencyTranscript = {
@@ -132,7 +145,7 @@ function sure(transcripts: TendencyTranscript[]): Tendency {
         href: href(worst.t),
       },
     ],
-    ...(status === "weak" ? { next: { label: "Practice out loud", href: "/jobs" } } : {}),
+    next: { label: "Practice out loud", href: "/jobs" },
   };
 }
 
@@ -173,7 +186,7 @@ function result(transcripts: TendencyTranscript[]): Tendency {
           },
         ]
       : [],
-    ...(missed.length > 0 ? { next: { label: "Fill in your numbers", href: "/numbers" } } : {}),
+    next: { label: "Fill in your numbers", href: "/numbers" },
   };
 }
 
@@ -193,7 +206,7 @@ function example(transcripts: TendencyTranscript[]): Tendency {
     citations: cite
       ? [{ label: `${cite.t.title}: “${clip(cite.q.question)}”`, href: href(cite.t), quote: cite.q.evidence || undefined }]
       : [],
-    ...(general.length > 0 ? { next: { label: "Find your stories", href: "/stories/new" } } : {}),
+    next: general.length > 0 ? { label: "Find your stories", href: "/stories/new" } : { label: "Build another story", href: "/stories/new" },
   };
 }
 
@@ -204,24 +217,37 @@ function tested(transcripts: TendencyTranscript[]): Tendency {
   if (asked.length === 0) {
     return noData("tested", "No case or skills questions in your reviewed interviews yet.", REVIEW_NEXT);
   }
-  const inInterviews = (pattern: RegExp) =>
-    new Set(asked.filter((a) => pattern.test(a.q.question)).map((a) => a.t.id)).size;
-  const skills = SKILLS.map((s) => ({ name: s.name, count: inInterviews(s.pattern) }))
+  const reviewed = transcripts.filter((t) => t.analysis).length;
+  const skills = SKILLS.map((s) => {
+    const hits = asked.filter((a) => s.pattern.test(a.q.question));
+    const count = new Set(hits.map((a) => a.t.id)).size;
+    // The most recent interview with a target job: that job's case questions are the place to practice.
+    const withJob = hits
+      .filter((a) => a.t.targetJobId)
+      .sort((a, b) => (b.t.createdAt ?? "").localeCompare(a.t.createdAt ?? ""))[0];
+    const jobId = withJob?.t.targetJobId ?? null;
+    return { name: s.name, count, jobId };
+  })
     .filter((s) => s.count > 0)
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.count - a.count)
+    .map((s) => ({
+      name: s.name,
+      detail: `${s.name} came up in ${s.count} of ${plural(reviewed, "interview")}`,
+      jobId: s.jobId,
+      href: s.jobId ? `/jobs/${s.jobId}#cases` : "/jobs",
+    }));
   const cases = asked.filter((a) => caseKind(a.q.question) === "case").length;
   const judged = asked.filter((a) => a.q.landed !== "unclear");
   const strong = judged.filter((a) => a.q.landed === "strong");
   const weakest = judged.find((a) => a.q.landed === "weak") ?? judged.find((a) => a.q.landed === "mixed");
   const share = judged.length ? strong.length / judged.length : 0;
-  const reviewed = transcripts.filter((t) => t.analysis).length;
   return {
     id: "tested",
     label: "Skills they test",
     status: judged.length === 0 ? "no_data" : share >= 0.65 ? "strong" : share >= 0.35 ? "developing" : "weak",
     headline: `${plural(asked.length, "case or skills question")}${judged.length ? `, ${strong.length} landed well` : ""}.`,
     details: [
-      ...skills.map((s) => `${s.name} came up in ${s.count} of ${plural(reviewed, "interview")}`),
+      ...skills.map((s) => s.detail),
       ...(cases > 0 ? [`${plural(cases, "case question")} to reason through`] : []),
     ],
     citations: weakest
@@ -231,6 +257,7 @@ function tested(transcripts: TendencyTranscript[]): Tendency {
       label: "Practice case questions",
       href: weakest?.t.targetJobId ? `/jobs/${weakest.t.targetJobId}#cases` : "/jobs",
     },
+    ...(skills.length ? { skills } : {}),
   };
 }
 
@@ -252,6 +279,9 @@ function landed(transcripts: TendencyTranscript[]): Tendency {
       href: href(a.t),
       quote: a.q.evidence || undefined,
     })),
+    next: strong.length
+      ? { label: "Practice them out loud", href: "/jobs" }
+      : { label: "See past interviews", href: "/transcripts" },
   };
 }
 

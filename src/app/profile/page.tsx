@@ -4,6 +4,8 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { startStory } from "@/app/stories/new/actions";
 import { AppHeader } from "@/components/app-header";
+import { getCurrentUser } from "@/lib/auth";
+import { canUseCurriculum } from "@/lib/curriculum/access";
 import { getAssessmentSafely } from "@/lib/assessment/data";
 import { listJobs } from "@/lib/jobs/data";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
@@ -30,7 +32,7 @@ import {
   type StoredProfile,
 } from "@/lib/profile/content";
 import { getStoredProfile, saveStoredProfile } from "@/lib/profile/data";
-import type { Tendency } from "@/lib/profile/tendencies";
+import type { SkillLink, Tendency } from "@/lib/profile/tendencies";
 import { fallbackSummary } from "@/lib/profile/prompts";
 import { writeProfileSummary } from "@/lib/profile/summary";
 import { listStories } from "@/lib/stories/data";
@@ -70,14 +72,16 @@ export default function ProfilePage() {
 }
 
 async function ProfileContent() {
-  const [stories, jobs, numbers, transcripts, practice, assessment] = await Promise.all([
+  const [stories, jobs, numbers, transcripts, practice, assessment, user] = await Promise.all([
     listStories(),
     listJobs(),
     getNumbersChecklistSafely(),
     listTranscriptsForPrep(),
     listPracticeSessionsSafely(),
     getAssessmentSafely(),
+    getCurrentUser(),
   ]);
+  const curriculum = canUseCurriculum(user.email);
   const result = assessProfile({ stories, jobs, numbers, transcripts, practice, assessment });
   await trackEvent("profile_opened");
 
@@ -166,7 +170,7 @@ async function ProfileContent() {
         </p>
         <ul className="divide-y divide-slate-100" data-testid="profile-tendencies">
           {result.tendencies.map((t) => (
-            <CriterionRow key={t.id} criterion={t} testPrefix="tendency" />
+            <CriterionRow key={t.id} criterion={t} testPrefix="tendency" curriculum={curriculum} />
           ))}
         </ul>
       </Card>
@@ -265,10 +269,16 @@ function NextStepButton({ step }: { step: NextStep }) {
 function CriterionRow({
   criterion: c,
   testPrefix = "criterion",
+  curriculum = false,
 }: {
   criterion: CriterionResult | Tendency;
   testPrefix?: string;
+  // The Curriculum beta: only admins see links to it.
+  curriculum?: boolean;
 }) {
+  const skills = "skills" in c ? (c.skills ?? []) : [];
+  const skillLines = new Set(skills.map((s) => s.detail));
+  const details = c.details.filter((d) => !skillLines.has(d));
   return (
     <li className="py-4 first:pt-0 last:pb-0" data-testid={`${testPrefix}-${c.id}`} data-status={c.status}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -276,9 +286,16 @@ function CriterionRow({
         <StatusPill status={c.status} />
       </div>
       <p className="mt-1 text-slate-700">{c.headline}</p>
-      {c.details.length > 0 && (
+      {skills.length > 0 && (
+        <ul className="mt-2 space-y-1.5 text-sm" data-testid={`${testPrefix}-${c.id}-skills`}>
+          {skills.map((s) => (
+            <SkillRow key={s.name} skill={s} curriculum={curriculum} />
+          ))}
+        </ul>
+      )}
+      {details.length > 0 && (
         <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-600">
-          {c.details.map((d) => (
+          {details.map((d) => (
             <li key={d}>{d}</li>
           ))}
         </ul>
@@ -286,9 +303,47 @@ function CriterionRow({
       {c.citations.map((citation) => (
         <CitationLine key={citation.label + (citation.quote ?? "")} citation={citation} />
       ))}
-      {c.next && (
-        <Link href={c.next.href ?? "/"} className="mt-1 inline-block text-sm font-semibold text-ink-800 hover:underline">
-          {c.next.label} →
+      {c.next && <ImproveLink step={c.next} />}
+    </li>
+  );
+}
+
+// The "how to improve" link under a criterion or tendency. A story type starts that story.
+function ImproveLink({ step }: { step: NextStep }) {
+  const className = "mt-1 inline-block text-sm font-semibold text-ink-800 hover:underline";
+  if (step.storyType) {
+    return (
+      <form action={startStory}>
+        <button type="submit" name="storyType" value={step.storyType} className={className}>
+          {step.label} →
+        </button>
+      </form>
+    );
+  }
+  return (
+    <Link href={step.href ?? "/"} className={className}>
+      {step.label} →
+    </Link>
+  );
+}
+
+// One skill interviewers tested, linked to the place to practice it.
+function SkillRow({ skill: s, curriculum }: { skill: SkillLink; curriculum: boolean }) {
+  return (
+    <li className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+      <Link href={s.href} className="font-semibold text-ink-800 hover:underline">
+        {s.name}
+      </Link>
+      <span className="text-slate-600">{s.detail.slice(s.name.length).trim()}</span>
+      <Link href={s.href} className="text-slate-600 underline-offset-2 hover:text-ink-800 hover:underline">
+        Practice {s.name} questions →
+      </Link>
+      {curriculum && s.jobId && (
+        <Link
+          href={`/jobs/${s.jobId}/curriculum`}
+          className="text-slate-600 underline-offset-2 hover:text-ink-800 hover:underline"
+        >
+          Curriculum (beta) →
         </Link>
       )}
     </li>

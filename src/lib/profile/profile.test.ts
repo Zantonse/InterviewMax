@@ -113,6 +113,20 @@ describe("assessProfile", () => {
     expect(result.weaknesses.find((w) => w.criterion === "evidence")?.next?.label).toBe("Add a number");
   });
 
+  it("gives every criterion with data a place to improve it, not only weak ones", () => {
+    const result = assessProfile({
+      ...none,
+      stories: [
+        story("a", "major_project", drafted("Saved $2M.", { criteria: scores({ context: 4, result: 4 }) })),
+        story("b", "went_wrong", drafted("Cut churn 10%.", { criteria: scores({ context: 4, result: 3 }) })),
+      ],
+    });
+    const scored = result.criteria.filter((c) => c.status !== "no_data");
+    expect(scored.length).toBeGreaterThan(1);
+    for (const c of scored) expect(c.next?.label, c.id).toBeTruthy();
+    expect(result.criteria.find((c) => c.id === "craft")?.next).toMatchObject({ href: "/stories/b" });
+  });
+
   it("ignores years when looking for a result's number", () => {
     expect(resultFigure(story("a", "major_project", drafted("In 2024 it shipped.")))).toBeUndefined();
     expect(resultFigure(story("a", "major_project", drafted("In 2024 it saved $1.2M.")))).toBe("$1.2M");
