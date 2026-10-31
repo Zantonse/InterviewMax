@@ -39,6 +39,14 @@ describe("suggestLevel", () => {
     ["Staff Product Manager", "principal"],
     ["Financial Analyst", "mid"],
     ["Solutions Engineer", "mid"],
+    ["Junior Data Analyst", "entry"],
+    ["Software Engineering Intern", "entry"],
+    ["Entry-Level Accountant", "entry"],
+    ["Associate Product Manager", "entry"],
+    ["Software Engineer I", "entry"],
+    ["Senior Associate", "senior"],
+    ["Associate Director, Finance", "principal"],
+    ["AI Engineer", "mid"],
   ])("%s → %s", (title, level) => {
     expect(suggestLevel(title)).toBe(level);
   });

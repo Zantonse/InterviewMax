@@ -105,6 +105,14 @@ describe("levelMix", () => {
     expect(needLabel(mix.needs[1])).toBe("two team-level or above stories, three needed");
   });
 
+  it("asks entry level for one graded story of any scope", () => {
+    const mix = levelMix([], "entry");
+    expect(mix.needs).toEqual([{ role: "hands-on proof", needed: 1, have: 0 }]);
+    expect(needLabel(mix.needs[0])).toBe("no graded stories, one needed");
+    expect(targetLevel([{ level: "entry" }])).toBe("entry");
+    expect(targetLevel([{ level: "entry" }, { level: "mid" }])).toBe("mid");
+  });
+
   it("never asks for hands-on stories, and needs nothing without a level", () => {
     expect(levelMix(bank, undefined).needs).toEqual([]);
     expect(levelMix(bank, "mid").needs.map((n) => n.role)).not.toContain("hands-on proof");

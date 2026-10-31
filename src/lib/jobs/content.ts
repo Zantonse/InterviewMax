@@ -13,6 +13,7 @@ export const RESUME_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"] as const;
 
 // The role levels the PRD names. Suggested from the title in code, confirmed by the user.
 export const LEVELS = [
+  { id: "entry", label: "Entry level" },
   { id: "mid", label: "Mid-level" },
   { id: "senior", label: "Senior" },
   { id: "principal", label: "Principal or above" },
@@ -31,6 +32,8 @@ export function isLevel(id: unknown): id is LevelId {
 const PRINCIPAL_RE =
   /\b(principal|staff|distinguished|fellow|director|head of|vp|svp|evp|vice president|chief|cto|cfo|coo|ceo|cio|cdo)\b/i;
 const SENIOR_RE = /\b(senior|sr|lead|iii)\b/i;
+const ENTRY_RE =
+  /\b(entry[- ]level|junior|jr|intern|internship|graduate|new grad|apprentice|trainee|associate)\b|\bI$/i;
 
 // A title for a job added without one (a posting whose title couldn't be picked out): the
 // posting's first short line that isn't a section heading.
@@ -48,6 +51,7 @@ export function titleFromPosting(description: string): string {
 export function suggestLevel(title: string): LevelId {
   if (PRINCIPAL_RE.test(title)) return "principal";
   if (SENIOR_RE.test(title)) return "senior";
+  if (ENTRY_RE.test(title.trim())) return "entry";
   return "mid";
 }
 

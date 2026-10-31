@@ -383,7 +383,7 @@ function level(stories: StoryLike[], jobs: JobLike[], points: Points): Criterion
   if (met && top[0]) {
     points.strength({
       criterion: "level",
-      text: `Your stories show the scope a ${levelName.toLowerCase()} role needs.`,
+      text: `Your stories show the scope ${target === "entry" ? "an" : "a"} ${levelName.toLowerCase()} role needs.`,
       citation: {
         label: `“${top[0].story.title}”: ${top[0].role!.role}`,
         href: storyHref(top[0].story),
@@ -412,7 +412,9 @@ function level(stories: StoryLike[], jobs: JobLike[], points: Points): Criterion
     status: met ? "strong" : score >= 50 ? "developing" : "weak",
     score,
     headline: met
-      ? `Enough team- and org-level stories for ${levelName.toLowerCase()} roles.`
+      ? target === "entry"
+        ? `Enough graded stories for ${levelName.toLowerCase()} roles.`
+        : `Enough team- and org-level stories for ${levelName.toLowerCase()} roles.`
       : `Short of what ${levelName.toLowerCase()} roles need.`,
     details: [
       ...mix.needs.map((n) => cap(needLabel(n))),
