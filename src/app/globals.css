@@ -108,3 +108,21 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Target job page tabs (src/app/jobs/[id]/job-tabs.tsx): <html data-job-tab> picks the panel.
+   Before the pre-paint script runs, the overview shows. */
+:root:not([data-job-tab]) [data-job-panel]:not([data-job-panel="overview"]),
+:root[data-job-tab="overview"] [data-job-panel]:not([data-job-panel="overview"]),
+:root[data-job-tab="prep"] [data-job-panel]:not([data-job-panel="prep"]),
+:root[data-job-tab="interviews"] [data-job-panel]:not([data-job-panel="interviews"]),
+:root[data-job-tab="pitch"] [data-job-panel]:not([data-job-panel="pitch"]) {
+  display: none;
+}
+:root:not([data-job-tab]) [data-tab-link="overview"],
+:root[data-job-tab="overview"] [data-tab-link="overview"],
+:root[data-job-tab="prep"] [data-tab-link="prep"],
+:root[data-job-tab="interviews"] [data-tab-link="interviews"],
+:root[data-job-tab="pitch"] [data-tab-link="pitch"] {
+  border-color: var(--color-ink-800);
+  color: var(--color-slate-900);
+}
