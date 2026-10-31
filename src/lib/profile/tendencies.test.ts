@@ -115,6 +115,31 @@ describe("interviewTendencies", () => {
     expect(tested.status).toBe("weak");
     expect(tested.citations[0]).toMatchObject({ href: "/transcripts/a", quote: "Called it moderate at best." });
     expect(tested.next?.href).toBe("/jobs/j1#cases");
+    // Each named skill links to the case questions of the job it came up for.
+    expect(tested.skills).toEqual([
+      { name: "SQL", detail: "SQL came up in 2 of 2 interviews", jobId: "j1", href: "/jobs/j1#cases" },
+    ]);
+  });
+
+  it("links a skill to the jobs list when its interview has no target job", () => {
+    const list = interviewTendencies([
+      transcript({ id: "a", targetJobId: null, analysis: analysis([asked({ question: "How do you use Excel?", landed: "weak" })]) }),
+    ]);
+    expect(byId(list, "tested").skills?.[0]).toMatchObject({ name: "Excel", jobId: null, href: "/jobs" });
+  });
+
+  it("gives every tendency with data a place to improve it", () => {
+    const list = interviewTendencies([
+      transcript({
+        id: "a",
+        analysis: analysis([
+          asked({ question: "Tell me about a conflict.", theme: "conflict", landed: "strong" }),
+          asked({ question: "Tell me about a failure.", theme: "failure", landed: "strong" }),
+          asked({ question: "Tell me about a launch.", theme: "impact", landed: "strong" }),
+        ]),
+      }),
+    ]);
+    for (const t of list.filter((x) => x.status !== "no_data")) expect(t.next?.label, t.id).toBeTruthy();
   });
 });
 

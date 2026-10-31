@@ -60,7 +60,8 @@ export type Citation = {
   quote?: string;
 };
 
-// The button beside a weakness. A story type starts that story; otherwise it's a link.
+// The button beside a weakness, or the "how to improve" link on a criterion. A story type starts
+// that story; otherwise it's a link.
 export type NextStep = { label: string; href?: string; storyType?: StoryTypeId };
 
 export type CriterionResult = {
@@ -72,7 +73,7 @@ export type CriterionResult = {
   headline: string;
   details: string[];
   citations: Citation[];
-  // With no data: how to get some.
+  // Where to go to improve this. With no data: how to get some.
   next?: NextStep;
 };
 
@@ -216,7 +217,15 @@ function craft(stories: StoryLike[], points: Points): CriterionResult {
     return { criterion: c, scores, average: avg(scores.map((x) => x.score)) };
   }).filter((p) => p.scores.length > 0);
   if (per.length === 0) {
-    return { ...base, status: "no_data", score: null, headline: "No graded stories yet.", details: [], citations: [] };
+    return {
+      ...base,
+      status: "no_data",
+      score: null,
+      headline: "No graded stories yet.",
+      details: [],
+      citations: [],
+      next: { label: "Build a story", href: "/stories/new" },
+    };
   }
   const overall = avg(per.map((p) => p.average));
   const sorted = [...per].sort((a, b) => b.average - a.average);
@@ -266,6 +275,7 @@ function craft(stories: StoryLike[], points: Points): CriterionResult {
         quote: firstSentence(lowest.note),
       },
     ],
+    next: { label: `Strengthen “${lowest.story.title}”`, href: storyHref(lowest.story) },
   };
 }
 
@@ -342,6 +352,10 @@ function evidence(
     citations: missing
       .slice(0, 3)
       .map((x) => ({ label: `“${x.story.title}”: no number in the result`, href: storyHref(x.story) })),
+    next:
+      missing[0] && (total === 0 || checklistShare >= 0.5)
+        ? { label: `Add a number to “${missing[0].story.title}”`, href: storyHref(missing[0].story) }
+        : { label: "Fill in your numbers", href: "/numbers" },
   };
 }
 
@@ -422,6 +436,7 @@ function level(stories: StoryLike[], jobs: JobLike[], points: Points): Criterion
       label: `“${x.story.title}”: ${x.role!.role}`,
       href: storyHref(x.story),
     })),
+    next: { label: "Build a bigger-scope story", storyType: "major_project" },
   };
 }
 
@@ -459,6 +474,18 @@ function coverage(stories: StoryLike[], jobs: JobLike[], points: Points): Criter
   const gaps = missing
     .map((t) => ({ theme: t, asked: asked(t.id) }))
     .sort((a, b) => b.asked.length - a.asked.length);
+
+  // Where to improve coverage: build the most-asked missing theme, else strengthen a thin one,
+  // else find a second story.
+  const firstGapType = gaps[0]?.theme.build;
+  const thinStory = thin.find((t) => t.story)?.story;
+  const coverageNext: NextStep = firstGapType
+    ? { label: `Build “${getStoryType(firstGapType)?.label ?? "the story"}”`, storyType: firstGapType }
+    : gaps[0]
+      ? { label: "Pick a story to build", href: "/stories/new" }
+      : thinStory
+        ? { label: `Strengthen “${thinStory.title}”`, href: storyHref(thinStory) }
+        : { label: "Find another story", href: "/stories/find" };
 
   if (gaps[0]) {
     const g = gaps[0];
@@ -504,6 +531,7 @@ function coverage(stories: StoryLike[], jobs: JobLike[], points: Points): Criter
         : []),
     ],
     citations: [],
+    next: coverageNext,
   };
 }
 
@@ -551,6 +579,7 @@ function fit(stories: StoryLike[], jobs: JobLike[], points: Points): CriterionRe
       headline: "Regrade a story to check it against your current jobs.",
       details: [],
       citations: [],
+      next: { label: "Build a story", href: "/stories/new" },
     };
   }
   const sorted = [...withFits].sort((a, b) => b.score - a.score);
@@ -597,6 +626,7 @@ function fit(stories: StoryLike[], jobs: JobLike[], points: Points): CriterionRe
       href: storyHref(f.story),
       quote: f.fit.proves[0],
     })),
+    next: { label: `See ${worst.job.title}'s likely questions`, href: `/jobs/${worst.job.id}` },
   };
 }
 
@@ -676,6 +706,7 @@ function patterns(transcripts: TranscriptLike[], stories: StoryLike[], points: P
       const a = answers.find((x) => x.q.theme === t.theme && x.q.probes.length > 0);
       return a ? [{ label: `Follow-up in ${a.t.title}`, href: `/transcripts/${a.t.id}`, quote: a.q.probes[0] }] : [];
     }),
+    next: { label: "See past interviews", href: "/transcripts" },
   };
 }
 
@@ -754,6 +785,9 @@ function delivery(practice: PracticeLike[], transcripts: TranscriptLike[], point
         href: `/jobs/${x.session.targetJobId}/practice`,
         quote: firstSentence(x.item.feedback!.followUpsNote),
       })),
+    next: items[0]
+      ? { label: "Practice out loud", href: `/jobs/${items[0].session.targetJobId}/practice` }
+      : { label: "Practice a target job", href: "/jobs" },
   };
 }
 
@@ -778,6 +812,7 @@ function readiness(assessment: Assessment | null | undefined, jobs: JobLike[]): 
     headline: `Journey grade ${grade.score} of 100: ${grade.level}.`,
     details: grade.gaps.map((g) => g.title),
     citations: [{ label: "Your journey check", href: "/assessment" }],
+    next: { label: "Retake the journey check", href: "/assessment" },
   };
 }
 
