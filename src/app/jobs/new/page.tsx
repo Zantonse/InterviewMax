@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { MAX_JOBS } from "@/lib/jobs/content";
 import { listJobs } from "@/lib/jobs/data";
+import { openJobs } from "@/lib/jobs/outcome";
 import { AddJobForm } from "../forms";
 
 export const metadata: Metadata = { title: "Add a target job · InterviewMax" };
@@ -38,14 +39,15 @@ export default function NewJobPage() {
 
 async function NewJob() {
   const jobs = await listJobs();
-  if (jobs.length >= MAX_JOBS) {
+  if (openJobs(jobs).length >= MAX_JOBS) {
     return (
       <p className="text-slate-700">
-        You already have {MAX_JOBS} target jobs, the most you can keep.{" "}
+        You already have {MAX_JOBS} target jobs in progress, the most you can keep.{" "}
         <Link href="/jobs" className="font-semibold text-ink-800 hover:underline">
-          Remove one
+          Open a job
         </Link>{" "}
-        to add another.
+        whose interviews are over and mark it finished, or remove one, to add another. Finished
+        jobs don&apos;t count.
       </p>
     );
   }

@@ -6,6 +6,7 @@ import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
+import { outcomeSummary } from "@/lib/jobs/outcome";
 import { listStories } from "@/lib/stories/data";
 import { removeResume } from "./actions";
 import { AddJobForm, PendingButton, RereadButton, ResumeForm } from "./forms";
@@ -95,7 +96,7 @@ async function JobsContent() {
         )}
 
         <ul className="space-y-3" data-testid="job-list">
-          {jobs.map((job) => {
+          {[...jobs.filter((j) => !j.outcome), ...jobs.filter((j) => j.outcome)].map((job) => {
             const read = overview?.jobs[job.id];
             return (
               <li key={job.id}>
@@ -115,6 +116,18 @@ async function JobsContent() {
                       {!job.levelConfirmed && " · confirm"}
                     </span>
                   </span>
+                  {job.outcome && (
+                    <span
+                      className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        job.outcome === "offer"
+                          ? "bg-emerald-100 text-emerald-900"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                      data-testid="job-outcome-badge"
+                    >
+                      Finished · {outcomeSummary(job)}
+                    </span>
+                  )}
                   {read?.summary && <span className="mt-2 block text-slate-600">{read.summary}</span>}
                   {read?.differs && (
                     <span className="mt-1 block text-sm text-slate-500">{read.differs}</span>

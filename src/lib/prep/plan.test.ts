@@ -100,6 +100,15 @@ describe("focusJob", () => {
     expect(focusJob(jobs, TODAY)?.id).toBe("b");
     expect(focusJob([], TODAY)).toBeNull();
   });
+
+  it("skips jobs whose interviews are finished", () => {
+    const jobs = [
+      { ...JOB, id: "a", interviewDate: "2026-10-16", outcome: "rejected" },
+      { ...JOB, id: "b", interviewDate: "2026-10-20" },
+    ];
+    expect(focusJob(jobs, TODAY)?.id).toBe("b");
+    expect(focusJob([{ ...JOB, outcome: "offer" }], TODAY)).toBeNull();
+  });
 });
 
 describe("buildPlan", () => {

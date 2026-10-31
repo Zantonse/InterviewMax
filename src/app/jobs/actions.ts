@@ -22,7 +22,14 @@ import {
   saveJobsPrep,
   setInterviewDate,
   setJobLevel,
+  setJobOutcome,
 } from "@/lib/jobs/data";
+import {
+  MAX_ROUND_NAME_LENGTH,
+  isOutcome,
+  openJobs,
+  parseRound,
+} from "@/lib/jobs/outcome";
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
@@ -112,8 +119,10 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
 
   let id: string;
   try {
-    if ((await listJobs()).length >= MAX_JOBS) {
-      return { error: `You can keep up to ${MAX_JOBS} target jobs. Remove one to add another.` };
+    if (openJobs(await listJobs()).length >= MAX_JOBS) {
+      return {
+        error: `You can have up to ${MAX_JOBS} target jobs in progress. Mark one finished or remove one to add another.`,
+      };
     }
     const level = formData.get("level");
     const date = formData.get("interviewDate");
@@ -170,6 +179,29 @@ export async function saveInterviewDate(formData: FormData): Promise<void> {
     await setInterviewDate(jobId, date);
     await trackEvent("prep_plan_set");
   } else return;
+  refresh();
+}
+
+// Marks a job's interview process finished with its outcome and the round reached, or reopens it
+// ("reopen"). Editable any time.
+export async function saveJobOutcome(formData: FormData): Promise<void> {
+  const jobId = String(formData.get("jobId") ?? "");
+  if (formData.get("intent") === "reopen") {
+    await setJobOutcome(jobId, null);
+    refresh();
+    return;
+  }
+  const outcome = formData.get("outcome");
+  if (!isOutcome(outcome)) return;
+  const finished = formData.get("finishedOn");
+  const wasOpen = formData.get("wasOpen") === "1";
+  await setJobOutcome(jobId, {
+    outcome,
+    roundReached: parseRound(formData.get("round")),
+    roundName: clean(formData.get("roundName")).slice(0, MAX_ROUND_NAME_LENGTH),
+    finishedOn: isDate(finished) ? finished : null,
+  });
+  if (wasOpen) await trackEvent("job_finished");
   refresh();
 }
 
