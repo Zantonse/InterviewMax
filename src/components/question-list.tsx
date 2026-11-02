@@ -3,7 +3,7 @@ import { startStory } from "@/app/stories/new/actions";
 import { coverageFor } from "@/lib/questions/coverage";
 import { askedLabel, type BankQuestion } from "@/lib/bank/content";
 import type { LikelyQuestion } from "@/lib/questions/content";
-import { getTheme } from "@/lib/questions/themes";
+import { AI_USE_QUESTION, getTheme } from "@/lib/questions/themes";
 import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 
@@ -14,11 +14,14 @@ export function QuestionList({
   stories,
   limit,
   compact = false,
+  aiAnswerHref,
 }: {
   questions: LikelyQuestion[];
   stories: StoryRecord[];
   limit?: number;
   compact?: boolean;
+  // Where the user's short "How do you use AI in your work?" answer is, shown on the AI question.
+  aiAnswerHref?: string;
 }) {
   return (
     <ol className="space-y-2" data-testid="question-list">
@@ -61,6 +64,15 @@ export function QuestionList({
                       </button>
                     </form>
                   ) : null}
+                  {aiAnswerHref && q.theme === AI_USE_QUESTION.theme && (
+                    <Link
+                      href={aiAnswerHref}
+                      className="mt-1 block font-medium text-ink-800 hover:underline"
+                      data-testid="ai-answer-link"
+                    >
+                      Asked as &ldquo;How do you use AI?&rdquo;: your short answer →
+                    </Link>
+                  )}
                 </div>
               </>
             )}

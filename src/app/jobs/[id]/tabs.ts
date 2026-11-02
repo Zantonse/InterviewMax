@@ -18,6 +18,7 @@ export const SECTION_TAB: Record<string, JobTabId> = {
   timeline: "interviews",
   "past-interviews": "interviews",
   "about-me": "pitch",
+  "ai-answer": "pitch",
   resume: "pitch",
   ask: "pitch",
 };

@@ -17,6 +17,7 @@ import { trackEvent } from "@/lib/usage/track";
 import { writeToughAnswer } from "@/lib/tough/coach";
 import { drillReference, newToughDrill, toughDrill } from "@/lib/tough/drill";
 import {
+  AI_ANSWER_ID,
   MAX_EDITED_ANSWER_LENGTH,
   MAX_TOUGH_ANSWER_LENGTH,
   getToughQuestion,
@@ -60,7 +61,12 @@ export async function writeTough(
     );
     const next: StoryContent = {
       ...content,
-      tough: { ...(job ? { jobId: job.id } : {}), note: written.note },
+      tough: {
+        ...(job ? { jobId: job.id } : {}),
+        note: written.note,
+        // The versions shaped for each job are kept; their page says when they predate this one.
+        ...(content.tough?.forJobs ? { forJobs: content.tough.forJobs } : {}),
+      },
       draft: {
         parts: { answer: written.answer },
         untracedNumbers: written.untracedNumbers,
@@ -89,6 +95,68 @@ export async function saveToughEdit(storyId: string, text: string): Promise<Toug
     await updateStory(storyId, { content });
     return { ok: true, content };
   });
+}
+
+// "How do you use AI in your work?" shaped for one target job, from the same answers, on that
+// job's page. Writing it again replaces the user's edits to it.
+export async function writeToughForJob(storyId: string, jobId: string): Promise<ToughResult> {
+  return withToughStory(storyId, async (story, question) => {
+    if (question.id !== AI_ANSWER_ID) return fail("Only this answer is written for each job.");
+    if (missingPrompts(question, story.content.answers).length > 0) {
+      return fail("Answer the questions about how you use AI first.");
+    }
+    const job = await getJob(String(jobId));
+    if (!job) return fail("We couldn't find that job.");
+    const written = await writeToughAnswer(question, story.content.answers, {
+      title: job.title,
+      company: job.company,
+      description: job.description,
+    });
+    // Read again just before saving, so changes made meanwhile aren't overwritten.
+    const latest = (await getStory(story.id))?.content ?? story.content;
+    const content = withJobAnswer(latest, job.id, {
+      answer: written.answer,
+      note: written.note,
+      untracedNumbers: written.untracedNumbers,
+      model: written.model,
+      writtenAt: new Date().toISOString(),
+    });
+    await updateStory(story.id, { content });
+    await trackEvent("ai_answer_for_job");
+    return { ok: true, content };
+  });
+}
+
+// Keeps the user's own edit of the answer for one job.
+export async function saveToughJobEdit(
+  storyId: string,
+  jobId: string,
+  text: string,
+): Promise<ToughResult> {
+  const answer = typeof text === "string" ? text.trim() : "";
+  if (!answer) return fail("The answer can't be empty.");
+  if (answer.length > MAX_EDITED_ANSWER_LENGTH) return fail("That answer is too long to save.");
+  return withToughStory(storyId, async (story) => {
+    const current = story.content.tough?.forJobs?.[String(jobId)];
+    if (!current) return fail("Write it for this job first.");
+    const content = withJobAnswer(story.content, String(jobId), {
+      ...current,
+      answer,
+      untracedNumbers: [],
+      edited: true,
+    });
+    await updateStory(story.id, { content });
+    return { ok: true, content };
+  });
+}
+
+function withJobAnswer(
+  content: StoryContent,
+  jobId: string,
+  answer: NonNullable<NonNullable<StoryContent["tough"]>["forJobs"]>[string],
+): StoryContent {
+  const tough = content.tough ?? {};
+  return { ...content, tough: { ...tough, forJobs: { ...tough.forJobs, [jobId]: answer } } };
 }
 
 // Starts a follow-up drill on the written answer, replacing the last one.
@@ -161,7 +229,7 @@ async function advanceDrill(
         turns: next.turns,
         kind: "tough",
       },
-      "tough",
+      drill.theme,
     );
     // New details belong in the situation answers, which the user edits on this page.
     next = { ...next, feedback: { ...feedback, newFacts: [] } };

@@ -152,6 +152,39 @@ describe("buildBrief", () => {
     ]);
   });
 
+  it("puts how you use AI first, in the version written for this job", () => {
+    const ai = {
+      id: "s-ai",
+      title: "How do you use AI in your work?",
+      storyType: "tough_ai_at_work",
+      content: content({
+        draft: draft({ answer: "I use Claude for first drafts." }),
+        tough: {
+          forJobs: {
+            "job-1": {
+              answer: "For Acme's payments roadmap, I use Claude for first drafts.",
+              note: "",
+              untracedNumbers: [],
+              model: "m",
+              writtenAt: "t",
+            },
+          },
+        },
+      }),
+    };
+    const withAi = buildBrief({ job: JOB, stories: [TOUGH, ai], numbers: null });
+    expect(withAi.tough.map((t) => [t.id, t.answer, t.href])).toEqual([
+      ["s-ai", "For Acme's payments roadmap, I use Claude for first drafts.", "/jobs/job-1#ai-answer"],
+      ["s-tough", "I want to own a product end to end.", "/tough-questions/s-tough"],
+    ]);
+    // Another job gets the general answer.
+    const other = buildBrief({ job: { ...JOB, id: "job-2" }, stories: [ai], numbers: null });
+    expect(other.tough[0]).toMatchObject({
+      answer: "I use Claude for first drafts.",
+      href: "/tough-questions/s-ai",
+    });
+  });
+
   it("works with nothing but the job", () => {
     const empty = buildBrief({
       job: { ...JOB, likelyQuestions: null },

@@ -2,8 +2,14 @@ import { describe, expect, it } from "vitest";
 import { parseContent } from "@/lib/stories/content";
 import { untracedNumbers } from "@/lib/stories/numbers";
 import { TOUGH_SYSTEM, parseToughReply, toughMessages } from "./prompts";
+import { targetWords } from "@/lib/practice/content";
+import { newToughDrill } from "./drill";
 import {
+  AI_ANSWER_ID,
   TOUGH_LENGTH,
+  lengthLabel,
+  toughForAsked,
+  toughLength,
   TOUGH_QUESTIONS,
   checkAnswer,
   getToughQuestion,
@@ -18,8 +24,9 @@ import {
 const leaving = getToughQuestion("why_leaving")!;
 
 describe("tough questions", () => {
-  it("covers the seven questions in the PRD, each with prompts", () => {
+  it("covers how you use AI and the seven questions in the PRD, each with prompts", () => {
     expect(TOUGH_QUESTIONS.map((q) => q.id)).toEqual([
+      "ai_at_work",
       "why_leaving",
       "gap",
       "let_go",
@@ -129,5 +136,54 @@ describe("saved content", () => {
     expect(content.tough).toEqual({ jobId: "job-1", note: "Stop after the last line.", edited: true });
     expect(content.draft?.parts.answer).toBe("I left in May.");
     expect(parseContent({ tough: "nope" }).tough).toBeUndefined();
+  });
+});
+
+describe("how you use AI", () => {
+  const ai = getToughQuestion(AI_ANSWER_ID)!;
+
+  it("is built from a few plain questions, three of them needed", () => {
+    expect(missingPrompts(ai, {})).toEqual(["tools", "example", "check"]);
+    expect(
+      missingPrompts(ai, { tools: "Claude for drafts", example: "A QBR deck", check: "I re-run the numbers" }),
+    ).toEqual([]);
+  });
+
+  it("runs about a minute, longer than the other short answers", () => {
+    const length = toughLength(ai);
+    expect(length.max).toBeGreaterThan(TOUGH_LENGTH.max);
+    expect(toughLength(leaving)).toBe(TOUGH_LENGTH);
+    expect(lengthLabel(TOUGH_LENGTH)).toBe("20 to 40 seconds");
+    expect(lengthLabel(length)).toBe("45 to 70 seconds");
+    const long = Array(length.max + 5).fill("word").join(" ");
+    const fine = Array(length.max - 5).fill("word").join(" ");
+    expect(checkAnswer({ answer: long, untracedNumbers: [] }, length)[0]).toContain("Cut it");
+    expect(checkAnswer({ answer: fine, untracedNumbers: [] }, length)).toEqual([]);
+    // The follow-up drill is timed against the same length.
+    expect(targetWords(newToughDrill(ai).theme)).toEqual(length);
+    expect(targetWords(newToughDrill(leaving).theme)).toEqual(TOUGH_LENGTH);
+  });
+
+  it("tells the writer its length and to keep claims modest", () => {
+    const [message] = toughMessages({ question: ai, answers: { tools: "Claude" }, job: null });
+    expect(message.content).toContain(`Never more than ${toughLength(ai).max} words`);
+    expect(TOUGH_SYSTEM).toContain("never make their use sound bigger");
+    const [other] = toughMessages({ question: leaving, answers: {}, job: null });
+    expect(other.content).not.toContain("Length for this question");
+  });
+
+  it("is recognised when a real interviewer asks it", () => {
+    expect(toughForAsked("How do you use AI in your day-to-day work?")).toBe("ai_at_work");
+    expect(toughForAsked("What AI tools do you use?")).toBe("ai_at_work");
+    expect(toughForAsked("Tell me about a time you used AI at work.")).toBeUndefined();
+  });
+
+  it("keeps the versions written for each job", () => {
+    const entry = { answer: "For Acme…", note: "n", untracedNumbers: ["5"], model: "m", writtenAt: "t" };
+    const content = parseContent({
+      tough: { forJobs: { "job-1": entry, "job-2": { answer: "" }, "job-3": "nope" } },
+    });
+    expect(content.tough?.forJobs).toEqual({ "job-1": entry });
+    expect(parseContent({ tough: { note: "x" } }).tough?.forJobs).toBeUndefined();
   });
 });

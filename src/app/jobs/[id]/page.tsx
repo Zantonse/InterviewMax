@@ -24,6 +24,9 @@ import { progress } from "@/lib/curriculum/content";
 import { removeJob } from "../actions";
 import { InterviewDateForm, JobOutcomeForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { outcomeSummary } from "@/lib/jobs/outcome";
+import { AI_ANSWER_ID, getToughQuestion, missingPrompts, toughStoryType } from "@/lib/tough/questions";
+import { startTough } from "../../tough-questions/actions";
+import { AiAnswerPanel } from "./ai-answer-panel";
 import { AskPanel } from "./ask-panel";
 import { CasePanel } from "./case-panel";
 import { ResumePanel } from "./resume-panel";
@@ -93,9 +96,14 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     .filter(isFinishedStory)
     .slice(0, MAX_STORIES)
     .map((s) => ({ id: s.id, draftWrittenAt: s.content.draft!.writtenAt }));
-  // Your pitch: About me for this job, resume bullets, questions to ask.
+  // "How do you use AI in your work?": answered once, then shaped for this job.
+  const aiQuestion = getToughQuestion(AI_ANSWER_ID)!;
+  const aiStory = stories.find((s) => s.storyType === toughStoryType(AI_ANSWER_ID));
+  const aiReady = Boolean(aiStory && missingPrompts(aiQuestion, aiStory.content.answers).length === 0);
+  // Your pitch: About me for this job, how you use AI, resume bullets, questions to ask.
   const pitchDone = [
     intro?.content.tailored?.[job.id]?.draft,
+    aiStory?.content.tough?.forJobs?.[job.id],
     job.resumeBullets,
     job.questionsToAsk?.questions.length,
   ].filter(Boolean).length;
@@ -122,7 +130,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             label: "Interviews",
             note: String(interviews.length),
           },
-          { id: "pitch", label: "Your pitch", note: `${pitchDone} of 3` },
+          { id: "pitch", label: "Your pitch", note: `${pitchDone} of 4` },
         ]}
       />
 
@@ -285,7 +293,11 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                   Most likely first. Each one points to the story that answers it, or the one to
                   build.
                 </p>
-                <QuestionList questions={job.likelyQuestions.questions} stories={stories} />
+                <QuestionList
+                  questions={job.likelyQuestions.questions}
+                  stories={stories}
+                  aiAnswerHref="#ai-answer"
+                />
               </>
             ) : (
               <p className="mb-4 text-slate-600">
@@ -531,6 +543,53 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </Link>
               . Then come back here to shape it for this job.
             </p>
+          )}
+        </section>
+        <section
+          id="ai-answer"
+          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+        >
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+            How you use AI, for {job.company || "this job"}
+          </h2>
+          <p className="mb-4 text-sm text-slate-600">
+            &ldquo;How do you use AI in your work?&rdquo; now comes up in almost every interview.
+            Interviewers listen for judgment: what you use it for, one real example, how you check
+            its work, and where you keep it out. About a minute.
+          </p>
+          {aiStory && aiReady ? (
+            <AiAnswerPanel
+              jobId={job.id}
+              company={job.company || "this company"}
+              storyId={aiStory.id}
+              initialContent={aiStory.content}
+            />
+          ) : aiStory ? (
+            <p className="text-slate-600">
+              First, finish the questions about how you really use AI in{" "}
+              <Link
+                href={`/tough-questions/${aiStory.id}`}
+                className="font-semibold text-ink-800 underline"
+              >
+                How do you use AI in your work?
+              </Link>
+              . Then come back here to shape it for this job.
+            </p>
+          ) : (
+            <form action={startTough} className="flex flex-col items-start gap-3">
+              <p className="text-slate-600">
+                First, answer a few short questions about how you really use AI: your tools, one
+                example, and how you check its work. Then come back here to shape it for this job.
+              </p>
+              <input type="hidden" name="question" value={AI_ANSWER_ID} />
+              <input type="hidden" name="jobId" value={job.id} />
+              <PendingButton
+                pendingText="Opening…"
+                className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+              >
+                Answer the questions →
+              </PendingButton>
+            </form>
           )}
         </section>
         <section

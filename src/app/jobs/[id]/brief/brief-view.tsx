@@ -173,7 +173,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
           className={`grid gap-4 print:gap-3 ${brief.tough.length > 0 ? "print:grid-cols-2" : ""}`}
         >
           {brief.tough.length > 0 && (
-            <Section title="Tough questions" testId="brief-tough">
+            <Section title="Short answers" testId="brief-tough">
               <ul className="space-y-3">
                 {brief.tough.map((t) => (
                   <li key={t.id}>

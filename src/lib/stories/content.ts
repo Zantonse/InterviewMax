@@ -127,6 +127,20 @@ export type ToughMeta = {
   // The latest follow-up drill on the answer: a practice item, read with toughDrill()
   // (src/lib/tough/drill.ts). Kept as stored here so this file doesn't depend on practice mode.
   drill?: unknown;
+  // "How do you use AI in your work?" only: the answer shaped for each target job, by job id, on
+  // that job's page. The general answer stays in draft.parts.answer.
+  forJobs?: Record<string, ToughJobAnswer>;
+};
+
+export type ToughJobAnswer = {
+  answer: string;
+  note: string;
+  // Numbers in the answer that aren't in the user's own answers. Should be empty.
+  untracedNumbers: string[];
+  // Set once the user has edited it; their words, so its numbers count as theirs.
+  edited?: boolean;
+  model: string;
+  writtenAt: string;
 };
 
 export type StoryContent = {
@@ -395,6 +409,8 @@ export function parseContent(raw: unknown): StoryContent {
       ...(raw.tough.edited === true ? { edited: true } : {}),
       ...(isRecord(raw.tough.drill) ? { drill: raw.tough.drill } : {}),
     };
+    const forJobs = parseToughJobAnswers(raw.tough.forJobs);
+    if (forJobs) content.tough.forJobs = forJobs;
   }
 
   const grade = parseStoredGrade(raw.grade);
@@ -419,4 +435,23 @@ function stringEntries(record: Record<string, unknown>): Record<string, string> 
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseToughJobAnswers(raw: unknown): Record<string, ToughJobAnswer> | undefined {
+  if (!isRecord(raw)) return undefined;
+  const out: Record<string, ToughJobAnswer> = {};
+  for (const [jobId, value] of Object.entries(raw)) {
+    if (!isRecord(value) || typeof value.answer !== "string" || !value.answer.trim()) continue;
+    out[jobId] = {
+      answer: value.answer,
+      note: typeof value.note === "string" ? value.note : "",
+      untracedNumbers: Array.isArray(value.untracedNumbers)
+        ? value.untracedNumbers.filter((n): n is string => typeof n === "string")
+        : [],
+      ...(value.edited === true ? { edited: true } : {}),
+      model: typeof value.model === "string" ? value.model : "",
+      writtenAt: typeof value.writtenAt === "string" ? value.writtenAt : "",
+    };
+  }
+  return Object.keys(out).length ? out : undefined;
 }

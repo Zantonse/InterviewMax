@@ -20,9 +20,64 @@ export type ToughQuestion = {
   prompts: readonly ToughPrompt[];
   // What a good answer does for this question, given to the writer and shown on the page.
   approach: string;
+  // Spoken length in words, when it isn't the usual 20 to 40 seconds (TOUGH_LENGTH).
+  length?: { min: number; max: number };
+  // Shown above the questions in place of the usual "tell me what really happened".
+  coachNote?: string;
+  // Shown under the written answer in place of the usual "say it, then stop talking".
+  sayTip?: string;
 };
 
 export const TOUGH_QUESTIONS = [
+  {
+    // "How do you use AI in your work?" (Craig, Oct 31: asked in every interview now). Not a
+    // dreaded question like the others, but the same shape: a few plain questions about what the
+    // user really does, then one short answer, about a minute, that can be shaped for each target
+    // job on its page. The "a time you used AI" STAR story (story type ai_use) is the long version.
+    id: "ai_at_work",
+    label: "How do you use AI in your work?",
+    blurb: "Asked in most interviews now. Your tools, one real example, and how you check its work.",
+    approach:
+      "What you use AI for day to day, one real example and what it changed, how you check what it gives you, and where you keep it out.",
+    length: { min: 110, max: 170 },
+    coachNote:
+      "Tell me what you really do with AI, in plain words. Interviewers listen for judgment, not hype, so a modest, specific answer beats a big claim. Only what you write here goes into your answer.",
+    sayTip:
+      "Say it out loud a few times until you can do it without reading. Expect a follow-up like \"How do you know it's right?\" or \"Where wouldn't you use it?\", and answer it with one specific.",
+    prompts: [
+      {
+        id: "tools",
+        text: "Which AI tools do you use at work, and for what kinds of tasks?",
+        hint: "For example: ChatGPT or Claude for first drafts, Copilot for code, AI notes for meetings, an AI feature in your CRM. Rarely or not yet is a fine answer too.",
+      },
+      {
+        id: "example",
+        text: "Tell me about one recent time it helped. What was the task, what did the AI do, and what did you do yourself?",
+      },
+      {
+        id: "check",
+        text: "How do you check what it gives you before you use it? Has it ever got something wrong that you caught?",
+        hint: "Facts, numbers, sources, code, tone, anything private you keep out of it.",
+      },
+      {
+        id: "impact",
+        text: "What has it changed for you? A rough number is fine.",
+        optional: true,
+        hint: "Hours saved a week, faster turnaround, work you can now take on. Only figures you give here go in the answer.",
+      },
+      {
+        id: "limits",
+        text: "Where do you choose not to use it, or what rules do you follow with it?",
+        optional: true,
+        hint: "Customer data, final decisions, anything that needs your judgment or your company's policy.",
+      },
+      {
+        id: "others",
+        text: "Have you helped others use it? A prompt library, a workflow, a tool, training your team?",
+        optional: true,
+      },
+    ],
+  },
   {
     id: "why_leaving",
     label: "Why are you leaving?",
@@ -206,6 +261,9 @@ export const TOUGH_QUESTIONS = [
 
 export type ToughQuestionId = (typeof TOUGH_QUESTIONS)[number]["id"];
 
+// "How do you use AI in your work?": the one tough answer that is also shaped for each target job.
+export const AI_ANSWER_ID = "ai_at_work" satisfies ToughQuestionId;
+
 const TYPE_PREFIX = "tough_";
 
 export function toughStoryType(id: ToughQuestionId): string {
@@ -229,6 +287,11 @@ export function getToughQuestion(
 // a number you're targeting?" is the salary question). Used on past interviews, where these come
 // back as "other" questions with no story to link to. Checked in order: most specific first.
 const ASKED_AS: { id: ToughQuestionId; pattern: RegExp }[] = [
+  {
+    id: "ai_at_work",
+    pattern:
+      /\b(?:how (?:do|would|are) you (?:use|using|leverage|leveraging|approach) (?:AI|gen(?:erative)? ?AI|LLMs?|ChatGPT|AI tools)|(?:what|which) AI tools do you use|your (?:use of|approach to) AI)\b/i,
+  },
   { id: "let_go", pattern: /\b(?:laid off|layoffs?|let go|were you fired)\b/i },
   { id: "gap", pattern: /\b(?:gap in|gap on your|employment gap|since you left|time off between)\b/i },
   {
@@ -262,8 +325,18 @@ export function missingPrompts(question: ToughQuestion, answers: Record<string, 
 }
 
 // 20 to 40 seconds spoken, at about 150 words a minute. The max is a hard limit: a longer answer is
-// sent back to be cut.
+// sent back to be cut. A question can set its own (see ToughQuestion.length).
 export const TOUGH_LENGTH = { min: 50, max: 100 };
+
+export function toughLength(question: ToughQuestion): { min: number; max: number } {
+  return question.length ?? TOUGH_LENGTH;
+}
+
+// "20 to 40 seconds", from a length in words.
+export function lengthLabel(length: { min: number; max: number }): string {
+  const seconds = (words: number) => Math.round(((words / 150) * 60) / 5) * 5;
+  return `${seconds(length.min)} to ${seconds(length.max)} seconds`;
+}
 
 export const MAX_TOUGH_ANSWER_LENGTH = 2000;
 export const MAX_EDITED_ANSWER_LENGTH = 1200;
@@ -278,7 +351,10 @@ export function speakingSeconds(text: string): number {
 }
 
 // What's wrong with a written answer, as instructions for a rewrite. Empty when it passes.
-export function checkAnswer(answer: { answer: string; untracedNumbers: string[] }): string[] {
+export function checkAnswer(
+  answer: { answer: string; untracedNumbers: string[] },
+  length: { min: number; max: number } = TOUGH_LENGTH,
+): string[] {
   const problems: string[] = [];
   if (answer.untracedNumbers.length > 0) {
     problems.push(
@@ -286,8 +362,8 @@ export function checkAnswer(answer: { answer: string; untracedNumbers: string[] 
     );
   }
   const words = wordCount(answer.answer);
-  if (words > TOUGH_LENGTH.max) {
-    problems.push(`It is ${words} words. Cut it to under ${TOUGH_LENGTH.max}.`);
+  if (words > length.max) {
+    problems.push(`It is ${words} words. Cut it to under ${length.max}.`);
   }
   return problems;
 }

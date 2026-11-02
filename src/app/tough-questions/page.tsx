@@ -21,15 +21,16 @@ export default function ToughQuestionsPage() {
           Tough questions
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          The questions people dread most are often the short ones. Prepare a true, brief answer
-          for each, so you can say it calmly and move on to why you want the role.
+          The questions people dread most are often the short ones, and almost every interview now
+          asks how you use AI. Prepare a true, brief answer for each, so you can say it calmly and
+          move on to why you want the role.
         </p>
         <PageGuide
           id="tough-questions"
           steps={[
             "Pick a question you're worried about.",
             "Tell me what really happened, in plain words. Only what you say goes in the answer.",
-            "Get a 20 to 40 second answer to edit and say out loud. It's saved with your stories.",
+            "Get a short answer to edit and say out loud, 20 to 40 seconds (about a minute for AI). It's saved with your stories.",
           ]}
         />
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>

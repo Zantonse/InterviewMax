@@ -4,11 +4,15 @@ import { useState, useTransition } from "react";
 import { MicButton } from "@/components/mic-button";
 import type { StoryContent } from "@/lib/stories/content";
 import {
+  AI_ANSWER_ID,
   MAX_EDITED_ANSWER_LENGTH,
   MAX_TOUGH_ANSWER_LENGTH,
   TOUGH_QUESTIONS,
+  type ToughQuestion,
+  lengthLabel,
   missingPrompts,
   speakingSeconds,
+  toughLength,
   wordCount,
 } from "@/lib/tough/questions";
 import { appendSpoken } from "@/lib/voice/text";
@@ -28,7 +32,7 @@ export function ToughCoach({
   initialContent: StoryContent;
   jobs: { id: string; label: string }[];
 }) {
-  const question = TOUGH_QUESTIONS.find((q) => q.id === questionId)!;
+  const question: ToughQuestion = TOUGH_QUESTIONS.find((q) => q.id === questionId)!;
   const [content, setContent] = useState(initialContent);
   const [answers, setAnswers] = useState<Record<string, string>>(initialContent.answers);
   const [jobId, setJobId] = useState<string>(
@@ -72,8 +76,8 @@ export function ToughCoach({
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{question.label}</h1>
         <p className="mt-1 text-slate-600">{question.approach}</p>
         <p className="mt-3 rounded-xl bg-ink-50 p-3 text-sm text-ink-900">
-          Tell me what really happened. I&apos;ll never suggest hiding or bending a fact, and only
-          what you write here goes into your answer.
+          {question.coachNote ??
+            "Tell me what really happened. I'll never suggest hiding or bending a fact, and only what you write here goes into your answer."}
         </p>
 
         <div className="mt-5 space-y-5">
@@ -124,6 +128,8 @@ export function ToughCoach({
               </label>
               <p className="mt-0.5 text-sm text-slate-500">
                 The answer ends by turning toward that role.
+                {question.id === AI_ANSWER_ID &&
+                  " You can also write a version for each job from its page, under Your pitch."}
               </p>
               <select
                 id="tough-job"
@@ -190,8 +196,8 @@ export function ToughCoach({
         <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">Your answer</h2>
         {!draft ? (
           <p className="mt-2 text-slate-600">
-            Once you&apos;ve answered the questions, your 20 to 40 second answer appears here, ready
-            to edit and say out loud.
+            Once you&apos;ve answered the questions, your answer appears here, about{" "}
+            {lengthLabel(toughLength(question))} out loud, ready to edit and practice.
           </p>
         ) : (
           <>
@@ -230,8 +236,8 @@ export function ToughCoach({
               </div>
             )}
             <p className="mt-4 text-sm text-slate-600">
-              Say it out loud a few times until you can do it without reading. Then stop talking:
-              a short, calm answer tells them the topic is closed.
+              {question.sayTip ??
+                "Say it out loud a few times until you can do it without reading. Then stop talking: a short, calm answer tells them the topic is closed."}
             </p>
             <ToughDrill
               storyId={storyId}

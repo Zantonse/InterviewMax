@@ -11,12 +11,18 @@ import {
   TAILORED_PARTS,
   getStoryType,
 } from "@/lib/stories/story-types";
-import { getToughQuestion, isToughType, storyHref } from "@/lib/tough/questions";
+import {
+  AI_ANSWER_ID,
+  getToughQuestion,
+  isToughType,
+  storyHref,
+  toughStoryType,
+} from "@/lib/tough/questions";
 
 // The pre-interview brief (PRD v0.3, P0): one page per target job to read just before walking in,
 // and the one-minute warm-up at its top. Assembled in code from what the user already has (About
 // me for this job, likely questions and the stories that answer them, their numbers, their tough
-// answers). No model call, so every line on it comes from their own data.
+// answers, including how they use AI). No model call, so every line on it comes from their own data.
 
 // Likely questions shown on the brief; the warm-up takes the top few.
 export const BRIEF_QUESTIONS = 8;
@@ -113,7 +119,7 @@ export function buildBrief(input: {
     moreQuestions: Math.max(0, all.length - questions.length),
     numbers: keyNumbers(input.numbers, usedTypes),
     gaps: questions.filter((q) => !q.story?.drafted),
-    tough: toughAnswers(stories),
+    tough: toughAnswers(stories, job.id),
     ask: askFor(job.questionsToAsk?.questions ?? []),
   };
 }
@@ -217,17 +223,25 @@ function keyNumbers(checklist: NumbersChecklist | null, usedTypes: Set<string>):
   return [...filled.filter((n) => n.fits), ...filled.filter((n) => !n.fits)].map((n) => n.number);
 }
 
-// Written tough answers (why you're leaving, a gap, salary…), one per question, latest first.
-function toughAnswers(stories: StoryLike[]): BriefTough[] {
+// Written tough answers (why you're leaving, a gap, salary…), one per question, latest first. How
+// you use AI comes first, in the version shaped for this job when there is one.
+function toughAnswers(stories: StoryLike[], jobId: string): BriefTough[] {
   const seen = new Set<string>();
-  return stories.flatMap((s) => {
+  const answers = stories.flatMap((s) => {
     if (!isToughType(s.storyType) || seen.has(s.storyType!)) return [];
-    const answer = s.content.draft?.parts.answer?.trim();
+    const forJob = s.content.tough?.forJobs?.[jobId]?.answer.trim();
+    const answer = forJob || s.content.draft?.parts.answer?.trim();
     const question = getToughQuestion(s.storyType);
     if (!answer || !question) return [];
     seen.add(s.storyType!);
-    return [{ id: s.id, question: question.label, answer, href: storyHref(s) }];
+    const href = forJob ? `/jobs/${jobId}#ai-answer` : storyHref(s);
+    return [{ id: s.id, question: question.label, answer, href }];
   });
+  const ai = toughStoryType(AI_ANSWER_ID);
+  return [
+    ...answers.filter((t) => stories.find((s) => s.id === t.id)?.storyType === ai),
+    ...answers.filter((t) => stories.find((s) => s.id === t.id)?.storyType !== ai),
+  ];
 }
 
 // The saved questions to ask, by audience, and how many suggestions are still unsaved.
