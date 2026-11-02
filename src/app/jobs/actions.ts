@@ -16,8 +16,10 @@ import {
 } from "@/lib/jobs/content";
 import {
   deleteJob,
+  getJob,
   insertJob,
   listJobs,
+  saveJobRoles,
   saveJobQuestions,
   saveJobsPrep,
   setInterviewDate,
@@ -30,6 +32,7 @@ import {
   openJobs,
   parseRound,
 } from "@/lib/jobs/outcome";
+import { MAX_OTHER_ROLES, swapMainRole } from "@/lib/jobs/roles";
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
@@ -117,6 +120,11 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
     };
   }
 
+  const attachTo = formData.get("attachTo");
+  if (typeof attachTo === "string" && attachTo) {
+    return addRole(attachTo, { title, level: formData.get("level"), description });
+  }
+
   let id: string;
   try {
     if (openJobs(await listJobs()).length >= MAX_JOBS) {
@@ -145,6 +153,74 @@ export async function addJob(_prev: FormState, formData: FormData): Promise<Form
   // Both are model calls; run side by side to keep the wait to one.
   await Promise.all([readAfterChange(), predictAfterAdd(id)]);
   redirect(`/jobs/${id}`);
+}
+
+// Adds a posting as another role of an existing job (same company, one interview process). It
+// takes no job slot. If the job already has likely questions, they're predicted again with the
+// new role in view; a failure there keeps the role.
+async function addRole(
+  jobId: string,
+  input: { title: string; level: FormDataEntryValue | null; description: string },
+): Promise<FormState> {
+  try {
+    const job = await getJob(jobId);
+    if (!job) return { error: "That job is gone. Add this one as its own job instead." };
+    if (job.otherRoles.length >= MAX_OTHER_ROLES) {
+      return {
+        error: `A job can hold up to ${MAX_OTHER_ROLES + 1} roles. Remove one from the job page to add another.`,
+      };
+    }
+    await saveJobRoles(job.id, {
+      otherRoles: [
+        ...job.otherRoles,
+        {
+          id: crypto.randomUUID(),
+          title: input.title,
+          level: isLevel(input.level) ? input.level : suggestLevel(input.title),
+          levelConfirmed: isLevel(input.level),
+          description: input.description,
+          addedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    await trackEvent("job_role_added");
+    if (job.likelyQuestions) await predictAfterAdd(job.id);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Target jobs: adding a role failed", err);
+    return { error: err instanceof Error ? err.message : "The role couldn't be added. Try again." };
+  }
+  redirect(`/jobs/${jobId}#roles`);
+}
+
+// Makes another role the main one, the one the prep aims at. The jobs are read again and the
+// questions predicted again for the new main role (both model calls; the swap is kept either way).
+export async function makeMainRole(formData: FormData): Promise<void> {
+  const job = await getJob(String(formData.get("jobId") ?? ""));
+  if (!job) return;
+  const next = swapMainRole(job, String(formData.get("roleId") ?? ""));
+  if (!next) return;
+  await saveJobRoles(job.id, {
+    otherRoles: next.otherRoles,
+    main: {
+      title: next.title,
+      level: next.level,
+      levelConfirmed: next.levelConfirmed,
+      description: next.description,
+    },
+  });
+  await Promise.all([readAfterChange(), job.likelyQuestions ? predictAfterAdd(job.id) : null]);
+  refresh();
+}
+
+export async function removeJobRole(formData: FormData): Promise<void> {
+  const job = await getJob(String(formData.get("jobId") ?? ""));
+  if (!job) return;
+  const roleId = String(formData.get("roleId") ?? "");
+  const otherRoles = job.otherRoles.filter((r) => r.id !== roleId);
+  if (otherRoles.length === job.otherRoles.length) return;
+  await saveJobRoles(job.id, { otherRoles });
+  refresh();
 }
 
 async function predictAfterAdd(jobId: string): Promise<void> {
@@ -200,6 +276,7 @@ export async function saveJobOutcome(formData: FormData): Promise<void> {
     roundReached: parseRound(formData.get("round")),
     roundName: clean(formData.get("roundName")).slice(0, MAX_ROUND_NAME_LENGTH),
     finishedOn: isDate(finished) ? finished : null,
+    offeredRole: clean(formData.get("offeredRole")).slice(0, MAX_TITLE_LENGTH),
   });
   if (wasOpen) await trackEvent("job_finished");
   refresh();

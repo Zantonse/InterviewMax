@@ -42,8 +42,12 @@ export function outcomeSummary(o: {
   outcome: string | null;
   roundReached: number | null;
   roundName: string;
+  // Which role it was for, when the job held several ("Offer · Solutions Engineer, Strategic").
+  offeredRole?: string;
 }): string {
-  const short = OUTCOMES.find((x) => x.id === o.outcome)?.short ?? "Finished";
+  const role = o.offeredRole?.trim();
+  const short =
+    (OUTCOMES.find((x) => x.id === o.outcome)?.short ?? "Finished") + (role ? ` · ${role}` : "");
   const name = o.roundName.trim();
   if (o.roundReached) return `${short} · reached round ${o.roundReached}${name ? ` (${name})` : ""}`;
   return name ? `${short} · reached ${name}` : short;

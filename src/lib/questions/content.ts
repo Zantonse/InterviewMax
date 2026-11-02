@@ -19,6 +19,9 @@ export type LikelyQuestion = {
   source: QuestionSource;
   // True when it comes from something only this job asks for.
   specific: boolean;
+  // When the job holds several roles at one company: the title of the one role this question is
+  // only for. Absent when it applies to all of them.
+  role?: string;
 };
 
 export type LikelyQuestions = {
@@ -53,6 +56,7 @@ export function parseQuestionList(raw: unknown): LikelyQuestion[] {
       why: typeof q.why === "string" ? q.why.trim().slice(0, 200) : "",
       source,
       specific: q.specific === true,
+      ...(typeof q.role === "string" && q.role.trim() ? { role: q.role.trim().slice(0, 200) } : {}),
     });
     if (result.length >= MAX_QUESTIONS) break;
   }

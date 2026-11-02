@@ -26,28 +26,45 @@ Rules:
 - why is a few words on why it's likely, pointing at the posting or report (e.g. "posting leads with partner enablement").
 - Every question is behavioral (about the candidate's past experience or how they work), one question each, in plain spoken English.
 - Don't invent facts about the company that the posting or reports don't state.
+- If other roles at the same company are listed, the candidate is in one interview process for all of them and is aiming for the main role (the job above). Rank and word the questions for the main role's level, and include one question that tests what the main role asks for beyond the others (the bigger scope, customers or experience its posting names). role is the exact title of the one role a question is only for; leave it out when the question applies to all of them, which is most of the time.
 
 Reply with JSON only, no other text:
-{"questions": [{"question": "…", "theme": "one of ${QUESTION_THEMES.map((t) => t.id).join(", ")}", "why": "…", "source": "common|posting|report|transcript", "specific": false}]}`;
+{"questions": [{"question": "…", "theme": "one of ${QUESTION_THEMES.map((t) => t.id).join(", ")}", "why": "…", "source": "common|posting|report|transcript", "specific": false, "role": "only when it's for one role"}]}`;
 
 export function likelyQuestionsMessages(input: {
   job: { title: string; company: string | null; level: string | null; description: string };
+  // Other roles at the same company in this job, with the lines of their postings that differ
+  // from the main one (the rest is the same text).
+  otherRoles?: { title: string; level: string | null; differs: string[] }[];
   otherJobs: { title: string; company: string | null }[];
   shared: string[];
   reports: string;
   // Questions the user was asked in their own past interviews, from their transcripts.
   past?: { thisJob: string[]; elsewhere: string[] };
 }): ChatMessage[] {
-  const { job, otherJobs, shared, reports, past } = input;
+  const { job, otherRoles = [], otherJobs, shared, reports, past } = input;
   const level = levelLabel(job.level);
   const lines = [
     `## The job: ${job.title}${job.company ? ` at ${job.company}` : ""}${level ? ` (${level})` : ""}`,
     job.description.trim(),
     "",
+  ];
+  if (otherRoles.length > 0) {
+    lines.push(
+      `## Other roles at ${job.company || "this company"} I'm also being considered for\nThe job above is my main role, the one I'm aiming for. These are in the same process; their postings match the main one except for these lines.`,
+      ...otherRoles.map((r) => {
+        const level = levelLabel(r.level);
+        const differs = r.differs.length ? r.differs.map((d) => `  - ${d}`).join("\n") : "  - (same posting)";
+        return `- ${r.title}${level ? ` (${level})` : ""}\n${differs}`;
+      }),
+      "",
+    );
+  }
+  lines.push(
     otherJobs.length > 0
       ? `## My other target jobs\n${otherJobs.map((j) => `- ${j.title}${j.company ? ` at ${j.company}` : ""}`).join("\n")}`
       : "This is my only target job.",
-  ];
+  );
   if (shared.length > 0) {
     lines.push("", `## What my target jobs share\n${shared.map((s) => `- ${s}`).join("\n")}`);
   }
@@ -78,12 +95,17 @@ export function parseLikelyQuestionsReply(
     hasOtherJobs,
     hasReports,
     hasPastForJob = false,
-  }: { hasOtherJobs: boolean; hasReports: boolean; hasPastForJob?: boolean },
+    roles = [],
+  }: { hasOtherJobs: boolean; hasReports: boolean; hasPastForJob?: boolean; roles?: string[] },
 ): LikelyQuestion[] {
+  // A role tag only means something when the job holds several roles, and only for one of them.
+  const roleTitle = (role: string | undefined) =>
+    roles.length > 1 ? roles.find((r) => r.toLowerCase() === role?.toLowerCase()) : undefined;
   const json = extractJson(text);
   if (!isRecord(json)) throw new Error("The questions came back in an unexpected format.");
-  const questions = parseQuestionList(json.questions).map((q) => ({
+  const questions = parseQuestionList(json.questions).map(({ role, ...q }) => ({
     ...q,
+    ...(roleTitle(role) ? { role: roleTitle(role) } : {}),
     specific: hasOtherJobs && q.specific,
     // Without reports or transcripts for this job, nothing can have come from one.
     source:

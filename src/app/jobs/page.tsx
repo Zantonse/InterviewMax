@@ -116,6 +116,11 @@ async function JobsContent() {
                       {!job.levelConfirmed && " · confirm"}
                     </span>
                   </span>
+                  {job.otherRoles.length > 0 && (
+                    <span className="mt-1 block text-sm text-slate-600">
+                      Also up for: {job.otherRoles.map((r) => r.title).join(" · ")}
+                    </span>
+                  )}
                   {job.outcome && (
                     <span
                       className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${

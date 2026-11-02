@@ -24,6 +24,8 @@ import { progress } from "@/lib/curriculum/content";
 import { removeJob } from "../actions";
 import { InterviewDateForm, JobOutcomeForm, LevelForm, PendingButton, PredictForm } from "../forms";
 import { outcomeSummary } from "@/lib/jobs/outcome";
+import { roleTitles } from "@/lib/jobs/roles";
+import { RolesCard } from "./roles-card";
 import { AI_ANSWER_ID, getToughQuestion, missingPrompts, toughStoryType } from "@/lib/tough/questions";
 import { startTough } from "../../tough-questions/actions";
 import { AiAnswerPanel } from "./ai-answer-panel";
@@ -115,6 +117,14 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         {job.title}
         {job.company && <span className="font-bold text-slate-500"> at {job.company}</span>}
       </h1>
+      {job.otherRoles.length > 0 && (
+        <p className="mt-1 text-sm text-slate-600" data-testid="job-other-roles">
+          Also up for: {job.otherRoles.map((r) => r.title).join(" · ")}.{" "}
+          <a href="#roles" className="font-semibold text-ink-800 hover:underline">
+            How the roles differ
+          </a>
+        </p>
+      )}
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
       <StepStrip label={`Your prep for ${job.title}`} steps={steps} />
       <JobTabs
@@ -177,6 +187,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               {read.differs && <p className="mt-4 text-sm text-slate-500">{read.differs}</p>}
             </section>
           )}
+          {job.otherRoles.length > 0 && <RolesCard job={job} />}
           {!read && (
             <section className="rounded-3xl bg-amber-50 p-6 ring-1 ring-black/5">
               <p className="text-slate-700">
@@ -223,6 +234,23 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               The level sets how senior your stories need to sound and which tier to aim for.
             </p>
             <LevelForm jobId={job.id} level={job.level} confirmed={job.levelConfirmed} />
+            {job.otherRoles.length === 0 && !job.outcome && (
+              <p className="mt-4 text-sm text-slate-600" data-testid="add-role-link">
+                Up for more than one role{job.company ? ` at ${job.company}` : " here"}?{" "}
+                <Link
+                  href={`/jobs/new?to=${job.id}`}
+                  className="font-semibold text-ink-800 hover:underline"
+                >
+                  Add a role
+                </Link>{" "}
+                to prep for them together, aimed at the highest.
+              </p>
+            )}
+            {job.otherRoles.length > 0 && (
+              <p className="mt-4 text-sm text-slate-600">
+                This is the level of your main role, {job.title}.
+              </p>
+            )}
           </section>
           {canUseCurriculum(user.email) && (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
@@ -458,12 +486,14 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           )}
           <JobOutcomeForm
             // A saved change remounts the form, so it closes back to the summary.
-            key={`${job.outcome}-${job.roundReached}-${job.roundName}-${job.finishedOn}`}
+            key={`${job.outcome}-${job.roundReached}-${job.roundName}-${job.finishedOn}-${job.offeredRole}`}
             jobId={job.id}
             outcome={job.outcome}
             roundReached={job.roundReached}
             roundName={job.roundName}
             finishedOn={job.finishedOn}
+            roles={job.otherRoles.length > 0 ? roleTitles(job) : []}
+            offeredRole={job.offeredRole}
           />
         </section>
         <InterviewTimeline
