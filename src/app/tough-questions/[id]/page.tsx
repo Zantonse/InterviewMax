@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app-header";
 import { DeleteStoryButton } from "@/components/delete-story-button";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { getStory } from "@/lib/stories/data";
-import { getToughQuestion } from "@/lib/tough/questions";
+import { AI_ANSWER_ID, getToughQuestion } from "@/lib/tough/questions";
 import { ToughCoach } from "./coach";
 
 export const metadata: Metadata = { title: "Tough question · InterviewMax" };
@@ -37,8 +37,19 @@ async function ToughLoader({ params }: { params: PageProps<"/tough-questions/[id
   const question = getToughQuestion(story.storyType);
   if (!question) redirect(`/stories/${story.id}`);
   const jobs = await listJobs().catch(() => [] as TargetJob[]);
+  // The AI answer is shaped for each job on the job's page, so lead back there.
+  const backTo =
+    question.id === AI_ANSWER_ID ? jobs.find((j) => j.id === story.content.tough?.jobId) : undefined;
   return (
     <>
+      {backTo && (
+        <Link
+          href={`/jobs/${backTo.id}#ai-answer`}
+          className="mt-2 block text-sm font-medium text-ink-800 hover:underline"
+        >
+          ← Back to {backTo.company || backTo.title}, to shape it for that job
+        </Link>
+      )}
       <ToughCoach
         storyId={story.id}
         questionId={question.id}

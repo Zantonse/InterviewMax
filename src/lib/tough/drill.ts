@@ -16,7 +16,8 @@ export function toughDrill(content: StoryContent): PracticeItem | null {
 export function newToughDrill(question: ToughQuestion): PracticeItem {
   return {
     question: question.label,
-    theme: "tough",
+    // A question with its own length is timed against it (see targetWords in practice).
+    theme: question.length ? `tough:${question.id}` : "tough",
     // Not shown for a drill: there is no round to rank it in.
     reason: "good_enough",
     turns: [{ question: question.label }],

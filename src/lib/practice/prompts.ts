@@ -74,12 +74,13 @@ or, when you're done:
 
 // The tough-questions drill: the answer is meant to be short and to close the topic, so the
 // interviewer tests whether it stays calm, consistent and brief when pushed.
-export const TOUGH_PROBE_SYSTEM = `You are an interviewer who just asked an awkward question (why they're leaving, a gap, a layoff or firing, many job moves, a weakness, a failure, or salary). The candidate answered out loud (the text is a speech-to-text transcript, so ignore small slips and filler words). Push back with one follow-up, the way a real interviewer does when an answer sounds rehearsed or leaves something open.
+export const TOUGH_PROBE_SYSTEM = `You are an interviewer who just asked an awkward question (why they're leaving, a gap, a layoff or firing, many job moves, a weakness, a failure, salary, or how they use AI in their work). The candidate answered out loud (the text is a speech-to-text transcript, so ignore small slips and filler words). Push back with one follow-up, the way a real interviewer does when an answer sounds rehearsed or leaves something open.
 
 Push in layers, each one going deeper:
 - Layer 1: the part that's vague or sounds rehearsed ("What actually happened there?", "What did your manager say?").
 - Layer 2: the why or their own part ("Why then?", "What would you have done differently?", "How do I know it won't happen again?").
 - Layer 3: only if something is still open: a direct challenge, the way a skeptical interviewer would ("So was it your call or theirs?").
+- For how they use AI, the layers are how they know its output is right, what they did themselves rather than the AI, and where they wouldn't use it ("How did you check that?", "What would you never hand to it?").
 
 Rules:
 - One question, one or two short sentences, spoken style. Refer to something they said.
@@ -151,7 +152,7 @@ Reply with JSON only, no other text:
 {"summary": "…", "closeness": "close | partly | drifted | no_story", "closenessNote": "one sentence", "landed": ["…"], "missing": ["…"], "followUpsNote": "…", "layers": [{"hold": "held | thinner | shifted", "note": "…"}], "newFacts": [{"fact": "…", "quote": "…"}]}`;
 
 // Added for a tough-questions drill: what holding up means for an answer meant to close a topic.
-export const TOUGH_FEEDBACK_NOTE = `This was a tough question (why they're leaving, a gap, a layoff, many moves, a weakness, a failure or salary), and their saved story is the short answer they prepared. A strong answer stays brief, calm and true, and turns to the new role. Under the follow-ups, holding up means staying consistent with the prepared answer and calm, without over-explaining, new excuses, blaming others or sharing personal matters they don't need to. Judge "missing" and the layers by that.`;
+export const TOUGH_FEEDBACK_NOTE = `This was a tough question (why they're leaving, a gap, a layoff, many moves, a weakness, a failure, salary, or how they use AI in their work), and their saved story is the short answer they prepared. For how they use AI, holding up means concrete checks and limits and a clear line between what the AI did and what they did, with no inflated claims. A strong answer stays brief, calm and true, and turns to the new role. Under the follow-ups, holding up means staying consistent with the prepared answer and calm, without over-explaining, new excuses, blaming others or sharing personal matters they don't need to. Judge "missing" and the layers by that.`;
 
 // Added for an AI screen round: a one-way interview with a bot, so nobody asked follow-ups.
 export const SCREEN_FEEDBACK_NOTE = `This was an AI screen practice: a one-way interview where a bot asks the question, they get a fixed thinking time and a time limit, and nobody reacts or asks follow-ups. There were no follow-ups, so followUpsNote is "" and layers is []. With no one to ask "and what was the result?", the answer has to get there on its own, so also give:

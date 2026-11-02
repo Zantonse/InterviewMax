@@ -28,6 +28,7 @@ export const USAGE_EVENTS = [
   "tough_drill_started",
   "curriculum_made",
   "job_finished",
+  "ai_answer_for_job",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
@@ -59,6 +60,7 @@ export const EVENT_LABELS: Record<UsageEvent, string> = {
   tough_drill_started: "Drilled a tough question",
   curriculum_made: "Got a job curriculum",
   job_finished: "Marked a job's interviews finished",
+  ai_answer_for_job: "Wrote How I use AI for a job",
 };
 
 export function isUsageEvent(value: unknown): value is UsageEvent {

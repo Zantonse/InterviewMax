@@ -4,7 +4,7 @@ import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import { countWords } from "@/lib/stories/grading";
 import { findNumbers, untracedNumbers } from "@/lib/stories/numbers";
 import { INTRO_LENGTH, STAR_LENGTH } from "@/lib/stories/story-types";
-import { TOUGH_LENGTH } from "@/lib/tough/questions";
+import { TOUGH_LENGTH, getToughQuestion, toughLength } from "@/lib/tough/questions";
 import { type Delivery, parseDelivery } from "./delivery";
 
 // Practice mode (PRD v0.3, P0): the user answers a target job's likely questions out loud, a
@@ -327,9 +327,14 @@ export function followUpCount(item: { turns: PracticeTurn[] }): number {
 
 // The spoken length that suits a question, in words: about a minute for "Tell me about yourself",
 // about two minutes for a behavioral story (see story-types.ts), 20 to 40 seconds for a tough
-// question (theme "tough", the tough-questions coach's drill).
+// question (theme "tough", the tough-questions coach's drill; "tough:<id>" for one with its own
+// length, such as how you use AI).
 export function targetWords(theme: string): { min: number; max: number } {
   if (theme === "tough") return TOUGH_LENGTH;
+  if (theme.startsWith("tough:")) {
+    const question = getToughQuestion(theme.slice("tough:".length));
+    return question ? toughLength(question) : TOUGH_LENGTH;
+  }
   return theme === "about_you" ? INTRO_LENGTH : STAR_LENGTH;
 }
 

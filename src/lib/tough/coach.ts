@@ -2,7 +2,7 @@ import "server-only";
 import { generateForStep } from "@/lib/ai";
 import { untracedNumbers } from "@/lib/stories/numbers";
 import { type ToughJob, TOUGH_SYSTEM, parseToughReply, toughMessages } from "./prompts";
-import { type ToughQuestion, checkAnswer } from "./questions";
+import { type ToughQuestion, checkAnswer, toughLength } from "./questions";
 
 export type ToughAnswer = {
   answer: string;
@@ -35,7 +35,7 @@ export async function writeToughAnswer(
       untracedNumbers: untracedNumbers(reply.answer, source),
       model: result.model,
     };
-    const problems = checkAnswer(written);
+    const problems = checkAnswer(written, toughLength(question));
     if (!best || problems.length < best.problems) best = { written, problems: problems.length };
     if (problems.length === 0) break;
     fix = problems.join(" ");

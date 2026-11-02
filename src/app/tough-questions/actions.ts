@@ -7,11 +7,13 @@ import { getToughQuestion, toughStoryType } from "@/lib/tough/questions";
 import { trackEvent } from "@/lib/usage/track";
 
 // Starts the coach for one tough question, or opens the answer already started for it: each
-// question has one answer in the bank.
+// question has one answer in the bank. From a job page, the new answer turns toward that job.
 export async function startTough(formData: FormData) {
   const question = getToughQuestion(String(formData.get("question") ?? ""));
   if (!question) redirect("/tough-questions");
   const storyType = toughStoryType(question.id);
+  // Started from a target job's page: the answer turns toward that job.
+  const jobId = String(formData.get("jobId") ?? "").trim();
 
   const existing = (await listStories()).find((s) => s.storyType === storyType);
   if (existing) redirect(`/tough-questions/${existing.id}`);
@@ -20,7 +22,7 @@ export async function startTough(formData: FormData) {
     title: question.label,
     storyType,
     themes: ["tough question"],
-    content: emptyContent(),
+    content: { ...emptyContent(), ...(jobId ? { tough: { jobId } } : {}) },
   });
   await trackEvent("tough_question_started");
   redirect(`/tough-questions/${id}`);
