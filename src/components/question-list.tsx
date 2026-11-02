@@ -38,6 +38,7 @@ export function QuestionList({
                 <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
                   <Tag>{getTheme(q.theme)?.label}</Tag>
                   {q.specific && <Tag tone="accent">Only this job</Tag>}
+                  {q.role && <Tag tone="accent">Only for {q.role}</Tag>}
                   {q.source === "report" && <Tag tone="accent">From an interview report</Tag>}
                   {q.source === "transcript" && <Tag tone="accent">Asked you before</Tag>}
                 </p>

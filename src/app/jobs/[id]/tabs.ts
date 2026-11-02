@@ -7,6 +7,7 @@ export type JobTabId = (typeof JOB_TABS)[number];
 // Every section id that other pages link to (#about-me, #questions...), by the tab that holds it.
 export const SECTION_TAB: Record<string, JobTabId> = {
   level: "overview",
+  roles: "overview",
   focus: "overview",
   posting: "overview",
   questions: "prep",

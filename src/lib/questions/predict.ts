@@ -3,6 +3,7 @@ import { generateForStep } from "@/lib/ai";
 import { getJob, getJobsPrep, listJobs, saveJobQuestions } from "@/lib/jobs/data";
 import { pastQuestionsFor } from "@/lib/transcripts/content";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { differenceText, roleDifference, roleTitles } from "@/lib/jobs/roles";
 import type { LikelyQuestions } from "./content";
 import { LIKELY_QUESTIONS_SYSTEM, likelyQuestionsMessages, parseLikelyQuestionsReply } from "./prompts";
 
@@ -23,6 +24,11 @@ export async function predictQuestions(jobId: string): Promise<LikelyQuestions> 
     system: LIKELY_QUESTIONS_SYSTEM,
     messages: likelyQuestionsMessages({
       job,
+      otherRoles: job.otherRoles.map((r) => ({
+        title: r.title,
+        level: r.level,
+        differs: differenceText(roleDifference(r.description, job.description)),
+      })),
       otherJobs,
       shared: otherJobs.length > 0 ? (overview?.shared ?? []) : [],
       reports,
@@ -37,6 +43,7 @@ export async function predictQuestions(jobId: string): Promise<LikelyQuestions> 
       hasOtherJobs: otherJobs.length > 0,
       hasReports: Boolean(reports.trim()),
       hasPastForJob: past.thisJob.length > 0,
+      roles: roleTitles(job),
     }),
     usedReports: Boolean(reports.trim()),
     ...(usedTranscripts > 0 ? { usedTranscripts } : {}),

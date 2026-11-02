@@ -6,6 +6,8 @@ import { parseCurriculum, type Curriculum } from "@/lib/curriculum/content";
 import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import { isOutcome, type OutcomeId } from "./outcome";
+import { parseOtherRoles, withRoleQuestion, type JobRole } from "./roles";
+import { MAX_QUESTIONS } from "@/lib/questions/content";
 import {
   parseOverview,
   parseResume,
@@ -39,6 +41,11 @@ export type TargetJob = {
   roundReached: number | null;
   roundName: string;
   finishedOn: string | null;
+  // Other roles at the same company in this one job; the job's own title, level and posting are
+  // the main role (see roles.ts).
+  otherRoles: JobRole[];
+  // Which role the outcome was for, when the job holds several roles. Empty when not said.
+  offeredRole: string;
   createdAt: string;
 };
 
@@ -61,13 +68,30 @@ type Row = {
   round_reached: number | null;
   round_name: string | null;
   finished_on: string | null;
+  other_roles: unknown;
+  offered_role: string | null;
   created_at: string;
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, outcome, round_reached, round_name, finished_on, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, outcome, round_reached, round_name, finished_on, other_roles, offered_role, created_at";
 
 function toJob(row: Row): TargetJob {
+  const otherRoles = parseOtherRoles(row.other_roles);
+  const likely = parseLikelyQuestions(row.likely_questions);
+  // Role tags only for roles the job still holds; the "also considering you for" question while
+  // it holds more than one.
+  const titles = new Set([row.title, ...otherRoles.map((r) => r.title)]);
+  const likelyQuestions = likely && {
+    ...likely,
+    questions: withRoleQuestion(
+      likely.questions.map(({ role, ...q }) =>
+        role && otherRoles.length > 0 && titles.has(role) ? { ...q, role } : q,
+      ),
+      otherRoles,
+      MAX_QUESTIONS,
+    ),
+  };
   return {
     id: row.id,
     title: row.title,
@@ -75,7 +99,7 @@ function toJob(row: Row): TargetJob {
     level: row.level,
     levelConfirmed: row.level_confirmed,
     description: row.job_description ?? "",
-    likelyQuestions: parseLikelyQuestions(row.likely_questions),
+    likelyQuestions,
     interviewReports: row.interview_reports ?? "",
     questionsToAsk: parseQuestionsToAsk(row.questions_to_ask),
     resumeBullets: parseResumeSet(row.resume_bullets),
@@ -85,6 +109,8 @@ function toJob(row: Row): TargetJob {
     roundReached: row.round_reached,
     roundName: row.round_name ?? "",
     finishedOn: row.finished_on,
+    otherRoles,
+    offeredRole: row.offered_role ?? "",
     createdAt: row.created_at,
   };
 }
@@ -179,7 +205,13 @@ export async function setInterviewDate(id: string, date: string | null): Promise
 // null reopens it as still in progress.
 export async function setJobOutcome(
   id: string,
-  value: { outcome: OutcomeId; roundReached: number | null; roundName: string; finishedOn: string | null } | null,
+  value: {
+    outcome: OutcomeId;
+    roundReached: number | null;
+    roundName: string;
+    finishedOn: string | null;
+    offeredRole?: string;
+  } | null,
 ): Promise<void> {
   if (!UUID_RE.test(id)) throw new Error("Job not found.");
   await getCurrentUser();
@@ -193,12 +225,42 @@ export async function setJobOutcome(
             round_reached: value.roundReached,
             round_name: value.roundName || null,
             finished_on: value.finishedOn,
+            offered_role: value.offeredRole || null,
           }
-        : { outcome: null, round_reached: null, round_name: null, finished_on: null },
+        : { outcome: null, round_reached: null, round_name: null, finished_on: null, offered_role: null },
     )
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the outcome: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Saves a job's roles: its other roles, and when the main role was swapped, the new main role's
+// title, level and posting.
+export async function saveJobRoles(
+  id: string,
+  patch: {
+    otherRoles: JobRole[];
+    main?: { title: string; level: string | null; levelConfirmed: boolean; description: string };
+  },
+): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({
+      other_roles: patch.otherRoles,
+      ...(patch.main && {
+        title: patch.main.title,
+        level: patch.main.level,
+        level_confirmed: patch.main.levelConfirmed,
+        job_description: patch.main.description,
+      }),
+    })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the roles: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

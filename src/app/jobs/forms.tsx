@@ -52,14 +52,36 @@ const METHODS: { id: Method; label: string }[] = [
   { id: "paste", label: "Paste the text" },
 ];
 
-export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: string }) {
+// A job the posting can be added to as another role (same company, one interview process).
+type RoleTarget = { id: string; title: string; company: string };
+
+function sameCompany(a: string, b: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  return Boolean(norm(a)) && norm(a) === norm(b);
+}
+
+export function AddJobForm({
+  submitLabel = "Add this job",
+  attachTo,
+  jobs = [],
+}: {
+  submitLabel?: string;
+  // Adding another role to this job, from its page.
+  attachTo?: RoleTarget;
+  // Open jobs, to offer adding a posting at the same company as another role of that job.
+  jobs?: RoleTarget[];
+}) {
   const [state, action, pending] = useActionState<FormState, FormData>(addJob, null);
   const [step, setStep] = useState<"find" | "check">("find");
   const [method, setMethod] = useState<Method>("link");
   const [link, setLink] = useState("");
   const [title, setTitle] = useState("");
-  const [company, setCompany] = useState("");
+  const [company, setCompany] = useState(attachTo?.company ?? "");
   const [description, setDescription] = useState("");
+  // When the company matches an open job: add as another role there (true) or as its own job.
+  const [asRole, setAsRole] = useState(true);
+  const match = attachTo ? undefined : jobs.find((j) => sameCompany(j.company, company));
+  const roleOf = attachTo ?? (match && asRole ? match : undefined);
   const [fetchError, setFetchError] = useState<string | null>(null);
   // Where the form was last filled in from, to say so.
   const [fetched, setFetched] = useState<null | Source>(null);
@@ -79,7 +101,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
       }
       // Keep what the user already typed when the source doesn't give it.
       if (result.posting.title) setTitle(result.posting.title);
-      if (result.posting.company) setCompany(result.posting.company);
+      if (result.posting.company && !attachTo) setCompany(result.posting.company);
       setDescription(result.posting.description);
       setFetched(from);
       setStep("check");
@@ -118,7 +140,7 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
           Find the posting
         </WizardStep>
         <WizardStep n={2} current={step === "check"} done={false}>
-          Check it and add the job
+          {attachTo ? "Check it and add the role" : "Check it and add the job"}
         </WizardStep>
       </ol>
 
@@ -278,12 +300,54 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
                 name="company"
                 maxLength={MAX_TITLE_LENGTH}
                 value={company}
+                readOnly={Boolean(attachTo)}
                 onChange={(e) => setCompany(e.target.value)}
                 placeholder="e.g. Acme"
                 className={INPUT}
               />
             </label>
           </div>
+          {roleOf && <input type="hidden" name="attachTo" value={roleOf.id} />}
+          {attachTo && (
+            <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-slate-700" data-testid="add-role-note">
+              This is added as another role in your {attachTo.company || attachTo.title} job.{" "}
+              {attachTo.title} stays the main role your prep aims at; you can switch that later.
+            </p>
+          )}
+          {match && (
+            <fieldset className="rounded-2xl bg-ink-50 px-4 py-3" data-testid="add-as-role">
+              <legend className="sr-only">How to add it</legend>
+              <p className="text-sm font-semibold text-slate-800">
+                You already have a {match.company} job ({match.title}). Is this the same interview
+                process?
+              </p>
+              <div className="mt-2 space-y-2 text-sm text-slate-700">
+                <label className="flex items-start gap-2">
+                  <input
+                    type="radio"
+                    name="asRole"
+                    checked={asRole}
+                    onChange={() => setAsRole(true)}
+                    className="mt-1 accent-ink-800"
+                  />
+                  <span>
+                    <span className="font-semibold">Yes, add it as another role there.</span> One
+                    prep for both, aimed at the main role, and no new job slot.
+                  </span>
+                </label>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="radio"
+                    name="asRole"
+                    checked={!asRole}
+                    onChange={() => setAsRole(false)}
+                    className="mt-1 accent-ink-800"
+                  />
+                  <span>No, it&apos;s a separate target job.</span>
+                </label>
+              </div>
+            </fieldset>
+          )}
           <label
             className="block text-sm font-semibold text-slate-700"
             htmlFor={`${id}-description`}
@@ -317,24 +381,32 @@ export function AddJobForm({ submitLabel = "Add this job" }: { submitLabel?: str
                 ))}
               </select>
             </label>
-            <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-date`}>
-              Interview date <span className="font-normal text-slate-500">(if you have one)</span>
-              <input
-                id={`${id}-date`}
-                type="date"
-                name="interviewDate"
-                className={INPUT}
-                data-testid="add-job-date"
-              />
-            </label>
+            {!roleOf && (
+              <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-date`}>
+                Interview date <span className="font-normal text-slate-500">(if you have one)</span>
+                <input
+                  id={`${id}-date`}
+                  type="date"
+                  name="interviewDate"
+                  className={INPUT}
+                  data-testid="add-job-date"
+                />
+              </label>
+            )}
           </div>
-          <p className="text-xs text-slate-500">
-            With a date, I&apos;ll plan your prep day by day. You can add or change it later.
-          </p>
+          {!roleOf && (
+            <p className="text-xs text-slate-500">
+              With a date, I&apos;ll plan your prep day by day. You can add or change it later.
+            </p>
+          )}
           {state?.error && <ErrorLine>{state.error}</ErrorLine>}
           <div className="flex flex-wrap gap-3">
             <button type="submit" disabled={pending} className={PRIMARY}>
-              {pending ? "Reading the posting and predicting your questions…" : submitLabel}
+              {pending
+                ? "Reading the posting and predicting your questions…"
+                : roleOf
+                  ? "Add this role"
+                  : submitLabel}
             </button>
             <button
               type="button"
@@ -541,12 +613,17 @@ export function JobOutcomeForm({
   roundReached,
   roundName,
   finishedOn,
+  roles = [],
+  offeredRole = "",
 }: {
   jobId: string;
   outcome: string | null;
   roundReached: number | null;
   roundName: string;
   finishedOn: string | null;
+  // The job's role titles, main first, when it holds more than one.
+  roles?: string[];
+  offeredRole?: string;
 }) {
   const id = useId();
   const finished = Boolean(outcome);
@@ -599,6 +676,25 @@ export function JobOutcomeForm({
           ))}
         </div>
       </fieldset>
+      {roles.length > 1 && (
+        <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-role`}>
+          For which role?
+          <select
+            id={`${id}-role`}
+            name="offeredRole"
+            defaultValue={roles.includes(offeredRole) ? offeredRole : ""}
+            className={INPUT}
+            data-testid="job-outcome-role"
+          >
+            <option value="">Not decided</option>
+            {roles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="flex flex-wrap gap-3">
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-round`}>
           Round you reached

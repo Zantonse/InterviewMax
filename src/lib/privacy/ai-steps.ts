@@ -65,7 +65,8 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   likelyQuestions: {
     feature: "Likely questions",
-    sends: "The job posting and any interview reports you pasted",
+    sends:
+      "The job posting (and how the postings of any other roles you added to the job differ from it) and any interview reports you pasted",
   },
   askQuestions: {
     feature: "Questions to ask the interviewer",
