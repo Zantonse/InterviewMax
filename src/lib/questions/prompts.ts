@@ -2,7 +2,14 @@ import type { ChatMessage } from "@/lib/ai/types";
 import { levelLabel } from "@/lib/jobs/content";
 import { extractJson } from "@/lib/stories/prompts";
 import { isRecord } from "@/lib/jobs/content";
-import { MAX_QUESTIONS, parseQuestionList, withAiUseQuestion, type LikelyQuestion } from "./content";
+import {
+  MAX_QUESTIONS,
+  REPORTS_HEADING,
+  REPORTS_HEDGE_RULE,
+  parseQuestionList,
+  withAiUseQuestion,
+  type LikelyQuestion,
+} from "./content";
 import { AI_USE_QUESTION, QUESTION_THEMES } from "./themes";
 
 // The model call in likely questions ("likelyQuestions"): predict the behavioral questions one
@@ -18,7 +25,9 @@ Rules:
 - Return ${MAX_QUESTIONS - 2} to ${MAX_QUESTIONS} questions, most likely first. Always include "Tell me about yourself" (theme about_you), and a question on using AI at work (theme ${AI_USE_QUESTION.theme}): interviewers now ask it in most roles, so word it for this job (e.g. "${AI_USE_QUESTION.question}").
 - Tailor the wording to this job: name its real situations (its customers, teams, products, scope) where the posting gives them, so the question sounds like this company's interviewer asked it.
 - Rank by what the posting stresses most (repeated themes, the first responsibilities listed, the level) and by what the interview reports say was actually asked.
-- If interview reports are given, include the behavioral questions they report, marked source "report". Ignore technical, case or coding questions: only behavioral ones belong here.
+- If interview reports are given, include the behavioral questions they say were actually asked, marked source "report". Ignore technical, case or coding questions: only behavioral ones belong here.
+- A guess about what an interviewer might ask, or advice on what to bring up, is not a reported question: let it shape the ranking and wording, but mark that question "posting" or "common", never "report", and say in why that it's someone's guess (e.g. "a former team member guesses design systems come up").
+${REPORTS_HEDGE_RULE}
 - If the candidate gives questions they were actually asked in their own earlier interviews for this job or company, rank them high: interviewers there are likely to ask them again in a later round. Mark those source "transcript".
 - Questions from their interviews elsewhere show what interviewers tend to ask someone with their background; use them to rank the themes, but mark a question "transcript" only when it came from this job or company.
 - source is "transcript" for a question from their own interviews for this job or company, "report" for a question from the reports, "posting" for one shaped by something in the posting, "common" for a standard question asked almost everywhere.
@@ -71,7 +80,7 @@ export function likelyQuestionsMessages(input: {
   lines.push(
     "",
     reports.trim()
-      ? `## Interview reports I found for this company or role\n${reports.trim()}`
+      ? `## ${REPORTS_HEADING}\n${reports.trim()}`
       : "I haven't found any interview reports.",
   );
   if (past && past.thisJob.length > 0) {

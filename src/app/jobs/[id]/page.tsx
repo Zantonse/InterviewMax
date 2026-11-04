@@ -330,7 +330,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             ) : (
               <p className="mb-4 text-slate-600">
                 I&apos;ll predict the behavioral questions this job is most likely to ask, from the
-                posting and any interview reports you paste, and match each to your stories.
+                posting and any interview reports or team notes you paste, and match each to your stories.
               </p>
             )}
             {askedRecently.length > 0 && (

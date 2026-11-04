@@ -508,11 +508,13 @@ export function PredictForm({
       <input type="hidden" name="jobId" value={jobId} />
       <details open={!predicted && Boolean(reports)}>
         <summary className="cursor-pointer text-sm font-semibold text-ink-800">
-          {reports ? "Interview reports you added" : "Add interview reports (optional)"}
+          {reports ? "Interview reports and notes you added" : "Add interview reports or notes (optional)"}
         </summary>
         <label className="mt-2 block text-sm text-slate-600" htmlFor={id}>
           Paste what people say they were asked at this company or for this role, from Glassdoor,
-          Blind, Reddit or a friend. I&apos;ll put the behavioral questions they mention on the list.
+          Blind, Reddit or a friend, or notes from someone who knows the team or interviewer. I&apos;ll
+          put the questions they say were asked on the list, and use the rest to shape it. Guesses
+          stay guesses.
           <textarea
             id={id}
             name="reports"

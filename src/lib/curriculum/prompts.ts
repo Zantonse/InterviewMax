@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { REPORTS_HEADING, REPORTS_HEDGE_RULE } from "@/lib/questions/content";
 import { quoteIsIn } from "@/lib/finder/content";
 import { isRecord, levelLabel } from "@/lib/jobs/content";
 import { extractJson } from "@/lib/stories/prompts";
@@ -27,6 +28,7 @@ Rules:
 - Each topic is something to know, named in a few words (e.g. "Pricing experiments", "SOC 2 basics", "Partner onboarding"), not a skill to claim.
 - quote: copy, word for word, the line or phrase of the posting the topic comes from. If the topic isn't named in the posting but is usual for this kind of role at this level, leave quote empty.
 - basics: up to ${MAX_BASICS} short points a well-prepared candidate would know about the topic, in plain words: what it is, why it matters in this job, the key terms and trade-offs. General knowledge only: never state facts about this company (its numbers, customers, products, plans) that the posting or the notes don't state.
+${REPORTS_HEDGE_RULE}
 - askedAs: one line on how it tends to come up in an interview for this level (a behavioral question, a case, a technical question, a "how would you…").
 - check: one question the candidate can ask themselves to test whether they really know it.
 - Match the level: for senior and leadership roles, stress strategy, trade-offs and leading others; for earlier-career roles, the fundamentals and how the work is done.
@@ -59,7 +61,7 @@ export function curriculumMessages(input: {
     );
   }
   if (reports.trim()) {
-    lines.push("", `## Interview reports I found for this company or role\n${reports.trim()}`);
+    lines.push("", `## ${REPORTS_HEADING}\n${reports.trim()}`);
   }
   return [
     {
