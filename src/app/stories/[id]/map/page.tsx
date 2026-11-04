@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { getUserFieldSafely } from "@/lib/field/data";
+import { getField } from "@/lib/field/fields";
+import { getRoleFamily } from "@/lib/roles/families";
 import { getStory } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { RoleMapper } from "./role-mapper";
@@ -27,8 +30,11 @@ export default function MapRolePage({ params }: PageProps<"/stories/[id]/map">) 
 
 async function MapLoader({ params }: { params: PageProps<"/stories/[id]/map">["params"] }) {
   const { id } = await params;
-  const story = await getStory(id);
+  const [story, field] = await Promise.all([getStory(id), getUserFieldSafely()]);
   if (!story || getStoryType(story.storyType)?.format !== "intro") notFound();
+  // Their field (Settings) picks the starting function map, when it has one.
+  const fromField = getField(field.id)?.roleFamily;
+  const initialFamilyId = fromField && getRoleFamily(fromField) ? fromField : undefined;
   return (
     <>
       <Link
@@ -37,7 +43,11 @@ async function MapLoader({ params }: { params: PageProps<"/stories/[id]/map">["p
       >
         ← Back to Tell me about yourself
       </Link>
-      <RoleMapper storyId={story.id} initialMap={story.content.roleMap} />
+      <RoleMapper
+        storyId={story.id}
+        initialMap={story.content.roleMap}
+        initialFamilyId={initialFamilyId}
+      />
     </>
   );
 }

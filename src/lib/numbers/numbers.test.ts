@@ -45,7 +45,8 @@ describe("guessFamily", () => {
     expect(guessFamily([undefined, "Senior Solutions Engineer"])).toBe("sales_engineering");
     expect(guessFamily(["FP&A Manager"])).toBe("finance");
     expect(guessFamily(["I was a data steward for the finance domain"])).toBe("data_governance");
-    expect(guessFamily(["Product designer"])).toBeUndefined();
+    expect(guessFamily(["Product designer"])).toBe("product_design");
+    expect(guessFamily(["Chef"])).toBeUndefined();
   });
 });
 

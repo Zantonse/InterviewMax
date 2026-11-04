@@ -230,6 +230,60 @@ export const ROLE_FAMILIES: RoleFamily[] = [
     ],
   },
   {
+    id: "product_design",
+    label: "Product design / UX",
+    functions: [
+      {
+        id: "research",
+        label: "User research",
+        blurb: "Interviews, usability tests and turning what people do into insights.",
+        terms: ["user research", "usability testing", "user interviews", "synthesis"],
+      },
+      {
+        id: "interaction",
+        label: "Interaction and flow design",
+        blurb: "Designing how people move through a product to get something done.",
+        terms: ["interaction design", "user flows", "information architecture", "wireframes"],
+      },
+      {
+        id: "visual",
+        label: "Visual and UI design",
+        blurb: "Layout, type, color and the polish of the final screens.",
+        terms: ["visual design", "UI design", "high-fidelity mockups", "accessibility"],
+      },
+      {
+        id: "prototyping",
+        label: "Prototyping",
+        blurb: "Building clickable or coded prototypes to test ideas fast.",
+        terms: ["prototyping", "Figma prototypes", "rapid iteration"],
+      },
+      {
+        id: "design_systems",
+        label: "Design systems",
+        blurb: "Shared components and patterns other designers and engineers build from.",
+        terms: ["design system", "component library", "design tokens", "patterns"],
+      },
+      {
+        id: "strategy",
+        label: "Product and design strategy",
+        blurb: "Shaping what gets built and why, with product managers and leaders.",
+        terms: ["design strategy", "product vision", "roadmap input", "problem framing"],
+      },
+      {
+        id: "collaboration",
+        label: "Working with engineering and product",
+        blurb: "Handoffs, trade-offs and making sure what ships matches the design.",
+        terms: ["design handoff", "cross-functional collaboration", "design QA"],
+      },
+      {
+        id: "metrics",
+        label: "Measuring design impact",
+        blurb: "Setting success metrics, A/B tests and reading the results.",
+        terms: ["A/B testing", "conversion", "task success", "design metrics"],
+      },
+    ],
+  },
+  {
     id: "sales",
     label: "Sales / account executive",
     functions: [

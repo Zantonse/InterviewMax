@@ -32,9 +32,12 @@ type Step = "questions" | "mark" | "profile";
 export function RoleMapper({
   storyId,
   initialMap,
+  initialFamilyId,
 }: {
   storyId: string;
   initialMap: RoleMap | undefined;
+  // From their field (Settings): the function map to start on before they've saved one.
+  initialFamilyId?: string;
 }) {
   const [map, setMap] = useState(initialMap);
   const stage = roleMapStage(map);
@@ -91,6 +94,7 @@ export function RoleMapper({
         {step === "questions" && (
           <WorkQuestions
             map={map}
+            initialFamilyId={initialFamilyId}
             busy={busy}
             onSubmit={(familyId, answers) =>
               run(
@@ -149,14 +153,18 @@ export function RoleMapper({
 
 function WorkQuestions({
   map,
+  initialFamilyId,
   busy,
   onSubmit,
 }: {
   map: RoleMap | undefined;
+  initialFamilyId?: string;
   busy: string | null;
   onSubmit: (familyId: string, answers: Record<string, string>) => void;
 }) {
-  const [familyId, setFamilyId] = useState(map ? (map.familyId ?? OTHER) : ROLE_FAMILIES[0].id);
+  const [familyId, setFamilyId] = useState(
+    map ? (map.familyId ?? OTHER) : (initialFamilyId ?? ROLE_FAMILIES[0].id),
+  );
   const [answers, setAnswers] = useState<Record<string, string>>(map?.answers ?? {});
   const familyField = useId();
   const ready = hasEnoughAnswers(answers);

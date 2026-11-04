@@ -9,12 +9,12 @@ import { CASE_FRAMES, type CaseFeedback, type CaseKind } from "./content";
 // It coaches the shape of the answer and never supplies experience: a figure that isn't in the
 // question or the answer is dropped in code.
 
-export const CASE_PRACTICE_SYSTEM = `You are an interview coach. The candidate is practicing a case or skills question from a real interview: a business problem to reason through, or a check on a tool or skill. They answered it out loud or in writing. Give short, specific feedback so the next try is better.
+export const CASE_PRACTICE_SYSTEM = `You are an interview coach. The candidate is practicing a case, skills or design question from a real interview: a business problem to reason through, a check on a tool or skill, a portfolio walkthrough, or a design critique or challenge. They answered it out loud or in writing. Give short, specific feedback so the next try is better.
 
 Judge the answer against the frame you're given (its steps, in order). For each step, decide whether the answer covered it. Then:
 - summary: one sentence on how the answer would land with the interviewer, naming the strongest part.
 - covered: the ids of the steps the answer covered.
-- missing: up to 3 things to add, most important first, each {"step": a step id, "tip": one sentence saying what to add, concretely, for this question}. For a case question, tips may suggest what to look at or test (e.g. "Compare stores with and without the new line in the same region and season"). For a skills question, tips are about how to say it, never claims of skill.
+- missing: up to 3 things to add, most important first, each {"step": a step id, "tip": one sentence saying what to add, concretely, for this question}. For a case question, tips may suggest what to look at or test (e.g. "Compare stores with and without the new line in the same region and season"). For a skills question or a portfolio walkthrough, tips are about how to say it, never claims of skill or work they didn't describe. For a design critique or challenge, tips may suggest what to look at, ask or test.
 - followUp: the one follow-up a skeptical interviewer would ask next, in their words.
 
 Rules:

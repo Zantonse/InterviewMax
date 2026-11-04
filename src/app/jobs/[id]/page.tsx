@@ -17,7 +17,9 @@ import { builderStage, hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
-import { caseQuestionsFor } from "@/lib/cases/content";
+import { caseQuestionsFor, withFieldStarters } from "@/lib/cases/content";
+import { getUserFieldSafely } from "@/lib/field/data";
+import { guessField } from "@/lib/field/fields";
 import { getCurrentUser } from "@/lib/auth";
 import { canUseCurriculum } from "@/lib/curriculum/access";
 import { progress } from "@/lib/curriculum/content";
@@ -61,13 +63,14 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
 async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const [job, { overview, resume }, stories, rounds, transcripts, user] = await Promise.all([
+  const [job, { overview, resume }, stories, rounds, transcripts, user, field] = await Promise.all([
     getJob(id),
     getJobsPrep(),
     listStories(),
     listPracticeSessionsSafely(id),
     listTranscriptsForPrep(),
     getCurrentUser(),
+    getUserFieldSafely(),
   ]);
   if (!job) notFound();
   // Shared question bank: what other people were asked at this company lately.
@@ -78,7 +81,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   // Interview timeline: this job's rounds in order, from its transcripts and any at the company.
   const timeline = buildTimeline(job, transcripts);
   // Case and technical questions real interviewers asked, which no story answers.
-  const cases = caseQuestionsFor(job, transcripts);
+  // Plus common ones for their field (a guessed field reads this job's title instead).
+  const caseField = field.guessed ? (guessField([job.title]) ?? field.id) : field.id;
+  const cases = withFieldStarters(caseQuestionsFor(job, transcripts), caseField);
   const read = overview?.jobs[job.id];
   // "Tell me about yourself": the drafted one if there is one (stories are newest first).
   const introType = getStoryType(REQUIRED_STORY_TYPE_ID);
@@ -406,8 +411,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               Case and technical questions
             </h2>
             <p className="mb-4 text-sm text-slate-600">
-              The questions no story answers: a business problem to reason through, or a check on a
-              tool. These are the ones your interviewers asked. Practice each with its frame.
+              The questions no story answers: a business problem to reason through, a check on a
+              tool, or for designers a portfolio walkthrough or design critique. These are the ones
+              your interviewers asked, plus common ones for your field. Practice each with its
+              frame.
             </p>
             <CasePanel jobId={job.id} questions={cases} />
           </section>

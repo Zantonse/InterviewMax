@@ -95,6 +95,11 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
             {q.here ? "Asked you here" : "Asked you elsewhere"}: {q.transcriptTitle}
           </Link>
         )}
+        {q.starter && (
+          <span className="rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200">
+            Common in your field
+          </span>
+        )}
         {q.landed && LANDED_LABELS[q.landed] && (
           <span className="rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200">
             Last time: {LANDED_LABELS[q.landed]}

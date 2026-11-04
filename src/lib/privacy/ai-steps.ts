@@ -5,7 +5,7 @@ import { STEP_MODELS, type Step, type StepModel } from "@/lib/ai/config";
 export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   storyProbe: {
     feature: "Story builder follow-up questions",
-    sends: "Your answers for that story, plus the job and numbers it draws on, and your coaching style",
+    sends: "Your answers for that story, plus the job and numbers it draws on, your coaching style and your field",
   },
   storyPrefill: {
     feature: "Filling in “Tell me about yourself” from LinkedIn",
@@ -25,11 +25,11 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   storyWrite: {
     feature: "Writing your story",
-    sends: "Your answers for that story, plus the numbers it draws on and, for About me, what your target jobs look for",
+    sends: "Your answers for that story, plus the numbers it draws on and, for About me, what your target jobs look for, and your field",
   },
   storyTailor: {
     feature: "About me for one job",
-    sends: "Your About me answers and that job’s posting",
+    sends: "Your About me answers, that job’s posting and your field",
   },
   careerPath: {
     feature: "Reading your career path",
@@ -37,15 +37,15 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   storyFind: {
     feature: "Story finder",
-    sends: "Your resume, LinkedIn text and role map, or your answers to its questions",
+    sends: "Your resume, LinkedIn text and role map, or your answers to its questions, and your field",
   },
   toughAnswer: {
     feature: "Tough questions",
-    sends: "Your answers about that question and, if you pick one, that job’s posting",
+    sends: "Your answers about that question and, if you pick one, that job’s posting, and your field",
   },
   storyTell: {
     feature: "How to tell it (storytelling coach)",
-    sends: "The written story, your answers behind it, its thinking feedback and your target jobs",
+    sends: "The written story, your answers behind it, its thinking feedback, your target jobs and your field",
   },
   storyGrade: {
     feature: "Grading a story",
@@ -66,16 +66,16 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   likelyQuestions: {
     feature: "Likely questions",
     sends:
-      "The job posting (and how the postings of any other roles you added to the job differ from it) and any interview reports you pasted",
+      "The job posting (and how the postings of any other roles you added to the job differ from it) and any interview reports you pasted, and your field",
   },
   askQuestions: {
     feature: "Questions to ask the interviewer",
     sends:
-      "The job posting, what its interviewers look for, any interview reports you pasted and the questions you already have",
+      "The job posting, what its interviewers look for, any interview reports you pasted and the questions you already have, and your field",
   },
   jobCurriculum: {
     feature: "Curriculum: the topics to know for a job (beta)",
-    sends: "The job posting, what its interviewers look for and any interview reports you pasted",
+    sends: "The job posting, what its interviewers look for, any interview reports you pasted and your field",
   },
   resumeBullets: {
     feature: "Resume bullets for a job",
@@ -92,21 +92,21 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   practiceProbe: {
     feature: "Follow-up questions in practice mode and the tough-questions drill",
-    sends: "The practice question, your spoken answers to it and the job’s title and level",
+    sends: "The practice question, your spoken answers to it and the job’s title and level, and your field",
   },
   practiceFeedback: {
     feature: "Feedback in practice mode, AI screen practice and the tough-questions drill",
     sends:
-      "Your spoken practice answers, the saved story or tough-question answer (and your answers behind it) for that question, the job’s title and your coaching style",
+      "Your spoken practice answers, the saved story or tough-question answer (and your answers behind it) for that question, the job’s title, your coaching style and your field",
   },
   casePractice: {
     feature: "Case and technical question practice",
-    sends: "The question, your practice answer, the job’s title and your coaching style",
+    sends: "The question, your practice answer, the job’s title, your coaching style and your field",
   },
   profileSummary: {
     feature: "Your interviewee profile summary",
     sends:
-      "The profile’s results worked out from your stories, grades, numbers, practice and past interviews (story titles, scores and findings), and your coaching style",
+      "The profile’s results worked out from your stories, grades, numbers, practice and past interviews (story titles, scores and findings), your coaching style and your field",
   },
   ladderRead: {
     feature: "PromotionMax: reading your career ladder (beta)",
