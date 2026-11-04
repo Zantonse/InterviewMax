@@ -3,6 +3,8 @@ import { emptyContent, type StoryContent } from "@/lib/stories/content";
 import { STORY_TYPES } from "@/lib/stories/story-types";
 import {
   MAX_QUESTIONS,
+  REPORTS_HEADING,
+  REPORTS_HEDGE_RULE,
   type LikelyQuestion,
   parseLikelyQuestions,
   parseQuestionList,
@@ -132,6 +134,18 @@ describe("likely questions prompt", () => {
     expect(m.content).toContain("- Senior Analyst");
     expect(m.content).toContain("- Forecasting");
     expect(m.content).toContain("They asked about a missed forecast.");
+  });
+
+  it("puts reports and team notes under one heading, and tells the model to keep guesses as guesses", () => {
+    const [m] = likelyQuestionsMessages({
+      job,
+      otherJobs: [],
+      shared: [],
+      reports: "A former team member guesses the manager asks about design systems.",
+    });
+    expect(m.content).toContain(`## ${REPORTS_HEADING}\nA former team member guesses`);
+    expect(LIKELY_QUESTIONS_SYSTEM).toContain(REPORTS_HEDGE_RULE);
+    expect(LIKELY_QUESTIONS_SYSTEM).toContain('never "report"');
   });
 
   it("says when there's one job and no reports", () => {
