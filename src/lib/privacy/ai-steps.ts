@@ -66,16 +66,16 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   likelyQuestions: {
     feature: "Likely questions",
     sends:
-      "The job posting (and how the postings of any other roles you added to the job differ from it) and any interview reports you pasted, and your field",
+      "The job posting (and how the postings of any other roles you added to the job differ from it), any interview reports or team notes you pasted and your field",
   },
   askQuestions: {
     feature: "Questions to ask the interviewer",
     sends:
-      "The job posting, what its interviewers look for, any interview reports you pasted and the questions you already have, and your field",
+      "The job posting, what its interviewers look for, any interview reports or team notes you pasted, the questions you already have and your field",
   },
   jobCurriculum: {
     feature: "Curriculum: the topics to know for a job (beta)",
-    sends: "The job posting, what its interviewers look for, any interview reports you pasted and your field",
+    sends: "The job posting, what its interviewers look for, any interview reports or team notes you pasted and your field",
   },
   resumeBullets: {
     feature: "Resume bullets for a job",

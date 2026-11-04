@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { REPORTS_HEADING, REPORTS_HEDGE_RULE } from "@/lib/questions/content";
 import { isRecord, levelLabel } from "@/lib/jobs/content";
 import { extractJson } from "@/lib/stories/prompts";
 import {
@@ -28,6 +29,7 @@ Rules:
 - Open questions only (how, what, which), one question each, under 30 words, in plain spoken English. No yes/no questions, no flattery, no questions about the candidate themselves except at most one closing question about next steps or concerns.
 - Never ask about salary, pay, benefits, time off or perks: those belong after an offer.
 - Don't invent facts about the company that the posting, the notes or the interview reports don't state.
+${REPORTS_HEDGE_RULE}
 - If the candidate already has questions, don't repeat them or ask the same thing in other words.
 - why is a few words on what in the posting the question comes from (e.g. "posting leads with partner launches").
 
@@ -60,7 +62,7 @@ export function askQuestionsMessages(input: {
     );
   }
   if (reports.trim()) {
-    lines.push("", `## Interview reports I found for this company or role\n${reports.trim()}`);
+    lines.push("", `## ${REPORTS_HEADING}\n${reports.trim()}`);
   }
   if (existing.length > 0) {
     lines.push("", `## Questions I already have\n${existing.map((q) => `- ${q}`).join("\n")}`);

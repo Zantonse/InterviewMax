@@ -7,6 +7,15 @@ import { AI_USE_QUESTION, getTheme, type QuestionThemeId } from "./themes";
 export const MAX_QUESTIONS = 10;
 export const MAX_REPORTS_LENGTH = 15000;
 
+// The heading the pasted reports go under in every prompt that uses them. The box holds public
+// interview reports and also notes from someone who knows the team (a friend, a former member).
+export const REPORTS_HEADING = "Interview reports and notes from people who know the team";
+
+// Notes from an insider are often impressions or guesses. Every prompt that reads them keeps
+// those hedges, so the app never presents a guess as fact.
+export const REPORTS_HEDGE_RULE =
+  "- The interview reports may include notes from someone who knows the team, full of impressions and guesses (\"he thought\", \"not confirmed\", \"might\"). Use them, but keep every hedge: never state a guess, an impression or an unconfirmed detail as fact. Say whose view it is (e.g. \"a former team member thinks…\").";
+
 // Where a question came from: the standard set, something in the posting, a report the user
 // pasted from a public interview review, or a transcript of the user's own earlier interview there.
 export type QuestionSource = "common" | "posting" | "report" | "transcript";
