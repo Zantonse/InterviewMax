@@ -13,6 +13,8 @@ import {
   filledCount,
 } from "@/lib/numbers/checklist";
 import { getNumbersChecklist } from "@/lib/numbers/data";
+import { getUserFieldSafely } from "@/lib/field/data";
+import { fieldLabel, getField } from "@/lib/field/fields";
 import { NUMBERS_FAMILIES, getNumbersFamily, guessFamily } from "@/lib/numbers/families";
 import { NUMBER_SOURCES } from "@/lib/numbers/sources";
 import { type StoryRecord, listStories } from "@/lib/stories/data";
@@ -117,16 +119,23 @@ async function NumbersContent() {
   );
 }
 
-// A first guess at their role from what they've already told us: their role map, their About me
-// answer about today, then their target jobs. They confirm it before anything is built.
+// A first guess at their role from what they've already told us: their role map, their field
+// (Settings), their About me answer about today, then their target jobs. They confirm it before
+// anything is built.
 async function suggestRole(): Promise<{ familyId: string; roleName: string }> {
-  const [stories, jobs] = await Promise.all([
+  const [stories, jobs, field] = await Promise.all([
     listStories().catch(() => [] as StoryRecord[]),
     listJobs().catch(() => [] as TargetJob[]),
+    getUserFieldSafely(),
   ]);
   const aboutMe = stories.find((s) => s.storyType === REQUIRED_STORY_TYPE_ID)?.content;
   const map = aboutMe?.roleMap;
   if (getNumbersFamily(map?.familyId)) return { familyId: map!.familyId!, roleName: "" };
+  const fromField = getField(field.id)?.numbersFamily;
+  if (fromField && getNumbersFamily(fromField)) return { familyId: fromField, roleName: "" };
+  if (!field.guessed && field.id !== "generic") {
+    return { familyId: OTHER_ROLE, roleName: map?.roleName ?? fieldLabel(field) };
+  }
   const guess = guessFamily([
     map?.roleName,
     map?.answers.title,

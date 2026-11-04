@@ -6,11 +6,13 @@ import { AppHeader } from "@/components/app-header";
 import { PolicyLinks } from "@/components/policy-links";
 import { getCurrentUser } from "@/lib/auth";
 import { getCoachingStyleSafely } from "@/lib/coaching/data";
+import { getUserFieldSafely } from "@/lib/field/data";
 import { listJobs } from "@/lib/jobs/data";
 import { listStories } from "@/lib/stories/data";
 import { listTranscripts } from "@/lib/transcripts/data";
 import { CoachingStyleForm } from "./coaching-style-form";
 import { DeleteAccountForm } from "./delete-account-form";
+import { FieldForm } from "./field-form";
 
 export const metadata: Metadata = { title: "Settings · InterviewMax" };
 
@@ -27,7 +29,25 @@ export default function SettingsPage() {
         </h1>
 
         <section
-          className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          id="field"
+          className="mt-8 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          aria-labelledby="field-heading"
+        >
+          <h2 id="field-heading" className="text-xl font-bold text-slate-900">
+            Your field
+          </h2>
+          <p className="mt-2 text-slate-600">
+            The kind of work you do. The story builder&apos;s examples and memory joggers come from
+            your field, Numbers and Map my role start on it, and the coach words its questions for
+            it. Your facts and grades don&apos;t change.
+          </p>
+          <Suspense fallback={<p className="mt-4 h-16 animate-pulse rounded-xl bg-slate-100" />}>
+            <FieldSection />
+          </Suspense>
+        </section>
+
+        <section
+          className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
           aria-labelledby="coaching-style-heading"
         >
           <h2 id="coaching-style-heading" className="text-xl font-bold text-slate-900">
@@ -71,6 +91,10 @@ export default function SettingsPage() {
 
 async function CoachingStyleSection() {
   return <CoachingStyleForm initial={await getCoachingStyleSafely()} />;
+}
+
+async function FieldSection() {
+  return <FieldForm initial={await getUserFieldSafely()} />;
 }
 
 async function WhatGetsDeleted() {

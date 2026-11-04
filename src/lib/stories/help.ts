@@ -5,6 +5,8 @@
 //   "I don't know this": where they could find it, and that a labelled estimate is fine.
 // Keyed by the gap a follow-up is aimed at, or the part a scripted question fills.
 
+import { type FieldId, fieldExample } from "@/lib/field/fields";
+
 export type QuestionHelp = { example: string; whereToLook?: string };
 
 const HELP: Record<string, QuestionHelp> = {
@@ -95,8 +97,15 @@ const HELP: Record<string, QuestionHelp> = {
   },
 };
 
-export function questionHelp(key: string | undefined): QuestionHelp | undefined {
-  return key ? HELP[key] : undefined;
+// The user's field (Settings) swaps in its own example where it has one; where to look stays.
+export function questionHelp(
+  key: string | undefined,
+  field?: FieldId | null,
+): QuestionHelp | undefined {
+  const base = key ? HELP[key] : undefined;
+  const example = key ? fieldExample(field, key) : undefined;
+  if (!base || !example) return base;
+  return { ...base, example };
 }
 
 // Generic, for gaps without their own advice.

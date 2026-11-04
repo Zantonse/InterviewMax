@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
+import { type FieldId, fieldJoggers } from "@/lib/field/fields";
 import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
@@ -102,6 +103,7 @@ export function StoryBuilder({
   nextUp,
   menu,
   beside,
+  field = null,
 }: {
   // Null for a new story that isn't saved yet: the first action creates it from newStory.
   storyId: string | null;
@@ -125,6 +127,8 @@ export function StoryBuilder({
   menu?: React.ReactNode;
   // Shown beside the chat on the Build view, under the answer checklist.
   beside?: React.ReactNode;
+  // The user's field (Settings): picks the examples and memory joggers.
+  field?: FieldId | null;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -413,12 +417,16 @@ export function StoryBuilder({
                     help={
                       content.answers[q.id]?.trim()
                         ? undefined
-                        : questionHelp(q.id === "start" && storyType?.format !== "intro" ? "telling" : q.part)
+                        : questionHelp(
+                            q.id === "start" && storyType?.format !== "intro" ? "telling" : q.part,
+                            field,
+                          )
                     }
                     joggers={
                       q.id === "start" && !content.answers[q.id]?.trim() && !seed ? (
                         <Joggers
                           storyType={storyType}
+                          field={field}
                           moments={moments}
                           disabled={busy !== null}
                           onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
@@ -470,7 +478,7 @@ export function StoryBuilder({
                       improves={
                         !fromPractice && content.draft ? partLabelForGap(f.gap, storyType) : undefined
                       }
-                      help={index === currentFollowUp ? questionHelp(f.gap) : undefined}
+                      help={index === currentFollowUp ? questionHelp(f.gap, field) : undefined}
                       joggers={
                         index === currentFollowUp && f.options?.length ? (
                           <TapOptions
@@ -954,16 +962,19 @@ function QuestionHelpRow({
 // moments the story finder read from their resume or LinkedIn. A tap starts the answer with it.
 function Joggers({
   storyType,
+  field,
   moments,
   disabled,
   onPick,
 }: {
   storyType: StoryType | undefined;
+  field: FieldId | null;
   moments: JoggerMoment[];
   disabled: boolean;
   onPick: (text: string) => void;
 }) {
-  const general: readonly string[] = storyType?.joggers ?? [];
+  const general: readonly string[] =
+    fieldJoggers(field, storyType?.id) ?? storyType?.joggers ?? [];
   if (general.length === 0 && moments.length === 0) return null;
   const chip =
     "rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50";

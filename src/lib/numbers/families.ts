@@ -225,6 +225,75 @@ export const NUMBERS_FAMILIES: NumbersFamily[] = [
       },
     ],
   },
+  {
+    id: "product_design",
+    label: "Product design / UX",
+    items: [
+      {
+        id: "products_owned",
+        label: "Products, flows or surfaces you owned",
+        why: "Sets the scope of your design work.",
+        where: "Your portfolio, your team's roadmap, or the areas you're listed as designer on.",
+        storyTypes: ["about_me", "prioritization", "defining_success"],
+      },
+      {
+        id: "users_reached",
+        label: "People who use what you designed",
+        why: "Shows the reach of your work.",
+        where: "Product analytics (daily or monthly users of the flow), or ask your PM.",
+        storyTypes: ["about_me", "major_project", "defining_success"],
+      },
+      {
+        id: "metric_moved",
+        label: "A product metric before and after your design (conversion, completion, retention)",
+        why: "The strongest result for a designer: the design changed what people did.",
+        where: "The launch readout, an A/B test result, or analytics for the weeks before and after.",
+        storyTypes: ["major_project", "defining_success", "went_wrong"],
+      },
+      {
+        id: "usability_change",
+        label: "Usability test results before and after (task success, time on task)",
+        why: "Proves the design worked even without a launch metric.",
+        where: "Your research notes or test reports: how many finished the task, before and after.",
+        storyTypes: ["major_project", "went_wrong", "defining_success"],
+      },
+      {
+        id: "research_sessions",
+        label: "Research sessions or interviews you ran",
+        why: "Shows your designs come from evidence, not taste.",
+        where: "Your research repository, calendar, or recruiting tool for a typical project.",
+        storyTypes: ["major_project", "difficult_stakeholder", "about_me"],
+      },
+      {
+        id: "team_size",
+        label: "Engineers and PMs you worked with",
+        why: "Shows how many people built from your designs.",
+        where: "Your team page, sprint board or standup list.",
+        storyTypes: ["cross_team", "difficult_stakeholder", "about_me"],
+      },
+      {
+        id: "design_system",
+        label: "Components or patterns you added to a design system, and teams using them",
+        why: "Shows impact beyond your own screens.",
+        where: "Your Figma library analytics or design system docs.",
+        storyTypes: ["cross_team", "major_project", "defining_success"],
+      },
+      {
+        id: "ship_time",
+        label: "Time from first sketch to launch",
+        why: "Makes speed and prioritization stories concrete.",
+        where: "Figma file history, the project tracker, or the launch date.",
+        storyTypes: ["prioritization", "went_wrong", "major_project"],
+      },
+      {
+        id: "support_tickets",
+        label: "Support tickets or complaints about the flow, before and after",
+        why: "Ties your design to cost and customer pain.",
+        where: "Your support tool filtered to that area, or ask the support lead.",
+        storyTypes: ["major_project", "defining_success", "cross_team"],
+      },
+    ],
+  },
 ];
 
 export function getNumbersFamily(id: string | null | undefined): NumbersFamily | undefined {
@@ -241,6 +310,10 @@ const FAMILY_WORDS: { id: string; re: RegExp }[] = [
   {
     id: "data_governance",
     re: /\b(data governance|data steward|data quality|metadata|master data|data catalog)/i,
+  },
+  {
+    id: "product_design",
+    re: /\b(product design(er)?|ux|ui\/ux|user experience|interaction design(er)?|visual design(er)?|designer)\b/i,
   },
   {
     id: "finance",

@@ -3,6 +3,7 @@ import { DeleteStoryButton } from "@/components/delete-story-button";
 import { startStory } from "@/app/stories/new/actions";
 import { type NextStory, nextStoryToBuild } from "@/lib/guide/journey";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
+import { getUserFieldSafely } from "@/lib/field/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import type { StoryContent } from "@/lib/stories/content";
@@ -27,13 +28,14 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.
-  const [prep, jobs, stories, checklist, targets, finder] = await Promise.all([
+  const [prep, jobs, stories, checklist, targets, finder, field] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
     intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
     intro ? null : getStoryFinder().catch(() => null),
+    getUserFieldSafely(),
   ]);
   // Story finder moments for this story type become memory joggers on the opening question.
   const moments = (finder?.moments ?? [])
@@ -54,6 +56,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       initialContent={story.content}
       hasResume={resume}
       moments={moments}
+      field={field.id}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
       nextUp={
