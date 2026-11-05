@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseContent } from "@/lib/stories/content";
-import { getStoryType } from "@/lib/stories/story-types";
+import { getStoryType, storyParts } from "@/lib/stories/story-types";
+import { formatGuide, partLength, totalLength } from "./structure";
 import { analysisIsCurrent, findQuote, parseAnalysis, writtenParts } from "./content";
 import { ANALYZE_SYSTEM, analyzeMessages, parseAnalyzeReply } from "./prompts";
 
@@ -74,7 +75,9 @@ describe("parseAnalyzeReply", () => {
 
   it("treats an unknown strength as partly landing", () => {
     const reply = parseAnalyzeReply(
-      JSON.stringify({ parts: [{ part: "actions", value: "Shows a call.", strength: "great" }] }),
+      JSON.stringify({
+        parts: [{ part: "actions", value: "Shows a call.", strength: "great" }],
+      }),
       paragraphs,
     );
     expect(reply.parts[0].strength).toBe("some");
@@ -104,7 +107,15 @@ describe("analyzeMessages", () => {
 describe("stored analysis", () => {
   const analysis = {
     summary: "s",
-    parts: [{ part: "result", value: "v", signals: ["Impact"], quote: "$2.4M", strength: "strong" }],
+    parts: [
+      {
+        part: "result",
+        value: "v",
+        signals: ["Impact"],
+        quote: "$2.4M",
+        strength: "strong",
+      },
+    ],
     model: "m",
     draftWrittenAt: "2026-11-05T00:00:00Z",
     analyzedAt: "2026-11-05T00:01:00Z",
@@ -114,7 +125,12 @@ describe("stored analysis", () => {
     const content = parseContent({
       version: 1,
       answers: {},
-      draft: { parts: PARTS, untracedNumbers: [], model: "m", writtenAt: "2026-11-05T00:00:00Z" },
+      draft: {
+        parts: PARTS,
+        untracedNumbers: [],
+        model: "m",
+        writtenAt: "2026-11-05T00:00:00Z",
+      },
       analysis,
     });
     expect(content.analysis?.parts[0].quote).toBe("$2.4M");
@@ -125,5 +141,33 @@ describe("stored analysis", () => {
   it("is dropped when there is no draft or no notes", () => {
     expect(parseContent({ version: 1, answers: {}, analysis }).analysis).toBeUndefined();
     expect(parseAnalysis({ ...analysis, parts: [] }, PARTS)).toBeUndefined();
+  });
+});
+
+describe("structure guide", () => {
+  it("explains every part of both formats", () => {
+    for (const type of [conflict, getStoryType("about_me")]) {
+      const guide = formatGuide(type);
+      for (const part of storyParts(type)) {
+        expect(guide.parts[part.id]?.why).toBeTruthy();
+        expect(guide.parts[part.id]?.lengthWhy).toBeTruthy();
+      }
+    }
+  });
+
+  it("says when a part is longer or shorter than usual", () => {
+    const guide = formatGuide(conflict).parts.situation;
+    const words = (n: number) => Array.from({ length: n }, () => "w").join(" ");
+    expect(partLength(words(15), 100, guide).verdict).toBe("fits");
+    expect(partLength(words(40), 100, guide).verdict).toBe("long");
+    expect(partLength(words(40), 100, guide).note).toContain("40%");
+    expect(partLength(words(5), 100, guide).verdict).toBe("short");
+  });
+
+  it("checks the whole story's length", () => {
+    const guide = formatGuide(conflict);
+    expect(totalLength(300, guide).verdict).toBe("fits");
+    expect(totalLength(150, guide).verdict).toBe("short");
+    expect(totalLength(500, guide).verdict).toBe("long");
   });
 });
