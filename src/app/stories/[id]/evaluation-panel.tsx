@@ -8,6 +8,7 @@ import {
   SCORE_LABELS,
   TIERS,
   gradingCriteria,
+  scoreOutOf100,
   THINKING_LEVELS,
   type StoryGrade,
   type ThinkingFeedback,
@@ -90,9 +91,7 @@ export function EvaluationPanel({
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  const average = grade?.criteria.length
-    ? grade.criteria.reduce((sum, c) => sum + c.score, 0) / grade.criteria.length
-    : undefined;
+  const score = grade ? scoreOutOf100(grade.criteria) : undefined;
 
   return (
     <section
@@ -119,9 +118,9 @@ export function EvaluationPanel({
               {TIERS.find((t) => t.id === grade.tier)?.label}
             </span>
           )}
-          {average !== undefined && (
-            <span className="text-sm text-slate-500" data-testid="average">
-              {average.toFixed(1)} / 4
+          {score !== undefined && (
+            <span className="text-sm font-semibold text-slate-600" data-testid="score-pill">
+              {score}/100
             </span>
           )}
         </span>
@@ -176,10 +175,14 @@ export function EvaluationPanel({
       </div>
 
       <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
-        {grade && <ContentFit content={grade.content} />}
-
-        <div>
-          <h3 className="text-sm font-bold text-slate-700">
+        <div
+          className="rounded-2xl p-4 ring-1 ring-ink-800/15 sm:p-5"
+          data-testid="score-section"
+          aria-label="Score"
+          role="group"
+        >
+          <ScoreHeadline score={score} />
+          <h3 className="mt-4 text-sm font-bold text-slate-700">
             How it scores, criterion by criterion
           </h3>
           <ul className="mt-2 flex flex-col gap-3" data-testid="criteria">
@@ -211,6 +214,8 @@ export function EvaluationPanel({
             })}
           </ul>
         </div>
+
+        {grade && <ContentFit content={grade.content} />}
 
         <div>
           <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
@@ -368,6 +373,46 @@ function Summary({ grade }: { grade: StoryGrade }) {
       ) : (
         <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
       )}
+    </div>
+  );
+}
+
+// The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) with a bar,
+// and how it's worked out, so it isn't read as a pass mark.
+function ScoreHeadline({ score }: { score: number | undefined }) {
+  const tone =
+    score === undefined
+      ? "bg-slate-200"
+      : score >= 75
+        ? "bg-emerald-600"
+        : score >= 50
+          ? "bg-amber-300"
+          : "bg-amber-500";
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-base font-bold text-slate-900">Score</h3>
+        <p className="text-slate-500" data-testid="score-total">
+          {score === undefined ? (
+            <span className="text-sm">Not graded yet</span>
+          ) : (
+            <>
+              <span className="text-3xl font-bold tabular-nums text-slate-900">{score}</span>
+              <span className="text-sm"> / 100</span>
+            </>
+          )}
+        </p>
+      </div>
+      <div
+        className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+        role="presentation"
+      >
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${score ?? 0}%` }} />
+      </div>
+      <p className="text-xs text-slate-500">
+        Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100. The level
+        above, not this number, decides when a story is Strong.
+      </p>
     </div>
   );
 }

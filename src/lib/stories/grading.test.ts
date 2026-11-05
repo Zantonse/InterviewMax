@@ -12,6 +12,7 @@ import {
   parseGrade,
   pronounCounts,
   quickChecks,
+  scoreOutOf100,
   tierFor,
   type CheckResult,
   type CriterionScore,
@@ -361,5 +362,18 @@ describe("in your own words", () => {
       JSON.parse(JSON.stringify({ version: 1, answers: {}, draft: { ...goodStar, ownWords: 0.3 } })),
     );
     expect(saved.draft?.ownWords).toBe(0.3);
+  });
+});
+
+describe("scoreOutOf100", () => {
+  const c = (score: number): CriterionScore => ({ id: "x", score, note: "" });
+  it("is the criteria average as a share of 4", () => {
+    expect(scoreOutOf100([c(3), c(3), c(3)])).toBe(75);
+    expect(scoreOutOf100([c(4), c(4)])).toBe(100);
+    expect(scoreOutOf100([c(3), c(4), c(2), c(3), c(3)])).toBe(75);
+    expect(scoreOutOf100([c(1), c(2)])).toBe(38);
+  });
+  it("is undefined with nothing scored", () => {
+    expect(scoreOutOf100([])).toBeUndefined();
   });
 });
