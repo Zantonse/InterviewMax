@@ -4,8 +4,12 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { getAssessmentSafely } from "@/lib/assessment/data";
+import { knownProgress } from "@/lib/assessment/journey";
+import { getCoachingStyleSafely } from "@/lib/coaching/data";
+import { getUserFieldSafely } from "@/lib/field/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { Quiz } from "./quiz";
+import { listStories } from "@/lib/stories/data";
+import { type Picks, Quiz, STEP_COUNT } from "./quiz";
 import { JourneyResult } from "./result";
 
 export const metadata: Metadata = { title: "Journey check · InterviewMax" };
@@ -24,7 +28,7 @@ export default function AssessmentPage({ searchParams }: PageProps<"/assessment"
           Your journey check
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Five quick taps, and I&apos;ll grade where you are and show you what to do first.
+          {STEP_COUNT} quick taps, and I&apos;ll show you where you are and where to start.
         </p>
         <Suspense fallback={<div className="mt-6 h-96 max-w-2xl animate-pulse rounded-3xl bg-white/80" />}>
           <Assessment searchParams={searchParams} />
@@ -39,29 +43,42 @@ async function Assessment({
 }: {
   searchParams: PageProps<"/assessment">["searchParams"];
 }) {
-  const [params, assessment, jobs] = await Promise.all([
+  const [params, assessment, jobs, stories, field, style] = await Promise.all([
     searchParams,
     getAssessmentSafely(),
     loadJobs(),
+    loadStories(),
+    getUserFieldSafely(),
+    getCoachingStyleSafely(),
   ]);
-  const hasJob = jobs.length > 0;
+  const known = knownProgress(stories, jobs.length > 0);
   const questionsJobId = jobs.find((j) => j.likelyQuestions)?.id;
   const taken = assessment && "answers" in assessment ? assessment : null;
 
   if (!taken || params.retake) {
+    // A retake shows the last answers and the saved settings as picked. A first go shows only a
+    // field they chose themselves, never a guess.
+    const initial: Picks = taken
+      ? { ...taken.answers, field: field.id, coachingStyle: style }
+      : field.guessed
+        ? {}
+        : { field: field.id };
     return (
       <Quiz
         key={params.retake ? "retake" : "first"}
-        hasJob={hasJob} questionsJobId={questionsJobId} retake={Boolean(taken)}
+        known={known}
+        questionsJobId={questionsJobId}
+        retake={Boolean(taken)}
+        initial={initial}
       />
     );
   }
   return (
     <>
-      <JourneyResult answers={taken.answers} hasJob={hasJob} questionsJobId={questionsJobId} />
+      <JourneyResult answers={taken.answers} known={known} questionsJobId={questionsJobId} />
       <p className="mt-4 text-sm text-slate-500">
         From {new Date(taken.completedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}.
-        Jobs you&apos;ve added since count already.{" "}
+        What you&apos;ve built since counts already.{" "}
         <Link href="/assessment?retake=1" className="font-semibold text-ink-800 hover:underline">
           Retake
         </Link>
@@ -76,6 +93,16 @@ async function loadJobs(): Promise<TargetJob[]> {
   } catch (err) {
     unstable_rethrow(err);
     console.error("Assessment: loading target jobs failed", err);
+    return [];
+  }
+}
+
+async function loadStories() {
+  try {
+    return await listStories();
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Assessment: loading stories failed", err);
     return [];
   }
 }

@@ -206,15 +206,20 @@ describe("assessProfile", () => {
     });
   });
 
-  it("uses the journey check for readiness", () => {
+  it("uses the journey check for readiness, counting a written About me", () => {
     const result = assessProfile({
       ...none,
+      stories: [story("i", "about_me", drafted("I run a team of 6."))],
       assessment: {
-        answers: { stage: "panels", nextInterview: "soon", targetJob: "posting", stories: "some", aboutMe: "yes" },
+        answers: { stage: "panels", nextInterview: "soon", targetJob: "posting", stories: "some", focus: "unsure" },
         completedAt: WRITTEN,
       },
     });
-    expect(result.criteria.find((c) => c.id === "readiness")).toMatchObject({ status: "strong", score: 85 });
+    expect(result.criteria.find((c) => c.id === "readiness")).toMatchObject({
+      status: "strong",
+      score: 85,
+      headline: "Journey check: Interview-ready.",
+    });
   });
 });
 

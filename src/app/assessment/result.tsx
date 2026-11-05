@@ -4,58 +4,52 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { AddJobForm } from "@/app/jobs/forms";
 import { startStory } from "@/app/stories/new/actions";
-import { type Answers, gradeJourney } from "@/lib/assessment/journey";
+import { type Answers, type KnownProgress, gradeJourney } from "@/lib/assessment/journey";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 
 const PRIMARY =
   "inline-block rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60";
 
-// The journey grade, the biggest gaps, and the one step to take next, with that step right here so
-// it's one tap (or, for a job, one paste) away.
+// Where they are (the level), their path from here, and the first step right here so it's one tap
+// (or, for a job, one paste) away. The number behind the level isn't shown: feedback, not a score.
 export function JourneyResult({
   answers,
-  hasJob,
+  known,
   questionsJobId,
   notSaved = false,
 }: {
   answers: Answers;
-  hasJob: boolean;
-  // A job whose likely questions are ready, for someone with nothing left to fix.
+  known: KnownProgress;
+  // A job whose likely questions are ready, for the practice step.
   questionsJobId?: string;
   notSaved?: boolean;
 }) {
-  const grade = gradeJourney(answers, { hasJob });
+  const grade = gradeJourney(answers, known);
   return (
     <div className="mt-6 grid grid-cols-1 items-start gap-4 md:grid-cols-5" data-testid="journey-result">
       <section className="rounded-3xl bg-ink-800 p-6 text-white shadow-sm md:col-span-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide opacity-80">Journey grade</h2>
-        <p className="mt-3 flex items-baseline gap-2">
-          <span className="text-5xl font-extrabold" data-testid="journey-score">
-            {grade.score}
-          </span>
-          <span className="text-ink-100">/ 100</span>
+        <h2 className="text-sm font-bold uppercase tracking-wide opacity-80">Where you are</h2>
+        <p className="mt-2 text-3xl font-extrabold text-accent-300" data-testid="journey-level">
+          {grade.level}
         </p>
-        <p className="mt-1 text-lg font-semibold text-accent-300">{grade.level}</p>
-        {grade.gaps.length > 0 ? (
-          <>
-            <p className="mt-5 text-sm font-semibold text-ink-100">Your biggest gaps</p>
-            <ol className="mt-2 space-y-2">
-              {grade.gaps.map((gap, i) => (
-                <li key={gap.id} className="flex gap-3">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-bold">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="block font-semibold">{gap.title}</span>
-                    <span className="block text-sm text-ink-100">{gap.why}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </>
-        ) : (
-          <p className="mt-5 text-ink-100">No big gaps. Time to practise out loud.</p>
-        )}
+        <p className="mt-5 text-sm font-semibold text-ink-100">Your path from here</p>
+        <ol className="mt-2 space-y-2">
+          {grade.gaps.map((gap, i) => (
+            <li key={gap.id} className="flex gap-3">
+              <span
+                className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  i === 0 ? "bg-accent-400 text-ink-950" : "bg-white/15"
+                }`}
+              >
+                {i + 1}
+              </span>
+              <span>
+                <span className="block font-semibold">{gap.title}</span>
+                <span className="block text-sm text-ink-100">{gap.why}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
         <p className="mt-6 text-sm text-ink-200">
           <Link href="/assessment?retake=1" className="underline hover:text-white">
             Retake
@@ -72,14 +66,12 @@ export function JourneyResult({
         )}
       </section>
 
-      {/* On phones the step to take comes first; the grade follows. */}
+      {/* On phones the step to take comes first; the path follows. */}
       <section className="order-first rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8 md:order-none md:col-span-3">
         <p className="text-xs font-bold uppercase tracking-wide text-ink-700">Start here</p>
-        {grade.urgent && (
-          <p className="mt-1 text-sm text-slate-600">
-            Your next interview is days away, so this starts with what can be ready in time.
-          </p>
-        )}
+        <p className="mt-1 text-sm text-slate-600" data-testid="journey-why">
+          {grade.why}
+        </p>
         <NextStep id={grade.next.id} questionsJobId={questionsJobId} />
       </section>
     </div>
