@@ -1,4 +1,5 @@
 import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map";
+import { parseAnalysis, type StoryAnalysis } from "@/lib/analysis/content";
 import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
 import { coreQuestions, type StoryType } from "./story-types";
@@ -169,6 +170,9 @@ export type StoryContent = {
   grade?: StoryGrade;
   // "How to tell it" coaching of the draft (see src/lib/telling). Stale once the draft is rewritten.
   telling?: StoryTelling;
+  // "Why it works": what each paragraph gives the interviewer (see src/lib/analysis). Stale once the
+  // draft is rewritten.
+  analysis?: StoryAnalysis;
 };
 
 // Where the user is in the builder, derived from what has been saved.
@@ -418,6 +422,9 @@ export function parseContent(raw: unknown): StoryContent {
 
   const telling = parseTelling(raw.telling);
   if (telling) content.telling = telling;
+
+  const analysis = content.draft ? parseAnalysis(raw.analysis, content.draft.parts) : undefined;
+  if (analysis) content.analysis = analysis;
 
   return content;
 }
