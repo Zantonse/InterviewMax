@@ -30,9 +30,11 @@ export default function AiUsagePage() {
       <PolicySection title="How a request travels">
         <p>
           When a step needs AI, our server sends only what that step needs to{" "}
-          <strong>OpenRouter</strong>, which passes it to the company whose model runs the step (
-          {vendors} today). Your email address and account details are not sent. Nothing goes to
-          a model until you use a feature that needs it.
+          <strong>OpenRouter</strong>, which passes it to a provider that runs the step&apos;s
+          model. Today the models are made by {vendors}. DeepSeek&apos;s models are open, so
+          OpenRouter may run them at a hosting company rather than at DeepSeek itself. Your email
+          address and account details are not sent. Nothing goes to a model until you use a
+          feature that needs it.
         </p>
       </PolicySection>
 
@@ -45,8 +47,8 @@ export default function AiUsagePage() {
           </li>
           <li>OpenRouter&apos;s own logging of what we send is turned off.</li>
           <li>
-            {vendors} don&apos;t train their models on data sent through their APIs. They may keep
-            requests for up to 30 days to check for abuse, then delete them.
+            So the providers that run these models don&apos;t train on what we send. Some may
+            keep requests for a short time to check for abuse, then delete them.
           </li>
           <li>We don&apos;t train or fine-tune any model on your stories.</li>
         </PolicyList>

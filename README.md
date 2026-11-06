@@ -97,7 +97,7 @@ Code calls `generateForStep("storyWrite", { system, messages })` from `src/lib/a
 
 | Provider | Key | Notes |
 | --- | --- | --- |
-| OpenRouter | `OPENROUTER_API_KEY` | Every step for now: Claude and GPT by OpenRouter slug, e.g. `anthropic/claude-opus-5.5` |
+| OpenRouter | `OPENROUTER_API_KEY` | Every step for now: DeepSeek, GPT and Whisper by OpenRouter slug, e.g. `deepseek/deepseek-v4.1-flash` |
 | Claude API | `ANTHROPIC_API_KEY` | Optional; switch a step's provider to `anthropic` to use it |
 | OpenAI API | `OPENAI_API_KEY` | Optional; switch a step's provider to `openai` to use it |
 
