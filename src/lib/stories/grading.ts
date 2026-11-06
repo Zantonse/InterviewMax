@@ -416,6 +416,15 @@ function formatSeconds(seconds: number) {
   return s ? `${m} min ${s} sec` : `${m} min`;
 }
 
+// The score out of 100 shown on a graded story: the criteria's average on the 1-4 scale, as a share
+// of 4 (so all Solid is 75, all Strong is 100). Undefined when nothing was scored. The tier, not
+// this number, decides "Strong"; the score just shows how far along the story is.
+export function scoreOutOf100(criteria: CriterionScore[]): number | undefined {
+  if (criteria.length === 0) return undefined;
+  const avg = criteria.reduce((sum, c) => sum + c.score, 0) / criteria.length;
+  return Math.round((avg / 4) * 100);
+}
+
 // The tier, from the grader's scores and the quick checks.
 //   not yet:     any criterion missing, an average under 2.5, no number, or an untraced number
 //   strong:      every criterion solid or better, an average of 3.5 or more, and every check passing
