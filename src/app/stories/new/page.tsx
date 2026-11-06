@@ -58,7 +58,7 @@ function JobQuestions({ questions }: { questions: QuestionToBuild[] }) {
       <p className="mt-1 text-sm text-slate-600">
         None of your stories answers these yet. Pick one to answer it with a story.
       </p>
-      <ul className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <ul className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2" data-stagger>
         {questions.map((q) => (
           <li key={q.question}>
             <form action={startStory} className="h-full">
