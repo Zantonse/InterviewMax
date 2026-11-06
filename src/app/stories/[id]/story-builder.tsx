@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
 import { type FieldId, fieldJoggers } from "@/lib/field/fields";
@@ -9,6 +10,8 @@ import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
   canStrengthen,
+  weakIntroPart,
+  type WeakPart,
   gradeIsCurrent,
   isRoughDraft,
   nextCoreQuestion,
@@ -39,6 +42,7 @@ import {
 } from "@/lib/stories/story-types";
 import {
   addVividDetail,
+  askAboutWeakPart,
   askFollowUps,
   coachDraft,
   gradeDraft,
@@ -284,6 +288,7 @@ export function StoryBuilder({
     run([{ busy: "reading", action: () => importLinkedIn(sid(), formData) }]);
   }
 
+  const weak = busy ? undefined : weakIntroPart(content, storyType);
   const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
   const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
@@ -678,6 +683,16 @@ export function StoryBuilder({
               )}
               {content.draft ? (
                 <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5">
+                  {weak && (
+                    <WeakPartCallout
+                      part={weak}
+                      disabled={busy !== null}
+                      busy={busy === "probing"}
+                      onAsk={() =>
+                        run([{ busy: "probing", action: () => askAboutWeakPart(sid()) }])
+                      }
+                    />
+                  )}
                   {content.nothingMoreToAsk && (
                     <p className="text-sm text-slate-600">
                       I couldn&apos;t find anything more to ask. Change an answer and I&apos;ll look
@@ -1763,5 +1778,43 @@ function Highlighted({ text, marks }: { text: string; marks: string[] }) {
         ),
       )}
     </>
+  );
+}
+
+// "Tell me about yourself": the part the grader scored weakest, with one question to fix it.
+function WeakPartCallout({
+  part,
+  disabled,
+  busy,
+  onAsk,
+}: {
+  part: WeakPart;
+  disabled: boolean;
+  busy: boolean;
+  onAsk: () => void;
+}) {
+  return (
+    <div
+      className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200"
+      data-testid="weak-part"
+    >
+      <p className="text-sm font-semibold text-amber-900">
+        Weakest part: {part.label} ({SCORE_LABELS[part.score] ?? part.score}, {part.score} of 4)
+      </p>
+      {(part.improve || part.note) && (
+        <p className="mt-1 text-sm text-amber-900/90">{part.improve || part.note}</p>
+      )}
+      <button
+        type="button"
+        onClick={onAsk}
+        disabled={disabled}
+        className="mt-3 rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+      >
+        {busy ? "Thinking of a question…" : "Answer one question to fix it"}
+      </button>
+      <p className="mt-2 text-xs text-amber-900/70">
+        I&apos;ll rewrite only this part from your answer and leave the rest as it is.
+      </p>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   inferCareerPath,
   prefillFromProfile,
   probeStory,
+  probeWeakPart,
   writeStory,
 } from "@/lib/stories/builder";
 import {
@@ -17,8 +18,10 @@ import {
   canStrengthen,
   maxProbeRounds,
   nextCoreQuestion,
+  partToFix,
   probeRounds,
   skipRemainingFollowUps,
+  weakIntroPart,
   writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
@@ -259,6 +262,30 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
   });
 }
 
+// "Tell me about yourself": one question about the part the grader scored weakest. Its answer
+// then rewrites that part only (writeDraft, via partToFix).
+export async function askAboutWeakPart(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    const part = weakIntroPart(story.content, storyType);
+    if (!part) return { ok: true, content: story.content, title: story.title };
+    const [numbers, targets] = await Promise.all([
+      storyNumbers(story.storyType),
+      loadBuilderTargets(storyType),
+    ]);
+    const round = probeRounds(story.content) + 1;
+    const asked = await probeWeakPart(story.content, storyType, part, round, numbers, targets);
+    if (asked.length === 0) return fail("I couldn't think of a good question. Try Rewrite instead.");
+    const content = {
+      ...story.content,
+      followUps: [...(story.content.followUps ?? []), ...asked],
+      nothingMoreToAsk: false,
+    };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
 // Call two. Writes the story, or rewrites it if a draft already exists. A behavioral story gets
 // a rough draft straight after the telling, before the follow-ups.
 export async function writeDraft(storyId: string): Promise<BuilderResult> {
@@ -273,8 +300,22 @@ export async function writeDraft(storyId: string): Promise<BuilderResult> {
       storyNumbers(story.storyType),
       storyType?.format === "intro" ? loadBuilderTargets(storyType) : undefined,
     ]);
-    const { title, draft } = await writeStory(story.content, storyType, numbers, targets);
-    const content = { ...story.content, draft };
+    // After a weak-part question, only that part is rewritten.
+    const part = partToFix(story.content);
+    const focus =
+      part && story.content.draft ? { part, previous: story.content.draft.parts } : undefined;
+    const { title, draft } = await writeStory(story.content, storyType, numbers, targets, focus);
+    const content = {
+      ...story.content,
+      draft,
+      ...(focus
+        ? {
+            followUps: (story.content.followUps ?? []).map((f) =>
+              f.fixes === focus.part && f.answer?.trim() ? { ...f, applied: true } : f,
+            ),
+          }
+        : {}),
+    };
     const newTitle = title || story.title;
     await updateStory(storyId, { content, title: newTitle });
     // A rough draft only means the story was told; it's finished once written after the follow-ups.
