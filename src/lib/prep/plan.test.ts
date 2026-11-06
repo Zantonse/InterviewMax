@@ -8,6 +8,8 @@ import {
   focusJob,
   horizonFor,
   isDate,
+  jobsToShapeIntroFor,
+  SHAPE_INTRO_DAYS,
   todayIn,
   planHeading,
   whenLabel,
@@ -264,5 +266,39 @@ describe("planHeading", () => {
     expect(planHeading(21, null)).toBe("3 weeks to your interview");
     expect(planHeading(1, "Okta")).toBe("Your Okta interview is tomorrow");
     expect(planHeading(0, null)).toBe("Your interview is today");
+  });
+});
+
+describe("jobsToShapeIntroFor", () => {
+  const job = (id: string, interviewDate: string | null, outcome: string | null = null) => ({
+    ...JOB,
+    id,
+    interviewDate,
+    outcome,
+  });
+
+  it("puts an interview within a week first, then the rest in order", () => {
+    const jobs = [job("youtube", null), job("later", "2026-11-30"), job("meta", "2026-10-15")];
+    const order = jobsToShapeIntroFor(jobs, () => false, TODAY);
+    expect(order.map((o) => [o.job.id, o.days])).toEqual([
+      ["meta", 1],
+      ["youtube", null],
+      ["later", null],
+    ]);
+  });
+
+  it("leaves out jobs already shaped, finished, or with a past interview first", () => {
+    const jobs = [job("done", "2026-10-15", "offer"), job("past", "2026-10-01"), job("meta", "2026-10-14")];
+    const order = jobsToShapeIntroFor(jobs, (id) => id === "meta", TODAY);
+    expect(order.map((o) => [o.job.id, o.days])).toEqual([["past", null]]);
+  });
+
+  it(`counts ${SHAPE_INTRO_DAYS} days out as soon, and today as 0`, () => {
+    const order = jobsToShapeIntroFor(
+      [job("edge", "2026-10-21"), job("today", TODAY)],
+      () => false,
+      TODAY,
+    );
+    expect(order.map((o) => o.days)).toEqual([0, 7]);
   });
 });

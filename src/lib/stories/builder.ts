@@ -3,6 +3,7 @@ import { generateForStep, type Step } from "@/lib/ai";
 import {
   allAnswerText,
   type FollowUp,
+  type WeakPart,
   type StoryContent,
   type StoryDraft,
   type TailoredDraft,
@@ -33,12 +34,14 @@ import {
   pathMessages,
   tailorMessages,
   type TailorJob,
+  type WriteFocus,
   type WriteRetry,
   parseProbe,
   prefillMessages,
   parseWrite,
   probeMessages,
   probeSystem,
+  weakPartProbeSystem,
   writeMessages,
   writeSystem,
 } from "./prompts";
@@ -69,6 +72,26 @@ export async function probeStory(
     probeMessages(content, storyType, past, resume, numbers, targets),
   );
   return parseProbe(text, round);
+}
+
+// "Tell me about yourself": one question aimed at the part the grader scored weakest. Returns at
+// most one follow-up, marked with the part it fixes.
+export async function probeWeakPart(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+  part: WeakPart,
+  round: number,
+  numbers: StoryNumber[] = [],
+  targets?: BuilderTargets,
+): Promise<FollowUp[]> {
+  const { text } = await call(
+    "storyProbe",
+    weakPartProbeSystem(storyType, part, round, targets),
+    probeMessages(content, storyType, undefined, undefined, numbers, targets),
+  );
+  return parseProbe(text, round)
+    .slice(0, 1)
+    .map((f) => ({ ...f, gap: part.id, fixes: part.id }));
 }
 
 // "Tell me about yourself": answer the scripted questions a LinkedIn profile covers. Sentences with
@@ -105,14 +128,26 @@ export async function writeStory(
   storyType: StoryType | undefined,
   numbers: StoryNumber[] = [],
   targets?: BuilderTargets,
+  focus?: WriteFocus,
 ): Promise<{ title: string; draft: StoryDraft }> {
   const answers = `${allAnswerText(content)}\n${filledValues(numbers)}`;
   const system = writeSystem(storyType);
+  // A one-part rewrite keeps every other part as it was, whatever the model sent back.
+  const keepOthers = (story: { title: string; parts: Record<string, string> }) =>
+    focus
+      ? {
+          ...story,
+          parts: {
+            ...focus.previous,
+            [focus.part]: story.parts[focus.part] || focus.previous[focus.part] || "",
+          },
+        }
+      : story;
 
   const { result, value: story, untraced, ownWords } = await writeChecked({
     write: (retry) =>
-      call("storyWrite", system, writeMessages(content, storyType, retry, numbers, targets)),
-    parse: (text) => parseWrite(text, storyType),
+      call("storyWrite", system, writeMessages(content, storyType, retry, numbers, targets, focus)),
+    parse: (text) => keepOthers(parseWrite(text, storyType)),
     script: (story) => draftText(story.parts, storyType),
     answers,
     maxWords: lengthRange(storyType).max,
