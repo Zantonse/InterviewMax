@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
@@ -326,29 +326,7 @@ export function StoryBuilder({
           {progressLabel(stage, coreAnswered, questions.length, content)}
         </p>
         <div className="ml-auto flex items-center gap-2">
-          <div
-            role="tablist"
-            aria-label="Story views"
-            className="flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
-          >
-            {VIEWS.map((v, i) => (
-              <button
-                key={v.id}
-                type="button"
-                role="tab"
-                aria-selected={view === v.id}
-                onClick={() => setView(v.id)}
-                className={`rounded-full px-3.5 py-1.5 transition ${
-                  view === v.id
-                    ? "bg-white text-ink-800 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                data-testid={`tab-${v.id}`}
-              >
-                {i + 1} · {v.label}
-              </button>
-            ))}
-          </div>
+          <ViewTabs view={view} onChange={setView} />
           {menu && (
             <details className="relative" data-testid="story-menu">
               <summary
@@ -357,7 +335,7 @@ export function StoryBuilder({
               >
                 ⋯
               </summary>
-              <div className="absolute right-0 z-10 mt-2 w-72 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/10">
+              <div className="absolute right-0 z-10 mt-2 w-72 origin-top-right animate-pop rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/10">
                 {menu}
               </div>
             </details>
@@ -366,7 +344,7 @@ export function StoryBuilder({
       </div>
 
       {view === "build" ? (
-        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           {/* The conversation: its own scrolling pane, with the answer box pinned under it. */}
           <section
             className="flex h-[calc(100dvh-12rem)] min-h-[26rem] flex-col rounded-3xl bg-white shadow-sm ring-1 ring-black/5"
@@ -378,7 +356,7 @@ export function StoryBuilder({
               data-testid="chat"
             >
               {!content.imported && !content.linkedin && (
-                <li className="text-sm text-slate-500" data-testid="builder-intro">
+                <li className="animate-enter text-sm text-slate-500" data-testid="builder-intro">
                   {storyType?.format === "intro"
                     ? `How this works: answer ${questions.length} short questions in plain notes, typed or spoken. Then I'll ask a few follow-ups where it's thin and write your answer from your words, ready to shape for each target job.`
                     : "How this works: tell me what happened, your way. Messy notes or a minute of talking is plenty. I'll write a rough draft straight away, then ask a few questions about what's missing to make it stronger."}
@@ -668,7 +646,7 @@ export function StoryBuilder({
           </aside>
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-4">
             <StoryPanel
               title={title}
@@ -775,6 +753,57 @@ const VIEWS = [
   { id: "story", label: "Story & score" },
 ] as const;
 
+// Build | Story & score. One white pill slides between the tabs (the same object moving, not one
+// disappearing and another appearing). Before it's measured, the selected tab draws its own pill.
+function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  const tabs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({});
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const el = tabs.current[view];
+      if (el) setPill({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [view]);
+  return (
+    <div
+      role="tablist"
+      aria-label="Story views"
+      className="relative flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
+    >
+      {pill && (
+        <span
+          aria-hidden
+          className="absolute inset-y-1 left-0 rounded-full bg-white shadow-sm transition-[translate,width] duration-250 ease-in-out"
+          style={{ translate: `${pill.left}px 0`, width: pill.width }}
+        />
+      )}
+      {VIEWS.map((v, i) => (
+        <button
+          key={v.id}
+          ref={(el) => {
+            tabs.current[v.id] = el;
+          }}
+          type="button"
+          role="tab"
+          aria-selected={view === v.id}
+          onClick={() => onChange(v.id)}
+          className={`relative rounded-full px-3.5 py-1.5 transition-colors duration-200 ${
+            view === v.id
+              ? `text-ink-800 ${pill ? "" : "bg-white shadow-sm"}`
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          data-testid={`tab-${v.id}`}
+        >
+          {i + 1} · {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type View = (typeof VIEWS)[number]["id"];
 
 // Beside the chat: which parts of the story have answers so far.
@@ -810,7 +839,7 @@ function AnswerChecklist({
           return (
             <li key={part.id} className="flex items-center gap-2">
               <span
-                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors duration-300 ${
                   done
                     ? "border-ink-800 bg-ink-800"
                     : current
@@ -1008,7 +1037,7 @@ function Joggers({
           <p className="text-sm text-slate-600">
             From {moments[0].sourceLabel || "your resume"}, one of these might fit:
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-stagger>
             {moments.map((m) => (
               <button
                 key={m.moment}
@@ -1029,7 +1058,7 @@ function Joggers({
           <p className="text-sm text-slate-600">
             {moments.length > 0 ? "Or think of:" : "Stuck on which one? Think of:"}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-stagger>
             {general.map((j) => (
               <button
                 key={j}
@@ -1061,7 +1090,7 @@ function TapOptions({
 }) {
   return (
     <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="tap-options">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" data-stagger>
         {options.map((o) => (
           <button
             key={o}
@@ -1093,6 +1122,7 @@ function DraftSoFar({
   onShowStory: () => void;
 }) {
   const draft = content.draft;
+  const justWritten = useJustWritten(draft);
   if (!draft) {
     const told = Boolean(content.answers.start?.trim());
     const steps = [
@@ -1112,7 +1142,7 @@ function DraftSoFar({
           {steps.map((step, i) => (
             <li key={step} className="flex items-center gap-2">
               <span
-                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors duration-300 ${
                   i < current
                     ? "border-ink-800 bg-ink-800"
                     : i === current
@@ -1135,7 +1165,7 @@ function DraftSoFar({
   const pending = pendingFollowUps(content);
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 ${justWritten ? "animate-success" : ""}`}
       data-testid="draft-so-far"
     >
       <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
@@ -1152,9 +1182,9 @@ function DraftSoFar({
           draft.parts[p.id]?.trim() ? (
             <p
               key={p.id}
-              className={
-                p.id === marked ? "-mx-2 rounded-lg bg-accent-50 px-2 py-1 ring-1 ring-accent-300" : ""
-              }
+              className={`-mx-2 rounded-lg px-2 py-1 ring-1 transition-[background-color,box-shadow] duration-300 ${
+                p.id === marked ? "bg-accent-50 ring-accent-300" : "ring-transparent"
+              }`}
               data-testid={p.id === marked ? "draft-part-marked" : undefined}
             >
               {p.id === marked && (
@@ -1237,7 +1267,7 @@ function Exchange({
   onSubmit: (answer: string) => void;
 }) {
   return (
-    <li className="flex flex-col gap-2">
+    <li className="flex animate-enter flex-col gap-2">
       {improves && (
         <p className="pl-1 text-xs font-semibold uppercase tracking-wide text-ink-700">
           Improves: {improves}
@@ -1281,7 +1311,7 @@ function Exchange({
         />
       ) : answer ? (
         <div className="flex flex-col items-end gap-1">
-          <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-4 py-3 text-white">
+          <p className="max-w-[90%] origin-bottom-right animate-pop whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-4 py-3 text-white">
             {answer}
           </p>
           {source && <p className="text-xs text-slate-500">{source}</p>}
@@ -1530,19 +1560,19 @@ function UploadOption({
 
 function CoachBubble({ children }: { children: React.ReactNode }) {
   return (
-    <p className="max-w-[90%] rounded-2xl rounded-bl-md bg-ink-50 px-4 py-3 text-slate-800">
+    <p className="max-w-[90%] origin-bottom-left animate-pop rounded-2xl rounded-bl-md bg-ink-50 px-4 py-3 text-slate-800">
       {children}
     </p>
   );
 }
 
 function CoachLine({ children }: { children: React.ReactNode }) {
-  return <li className="pt-2 text-sm font-semibold text-ink-900">{children}</li>;
+  return <li className="animate-enter pt-2 text-sm font-semibold text-ink-900">{children}</li>;
 }
 
 function Thinking({ children }: { children: React.ReactNode }) {
   return (
-    <li role="status" className="flex items-center gap-2 text-sm text-slate-600">
+    <li role="status" className="flex animate-fade items-center gap-2 text-sm text-slate-600">
       <span className="h-2 w-2 animate-pulse rounded-full bg-ink-600" />
       {children}
     </li>
@@ -1592,6 +1622,24 @@ function ActionLine({
   );
 }
 
+// True for a moment after the written story changes (a draft or a rewrite just landed), so the
+// story can pulse once to say so. Not on first load.
+function useJustWritten(draft: StoryContent["draft"]) {
+  const text = draft ? Object.values(draft.parts).join("\n") : "";
+  const [was, setWas] = useState(text);
+  const [pulse, setPulse] = useState(false);
+  if (text !== was) {
+    setWas(text);
+    if (text) setPulse(true);
+  }
+  useEffect(() => {
+    if (!pulse) return;
+    const t = setTimeout(() => setPulse(false), 800);
+    return () => clearTimeout(t);
+  }, [pulse]);
+  return pulse;
+}
+
 function StoryPanel({
   title,
   content,
@@ -1615,12 +1663,13 @@ function StoryPanel({
   const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
   // At an interview pace of about 150 words a minute.
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
+  const justWritten = useJustWritten(draft);
 
   return (
     <section
       className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
         writing ? "opacity-60" : ""
-      }`}
+      } ${justWritten ? "animate-success" : ""}`}
       aria-label="Your story"
     >
       <div className="flex items-start justify-between gap-3">

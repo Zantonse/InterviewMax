@@ -24,7 +24,7 @@ export function QuestionList({
   aiAnswerHref?: string;
 }) {
   return (
-    <ol className="space-y-2" data-testid="question-list">
+    <ol className="space-y-2" data-testid="question-list" data-stagger>
       {questions.slice(0, limit).map((q, i) => {
         const coverage = coverageFor(q.theme, stories, q.question);
         return (

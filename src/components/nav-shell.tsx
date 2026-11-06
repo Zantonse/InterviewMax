@@ -37,7 +37,7 @@ export function NavShell({ children }: { children: ReactNode }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-ink-950/50 lg:hidden"
+          className="fixed inset-0 z-40 animate-fade bg-ink-950/50 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -49,7 +49,7 @@ export function NavShell({ children }: { children: ReactNode }) {
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a")) setOpen(false);
         }}
-        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-ink-900 shadow-xl transition-transform duration-200 data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18 print:hidden"
+        className="fixed inset-y-0 left-0 z-50 invisible flex w-72 max-w-[85vw] -translate-x-full flex-col data-open:visible lg:visible bg-ink-900 shadow-xl data-open:translate-x-0 lg:z-30 lg:w-64 lg:translate-x-0 lg:shadow-none nav-collapsed:w-18 print:hidden"
       >
         <button
           type="button"

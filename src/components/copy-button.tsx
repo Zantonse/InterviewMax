@@ -24,10 +24,13 @@ export function CopyButton({
   return (
     <span className="inline-flex flex-col items-end gap-1">
       <button type="button" onClick={copy} className={className} data-testid="copy-button">
-        {state === "copied" ? "Copied" : label}
+        {/* The label crossfades (with a slight blur) rather than snapping to "Copied". */}
+        <span key={state === "copied" ? "copied" : "idle"} className="inline-block animate-swap">
+          {state === "copied" ? "Copied" : label}
+        </span>
       </button>
       {state === "failed" && (
-        <span role="alert" className="max-w-56 text-right text-xs font-medium text-red-700">
+        <span role="alert" className="max-w-56 animate-enter text-right text-xs font-medium text-red-700">
           {COPY_FAILED}
         </span>
       )}

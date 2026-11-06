@@ -16,7 +16,7 @@ export function StoryPlan({
   limit?: number;
 }) {
   return (
-    <ol className="space-y-2" data-testid="story-plan">
+    <ol className="space-y-2" data-testid="story-plan" data-stagger>
       {order.slice(0, limit).map((p, i) => {
         const type = getStoryType(p.storyType);
         if (!type) return null;

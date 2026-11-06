@@ -319,7 +319,7 @@ export function MicButton({
         <button
           type="button"
           onClick={stop}
-          className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+          className="inline-flex animate-swap items-center gap-2 rounded-xl bg-red-50 px-3 py-2 font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
           aria-label={`Stop talking (${clock})`}
         >
           <span className="relative flex h-3 w-3" aria-hidden>
@@ -341,11 +341,13 @@ export function MicButton({
           className="inline-flex items-center gap-1.5 rounded-xl bg-accent-100 px-3 py-2 font-semibold text-accent-900 ring-1 ring-accent-300 hover:bg-accent-200 disabled:opacity-50"
         >
           <MicIcon />
-          {phase === "starting" ? "Starting…" : phase === "finishing" ? "Writing it down…" : "Talk"}
+          <span key={phase} className="animate-swap">
+            {phase === "starting" ? "Starting…" : phase === "finishing" ? "Writing it down…" : "Talk"}
+          </span>
         </button>
       )}
       {phase === "recording" && (
-        <span className="text-xs text-slate-500" role="status">
+        <span className="animate-fade text-xs text-slate-500" role="status">
           Listening. Your words appear as you go; edit them before you send. Speech is written
           down by an AI model and the recording isn&apos;t kept.
         </span>

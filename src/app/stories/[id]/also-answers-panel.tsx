@@ -84,7 +84,7 @@ export function AlsoAnswersPanel({
               fine: it&apos;s focused. Build another story for your other questions.
             </p>
           ) : (
-            <ul className="mt-3 flex flex-col gap-2" data-testid="also-answers-list">
+            <ul className="mt-3 flex flex-col gap-2" data-testid="also-answers-list" data-stagger>
               {also.questions.map((q) => (
                 <Pick key={q.question} pick={q} />
               ))}
