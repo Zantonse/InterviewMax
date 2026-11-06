@@ -34,6 +34,9 @@ export const STEP_MODELS = {
   // Story finder: point at moments in the resume, LinkedIn profile and role map that could become
   // stories, each quoting the line it comes from (quotes and numbers checked in code).
   storyFind: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
+  // Also answers: pick, from the user's likely, past-interview, shared-bank, tough and library
+  // questions, the other ones a written story can answer, with what to lead with for each.
+  storyQuestions: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "low" },
   // Tough-questions coach: a short, honest answer to one awkward question (why leaving, a gap,
   // salary…) from the user's answers about their situation. Numbers checked in code.
   toughAnswer: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },

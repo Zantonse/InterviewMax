@@ -2,6 +2,7 @@ import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map
 import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
 import { coreQuestions, type StoryType } from "./story-types";
+import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
 
 // What the builder keeps in stories.content (jsonb).
 export type FollowUp = {
@@ -150,6 +151,9 @@ export type StoryContent = {
   // The interview question the user picked to answer with this story (from a job's likely
   // questions, the question library or a past interview), asked as the opening question.
   asked?: string;
+  // "Also answers": the other interview questions the written story can answer (see
+  // src/lib/reuse). Stale once the draft is rewritten.
+  alsoAnswers?: StoryAlsoAnswers;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -374,6 +378,9 @@ export function parseContent(raw: unknown): StoryContent {
   }
 
   if (typeof raw.asked === "string" && raw.asked.trim()) content.asked = raw.asked.trim();
+
+  const alsoAnswers = parseAlsoAnswers(raw.alsoAnswers);
+  if (alsoAnswers) content.alsoAnswers = alsoAnswers;
 
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {

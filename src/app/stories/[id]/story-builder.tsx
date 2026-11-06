@@ -58,6 +58,7 @@ import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/ta
 import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
+import { AlsoAnswersPanel } from "./also-answers-panel";
 import { AiNotice } from "@/components/ai-notice";
 
 type Busy =
@@ -729,6 +730,13 @@ export function StoryBuilder({
                   { busy: "coaching", action: () => coachDraft(sid()) },
                 ])
               }
+            />
+            <AlsoAnswersPanel
+              storyId={sid}
+              content={content}
+              storyType={storyType}
+              disabled={busy !== null}
+              onContent={setContent}
             />
             {content.draft && nextUp}
             {afterStory}

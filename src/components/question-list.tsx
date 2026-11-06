@@ -26,7 +26,7 @@ export function QuestionList({
   return (
     <ol className="space-y-2" data-testid="question-list">
       {questions.slice(0, limit).map((q, i) => {
-        const coverage = coverageFor(q.theme, stories);
+        const coverage = coverageFor(q.theme, stories, q.question);
         return (
           <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
             <p className="font-semibold text-slate-900">
@@ -51,7 +51,11 @@ export function QuestionList({
                     >
                       {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
                     </Link>
-                  ) : coverage?.kind === "build" ? (
+                  ) : null}
+                  {coverage?.kind === "story" && coverage.emphasize && (
+                    <EmphasizeLine text={coverage.emphasize} />
+                  )}
+                  {coverage?.kind === "build" ? (
                     <form action={startStory} className="flex flex-wrap items-center gap-2">
                       <input type="hidden" name="asked" value={q.question} />
                       <span className="text-slate-500">No story for this yet.</span>
@@ -104,7 +108,7 @@ export function AskedRecently({
       </p>
       <ul className="space-y-2">
         {questions.map((q) => {
-          const coverage = q.theme ? coverageFor(q.theme, stories) : undefined;
+          const coverage = q.theme ? coverageFor(q.theme, stories, q.question) : undefined;
           return (
             <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
               <p className="font-semibold text-slate-900">{q.question}</p>
@@ -119,7 +123,11 @@ export function AskedRecently({
                 >
                   {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
                 </Link>
-              ) : coverage?.kind === "build" ? (
+              ) : null}
+              {coverage?.kind === "story" && coverage.emphasize && (
+                <EmphasizeLine text={coverage.emphasize} />
+              )}
+              {coverage?.kind === "build" ? (
                 <form action={startStory} className="mt-2 text-sm">
                   <input type="hidden" name="asked" value={q.question} />
                   <button
@@ -149,5 +157,15 @@ function Tag({ children, tone = "plain" }: { children: React.ReactNode; tone?: "
     >
       {children}
     </span>
+  );
+}
+
+// Under a story that answers this question through "Also answers": what to lead with.
+function EmphasizeLine({ text }: { text: string }) {
+  return (
+    <p className="mt-1 text-sm text-slate-600" data-testid="also-emphasize">
+      <span className="font-semibold text-slate-700">Lead with: </span>
+      {text}
+    </p>
   );
 }
