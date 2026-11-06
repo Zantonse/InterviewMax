@@ -12,8 +12,8 @@ describe("AI usage policy steps", () => {
   });
 
   it("names the company behind each model", () => {
-    expect(stepVendor("storyWrite")).toBe("Anthropic");
+    expect(stepVendor("storyWrite")).toBe("DeepSeek");
     expect(stepVendor("storyGrade")).toBe("OpenAI");
-    expect(aiVendors()).toEqual(["Anthropic", "OpenAI"]);
+    expect(aiVendors()).toEqual(["DeepSeek", "OpenAI"]);
   });
 });

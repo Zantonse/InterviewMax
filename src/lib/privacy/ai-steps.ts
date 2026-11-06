@@ -129,6 +129,7 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
 
 const VENDORS: Record<string, string> = {
   anthropic: "Anthropic",
+  deepseek: "DeepSeek",
   openai: "OpenAI",
   google: "Google",
   "meta-llama": "Meta",
