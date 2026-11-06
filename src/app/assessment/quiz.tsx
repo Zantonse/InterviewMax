@@ -2,24 +2,64 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { type Answers, QUESTIONS } from "@/lib/assessment/journey";
+import { type Answers, type KnownProgress, QUESTIONS } from "@/lib/assessment/journey";
+import { COACHING_STYLES, type CoachingStyle, STYLE_OPTIONS } from "@/lib/coaching/style";
+import { FIELDS, type FieldId } from "@/lib/field/fields";
 import { skipAssessment, submitAssessment } from "./actions";
 import { JourneyResult } from "./result";
 
+type Choice = { id: string; label: string; hint?: string };
+type QuizStep = { id: string; question: string; options: readonly Choice[] };
+
+// Your field opens the quiz (it's the easiest tap and tailors examples from the first story), the
+// journey questions follow, and coaching style closes it. Field and style are saved to Settings,
+// where they can be changed any time.
+const STEPS: QuizStep[] = [
+  {
+    id: "field",
+    question: "What kind of work do you do?",
+    // The named fields first; "not sure" and "something else" close the list.
+    options: [
+      ...FIELDS.filter((f) => f.id !== "generic" && f.id !== "other"),
+      ...FIELDS.filter((f) => f.id === "other" || f.id === "generic"),
+    ].map((f) => ({
+      id: f.id,
+      label: f.id === "other" ? "Something else" : f.id === "generic" ? "Not sure / a mix" : f.label,
+    })),
+  },
+  ...QUESTIONS,
+  {
+    id: "coachingStyle",
+    question: "How do you want me to coach you?",
+    options: COACHING_STYLES.map((id) => ({
+      id,
+      label: STYLE_OPTIONS[id].label,
+      hint: STYLE_OPTIONS[id].description,
+    })),
+  },
+];
+
+export const STEP_COUNT = STEPS.length;
+
+export type Picks = Partial<Answers> & { field?: FieldId; coachingStyle?: CoachingStyle };
+
 // One question at a time; a tap answers it and moves on. The last tap saves the answers and shows
-// the grade in place.
+// where to start, in place.
 export function Quiz({
-  hasJob,
+  known,
   questionsJobId,
   retake = false,
+  initial = {},
 }: {
-  hasJob: boolean;
+  known: KnownProgress;
   questionsJobId?: string;
   // Retaking keeps the last result if they back out, so there's nothing to skip.
   retake?: boolean;
+  // Last answers and saved settings, shown as already picked.
+  initial?: Picks;
 }) {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Partial<Answers>>({});
+  const [answers, setAnswers] = useState<Picks>(initial);
   const [done, setDone] = useState<{ answers: Answers; saved: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -28,21 +68,21 @@ export function Quiz({
     return (
       <JourneyResult
         answers={done.answers}
-        hasJob={hasJob}
+        known={known}
         questionsJobId={questionsJobId}
         notSaved={!done.saved}
       />
     );
   }
 
-  const question = QUESTIONS[step];
-  const chosen = answers[question.id];
+  const question = STEPS[step];
+  const chosen = (answers as Record<string, string | undefined>)[question.id];
 
   function choose(optionId: string) {
     const next = { ...answers, [question.id]: optionId };
     setAnswers(next);
     setError(null);
-    if (step < QUESTIONS.length - 1) {
+    if (step < STEPS.length - 1) {
       setStep(step + 1);
       return;
     }
@@ -52,7 +92,7 @@ export function Quiz({
         setError(result.error);
         return;
       }
-      setDone({ answers: next as Answers, saved: result.saved });
+      setDone({ answers: result.answers, saved: result.saved });
     });
   }
 
@@ -63,9 +103,9 @@ export function Quiz({
     >
       <div className="flex items-center justify-between gap-4">
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
-          {step + 1} of {QUESTIONS.length}
+          {step + 1} of {STEPS.length}
           <span className="flex gap-1" aria-hidden>
-            {QUESTIONS.map((q, i) => (
+            {STEPS.map((q, i) => (
               <span
                 key={q.id}
                 className={`size-2 rounded-full ${
@@ -103,6 +143,15 @@ export function Quiz({
               }`}
             >
               {option.label}
+              {option.hint && (
+                <span
+                  className={`mt-0.5 block text-sm font-normal ${
+                    chosen === option.id ? "text-ink-100" : "text-slate-600"
+                  }`}
+                >
+                  {option.hint}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -110,7 +159,7 @@ export function Quiz({
 
       {saving && (
         <p className="mt-4 text-sm text-slate-600" role="status">
-          Working out your grade…
+          Working out where to start…
         </p>
       )}
       {error && (
