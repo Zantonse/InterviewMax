@@ -25,7 +25,8 @@ import {
 //   call one (storyProbe): read the answers and ask follow-ups aimed at the gaps, in one round (more on request)
 //   call two (storyWrite): write the story from the user's own answers, inventing nothing
 
-const CHECKLIST = `- Situation: where they were, their role, and what was at stake are clear.
+const CHECKLIST = `- Principle: how they think about this kind of problem, the mental model or principle they bring to it, in a line ("I always start from the customer's deadline, not ours"). The story opens with it and then shows it in action. If the telling doesn't state one, ask once, lightly, e.g. "Before the story: how do you usually think about problems like this?" Never suggest a principle for them.
+- Situation: where they were, their role, and what was at stake are clear.
 - Ownership: their own actions are separated from the team's ("I", not only "we").
 - Actions: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
@@ -33,7 +34,16 @@ const CHECKLIST = `- Situation: where they were, their role, and what was at sta
 - Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
 - Reflection: a specific lesson or something they'd do differently.`;
 
-const GAPS = ["situation", "ownership", "actions", "obstacle", "decision", "result", "reflection"] as const;
+const GAPS = [
+  "principle",
+  "situation",
+  "ownership",
+  "actions",
+  "obstacle",
+  "decision",
+  "result",
+  "reflection",
+] as const;
 
 // How the reviews ask. Interviewers remember numbers and specifics, so the coach still gets them,
 // but like an autobiographer drawing out a life story, not an interrogator: curious questions about
@@ -59,7 +69,7 @@ Tap options: a blank box is where people stall, so give a question 3 or 4 tap op
 
 // A behavioral story arrives as one telling in the user's own words, so the first round asks only
 // about what it left out. Interviewers judge judgment, so the thinking question is never dropped.
-const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what made it hard, what they were thinking at the key moment, the result with a number, what they learned. If what they were thinking at the key moment is missing, one of your questions must ask about it. Put the lightest question first.`;
+const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what made it hard, what they were thinking at the key moment, the result with a number, what they learned, and how they think about this kind of problem in general (the principle the story opens with). If what they were thinking at the key moment is missing, one of your questions must ask about it. If the telling doesn't state a principle, one of your questions must ask for it, lightly. Put the lightest question first.`;
 
 function roundInstructions(round: number, storyType?: StoryType): string {
   if (round <= 1 && storyType?.format !== "intro") return TOLD_FIRST_ROUND;
@@ -112,11 +122,12 @@ ${EDIT_RULES}
 Make it strong, not just accurate: put their most impressive numbers where they land hardest, use every relevant figure and concrete example they gave (including in their follow-up answers), and cut details that dilute the story. Prefer concrete verbs over filler and clichés, while keeping their voice.
 
 Write these parts:
+- principle: 1 sentence, at most 2, said before the story starts: the mental model, principle or way they think about this kind of problem, in their own words (e.g. "The way I see it, a launch date is a promise to the customer, so scope is what moves."). The story then shows it in action, so the actions should visibly follow from it. Write it only from a principle they stated in their answers; if they gave none, leave it as an empty string "". Never make one up from the story.
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
 - actions: 3 to 5 sentences on the steps they took, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
 - result: 1 to 2 sentences on the outcome, with their number.
-- reflection: 1 to 2 sentences on what they learned or would do differently.
+- reflection: 1 to 2 sentences on what they learned or would do differently. When there's a principle, don't restate it; it can close the loop in a few words (whether the story confirmed or changed how they think).
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
 

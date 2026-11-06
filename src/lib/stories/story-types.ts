@@ -147,7 +147,11 @@ export type StoryPart = { id: string; label: string };
 export type CoreQuestion = { id: string; part: string; text: string };
 
 // The parts of a behavioral story, in the order it is told.
+// A behavioral story may open with how the user thinks about this kind of problem (Craig, Nov 6:
+// "start with the mental model, principles, or way I think about the problem before the story").
+// It's written only from their own words, and left empty when they gave none.
 export const STAR_PARTS = [
+  { id: "principle", label: "How I think about it" },
   { id: "situation", label: "Situation" },
   { id: "role", label: "Your role" },
   { id: "actions", label: "What you did" },

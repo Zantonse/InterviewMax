@@ -565,6 +565,8 @@ Then give the one or two changes that would most improve the story, most importa
       ? ""
       : `
 
+A behavioral story may open with a sentence on how the user thinks about this kind of problem (a principle or mental model) before the situation. That's intended: don't count it as padding or slow setup. When the story then shows that principle in action, mention it as a strength.
+
 Also say which job this story does in a story bank: one of ${BANK_ROLES.map((r) => `"${r}"`).join(", ")}, with one short sentence on why. This describes the story's level; it is not a score.
 
 ${THINKING_RULES}`
