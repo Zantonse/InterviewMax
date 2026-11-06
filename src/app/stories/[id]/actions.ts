@@ -36,6 +36,7 @@ import {
 } from "@/lib/stories/story-types";
 import { notesForStoryType, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { analyzeStory } from "@/lib/analysis/analyze";
 import { coachTelling } from "@/lib/telling/coach";
 import { canTell } from "@/lib/telling/content";
 import { trackEvent } from "@/lib/usage/track";
@@ -321,6 +322,26 @@ export async function coachDraft(storyId: string): Promise<BuilderResult> {
       extraAnswers: numbers.flatMap((n) => (n.value ? [n.value] : [])).join("\n"),
     });
     const content = { ...story.content, telling };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// Why it works: what each paragraph of the current draft gives the interviewer. Runs when the user
+// turns the toggle on and there's no analysis for this version of the story yet. Never touches the
+// draft or its grade.
+export async function analyzeDraft(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    if (!story.content.draft) return fail("Write the story first, then I'll show why it works.");
+    const targets = await loadBuilderTargets(storyType);
+    const analysis = await analyzeStory({
+      title: story.title,
+      content: story.content,
+      storyType,
+      targets,
+    });
+    const content = { ...story.content, analysis };
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });

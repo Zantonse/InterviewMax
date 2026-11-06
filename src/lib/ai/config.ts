@@ -43,6 +43,9 @@ export const STEP_MODELS = {
   // How to tell it: turn a written story into one told out loud (two hooks, a 30-second and a
   // 2-minute version in beats). Facts and figures checked in code; the delivery cues are code.
   storyTell: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
+  // Why it works: read a written story as the interviewer would and say, paragraph by paragraph,
+  // what each one gives them (signal, competencies proved, how to sharpen). Quotes checked in code.
+  storyAnalyze: { provider: "openrouter", model: "anthropic/claude-opus-5.5", effort: "medium" },
   // Model grade (Context, Ownership, Reflection, level). A different vendor from the writer.
   storyGrade: { provider: "openrouter", model: "openai/gpt-5.5", effort: "medium" },
   // Target jobs: read the resume and every job posting together (what they share, how each differs).

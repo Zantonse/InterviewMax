@@ -39,6 +39,7 @@ import {
 } from "@/lib/stories/story-types";
 import {
   addVividDetail,
+  analyzeDraft,
   askFollowUps,
   coachDraft,
   gradeDraft,
@@ -56,6 +57,8 @@ import {
 import { createStory } from "@/app/stories/new/actions";
 import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
+import { analysisIsCurrent } from "@/lib/analysis/content";
+import { AnalysisView } from "./analysis-view";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
@@ -69,7 +72,8 @@ type Busy =
   | "probing"
   | "writing"
   | "grading"
-  | "coaching";
+  | "coaching"
+  | "analyzing";
 type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: number };
 
 // Where a follow-up's answer shows up in the story panel, by the gap it was aimed at. Gaps that
@@ -670,6 +674,9 @@ export function StoryBuilder({
               content={content}
               storyType={storyType}
               writing={busy === "writing"}
+              analyzing={busy === "analyzing"}
+              disabled={busy !== null}
+              onAnalyze={() => run([{ busy: "analyzing", action: () => analyzeDraft(sid()) }])}
             >
               {error && (
                 <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
@@ -1582,12 +1589,19 @@ function StoryPanel({
   content,
   storyType,
   writing,
+  analyzing,
+  disabled,
+  onAnalyze,
   children,
 }: {
   title: string;
   content: StoryContent;
   storyType: StoryType | undefined;
   writing: boolean;
+  // "Why it works": what each paragraph gives the interviewer.
+  analyzing: boolean;
+  disabled: boolean;
+  onAnalyze: () => void;
   // Actions under the story.
   children?: React.ReactNode;
 }) {
@@ -1596,6 +1610,7 @@ function StoryPanel({
   const storyTypeLabel = storyType?.label;
   // A written story reads as one script to say aloud; the parts view is for checking what went where.
   const [showParts, setShowParts] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
   const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
   // At an interview pace of about 150 words a minute.
@@ -1632,17 +1647,38 @@ function StoryPanel({
             {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
             spoken
           </span>
-          <button
-            type="button"
-            onClick={() => setShowParts((v) => !v)}
-            className="font-medium text-ink-800 hover:underline"
-          >
-            {showParts ? "Show as a script" : "Show by part"}
-          </button>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {!showWhy && (
+              <button
+                type="button"
+                onClick={() => setShowParts((v) => !v)}
+                className="font-medium text-ink-800 hover:underline"
+              >
+                {showParts ? "Show as a script" : "Show by part"}
+              </button>
+            )}
+            <WhyToggle
+              on={showWhy}
+              onChange={(on) => {
+                setShowWhy(on);
+                if (on && !analysisIsCurrent(content.analysis, draft.writtenAt) && !disabled) {
+                  onAnalyze();
+                }
+              }}
+            />
+          </div>
         </div>
       )}
 
-      {draft && !showParts ? (
+      {draft && showWhy ? (
+        <AnalysisView
+          content={content}
+          storyType={storyType}
+          analyzing={analyzing}
+          disabled={disabled}
+          onAnalyze={onAnalyze}
+        />
+      ) : draft && !showParts ? (
         <div className="mt-5" data-testid="story-script">
           <div className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800">
             {paragraphs.map((text, i) => (
@@ -1695,6 +1731,34 @@ function StoryPanel({
       )}
       {children}
     </section>
+  );
+}
+
+// Switches the story between the plain script and "Why it works".
+function WhyToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="flex items-center gap-2 font-medium text-ink-800"
+      data-testid="why-toggle"
+    >
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition ${
+          on ? "bg-ink-800" : "bg-slate-300"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+            on ? "left-[18px]" : "left-0.5"
+          }`}
+        />
+      </span>
+      Why it works
+    </button>
   );
 }
 
