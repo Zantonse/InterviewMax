@@ -72,11 +72,18 @@ jobs:
           SHA: ${{ github.event.deployment.sha }}
           URL_INPUT: ${{ inputs.url }}
           DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          # The Vercel team slug in preview URLs. Override with the SIM_PREVIEW_TEAM repo variable.
+          PREVIEW_TEAM: ${{ vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects' }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "url=$URL_INPUT" >> "$GITHUB_OUTPUT"; exit 0
           fi
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          # Two Vercel projects deploy this repo (the old work one too); only test the live one.
+          case "$DEPLOY_URL" in
+            *"$PREVIEW_TEAM"*) ;;
+            *) echo "Not a $PREVIEW_TEAM preview ($DEPLOY_URL); skipping."; echo "run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
           if [ "$REF" = "sims/main" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
