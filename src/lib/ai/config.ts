@@ -39,6 +39,9 @@ export const STEP_MODELS = {
   // Also answers: pick, from the user's likely, past-interview, shared-bank, tough and library
   // questions, the other ones a written story can answer, with what to lead with for each.
   storyQuestions: { provider: "openrouter", model: "deepseek/deepseek-v4.1-flash", effort: "low" },
+  // Exec version: the written story cut to 30 seconds, answer first (result and number, why it
+  // mattered, the key decision), plus what an executive would ask next. Figures checked in code.
+  storyExec: { provider: "openrouter", model: "deepseek/deepseek-v4.1-flash", effort: "medium" },
   // Tough-questions coach: a short, honest answer to one awkward question (why leaving, a gap,
   // salary…) from the user's answers about their situation. Numbers checked in code.
   toughAnswer: { provider: "openrouter", model: "deepseek/deepseek-v4.1-flash", effort: "medium" },

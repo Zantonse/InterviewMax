@@ -63,6 +63,7 @@ import { appendSpoken } from "@/lib/voice/text";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
+import { ExecPanel } from "./exec-panel";
 import { AiNotice } from "@/components/ai-notice";
 
 type Busy =
@@ -723,6 +724,13 @@ export function StoryBuilder({
                   { busy: "coaching", action: () => coachDraft(sid()) },
                 ])
               }
+            />
+            <ExecPanel
+              storyId={sid}
+              content={content}
+              storyType={storyType}
+              disabled={busy !== null}
+              onContent={setContent}
             />
             <AlsoAnswersPanel
               storyId={sid}

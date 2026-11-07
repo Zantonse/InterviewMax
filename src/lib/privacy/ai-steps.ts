@@ -43,6 +43,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Also answers (other questions a written story can answer)",
     sends: "The written story, the question it was built for, the questions it's checked against (likely questions for your target jobs, questions from your past interviews and ones asked recently at those companies) and your field",
   },
+  storyExec: {
+    feature: "Exec version (a 30-second, answer-first version of a written story)",
+    sends: "The written story, the question it was built for, your answers behind it and your field",
+  },
   toughAnswer: {
     feature: "Tough questions",
     sends: "Your answers about that question and, if you pick one, that job’s posting, and your field",
