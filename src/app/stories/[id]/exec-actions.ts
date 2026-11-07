@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { ModelError } from "@/lib/ai";
 import { canExec } from "@/lib/exec/content";
 import { makeExecVersion } from "@/lib/exec/make";
+import { getExecModeSafely } from "@/lib/exec/settings";
 import { numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { getStory, updateStory } from "@/lib/stories/data";
@@ -14,6 +15,9 @@ import type { BuilderResult } from "./actions";
 // its grade.
 export async function makeExec(storyId: string): Promise<BuilderResult> {
   try {
+    if (!(await getExecModeSafely())) {
+      return { ok: false, error: "Turn on Exec mode in Settings first." };
+    }
     const story = await getStory(String(storyId));
     if (!story) return { ok: false, error: "We couldn't find that story." };
     const storyType = getStoryType(story.storyType);

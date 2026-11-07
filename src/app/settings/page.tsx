@@ -6,12 +6,14 @@ import { AppHeader } from "@/components/app-header";
 import { PolicyLinks } from "@/components/policy-links";
 import { getCurrentUser } from "@/lib/auth";
 import { getCoachingStyleSafely } from "@/lib/coaching/data";
+import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { listJobs } from "@/lib/jobs/data";
 import { listStories } from "@/lib/stories/data";
 import { listTranscripts } from "@/lib/transcripts/data";
 import { CoachingStyleForm } from "./coaching-style-form";
 import { DeleteAccountForm } from "./delete-account-form";
+import { ExecModeForm } from "./exec-mode-form";
 import { FieldForm } from "./field-form";
 
 export const metadata: Metadata = { title: "Settings · InterviewMax" };
@@ -62,6 +64,23 @@ export default function SettingsPage() {
           </Suspense>
         </section>
 
+        <section
+          id="exec-mode"
+          className="mt-6 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+          aria-labelledby="exec-mode-heading"
+        >
+          <h2 id="exec-mode-heading" className="text-xl font-bold text-slate-900">
+            Exec mode
+          </h2>
+          <p className="mt-2 text-slate-600">
+            For interviews with executives, or if you&apos;re working on how you talk to them. Off
+            unless you turn it on.
+          </p>
+          <Suspense fallback={<p className="mt-4 h-16 animate-pulse rounded-xl bg-slate-100" />}>
+            <ExecModeSection />
+          </Suspense>
+        </section>
+
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-xl font-bold text-slate-900">Your data</h2>
           <p className="mt-2 text-slate-600">
@@ -91,6 +110,10 @@ export default function SettingsPage() {
 
 async function CoachingStyleSection() {
   return <CoachingStyleForm initial={await getCoachingStyleSafely()} />;
+}
+
+async function ExecModeSection() {
+  return <ExecModeForm initial={await getExecModeSafely()} />;
 }
 
 async function FieldSection() {

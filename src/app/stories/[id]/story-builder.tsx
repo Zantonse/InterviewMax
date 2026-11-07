@@ -110,6 +110,7 @@ export function StoryBuilder({
   menu,
   beside,
   field = null,
+  execMode = false,
 }: {
   // Null for a new story that isn't saved yet: the first action creates it from newStory.
   storyId: string | null;
@@ -135,6 +136,8 @@ export function StoryBuilder({
   beside?: React.ReactNode;
   // The user's field (Settings): picks the examples and memory joggers.
   field?: FieldId | null;
+  // Exec mode (Settings, off by default): shows the Exec version card on the written story.
+  execMode?: boolean;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -725,13 +728,15 @@ export function StoryBuilder({
                 ])
               }
             />
-            <ExecPanel
-              storyId={sid}
-              content={content}
-              storyType={storyType}
-              disabled={busy !== null}
-              onContent={setContent}
-            />
+            {execMode && (
+              <ExecPanel
+                storyId={sid}
+                content={content}
+                storyType={storyType}
+                disabled={busy !== null}
+                onContent={setContent}
+              />
+            )}
             <AlsoAnswersPanel
               storyId={sid}
               content={content}
