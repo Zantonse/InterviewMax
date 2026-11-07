@@ -1,0 +1,121 @@
+name: Simulated users
+
+# AI personas build a story end to end on a Vercel preview, then a cheap model writes an
+# insights report (scripts/sims/README.md). Runs:
+#   - every 3 days: pushes main to the sims/main branch, Vercel builds a preview of it, and the
+#     preview's deployment event starts the run
+#   - on PRs that change the story builder, once their preview is ready
+#   - from the Run workflow button (optionally against a preview URL you paste)
+# The report is on the run's Summary page; transcripts and screenshots are in its files.
+
+on:
+  schedule:
+    - cron: "23 9 */3 * *"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Preview URL to test (leave empty to build a fresh preview of main)"
+        required: false
+      personas:
+        description: "Persona ids, comma-separated (empty = all)"
+        required: false
+      models:
+        description: "OpenRouter persona models, comma-separated (empty = the list in src/lib/sims/models.ts)"
+        required: false
+  deployment_status:
+
+concurrency:
+  group: simulated-users
+  cancel-in-progress: false
+
+jobs:
+  # Scheduled runs, and Run without a URL: refresh the sims/main branch so Vercel builds a preview
+  # of main. Its deployment event then starts the `run` job below.
+  refresh-preview:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.url == '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Point sims/main at main, with a marker commit so Vercel always builds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git checkout -B sims/main
+          git commit --allow-empty -m "Simulated users run ${{ github.run_number }}"
+          git push --force origin sims/main
+
+  run:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.url != '') ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       !contains(github.event.deployment.environment, 'Production'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this deployment needs a run
+        id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.event.deployment.ref }}
+          SHA: ${{ github.event.deployment.sha }}
+          URL_INPUT: ${{ inputs.url }}
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "url=$URL_INPUT" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          if [ "$REF" = "sims/main" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # A PR preview: only when the story builder (or these runs) changed.
+          git fetch --quiet origin main
+          changed=$(git diff --name-only "origin/main...$SHA" || true)
+          if echo "$changed" | grep -qE '^(src/app/stories/|src/lib/stories/|src/lib/ai/|src/lib/sims/|src/app/api/sims/|scripts/sims/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No story builder changes in $REF; skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.check.outputs.run == 'true'
+        run: npm ci
+      - if: steps.check.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the personas
+        if: steps.check.outputs.run == 'true'
+        env:
+          SIM_BASE_URL: ${{ steps.check.outputs.url }}
+          SIM_COMMIT: ${{ github.event.deployment.sha || github.sha }}
+          SIM_PERSONAS: ${{ inputs.personas }}
+          SIM_MODELS: ${{ inputs.models }}
+          SIM_OUT: sims-out
+          SIM_USERS_SECRET: ${{ secrets.SIM_USERS_SECRET }}
+          OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: npm run sims
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.check.outputs.run == 'true'
+        with:
+          name: simulated-users-${{ github.run_number }}
+          path: sims-out
+          retention-days: 30
