@@ -74,7 +74,13 @@ jobs:
           DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           # The Vercel team slug in preview URLs. Override with the SIM_PREVIEW_TEAM repo variable.
           PREVIEW_TEAM: ${{ vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects' }}
+          HAS_SECRETS: ${{ secrets.SIM_USERS_SECRET != '' && secrets.SIMS_OPENROUTER_API_KEY != '' }}
         run: |
+          # Until the one-time setup is done (scripts/sims/README.md), skip instead of failing.
+          if [ "$HAS_SECRETS" != "true" ]; then
+            echo "Simulated users aren't set up yet: add SIM_USERS_SECRET and SIMS_OPENROUTER_API_KEY (scripts/sims/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "run=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "url=$URL_INPUT" >> "$GITHUB_OUTPUT"; exit 0
           fi
