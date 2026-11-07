@@ -51,3 +51,4 @@ next-env.d.ts
 
 # grader eval set (user stories, see scripts/grade-eval.mts)
 /eval-set/
+/sims-out
