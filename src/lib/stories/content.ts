@@ -2,6 +2,7 @@ import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map
 import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
 import { INTRO_PARTS, coreQuestions, type StoryType } from "./story-types";
+import { parseExecVersion, type ExecVersion } from "@/lib/exec/content";
 import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
 
 // What the builder keeps in stories.content (jsonb).
@@ -159,6 +160,9 @@ export type StoryContent = {
   // "Also answers": the other interview questions the written story can answer (see
   // src/lib/reuse). Stale once the draft is rewritten.
   alsoAnswers?: StoryAlsoAnswers;
+  // "Exec version": the 30-second, answer-first version of the written story (see src/lib/exec).
+  // Stale once the draft is rewritten.
+  exec?: ExecVersion;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -429,6 +433,9 @@ export function parseContent(raw: unknown): StoryContent {
 
   const alsoAnswers = parseAlsoAnswers(raw.alsoAnswers);
   if (alsoAnswers) content.alsoAnswers = alsoAnswers;
+
+  const exec = parseExecVersion(raw.exec);
+  if (exec) content.exec = exec;
 
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {
