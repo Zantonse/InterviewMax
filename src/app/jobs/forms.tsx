@@ -9,7 +9,7 @@ import {
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
 import { MAX_ROUND, MAX_ROUND_NAME_LENGTH, OUTCOMES } from "@/lib/jobs/outcome";
-import { POSTING_FILE_ACCEPT, postingFileKind } from "@/lib/jobs/posting-file";
+import { POSTING_FILE_ACCEPT, looksLikePostingText, postingFileKind } from "@/lib/jobs/posting-file";
 import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import {
@@ -108,8 +108,17 @@ export function AddJobForm({
     });
   }
 
+  // The whole posting pasted where the link goes: take it as pasted text instead of failing.
+  function takePastedText(text: string) {
+    setDescription(text.trim());
+    setLink("");
+    setFetchError(null);
+    setMethod("paste");
+  }
+
   function fetchLink() {
     if (!link.trim()) return;
+    if (looksLikePostingText(link)) return takePastedText(link);
     fill("link", () => fetchJobPosting(link));
   }
 
@@ -181,6 +190,14 @@ export function AddJobForm({
                   value={link}
                   autoFocus
                   onChange={(e) => setLink(e.target.value)}
+                  onPaste={(e) => {
+                    // Read the clipboard before the input drops its line breaks.
+                    const text = e.clipboardData.getData("text");
+                    if (looksLikePostingText(text)) {
+                      e.preventDefault();
+                      takePastedText(text);
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();

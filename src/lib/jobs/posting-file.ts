@@ -20,6 +20,16 @@ export function postingFileKind(name: string): PostingFileKind | null {
 }
 
 // Screenshots are cut into tiles this many at most, so a long page stays readable to the model.
+// Text pasted into the link box that is clearly the posting itself, not its address: several
+// words, or a line break, and no lone URL. Simulated users pasted the whole posting there (2 of
+// 3 in the first run) and got "That doesn't look like a link".
+export function looksLikePostingText(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (/^(https?:\/\/|www\.)\S+$/i.test(t)) return false;
+  return /\n/.test(t) || t.split(/\s+/).length >= 8;
+}
+
 export const MAX_SCREENSHOT_TILES = 8;
 // All the tiles together, under the 4 MB request limit.
 export const MAX_SCREENSHOTS_BYTES = 3.5 * 1024 * 1024;
