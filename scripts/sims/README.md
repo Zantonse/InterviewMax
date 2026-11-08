@@ -47,7 +47,11 @@ are in the run's `simulated-users-<n>` file.
    one-line thought. Sign out, delete, upload and microphone controls are hidden from it.
 3. `POST /api/sims/result` returns what the persona made (stories, jobs, usage events, click
    signals), then deletes the account. The runner scores the run (`src/lib/sims/score.ts`).
-4. The analyst model writes the insights (`src/lib/sims/report.ts`).
+4. Each written story is graded again by other models with the app's own grading prompt and tier
+   rules (`src/lib/sims/graders.ts`: GPT 5.5 again, DeepSeek V4.1 Flash, Gemini 2.5 Flash), so a
+   cheaper grader can be compared with the app's before switching. `SIM_GRADERS=a/b,c/d` picks
+   them, `SIM_GRADERS=none` turns it off.
+5. The analyst model writes the insights (`src/lib/sims/report.ts`).
 
 Persona accounts never count in /admin: `src/lib/admin/data.ts` leaves out every profile with
 `is_simulated`.

@@ -1,3 +1,4 @@
+import { graderTable, type GraderResult } from "./graders";
 import type { Persona } from "./personas";
 import type { RunMetrics, StepRecord } from "./score";
 
@@ -10,6 +11,8 @@ export type PersonaRun = {
   metrics: RunMetrics;
   steps: StepRecord[];
   crashed?: string;
+  // The same story graded again by other models (graders.ts), app's own grade first.
+  graders?: GraderResult[];
 };
 
 const OUTCOME_LABELS: Record<RunMetrics["outcome"], string> = {
@@ -124,6 +127,21 @@ export function storiesAppendix(runs: PersonaRun[]): string[] {
   return out;
 }
 
+function graderSection(runs: PersonaRun[]): string[] {
+  const rows = runs
+    .filter((r) => r.graders?.length)
+    .map((r) => ({ persona: r.persona.name, level: r.persona.level, results: r.graders! }));
+  if (!rows.length) return [];
+  return [
+    "## Grader comparison",
+    "",
+    "Each written story graded again with the app's grading prompt and tier rules (tier, score out of 100). The first column is the grade the app gave; a GPT 5.5 column next to it shows how much the same grader varies run to run.",
+    "",
+    graderTable(rows),
+    "",
+  ];
+}
+
 export function reportMarkdown(input: {
   runs: PersonaRun[];
   insights: string;
@@ -148,6 +166,7 @@ export function reportMarkdown(input: {
     "",
     input.insights.trim() || "_The analyst model didn't answer, so there are no insights this run. The transcripts are in the run's files._",
     "",
+    ...graderSection(input.runs),
     ...storiesAppendix(input.runs),
     "---",
     `_AI personas can't feel dread or tiredness, and AI judging AI is biased: use this to catch breakage and friction, and real testers to confirm what matters.${input.runnerCostUsd !== undefined ? ` Persona and analyst calls cost $${input.runnerCostUsd.toFixed(3)}; the app's own builder and grader calls are on the app's OpenRouter key._` : "_"}`,

@@ -25,6 +25,7 @@ import {
   type Turn,
 } from "../../src/lib/sims/agent";
 import { ANALYST_MODELS, PERSONA_MODELS, assignModels, availableModels } from "../../src/lib/sims/models";
+import { COMPARE_GRADERS, appGrade, gradableStory, graderMessages, graderResult } from "../../src/lib/sims/graders";
 import { PERSONAS, type Persona } from "../../src/lib/sims/personas";
 import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, type PersonaRun } from "../../src/lib/sims/report";
 import { scoreRun, type ResultPayload, type StepRecord } from "../../src/lib/sims/score";
@@ -37,6 +38,11 @@ const secret = process.env.SIM_USERS_SECRET ?? "";
 const apiKey = process.env.OPENROUTER_API_KEY ?? "";
 const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "";
 const maxSteps = Number(process.env.SIM_MAX_STEPS ?? 80);
+// Comparison graders for each written story; SIM_GRADERS=none turns it off.
+const graderModels =
+  process.env.SIM_GRADERS === "none"
+    ? []
+    : (process.env.SIM_GRADERS ?? COMPARE_GRADERS.join(",")).split(",").map((m) => m.trim()).filter(Boolean);
 const runNumber = Number(process.env.SIM_RUN_NUMBER ?? process.env.GITHUB_RUN_NUMBER ?? Date.now() / 86_400_000);
 const outDir = process.env.SIM_OUT ?? "sims-out";
 const commit = process.env.SIM_COMMIT;
@@ -54,7 +60,11 @@ const notes: string[] = [];
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: number; temperature: number }) {
+async function chat(
+  model: string,
+  messages: ChatMessage[],
+  opts: { maxTokens: number; temperature: number; effort?: "low" | "medium" },
+) {
   const res = await fetch(`${OPENROUTER}/chat/completions`, {
     method: "POST",
     headers: {
@@ -70,7 +80,7 @@ async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: n
       usage: { include: true },
       // Thinking models (e.g. Qwen 3) can spend the whole token budget reasoning and return an
       // empty reply; keep it short and out of the answer.
-      reasoning: { effort: "low", exclude: true },
+      reasoning: { effort: opts.effort ?? "low", exclude: true },
       // Same rule as the app: providers that train on prompts are never used.
       provider: { data_collection: "deny" },
     }),
@@ -239,6 +249,25 @@ async function nextTurn(model: string, system: string, prompt: string): Promise<
   return { thought: "(the model never gave a valid action)", action: { type: "give_up", reason: `persona model gave no valid action (last reply: ${JSON.stringify(raw.slice(0, 300))})` } };
 }
 
+// Grades the persona's written story again with each comparison grader (src/lib/sims/graders.ts).
+async function compareGraders(result: ResultPayload | null, title: string | undefined) {
+  const row = result?.stories.find((r) => r.title === title && gradableStory(r));
+  const story = row ? gradableStory(row) : null;
+  if (!row || !story || graderModels.length === 0) return undefined;
+  const own = appGrade(row);
+  const others = await Promise.all(
+    graderModels.map(async (m) => {
+      try {
+        const text = await chat(m, graderMessages(story), { maxTokens: 4000, temperature: 0.2, effort: "medium" });
+        return graderResult(m, text, story);
+      } catch (err) {
+        return { model: m, criteria: {}, error: String(err).slice(0, 200) };
+      }
+    }),
+  );
+  return [...(own ? [own] : []), ...others];
+}
+
 async function runPersona(context: BrowserContext, persona: Persona, model: string): Promise<PersonaRun> {
   const dir = path.join(outDir, persona.id);
   await mkdir(dir, { recursive: true });
@@ -350,7 +379,8 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
   await page.close().catch(() => {});
 
   const metrics = scoreRun({ steps, result, startedAt, endedAt: Date.now(), crashed });
-  const run: PersonaRun = { persona, model, metrics, steps, crashed };
+  const graders = await compareGraders(result, metrics.story?.title);
+  const run: PersonaRun = { persona, model, metrics, steps, crashed, graders };
   await writeFile(path.join(dir, "transcript.json"), JSON.stringify({ ...run, result }, null, 2));
   return run;
 }
