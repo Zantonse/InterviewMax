@@ -28,8 +28,13 @@ describe("grader calibration", () => {
   it("reports hits and caught flaws per grader", () => {
     const md = calibrationReport([
       { ref: stories[0], results: [{ model: "a/x", tier: "strong", score: 95, criteria: { result: 4 } }] },
-      { ref: stories.find((s) => s.kind === "planted")!, results: [{ model: "a/x", tier: "good_enough", score: 80, criteria: {} }] },
+      {
+        ref: stories.find((s) => s.kind === "planted")!,
+        results: [{ model: "a/x", tier: "good_enough", score: 80, criteria: { ownership: 2 } }],
+        failedChecks: ["i_we"],
+      },
     ]);
     expect(md).toContain("a/x: 1/2 on the expected tier, caught 0/1 planted flaws, 1 misses");
+    expect(md).toMatch(/## Why answers missed\n- planted-[\w-]+: checks failed: i_we; scored 1-2: ownership \(1\)/);
   });
 });

@@ -46,7 +46,14 @@ export function verdict(expect: Tier, got: Tier | undefined): "hit" | "near" | "
 const short = (m: string) => m.split("/").pop()!;
 const tierLabel = (t?: Tier) => (t ? t.replace("_", " ") : "–");
 
-export function calibrationReport(rows: { ref: ReferenceStory; results: GraderResult[] }[]): string {
+export type CalibrationRow = {
+  ref: ReferenceStory;
+  results: GraderResult[];
+  // Quick checks the answer fails (no model involved), e.g. "length", "number".
+  failedChecks?: string[];
+};
+
+export function calibrationReport(rows: CalibrationRow[]): string {
   const models = [...new Set(rows.flatMap((r) => r.results.map((g) => g.model)))];
   const head = `| Answer | Kind | Expected | ${models.map(short).join(" | ")} |\n|---|---|---|${models.map(() => "---|").join("")}`;
   const lines = rows.map(({ ref, results }) => {
@@ -75,6 +82,15 @@ export function calibrationReport(rows: { ref: ReferenceStory; results: GraderRe
     .sort((a, b) => b[1] - a[1])
     .map(([c, n]) => `${c} (${n})`)
     .join(", ");
+  // Why answers missed: the checks they fail and the criteria graders scored 1-2 (count of graders).
+  const why = rows
+    .filter((r) => r.results.some((g) => !g.error && verdict(r.ref.expect, g.tier) !== "hit"))
+    .map(({ ref, results, failedChecks }) => {
+      const lowCounts: Record<string, number> = {};
+      for (const g of results) for (const [c, s] of Object.entries(g.criteria)) if (s <= 2) lowCounts[c] = (lowCounts[c] ?? 0) + 1;
+      const lows = Object.entries(lowCounts).map(([c, n]) => `${c} (${n})`).join(", ");
+      return `- ${ref.id}: checks failed: ${failedChecks?.length ? failedChecks.join(", ") : "none"}; scored 1-2: ${lows || "none"}`;
+    });
   return [
     "# Grader calibration",
     "",
@@ -87,6 +103,7 @@ export function calibrationReport(rows: { ref: ReferenceStory; results: GraderRe
     ...totals,
     "",
     `Criteria scored 1-2 on the published strong answers (all graders): ${counts || "none"}.`,
+    ...(why.length ? ["", "## Why answers missed", ...why] : []),
     "",
   ].join("\n");
 }

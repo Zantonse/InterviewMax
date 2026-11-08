@@ -143,6 +143,19 @@ describe("tierFor", () => {
     expect(tierFor(scores(STAR_CRITERIA, 4), checks({ traced: false }))).toBe("not_yet");
     expect(tierFor([], checks())).toBe("not_yet");
   });
+
+  it("keeps a story with no lesson out of Strong without making it Not yet", () => {
+    const noLesson = [
+      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 4),
+      { id: "reflection", score: 1, note: "" },
+    ];
+    expect(tierFor(noLesson, checks())).toBe("good_enough");
+    const weakCore = [
+      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 2),
+      { id: "reflection", score: 4, note: "" },
+    ];
+    expect(tierFor(weakCore, checks())).toBe("not_yet");
+  });
 });
 
 describe("combineGrade", () => {

@@ -430,17 +430,24 @@ export function scoreOutOf100(criteria: CriterionScore[], tier?: Tier): number |
 }
 
 // The tier, from the grader's scores and the quick checks.
-//   not yet:     any criterion missing, an average under 2.5, no number, or an untraced number
+//   not yet:     any core criterion missing, a core average under 2.5, no number, or an untraced number
 //   strong:      every criterion solid or better, an average of 3.5 or more, and every check passing
 //   good enough: everything in between
+// Reflection isn't core: published strong answers often end on the result (grader calibration,
+// 2026-11-08: every graded one without a lesson came back Not yet), so a missing lesson keeps a
+// story from Strong but doesn't make it Not yet on its own.
+const OPTIONAL_FOR_NOT_YET = new Set(["reflection"]);
+
 export function tierFor(criteria: CriterionScore[], checks: CheckResult[]): Tier {
   const scores = criteria.map((c) => c.score);
   if (scores.length === 0) return "not_yet";
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const core = criteria.filter((c) => !OPTIONAL_FOR_NOT_YET.has(c.id)).map((c) => c.score);
+  const coreAvg = core.length ? core.reduce((a, b) => a + b, 0) / core.length : 0;
   const passed = (id: CheckId) => checks.find((c) => c.id === id)?.pass ?? false;
 
   if (!passed("number") || !passed("traced")) return "not_yet";
-  if (Math.min(...scores) <= 1 || avg < 2.5) return "not_yet";
+  if (core.length === 0 || Math.min(...core) <= 1 || coreAvg < 2.5) return "not_yet";
   if (Math.min(...scores) >= 3 && avg >= 3.5 && checks.every((c) => c.pass)) return "strong";
   return "good_enough";
 }
