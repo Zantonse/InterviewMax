@@ -54,6 +54,9 @@ export type StoryOutcome = {
   score?: number;
   fixes: string[];
   summary?: string;
+  // The grader's separate check of whether the story's scope fits the target job's level
+  // ("below", "matches" or "above", with its note). The score itself doesn't use the level.
+  levelFit?: string;
   draftText?: string;
 };
 
@@ -107,6 +110,10 @@ export function storyOutcome(row: ResultPayload["stories"][number]): StoryOutcom
     score: grade ? scoreOutOf100(grade.criteria) : undefined,
     fixes: grade?.fixes ?? [],
     summary: grade?.summary,
+    levelFit: (() => {
+      const level = grade?.content?.jobs.find((j) => j.level)?.level;
+      return level ? `${level.match}: ${level.note}` : undefined;
+    })(),
     draftText,
   };
 }

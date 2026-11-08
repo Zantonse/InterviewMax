@@ -26,12 +26,12 @@ const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 export function metricsTable(runs: PersonaRun[]): string {
   const head =
-    "| Persona | Played by | Outcome | Steps | Minutes | Stuck (longest) | Errors | Follow-ups answered / skipped | In own words | Grade |\n" +
-    "|---|---|---|---|---|---|---|---|---|---|";
+    "| Persona | Level | Played by | Outcome | Steps | Minutes | Stuck (longest) | Errors | Follow-ups answered / skipped | In own words | Grade |\n" +
+    "|---|---|---|---|---|---|---|---|---|---|---|";
   const rows = runs.map(({ persona, model, metrics: m }) => {
     const s = m.story;
     const grade = s?.graded ? `${s.tier?.replace("_", " ")}${s.score !== undefined ? `, ${s.score}/100` : ""}` : "–";
-    return `| ${cell(persona.name)} (${persona.id}) | ${cell(model)} | ${OUTCOME_LABELS[m.outcome]} | ${m.steps} | ${m.minutes} | ${m.noChangeSteps} (${m.longestStuck}) | ${m.errors} | ${s ? `${s.followUpsAnswered} / ${s.followUpsSkipped}` : "–"} | ${pct(s?.ownWords)} | ${grade} |`;
+    return `| ${cell(persona.name)} (${persona.id}) | ${persona.level} | ${cell(model)} | ${OUTCOME_LABELS[m.outcome]} | ${m.steps} | ${m.minutes} | ${m.noChangeSteps} (${m.longestStuck}) | ${m.errors} | ${s ? `${s.followUpsAnswered} / ${s.followUpsSkipped}` : "–"} | ${pct(s?.ownWords)} | ${grade} |`;
   });
   return [head, ...rows].join("\n");
 }
@@ -41,7 +41,7 @@ export function metricsTable(runs: PersonaRun[]): string {
 export function transcriptForAnalyst(run: PersonaRun, maxChars = 30000): string {
   const { persona, model, metrics: m } = run;
   const lines = [
-    `## ${persona.name} (${persona.id}), played by ${model}`,
+    `## ${persona.name} (${persona.id}, ${persona.level} level, target ${persona.job.title}), played by ${model}`,
     `Who: ${persona.headline}. Voice: ${persona.voice}`,
     `Target job: ${persona.job.title} at ${persona.job.company}.`,
     `Outcome: ${OUTCOME_LABELS[m.outcome]}${m.gaveUp ? ` ("${m.gaveUp}")` : ""}${run.crashed ? ` (runner error: ${run.crashed})` : ""}. ${m.steps} steps, ${m.minutes} min, ${m.slowSteps} slow steps (30s+), ${m.noChangeSteps} steps where nothing changed, ${m.errors} errors.`,
@@ -65,7 +65,7 @@ export function transcriptForAnalyst(run: PersonaRun, maxChars = 30000): string 
       `Type: ${story.storyType}; question: ${story.asked ?? "(none)"}; answers: ${story.answers}; follow-ups asked ${story.followUpsAsked}, answered ${story.followUpsAnswered}, skipped ${story.followUpsSkipped}.`,
       `Draft in their own words: ${pct(story.ownWords)}.`,
       story.graded
-        ? `Grade: ${story.tier}${story.score !== undefined ? `, ${story.score}/100` : ""}. Summary: ${story.summary ?? ""}. Fixes: ${story.fixes.join(" / ")}`
+        ? `Grade: ${story.tier}${story.score !== undefined ? `, ${story.score}/100` : ""}. Summary: ${story.summary ?? ""}. Fixes: ${story.fixes.join(" / ")}${story.levelFit ? `. Level fit: ${story.levelFit}` : ""}`
         : "Not graded.",
       story.draftText ? `Draft:\n${story.draftText}` : "No draft.",
     );
@@ -85,6 +85,8 @@ One short paragraph per persona: how far they got, the path they took, and the m
 Which steps and features each used, skipped or missed; where they hesitated, repeated themselves, got stuck or saw errors; anything the app made needlessly hard.
 ## Story quality
 Did the builder pull out specifics (actions, numbers, what the person did themselves, the hardest part) or settle for vague answers? Is the draft in the person's own voice? Did the grade match what the transcript supports?
+## Levels
+Personas differ in career level (junior, senior, principal) and target jobs at different levels. Did the grader hold each to the bar of the level they're applying for (scope, ownership, influence, impact), or grade them all the same? Did the builder's questions help a junior find their own contribution and a principal show org-wide impact? Skip if only one level ran.
 ## Patterns across personas and models
 What changed with personality and model (terse vs chatty, nervous vs confident). Note anything that looks like a model artefact rather than a product issue.
 ## Suggested fixes
@@ -116,6 +118,7 @@ export function storiesAppendix(runs: PersonaRun[]): string[] {
     if (s.asked) out.push(`_Question: ${s.asked}_`, "");
     out.push(s.draftText!.trim(), "");
     if (s.summary) out.push(`**Grader:** ${s.summary}`, "");
+    if (s.levelFit) out.push(`**Level fit for ${persona.job.title}:** ${s.levelFit}`, "");
     if (s.fixes.length) out.push(...s.fixes.map((f) => `- ${f}`), "");
   }
   return out;
