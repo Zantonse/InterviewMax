@@ -108,12 +108,15 @@ export function AddJobForm({
     });
   }
 
-  // The whole posting pasted where the link goes: take it as pasted text instead of failing.
+  // The whole posting pasted where the link goes: take it as pasted text instead of failing, and
+  // move on to the check step, so it doesn't look like the app is asking for the posting again.
   function takePastedText(text: string) {
     setDescription(text.trim());
     setLink("");
     setFetchError(null);
     setMethod("paste");
+    setFetched(null);
+    setStep("check");
   }
 
   function fetchLink() {

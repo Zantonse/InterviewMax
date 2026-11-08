@@ -119,7 +119,7 @@ export function storyOutcome(row: ResultPayload["stories"][number]): StoryOutcom
       : undefined,
     graded: Boolean(grade),
     tier: grade?.tier,
-    score: grade ? scoreOutOf100(grade.criteria) : undefined,
+    score: grade ? scoreOutOf100(grade.criteria, grade.tier) : undefined,
     fixes: grade?.fixes ?? [],
     summary: grade?.summary,
     levelFit: (() => {

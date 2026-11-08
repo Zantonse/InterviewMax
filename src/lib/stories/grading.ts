@@ -419,10 +419,14 @@ function formatSeconds(seconds: number) {
 // The score out of 100 shown on a graded story: the criteria's average on the 1-4 scale, as a share
 // of 4 (so all Solid is 75, all Strong is 100). Undefined when nothing was scored. The tier, not
 // this number, decides "Strong"; the score just shows how far along the story is.
-export function scoreOutOf100(criteria: CriterionScore[]): number | undefined {
+// With the tier, the score can't contradict it: Not yet tops out at 69 and Good enough at 89. Without
+// this, a story held at Not yet by a quick check (no number in the result) still showed 95.
+export const TIER_SCORE_CAP: Record<Tier, number> = { not_yet: 69, good_enough: 89, strong: 100 };
+export function scoreOutOf100(criteria: CriterionScore[], tier?: Tier): number | undefined {
   if (criteria.length === 0) return undefined;
   const avg = criteria.reduce((sum, c) => sum + c.score, 0) / criteria.length;
-  return Math.round((avg / 4) * 100);
+  const raw = Math.round((avg / 4) * 100);
+  return tier ? Math.min(raw, TIER_SCORE_CAP[tier]) : raw;
 }
 
 // The tier, from the grader's scores and the quick checks.

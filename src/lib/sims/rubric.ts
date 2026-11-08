@@ -93,12 +93,12 @@ export function parseSurvey(text: string): Survey | undefined {
 
 export const JUDGE_SYSTEM = `You are the judge for simulated-user runs of InterviewMax, an interview prep app whose story builder asks a user about a work example, writes a behavioral interview story from their answers, then grades it. An AI persona with a known, made-up work history just used it. You see the persona's real history (the app never saw it), the steps they took, the story the app wrote and the app's grade.
 
-Score each dimension 1 to 4 using its anchors exactly. There is no middle: lean one way. Every score needs evidence: a step number or a quoted line from the draft. For fact fidelity, compare every number, tool, name and result in the draft with the history and the persona's answers; an invented or inflated detail is a 1 or 2 even if the story reads well. For grader accuracy, decide the tier you'd give at the target job's level (strong, almost, not yet) and compare. For level calibration, judge whether the grade and fixes held the story to the bar of the target job's level.
+Score each dimension 1 to 4 using its anchors exactly. There is no middle: lean one way. Every score needs evidence: a step number or a quoted line from the draft. For fact fidelity, compare every number, tool, name and result in the draft with the history and the persona's answers; an invented or inflated detail is a 1 or 2 even if the story reads well. For grader accuracy, decide the tier you'd give at the target job's level (strong, almost, not yet) and compare. For level calibration, judge whether the grade and fixes held the story to the bar of the target job's level. Score only what happened: with no draft, give null for fact fidelity, story quality and own voice; with no grade, give null for grader accuracy and level calibration. Never score a dimension 1 just because there was nothing to judge.
 
 Dimensions:
 ${JUDGE_DIMENSIONS.map((d) => `- ${d.id} (${d.label}): ${d.anchors.map((a, i) => `${i + 1} = ${a}`).join("; ")}`).join("\n")}
 
-Reply with ONLY a JSON object: {${JUDGE_DIMENSIONS.map((d) => `"${d.id}": {"score": <1-4>, "evidence": "<one sentence>"}`).join(", ")}}`;
+Reply with ONLY a JSON object: {${JUDGE_DIMENSIONS.map((d) => `"${d.id}": {"score": <1-4 or null>, "evidence": "<one sentence>"}`).join(", ")}}`;
 
 export function judgePrompt(run: PersonaRun, transcript: string): string {
   const { persona } = run;

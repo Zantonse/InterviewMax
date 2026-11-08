@@ -64,7 +64,7 @@ export function graderResult(
     return {
       model,
       tier: tierFor(graded.criteria, checks),
-      score: scoreOutOf100(graded.criteria),
+      score: scoreOutOf100(graded.criteria, tierFor(graded.criteria, checks)),
       criteria: Object.fromEntries(graded.criteria.map((c) => [c.id, c.score])),
     };
   } catch (err) {
@@ -79,7 +79,7 @@ export function appGrade(row: StoryRow): GraderResult | null {
   return {
     model: `${grade.model} (in the app)`,
     tier: grade.tier,
-    score: scoreOutOf100(grade.criteria),
+    score: scoreOutOf100(grade.criteria, grade.tier),
     criteria: Object.fromEntries(grade.criteria.map((c) => [c.id, c.score])),
   };
 }

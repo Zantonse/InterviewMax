@@ -1375,11 +1375,17 @@ function Composer({
   }, []);
 
   // A tapped jogger is added to whatever is typed so far (state adjusted during render, not in an
-  // effect, so it lands in one pass).
+  // effect, so it lands in one pass). Tapping one that's already in the box adds nothing.
   const [inserted, setInserted] = useState(insert?.n);
   if (insert && insert.n !== inserted) {
     setInserted(insert.n);
-    setText((t) => (t.trim() ? `${t.trimEnd()}\n${insert.text}` : insert.text));
+    setText((t) =>
+      t.includes(insert.text.trim())
+        ? t
+        : t.trim()
+          ? `${t.trimEnd()}\n${insert.text}`
+          : insert.text,
+    );
   }
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;

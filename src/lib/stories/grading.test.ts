@@ -376,4 +376,12 @@ describe("scoreOutOf100", () => {
   it("is undefined with nothing scored", () => {
     expect(scoreOutOf100([])).toBeUndefined();
   });
+
+  it("never contradicts the tier", () => {
+    const fours = [c(4), c(4), c(3), c(4), c(4)];
+    expect(scoreOutOf100(fours, "not_yet")).toBe(69);
+    expect(scoreOutOf100(fours, "good_enough")).toBe(89);
+    expect(scoreOutOf100(fours, "strong")).toBe(95);
+    expect(scoreOutOf100([c(2), c(2)], "good_enough")).toBe(50);
+  });
 });
