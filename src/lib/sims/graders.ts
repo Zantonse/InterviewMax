@@ -19,6 +19,8 @@ export const COMPARE_GRADERS = [
   "openai/gpt-5.5",
   "deepseek/deepseek-v4.1-flash",
   "google/gemini-2.5-flash",
+  // Craig asked 2026-11-08 whether Opus 5.5 would grade better; a different vendor from the writer.
+  "anthropic/claude-opus-5.5",
 ] as const;
 
 export type GraderResult = {
