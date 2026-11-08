@@ -15,6 +15,12 @@ on:
     - cron: "23 9 */3 * *"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "personas = run the personas on a preview; calibrate = grade the reference answers only (no preview)"
+        required: false
+        default: personas
+        type: choice
+        options: [personas, calibrate]
       url:
         description: "Preview URL to test (leave empty to build a fresh preview of main)"
         required: false
@@ -51,6 +57,7 @@ jobs:
         env:
           HAS_SECRETS: ${{ secrets.SIM_USERS_SECRET != '' && secrets.SIMS_OPENROUTER_API_KEY != '' }}
           URL_INPUT: ${{ inputs.url }}
+          MODE: ${{ inputs.mode || 'personas' }}
         run: |
           # Until the one-time setup is done (scripts/sims/README.md), skip instead of failing.
           if [ "$HAS_SECRETS" != "true" ]; then
@@ -58,13 +65,14 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           echo "run=true" >> "$GITHUB_OUTPUT"
+          [ "$MODE" = "calibrate" ] && echo "calibrate=true" >> "$GITHUB_OUTPUT" || echo "calibrate=false" >> "$GITHUB_OUTPUT"
           echo "url=${URL_INPUT:-$MAIN_PREVIEW_URL}" >> "$GITHUB_OUTPUT"
           [ -n "$URL_INPUT" ] && echo "fresh=false" >> "$GITHUB_OUTPUT" || echo "fresh=true" >> "$GITHUB_OUTPUT"
 
       # No URL given: point sims/main at main with a marker commit (so Vercel always builds), then
       # wait until the branch preview serves that commit.
       - name: Build a fresh preview of main
-        if: steps.check.outputs.run == 'true' && steps.check.outputs.fresh == 'true'
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true' && steps.check.outputs.fresh == 'true'
         id: fresh
         run: |
           git config user.name "github-actions[bot]"
@@ -75,7 +83,7 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Wait for the preview
-        if: steps.check.outputs.run == 'true'
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
         env:
           URL: ${{ steps.check.outputs.url }}
           WANT: ${{ steps.fresh.outputs.sha }}
@@ -100,11 +108,18 @@ jobs:
           cache: npm
       - if: steps.check.outputs.run == 'true'
         run: npm ci
-      - if: steps.check.outputs.run == 'true'
+      - if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Grade the reference answers
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate == 'true'
+        env:
+          SIM_OUT: sims-out
+          OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
+        run: npm run sims:calibrate
+
       - name: Run the personas
-        if: steps.check.outputs.run == 'true'
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
         env:
           SIM_BASE_URL: ${{ steps.check.outputs.url }}
           SIM_COMMIT: ${{ steps.fresh.outputs.sha || github.sha }}
