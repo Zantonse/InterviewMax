@@ -68,6 +68,9 @@ async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: n
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
       usage: { include: true },
+      // Thinking models (e.g. Qwen 3) can spend the whole token budget reasoning and return an
+      // empty reply; keep it short and out of the answer.
+      reasoning: { effort: "low", exclude: true },
       // Same rule as the app: providers that train on prompts are never used.
       provider: { data_collection: "deny" },
     }),
@@ -196,9 +199,14 @@ async function act(page: Page, action: Action): Promise<string | null> {
       case "type":
         await target(action.id).fill(action.text, { timeout: 10_000 });
         return null;
-      case "select":
-        await target(action.id).selectOption({ label: action.option }, { timeout: 10_000 });
+      case "select": {
+        // Models sometimes "select" on a button group; treat that as clicking the control.
+        const el = target(action.id);
+        const isSelect = await el.evaluate((n) => n.tagName === "SELECT").catch(() => false);
+        if (isSelect) await el.selectOption({ label: action.option }, { timeout: 10_000 });
+        else await el.click({ timeout: 10_000 });
         return null;
+      }
       case "goto":
         await page.goto(new URL(action.path, baseUrl).toString(), { timeout: 60_000 });
         return null;
@@ -220,7 +228,7 @@ async function nextTurn(model: string, system: string, prompt: string): Promise<
   ];
   let raw = "";
   for (let attempt = 0; attempt < 3; attempt++) {
-    raw = await chat(model, messages, { maxTokens: 900, temperature: 0.9 });
+    raw = await chat(model, messages, { maxTokens: 1500, temperature: 0.9 });
     const turn = parseTurn(raw);
     if (turn) return turn;
     messages.push(
