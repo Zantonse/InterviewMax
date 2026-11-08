@@ -10,7 +10,16 @@ export async function POST(request: NextRequest) {
   if (!simsEnabled() || !secretMatches(request.headers.get("x-sim-secret"))) {
     return new NextResponse(null, { status: 404 });
   }
-  const body = (await request.json().catch(() => ({}))) as { persona?: unknown; delete?: unknown };
+  const body = (await request.json().catch(() => ({}))) as {
+    persona?: unknown;
+    delete?: unknown;
+    version?: unknown;
+  };
+  // {"version": true}: which commit this preview serves, so the workflow can wait for a fresh
+  // preview before running.
+  if (body.version === true) {
+    return NextResponse.json({ commit: process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown" });
+  }
   if (!isPersonaId(body.persona)) {
     return NextResponse.json({ error: "Unknown persona." }, { status: 400 });
   }

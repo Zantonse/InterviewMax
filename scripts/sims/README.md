@@ -13,18 +13,18 @@ real testers.
 ## When it runs
 
 - **Every 3 days** (`.github/workflows/sims.yml`): the workflow points the `sims/main` branch at
-  `main`, Vercel builds a preview of it, and the run starts when that preview is ready.
-- **On PRs that change the story builder** (`src/app/stories`, `src/lib/stories`, `src/lib/ai`,
-  or these runs), once the PR's preview is ready.
+  `main`, waits until Vercel's preview of it serves that commit, then runs against it.
 - **Run workflow button** in GitHub Actions → Simulated users. Paste a preview URL to test that
-  preview, and optionally pick personas and models. Leave the URL empty for a fresh preview of
-  `main`.
+  preview (for a story builder PR, its preview URL from the Vercel comment), and optionally pick
+  personas and models. Leave the URL empty for a fresh preview of `main`.
 
-Only previews from the live Vercel project (team `craigverzosa-5395s-projects`) are tested, since
-the old work project deploys this repo too; set the `SIM_PREVIEW_TEAM` repository variable to change
-it. Until the GitHub secrets exist, runs skip themselves instead of failing.
+The live Vercel project sends GitHub no deployment events, so nothing starts a run on its own
+when a PR's preview is ready. The `sims/main` preview URL is
+`https://interview-max-git-sims-main-craigverzosa-5395s-projects.vercel.app`; set the
+`SIM_MAIN_PREVIEW_URL` repository variable if that changes. Runs never overlap, since they share the
+persona accounts. Until the GitHub secrets exist, runs skip themselves instead of failing.
 
-The report shows on the run's **Summary** page. The transcript and a screenshot of every step
+The report shows on the run's **Summary** page and at the end of the "Run the personas" log. The transcript and a screenshot of every step
 are in the run's `simulated-users-<n>` file.
 
 ## Personas and models
@@ -62,10 +62,12 @@ Persona accounts never count in /admin: `src/lib/admin/data.ts` leaves out every
    2. Authentication → Database → Create DB Connection, named `interviewmax-sims`, and tick
       **Disable Sign Ups** so nobody else can make an account in it. In its Applications
       tab, enable it for **InterviewMax Sims only**, not for the InterviewMax app, so it never
-      shows on the sign-in page.
+      shows on the sign-in page. In its Attributes tab, add **Email** as an identifier active for
+      login (the runs sign in by email; Username alone gives "Wrong email or password").
    3. User Management → Users → Create User, connection `interviewmax-sims`, once per persona:
       `sim-sales-engineer@sims.interviewmax.test`, `sim-product-designer@sims.interviewmax.test`,
-      `sim-data-governance@sims.interviewmax.test`, all with the same long random password.
+      `sim-data-governance@sims.interviewmax.test`, `sim-sales-engineer-junior@sims.interviewmax.test`,
+      `sim-sales-engineer-principal@sims.interviewmax.test`, all with the same long random password.
    4. Actions → the post-login action that sets the `role` claim: let it run for the Sims app too,
       e.g. `if (![INTERVIEWMAX_CLIENT_ID, SIMS_CLIENT_ID].includes(event.client.client_id)) return;`.
 3. **Vercel → Settings → Environment Variables, Preview only** (never Production):
@@ -94,4 +96,4 @@ account afterwards so you can look at it on the preview. Output goes to `sims-ou
 
 Roughly $0.85 a run at Nov 2026 list prices: the app's grader (GPT 5.5) is most of it, on the
 app's OpenRouter key; persona and analyst calls are on `SIMS_OPENROUTER_API_KEY`, and the report
-prints what they cost. Every 3 days is about $8 a month, plus about $1 per story builder PR.
+prints what they cost. Every 3 days is about $8 a month.
