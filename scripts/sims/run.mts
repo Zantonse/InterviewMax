@@ -14,6 +14,7 @@ import {
   isBlockedControl,
   newText,
   parseTurn,
+  typedNote,
   personaSystemPrompt,
   personaTurnPrompt,
   summarizeTurn,
@@ -216,8 +217,9 @@ async function nextTurn(model: string, system: string, prompt: string): Promise<
     { role: "system", content: system },
     { role: "user", content: prompt },
   ];
+  let raw = "";
   for (let attempt = 0; attempt < 3; attempt++) {
-    const raw = await chat(model, messages, { maxTokens: 900, temperature: 0.9 });
+    raw = await chat(model, messages, { maxTokens: 900, temperature: 0.9 });
     const turn = parseTurn(raw);
     if (turn) return turn;
     messages.push(
@@ -225,7 +227,7 @@ async function nextTurn(model: string, system: string, prompt: string): Promise<
       { role: "user", content: "That wasn't a valid action. Reply with only the JSON object, using an id from the list." },
     );
   }
-  return { thought: "(the model never gave a valid action)", action: { type: "give_up", reason: "persona model gave no valid action" } };
+  return { thought: "(the model never gave a valid action)", action: { type: "give_up", reason: `persona model gave no valid action (last reply: ${JSON.stringify(raw.slice(0, 300))})` } };
 }
 
 async function runPersona(context: BrowserContext, persona: Persona, model: string): Promise<PersonaRun> {
@@ -258,6 +260,8 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
     const system = personaSystemPrompt(persona);
     let note: string | undefined;
     let stuck = 0;
+    let typedInARow = 0;
+    let lastTypedId: number | undefined;
     for (let step = 1; step <= maxSteps; step++) {
       const before = await observe(page);
       const turn = await nextTurn(
@@ -301,11 +305,20 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
       console.log(`[${persona.id}] ${step}. ${steps.at(-1)!.summary}`);
       if (turn.action.type === "done" || turn.action.type === "give_up") break;
       stuck = noChange ? stuck + 1 : 0;
+      if (turn.action.type === "type" && !failure) {
+        typedInARow = turn.action.id === lastTypedId ? typedInARow + 1 : 1;
+        lastTypedId = turn.action.id;
+      } else {
+        typedInARow = 0;
+        lastTypedId = undefined;
+      }
       note = failure
         ? `${failure}. Pick an id from the current list.`
-        : noChange
-          ? `Your last action didn't change anything on the page${stuck >= 3 ? " (several times in a row)" : ""}.`
-          : undefined;
+        : typedInARow > 0
+          ? typedNote(after.controls, typedInARow)
+          : noChange
+            ? `Your last action didn't change anything on the page${stuck >= 3 ? " (several times in a row)" : ""}.`
+            : undefined;
     }
   } catch (err) {
     crashed = String(err).split("\n")[0].slice(0, 400);

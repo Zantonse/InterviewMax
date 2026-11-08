@@ -3,6 +3,7 @@ import {
   clipText,
   describeControls,
   isBlockedControl,
+  typedNote,
   newText,
   parseTurn,
   personaSystemPrompt,
@@ -119,5 +120,31 @@ describe("personas", () => {
     expect(PERSONAS.map((p) => p.field).sort()).toEqual(
       ["data_governance", "product_design", "sales_engineering"].sort(),
     );
+  });
+});
+
+describe("typedNote", () => {
+  const controls = [
+    { id: 3, kind: "textbox", label: "Your answer" },
+    { id: 4, kind: "button", label: "Next" },
+  ] as Parameters<typeof typedNote>[0];
+
+  it("names the button that sends the text", () => {
+    expect(typedNote(controls, 1)).toContain('[4] "Next"');
+  });
+
+  it("pushes harder after typing into the same box again", () => {
+    expect(typedNote(controls, 3)).toMatch(/3 times in a row/);
+  });
+
+  it("falls back when no send button is visible", () => {
+    expect(typedNote([controls[0]], 1)).toContain("the button that sends it");
+  });
+});
+
+describe("Talk button", () => {
+  it("is hidden from personas", () => {
+    expect(isBlockedControl("Talk")).toBe(true);
+    expect(isBlockedControl("Talking points")).toBe(false);
   });
 });

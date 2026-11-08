@@ -35,7 +35,7 @@ export type Turn = { thought: string; feeling?: string; action: Action };
 // Controls the persona may not touch: they'd end the run, delete things or need a real file or
 // microphone. Matched on the visible label.
 const BLOCKED_LABEL_RE =
-  /\b(sign ?out|log ?out|delete|remove|discard|upload|microphone|record|mic mode|import from linkedin|privacy|ai usage)\b/i;
+  /\b(sign ?out|log ?out|delete|remove|discard|upload|microphone|record|mic mode|import from linkedin|privacy|ai usage)\b|^(talk|stop talking)$/i;
 
 export function isBlockedControl(label: string): boolean {
   return BLOCKED_LABEL_RE.test(label);
@@ -62,6 +62,20 @@ export function describeControls(controls: Control[]): string {
       return parts.join(" · ");
     })
     .join("\n");
+}
+
+const SEND_LABEL_RE = /^(next|send|save|continue|submit|done|add|finish|build|write)\b/i;
+
+// After the persona types, remind it the text isn't sent yet and name the button that sends it.
+// Without this, some models keep rewording the same answer and never send it. `typedInARow` counts
+// consecutive type actions into the same box, including this one.
+export function typedNote(controls: Control[], typedInARow: number): string {
+  const send = controls.find((c) => c.kind === "button" && SEND_LABEL_RE.test(c.label));
+  const how = send ? `click [${send.id}] "${send.label}"` : "click the button that sends it";
+  if (typedInARow >= 2) {
+    return `You've now typed into that box ${typedInARow} times in a row and still haven't sent it. Nothing reaches the app until you ${how}. Send what you have; you can add more after.`;
+  }
+  return `Your text is in the box but not sent yet. To send it, ${how}.`;
 }
 
 export function personaSystemPrompt(persona: Persona): string {
