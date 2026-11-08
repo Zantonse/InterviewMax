@@ -20,6 +20,10 @@ real testers.
   preview, and optionally pick personas and models. Leave the URL empty for a fresh preview of
   `main`.
 
+Only previews from the live Vercel project (team `craigverzosa-5395s-projects`) are tested, since
+the old work project deploys this repo too; set the `SIM_PREVIEW_TEAM` repository variable to change
+it. Until the GitHub secrets exist, runs skip themselves instead of failing.
+
 The report shows on the run's **Summary** page. The transcript and a screenshot of every step
 are in the run's `simulated-users-<n>` file.
 
