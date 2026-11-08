@@ -24,8 +24,10 @@ on:
         required: false
   deployment_status:
 
+# One group per deployment, so the old work project's deployment event can't take the slot of the
+# live one (a pending run in a shared group gets replaced by the next one).
 concurrency:
-  group: simulated-users
+  group: simulated-users-${{ github.event.deployment.id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -54,7 +56,9 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.url != '') ||
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
-       !contains(github.event.deployment.environment, 'Production'))
+       !contains(github.event.deployment.environment, 'Production') &&
+       contains(format('{0} {1}', github.event.deployment_status.environment_url, github.event.deployment_status.target_url),
+                vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -90,11 +94,12 @@ jobs:
             *"$PREVIEW_TEAM"*) ;;
             *) echo "Not a $PREVIEW_TEAM preview ($DEPLOY_URL); skipping."; echo "run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
           esac
-          if [ "$REF" = "sims/main" ]; then
+          # Vercel sends the commit SHA as the ref, so match the sims/main branch by its SHA.
+          git fetch --quiet origin main sims/main 2>/dev/null || git fetch --quiet origin main
+          if [ "$REF" = "sims/main" ] || [ "$SHA" = "$(git rev-parse --verify --quiet origin/sims/main || true)" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           # A PR preview: only when the story builder (or these runs) changed.
-          git fetch --quiet origin main
           changed=$(git diff --name-only "origin/main...$SHA" || true)
           if echo "$changed" | grep -qE '^(src/app/stories/|src/lib/stories/|src/lib/ai/|src/lib/sims/|src/app/api/sims/|scripts/sims/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
