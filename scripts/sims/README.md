@@ -87,7 +87,7 @@ SIM_USERS_SECRET=… OPENROUTER_API_KEY=… VERCEL_AUTOMATION_BYPASS_SECRET=… 
 ```
 
 `SIM_PERSONAS=product-designer` runs one persona, `SIM_MODELS=vendor/model` picks the persona
-model, `SIM_MAX_STEPS` caps the steps (default 45), and `SIM_KEEP_ACCOUNTS=1` keeps the persona
+model, `SIM_MAX_STEPS` caps the steps (default 80), and `SIM_KEEP_ACCOUNTS=1` keeps the persona
 account afterwards so you can look at it on the preview. Output goes to `sims-out/`.
 
 ## Cost

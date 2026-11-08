@@ -5,7 +5,7 @@
 // Env:   SIM_USERS_SECRET, OPENROUTER_API_KEY (required)
 //        VERCEL_AUTOMATION_BYPASS_SECRET (when previews are behind Vercel Authentication)
 //        SIM_PERSONAS=sales-engineer,product-designer   SIM_MODELS=vendor/model,...
-//        SIM_MAX_STEPS=45   SIM_RUN_NUMBER=7   SIM_OUT=sims-out   SIM_KEEP_ACCOUNTS=1
+//        SIM_MAX_STEPS=80   SIM_RUN_NUMBER=7   SIM_OUT=sims-out   SIM_KEEP_ACCOUNTS=1
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -15,6 +15,7 @@ import {
   newText,
   parseTurn,
   typedNote,
+  filledBoxes,
   personaSystemPrompt,
   personaTurnPrompt,
   summarizeTurn,
@@ -35,7 +36,7 @@ const baseUrl = (process.argv[2] ?? process.env.SIM_BASE_URL ?? "").replace(/\/$
 const secret = process.env.SIM_USERS_SECRET ?? "";
 const apiKey = process.env.OPENROUTER_API_KEY ?? "";
 const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "";
-const maxSteps = Number(process.env.SIM_MAX_STEPS ?? 45);
+const maxSteps = Number(process.env.SIM_MAX_STEPS ?? 80);
 const runNumber = Number(process.env.SIM_RUN_NUMBER ?? process.env.GITHUB_RUN_NUMBER ?? Date.now() / 86_400_000);
 const outDir = process.env.SIM_OUT ?? "sims-out";
 const commit = process.env.SIM_COMMIT;
@@ -312,10 +313,13 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
         typedInARow = 0;
         lastTypedId = undefined;
       }
+      const filled = filledBoxes(before.controls, after.controls);
       note = failure
         ? `${failure}. Pick an id from the current list.`
         : typedInARow > 0
           ? typedNote(after.controls, typedInARow)
+          : filled.length
+            ? `That added text to ${filled.map((c) => `"${c.label || "the answer box"}"`).join(", ")} (it's in the box, not sent). ${typedNote(after.controls, 1)}`
           : noChange
             ? `Your last action didn't change anything on the page${stuck >= 3 ? " (several times in a row)" : ""}.`
             : undefined;
@@ -417,6 +421,8 @@ async function main() {
     ),
   );
   if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${report}\n`);
+  // Also in the log, so the report can be read without downloading the run's files.
+  console.log(`\n${report}`);
   console.log(`\nReport: ${path.join(outDir, "report.md")} (persona + analyst calls $${costUsd.toFixed(3)})`);
   // A failing check means the runs couldn't happen at all, not that a persona struggled: that's
   // what the report is for.

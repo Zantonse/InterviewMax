@@ -78,6 +78,17 @@ export function typedNote(controls: Control[], typedInARow: number): string {
   return `Your text is in the box but not sent yet. To send it, ${how}.`;
 }
 
+// Text boxes whose content changed without the persona typing, e.g. after tapping a suggestion
+// chip that inserts text. The page text doesn't show box contents, so without this the click looks
+// like it did nothing and the persona taps it again.
+export function filledBoxes(before: Control[], after: Control[]): Control[] {
+  return after.filter((a) => {
+    if (a.kind !== "textbox") return false;
+    const b = before.find((c) => c.kind === "textbox" && c.label === a.label);
+    return (a.value ?? "") !== (b?.value ?? "") && (a.value ?? "").length > (b?.value ?? "").length;
+  });
+}
+
 export function personaSystemPrompt(persona: Persona): string {
   return `You are ${persona.name}, a real person using InterviewMax, a web app that helps people prepare for job interviews. You are NOT a tester and you don't know how the app works inside. Act exactly as this person would.
 

@@ -4,6 +4,7 @@ import {
   describeControls,
   isBlockedControl,
   typedNote,
+  filledBoxes,
   newText,
   parseTurn,
   personaSystemPrompt,
@@ -146,5 +147,14 @@ describe("Talk button", () => {
   it("is hidden from personas", () => {
     expect(isBlockedControl("Talk")).toBe(true);
     expect(isBlockedControl("Talking points")).toBe(false);
+  });
+});
+
+describe("filledBoxes", () => {
+  it("finds a box a click filled in", () => {
+    const before = [{ id: 1, kind: "textbox", label: "Your answer", value: "" }] as Parameters<typeof filledBoxes>[0];
+    const after = [{ id: 1, kind: "textbox", label: "Your answer", value: "The timeline was brutal" }] as typeof before;
+    expect(filledBoxes(before, after).map((c) => c.label)).toEqual(["Your answer"]);
+    expect(filledBoxes(after, after)).toEqual([]);
   });
 });
