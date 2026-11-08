@@ -67,7 +67,9 @@ Persona accounts never count in /admin: `src/lib/admin/data.ts` leaves out every
    3. User Management → Users → Create User, connection `interviewmax-sims`, once per persona:
       `sim-sales-engineer@sims.interviewmax.test`, `sim-product-designer@sims.interviewmax.test`,
       `sim-data-governance@sims.interviewmax.test`, `sim-sales-engineer-junior@sims.interviewmax.test`,
-      `sim-sales-engineer-principal@sims.interviewmax.test`, all with the same long random password.
+      `sim-sales-engineer-principal@sims.interviewmax.test`,
+      `sim-data-governance-junior@sims.interviewmax.test`,
+      `sim-data-governance-senior@sims.interviewmax.test`, all with the same long random password.
    4. Actions → the post-login action that sets the `role` claim: let it run for the Sims app too,
       e.g. `if (![INTERVIEWMAX_CLIENT_ID, SIMS_CLIENT_ID].includes(event.client.client_id)) return;`.
 3. **Vercel → Settings → Environment Variables, Preview only** (never Production):

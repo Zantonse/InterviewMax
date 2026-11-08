@@ -123,6 +123,8 @@ describe("personas", () => {
     );
     const se = PERSONAS.filter((p) => p.field === "sales_engineering").map((p) => p.level);
     expect(se.sort()).toEqual(["Junior", "Principal", "Senior"]);
+    const dg = PERSONAS.filter((p) => p.field === "data_governance").map((p) => p.level);
+    expect(dg.sort()).toEqual(["Junior", "Principal", "Senior"]);
   });
 });
 

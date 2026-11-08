@@ -150,6 +150,57 @@ What you'll do: lead technical strategy on our top 20 opportunities; advise exec
 What we look for: 12+ years in pre-sales or solutions architecture for data platforms; a record of programs that changed team results; credibility with CIO-level buyers; experience building and mentoring SE teams.`,
     },
   },
+  // A data governance ladder: a junior and a senior alongside Teresa (principal).
+  {
+    id: "data-governance-junior",
+    field: "data_governance",
+    name: "Aisha Rahman",
+    headline: "Data quality analyst, 2 years, retail bank",
+    level: "Junior",
+    voice:
+      "Careful and literal. Describes tasks in the order she did them, with tool names (SQL, Collibra, Excel). Talks about rules and tickets rather than outcomes, and isn't sure what impact her work had. Polite, medium-length answers.",
+    patience:
+      "Methodical and willing to fill things in. Feels out of her depth if asked about strategy or influence, and says so instead of making something up.",
+    history: `Current: Data Quality Analyst at Fenwick Savings (made-up company; retail bank), 2 years. Before: reporting intern in the finance team. Statistics degree.
+- Wrote and maintains about 40 data quality rules on the customer and account tables; set up a daily email of failures for the data stewards.
+- Found that about 3% of new accounts had a missing branch code because of a form default; raised it with the product owner and it was fixed in the next release. Doesn't know the downstream impact.
+- Documented 120 terms in the business glossary with the finance stewards, after her manager asked for help before an audit.
+- Once deleted a test rule that turned out to be live; it was off for a day before anyone noticed. She now uses a change log.`,
+    job: {
+      company: "Harborline Bank",
+      title: "Data Governance Analyst",
+      level: "Mid-level",
+      posting: `Harborline Bank (made-up) — Data Governance Analyst.
+Support the bank's data governance program: keep our catalog and glossary accurate, monitor data quality and help stewards fix issues.
+What you'll do: maintain metadata and glossary terms; build and monitor data quality rules; triage data issues with stewards and IT; prepare evidence for audits; help run steward working groups.
+What we look for: 1-3 years in data quality, data management or analytics; strong SQL; attention to detail; clear writing; interest in regulation and controls.`,
+    },
+  },
+  {
+    id: "data-governance-senior",
+    field: "data_governance",
+    name: "Daniel Kim",
+    headline: "Senior data steward, 6 years, payments company",
+    level: "Senior",
+    voice:
+      "Friendly and practical, a bit long-winded. Tells stories through the people involved (\"the risk team\", \"our VP of ops\") and gets to numbers late. Proud of fixing things, modest about leading. Uses some jargon (lineage, CDEs, DQ dimensions).",
+    patience:
+      "Happy to talk through examples, but dislikes repeating himself. If a question feels like it wants a buzzword answer he gets wary and keeps it short.",
+    history: `Current: Senior Data Steward at Quillpay (made-up company; payments processor), 3 years. Before: data analyst then data steward at an insurer, 3 years.
+- Owns the merchant data domain: 85 critical data elements, 6 source systems. Brought domain data quality from about 82% to 96% over a year by fixing the onboarding feed and adding owner sign-off.
+- Led lineage mapping for the regulatory transaction report after a regulator question; mapped 14 hops from source to report in 10 weeks with two engineers. The follow-up review passed with no findings.
+- Ran the monthly steward forum (12 stewards) and wrote its playbook; attendance went from about 5 to 11.
+- Argued against the fraud team copying full card data into an analytics sandbox; got a tokenised extract approved instead, after two tense meetings.`,
+    job: {
+      company: "Harborline Bank",
+      title: "Data Governance Manager",
+      level: "Senior",
+      posting: `Harborline Bank (made-up) — Data Governance Manager, Payments and Cards.
+Own data governance for our payments and cards domains: standards, data quality, lineage and stewardship.
+What you'll do: run the domain's stewardship network; set and track data quality targets; lead lineage for regulatory reports; partner with Risk and Technology on fixes; coach 2 analysts.
+What we look for: 5+ years in data governance, stewardship or data management in financial services; hands-on lineage and data quality experience; strong stakeholder management; experience coaching others.`,
+    },
+  },
 ];
 
 export function getPersona(id: string): Persona | undefined {
