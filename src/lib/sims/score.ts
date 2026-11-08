@@ -1,7 +1,7 @@
 import { parseContent } from "@/lib/stories/content";
 import { scoreOutOf100, type Tier } from "@/lib/stories/grading";
 import { ownWordsShare } from "@/lib/stories/own-words";
-import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
+import { INTRO_PARTS, REQUIRED_STORY_TYPE_ID, STAR_PARTS } from "@/lib/stories/story-types";
 import type { Action } from "./agent";
 
 // Scores one persona's run from what it did (the steps) and what it made (the result route's
@@ -84,10 +84,22 @@ function count<T>(items: T[], key: (t: T) => string): Record<string, number> {
   return out;
 }
 
+// The database hands back a draft's parts sorted by key length, not story order, so put them back
+// in the order the app shows them (STAR or intro), with any other part after.
+const PART_ORDER: string[] = [...STAR_PARTS, ...INTRO_PARTS].map((p) => p.id);
+export function orderedDraft(parts: Record<string, string>): string {
+  const rank = (k: string) => (PART_ORDER.includes(k) ? PART_ORDER.indexOf(k) : PART_ORDER.length);
+  return Object.keys(parts)
+    .sort((a, b) => rank(a) - rank(b))
+    .map((k) => parts[k])
+    .filter((t) => t?.trim())
+    .join("\n\n");
+}
+
 export function storyOutcome(row: ResultPayload["stories"][number]): StoryOutcome {
   const content = parseContent(row.content);
   const followUps = content.followUps ?? [];
-  const draftText = content.draft ? Object.values(content.draft.parts).join("\n\n") : undefined;
+  const draftText = content.draft ? orderedDraft(content.draft.parts) : undefined;
   const answers = [
     ...Object.values(content.answers),
     ...followUps.map((f) => f.answer ?? ""),

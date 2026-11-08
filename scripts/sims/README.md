@@ -31,7 +31,9 @@ are in the run's `simulated-users-<n>` file.
 
 - Personas: `src/lib/sims/personas.ts`. They are a sales engineer, a product designer and a
   data governance lead, each with a voice, a patience level, a work history and a target job.
-  Everything in them is made up.
+  Everything in them is made up. Each persona practises a different behavioral question
+  (`question`: a lost deal, research changing a design, fixing data under audit, stepping up,
+  influence without authority, spotting a problem, a tight deadline) and is told to skip About me.
 - Models: `src/lib/sims/models.ts`. Persona models rotate with each run, so over a few runs every
   persona is played by every model. The analyst is the first available cheap model. The app's own
   builder and grader keep the models in `src/lib/ai/config.ts`, so the runs test what users get.
@@ -51,7 +53,14 @@ are in the run's `simulated-users-<n>` file.
    rules (`src/lib/sims/graders.ts`: GPT 5.5 again, DeepSeek V4.1 Flash, Gemini 2.5 Flash), so a
    cheaper grader can be compared with the app's before switching. `SIM_GRADERS=a/b,c/d` picks
    them, `SIM_GRADERS=none` turns it off.
-5. The analyst model writes the insights (`src/lib/sims/report.ts`).
+5. The rubric (`src/lib/sims/rubric.ts`, approved by Craig 2026-11-08): the persona answers a
+   six-question exit survey in character (1 to 5), and a judge from a third vendor (Gemini 2.5
+   Flash; `SIM_JUDGE` overrides) scores seven dimensions 1 to 4 against the persona's real
+   history: completion, friction, fact fidelity, story quality at level, own voice, grader
+   accuracy and level calibration. The report opens with the pass bars and the scorecard, and
+   ends with CSV rows to append to `/mnt/project-files/sim-users/scorecard.csv`.
+   `SIM_RUBRIC=none` turns it off.
+6. The analyst model writes the insights (`src/lib/sims/report.ts`).
 
 Persona accounts never count in /admin: `src/lib/admin/data.ts` leaves out every profile with
 `is_simulated`.

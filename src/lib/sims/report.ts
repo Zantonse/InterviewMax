@@ -1,5 +1,6 @@
 import { graderTable, type GraderResult } from "./graders";
 import type { Persona } from "./personas";
+import { SCORECARD_CSV_HEADER, scorecardCsv, scorecardDetail, scorecardSection, type Judge, type Survey } from "./rubric";
 import type { RunMetrics, StepRecord } from "./score";
 
 // The simulated-user report: a table of each persona's numbers (code), then insights a cheap
@@ -13,6 +14,9 @@ export type PersonaRun = {
   crashed?: string;
   // The same story graded again by other models (graders.ts), app's own grade first.
   graders?: GraderResult[];
+  // The rubric (rubric.ts): the persona's exit survey and the judge's scorecard.
+  survey?: Survey;
+  judge?: Judge;
 };
 
 const OUTCOME_LABELS: Record<RunMetrics["outcome"], string> = {
@@ -46,7 +50,7 @@ export function transcriptForAnalyst(run: PersonaRun, maxChars = 30000): string 
   const lines = [
     `## ${persona.name} (${persona.id}, ${persona.level} level, target ${persona.job.title}), played by ${model}`,
     `Who: ${persona.headline}. Voice: ${persona.voice}`,
-    `Target job: ${persona.job.title} at ${persona.job.company}.`,
+    `Target job: ${persona.job.title} at ${persona.job.company}. Question they set out to answer: "${persona.question}".`,
     `Outcome: ${OUTCOME_LABELS[m.outcome]}${m.gaveUp ? ` ("${m.gaveUp}")` : ""}${run.crashed ? ` (runner error: ${run.crashed})` : ""}. ${m.steps} steps, ${m.minutes} min, ${m.slowSteps} slow steps (30s+), ${m.noChangeSteps} steps where nothing changed, ${m.errors} errors.`,
     `Job added: ${m.jobAdded ? "yes" : "no"}; likely questions shown: ${m.likelyQuestions ? "yes" : "no"}.`,
     `Usage events: ${JSON.stringify(m.events)}. Click signals: ${JSON.stringify(m.signals)}.`,
@@ -142,6 +146,12 @@ function graderSection(runs: PersonaRun[]): string[] {
   ];
 }
 
+function csvBlock(runs: PersonaRun[], commit?: string): string[] {
+  const rows = scorecardCsv(runs, { date: new Date().toISOString().slice(0, 10), commit });
+  if (!rows.length || !runs.some((r) => r.judge || r.survey)) return [];
+  return ["## Scorecard rows", "", "```csv", SCORECARD_CSV_HEADER, ...rows, "```", ""];
+}
+
 export function reportMarkdown(input: {
   runs: PersonaRun[];
   insights: string;
@@ -161,6 +171,7 @@ export function reportMarkdown(input: {
     "",
     "Steps: actions the persona took. Stuck: steps where nothing on the page changed (longest run in brackets). In own words: share of the draft in the persona's phrasing (the builder asks for a rewrite under 25%).",
     "",
+    ...scorecardSection(input.runs),
     ...(input.notes.length ? ["**Notes:**", ...input.notes.map((n) => `- ${n}`), ""] : []),
     `## Insights${input.analystModel ? ` (written by ${input.analystModel})` : ""}`,
     "",
@@ -168,6 +179,8 @@ export function reportMarkdown(input: {
     "",
     ...graderSection(input.runs),
     ...storiesAppendix(input.runs),
+    ...scorecardDetail(input.runs),
+    ...csvBlock(input.runs, input.commit),
     "---",
     `_AI personas can't feel dread or tiredness, and AI judging AI is biased: use this to catch breakage and friction, and real testers to confirm what matters.${input.runnerCostUsd !== undefined ? ` Persona and analyst calls cost $${input.runnerCostUsd.toFixed(3)}; the app's own builder and grader calls are on the app's OpenRouter key._` : "_"}`,
   ].join("\n");

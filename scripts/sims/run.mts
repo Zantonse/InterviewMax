@@ -27,7 +27,8 @@ import {
 import { ANALYST_MODELS, PERSONA_MODELS, assignModels, availableModels } from "../../src/lib/sims/models";
 import { COMPARE_GRADERS, appGrade, gradableStory, graderMessages, graderResult } from "../../src/lib/sims/graders";
 import { PERSONAS, type Persona } from "../../src/lib/sims/personas";
-import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, type PersonaRun } from "../../src/lib/sims/report";
+import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, transcriptForAnalyst, type PersonaRun } from "../../src/lib/sims/report";
+import { JUDGE_MODEL, JUDGE_SYSTEM, judgePrompt, parseJudge, parseSurvey, surveyPrompt } from "../../src/lib/sims/rubric";
 import { scoreRun, type ResultPayload, type StepRecord } from "../../src/lib/sims/score";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
@@ -161,7 +162,13 @@ async function observe(page: Page): Promise<Observation> {
         id: id++,
         kind,
         label,
-        value: kind === "textbox" ? (el as HTMLInputElement).value.slice(0, 200) : undefined,
+        // Long values keep their end too, so text a chip appends still shows as a change.
+        value:
+          kind === "textbox"
+            ? ((v: string) => (v.length > 200 ? `${v.slice(0, 120)} … ${v.slice(-80)} (${v.length} chars)` : v))(
+                (el as HTMLInputElement).value,
+              )
+            : undefined,
         placeholder: el.getAttribute("placeholder") ?? undefined,
         options:
           el instanceof HTMLSelectElement ? Array.from(el.options).map((o) => o.text.trim()) : undefined,
@@ -266,6 +273,41 @@ async function compareGraders(result: ResultPayload | null, title: string | unde
     }),
   );
   return [...(own ? [own] : []), ...others];
+}
+
+// The rubric (src/lib/sims/rubric.ts): the persona answers an exit survey in character, then a
+// judge from a third vendor scores the run against the persona's real history.
+const judgeModel = process.env.SIM_JUDGE || JUDGE_MODEL;
+async function rubric(run: PersonaRun) {
+  if (run.crashed || process.env.SIM_RUBRIC === "none") return;
+  try {
+    const text = await chat(
+      run.model,
+      [
+        { role: "system", content: personaSystemPrompt(run.persona) },
+        { role: "user", content: surveyPrompt(run) },
+      ],
+      { maxTokens: 1500, temperature: 0.7 },
+    );
+    run.survey = parseSurvey(text);
+    if (!run.survey) notes.push(`${run.persona.id}: the exit survey answer couldn't be read.`);
+  } catch (err) {
+    notes.push(`${run.persona.id}: the exit survey failed (${String(err).slice(0, 200)}).`);
+  }
+  try {
+    const text = await chat(
+      judgeModel,
+      [
+        { role: "system", content: JUDGE_SYSTEM },
+        { role: "user", content: judgePrompt(run, transcriptForAnalyst(run)) },
+      ],
+      { maxTokens: 3000, temperature: 0.2, effort: "medium" },
+    );
+    run.judge = parseJudge(text);
+    if (!run.judge) notes.push(`${run.persona.id}: the judge's scorecard couldn't be read.`);
+  } catch (err) {
+    notes.push(`${run.persona.id}: the judge failed (${String(err).slice(0, 200)}).`);
+  }
 }
 
 async function runPersona(context: BrowserContext, persona: Persona, model: string): Promise<PersonaRun> {
@@ -381,6 +423,7 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
   const metrics = scoreRun({ steps, result, startedAt, endedAt: Date.now(), crashed });
   const graders = await compareGraders(result, metrics.story?.title);
   const run: PersonaRun = { persona, model, metrics, steps, crashed, graders };
+  await rubric(run);
   await writeFile(path.join(dir, "transcript.json"), JSON.stringify({ ...run, result }, null, 2));
   return run;
 }
@@ -452,7 +495,7 @@ async function main() {
         commit,
         analyst,
         runnerCostUsd: costUsd,
-        runs: runs.map((r) => ({ persona: r.persona.id, model: r.model, ...r.metrics, story: { ...r.metrics.story, draftText: undefined } })),
+        runs: runs.map((r) => ({ persona: r.persona.id, model: r.model, ...r.metrics, story: { ...r.metrics.story, draftText: undefined }, survey: r.survey, judge: r.judge })),
       },
       null,
       2,

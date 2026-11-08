@@ -20,11 +20,14 @@ export type Persona = {
   history: string;
   // level: the option they'd pick for the job's level in the app.
   job: { company: string; title: string; level: string; posting: string };
+  // The behavioral question this persona practises, so runs cover more than one kind of story.
+  question: string;
 };
 
 export const PERSONAS: Persona[] = [
   {
     id: "sales-engineer",
+    question: "Tell me about a time you lost a deal or made a mistake with a customer. What did you learn?",
     field: "sales_engineering",
     name: "Priya Natarajan",
     headline: "Senior sales engineer, 7 years, mid-market data infrastructure",
@@ -50,6 +53,7 @@ What we look for: 6+ years in pre-sales for data or developer tools; hands-on wi
   },
   {
     id: "product-designer",
+    question: "Tell me about a time you used research to change a design decision.",
     field: "product_design",
     name: "Marcus Bell",
     headline: "Product designer, 5 years, consumer fintech",
@@ -75,6 +79,7 @@ What we look for: 5+ years of product design; a portfolio showing shipped work a
   },
   {
     id: "data-governance",
+    question: "Tell me about a time you had to fix a serious data quality problem under audit or regulatory pressure.",
     field: "data_governance",
     name: "Teresa Alvarado",
     headline: "Data governance lead, 9 years, healthcare insurance",
@@ -102,6 +107,7 @@ What we look for: 8+ years in data governance or data management in a regulated 
   // the same kind of target company, so grades can be compared by level.
   {
     id: "sales-engineer-junior",
+    question: "Tell me about a time you had to step up when no one else was available.",
     field: "sales_engineering",
     name: "Jordan Reyes",
     headline: "Associate sales engineer, 2 years, first job after college",
@@ -127,6 +133,7 @@ What we look for: 1-3 years in sales engineering, solutions or technical support
   },
   {
     id: "sales-engineer-principal",
+    question: "Tell me about a time you influenced another team, like Product, without authority over them.",
     field: "sales_engineering",
     name: "Grace Okafor",
     headline: "Principal sales engineer, 14 years, enterprise data platforms",
@@ -153,6 +160,7 @@ What we look for: 12+ years in pre-sales or solutions architecture for data plat
   // A data governance ladder: a junior and a senior alongside Teresa (principal).
   {
     id: "data-governance-junior",
+    question: "Tell me about a time you spotted a problem nobody asked you to look for.",
     field: "data_governance",
     name: "Aisha Rahman",
     headline: "Data quality analyst, 2 years, retail bank",
@@ -178,6 +186,7 @@ What we look for: 1-3 years in data quality, data management or analytics; stron
   },
   {
     id: "data-governance-senior",
+    question: "Tell me about a time you led a project with a tight deadline and limited resources.",
     field: "data_governance",
     name: "Daniel Kim",
     headline: "Senior data steward, 6 years, payments company",
