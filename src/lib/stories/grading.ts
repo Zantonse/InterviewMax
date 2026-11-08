@@ -310,7 +310,9 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     untraced: draft.untracedNumbers,
     range: lengthRange(storyType),
     where: storyType?.format === "intro" ? "your proof point" : "the result",
-    ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
+    ...(storyType?.format === "intro"
+      ? { maxFigures: INTRO_MAX_FIGURES }
+      : { stakeText: draft.parts.situation ?? "" }),
   });
   return draft.ownWords === undefined ? checks : [...checks, ownWordsCheck(draft.ownWords)];
 }
@@ -326,6 +328,10 @@ export function ownWordsCheck(share: number): CheckResult {
         : `Only about ${pct}% of it is phrased the way you said it, so it may not sound like you. Rewrite it, or add more in your own words.`,
   };
 }
+
+// A result that settles the stakes set up earlier: the deal was won, the audit passed.
+const OUTCOME_RE =
+  /\b(won|win|closed|signed|renewed|kept|saved|passed|hit|met|beat|shipped|launched|delivered|landed|retained|recovered|avoided)\b/i;
 
 // The figures an introduction says, as written, once each. Years ("since 2019") aren't metrics.
 export function introFigures(text: string): string[] {
@@ -347,9 +353,19 @@ export function checkScript(input: {
   where: string;
   // An introduction leads with its most important figure and saves the rest for follow-ups.
   maxFigures?: number;
+  // Where the stakes were set up. A result like "we won the deal" after a "$2.4M deal" opening
+  // carries that number, so it passes (a principal persona's story was held at Not yet for this,
+  // 2026-11-08), with a nudge to say the figure again where it lands.
+  stakeText?: string;
 }): CheckResult[] {
   const { text, untraced, where } = input;
   const numbers = findNumbers(input.numberText, { includeCommonWords: false });
+  const carried =
+    numbers.length === 0 && input.stakeText && OUTCOME_RE.test(input.numberText)
+      ? findNumbers(input.stakeText, { includeCommonWords: false }).filter(
+          (n) => !/^(19|20)\d\d$/.test(n.raw),
+        )
+      : [];
   const { i, we } = pronounCounts(text);
   const words = countWords(text);
   const { min, max } = input.range;
@@ -361,10 +377,12 @@ export function checkScript(input: {
   const results: CheckResult[] = [
     {
       id: "number",
-      pass: numbers.length > 0,
+      pass: numbers.length > 0 || carried.length > 0,
       detail: numbers.length
         ? `${where[0].toUpperCase()}${where.slice(1)} includes ${numbers.map((n) => n.raw).join(", ")}.`
-        : `There's no number in ${where}. Add one to your answers, or a labelled estimate.`,
+        : carried.length
+          ? `${where[0].toUpperCase()}${where.slice(1)} pays off ${carried[0].raw} from the start. Say it again where it lands to make it stick.`
+          : `There's no number in ${where}. Add one to your answers, or a labelled estimate.`,
     },
     {
       id: "traced",

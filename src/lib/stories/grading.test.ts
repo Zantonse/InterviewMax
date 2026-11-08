@@ -69,6 +69,26 @@ describe("quick checks", () => {
     expect(result.find((c) => c.id === "traced")?.detail).toContain("40%");
   });
 
+  it("passes a result that pays off a number set up at the start", () => {
+    const d = draft({
+      ...goodStar.parts,
+      situation: "Aurelia Bank was a $2.4M first-year deal against two incumbents.",
+      result: "Product pulled lineage forward and we won the deal against both incumbents.",
+    });
+    const number = quickChecks(d, stakeholder).find((c) => c.id === "number");
+    expect(number?.pass).toBe(true);
+    expect(number?.detail).toContain("$2.4M");
+  });
+
+  it("still fails a result with no outcome even when the start has a number", () => {
+    const d = draft({
+      ...goodStar.parts,
+      situation: "It was a $2.4M deal.",
+      result: "Product talked about it for a while.",
+    });
+    expect(quickChecks(d, stakeholder).find((c) => c.id === "number")?.pass).toBe(false);
+  });
+
   it("looks for the number in the proof point of Tell me about yourself", () => {
     const d = draft({
       present: "I lead solutions engineering.",

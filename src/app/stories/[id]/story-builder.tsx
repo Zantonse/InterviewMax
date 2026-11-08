@@ -276,14 +276,26 @@ export function StoryBuilder({
   }
 
   // Drops the unanswered follow-ups. Without a draft, the chain goes on to write it; on a drafted
-  // story, it's rewritten only if this round's answers added something.
-  function skipRest() {
+  // story, it's rewritten only if this round's answers added something. Text typed in the box but
+  // not sent is kept as the open question's answer first: simulated users typed and then tapped
+  // Skip, and lost it (2026-11-08).
+  function skipRest(typed = "") {
     setEditing(null);
+    const open = nextFollowUpIndex(content);
+    const keep = typed.trim() && open !== undefined ? { index: open, answer: typed } : undefined;
     const round = Math.max(0, ...(content.followUps ?? []).map((f) => f.round ?? 1));
-    const addedThisRound = (content.followUps ?? []).some(
-      (f) => (f.round ?? 1) === round && f.answer?.trim(),
-    );
+    const addedThisRound =
+      Boolean(keep) ||
+      (content.followUps ?? []).some((f) => (f.round ?? 1) === round && f.answer?.trim());
     run([
+      ...(keep
+        ? [
+            {
+              busy: "saving" as const,
+              action: () => saveFollowUpAnswer(sid(), keep.index, keep.answer),
+            },
+          ]
+        : []),
       { busy: "saving", action: () => skipFollowUps(sid()) },
       ...(content.draft && addedThisRound
         ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }]
@@ -323,6 +335,8 @@ export function StoryBuilder({
   const weak = busy ? undefined : weakIntroPart(content, storyType);
   const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
+  // Where an unsent answer is kept, so leaving the box (another tab, a reload) doesn't lose it.
+  const draftScope = `imx-answer:${storyId ?? `new-${storyTypeId}`}`;
   const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
   // With an uploaded answer the remaining scripted questions are skipped. Answers to the old
   // scripted questions (stories started before "tell it your way") are still shown.
@@ -565,6 +579,7 @@ export function StoryBuilder({
                   <Composer
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
+                    draftKey={inferredNow ? undefined : `${draftScope}:core-${currentCore}`}
                     insert={insert}
                     onTextChange={setAnswerText}
                     placeholder={
@@ -582,12 +597,13 @@ export function StoryBuilder({
                 <Composer
                   key={`follow-up-${currentFollowUp}`}
                   initial=""
+                  draftKey={`${draftScope}:fu-${currentFollowUp}`}
                   insert={insert}
                   onTextChange={setAnswerText}
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
-                  onSkip={skipRest}
+                  onSkip={(typed) => skipRest(typed)}
                   skipLabel={content.draft ? "Skip the rest" : "Skip the rest and write it"}
                 />
               ) : busy ? null : stage === "probe" ? (
@@ -1413,6 +1429,7 @@ function Composer({
   onCancel,
   onSkip,
   skipLabel,
+  draftKey,
 }: {
   initial: string;
   // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
@@ -1425,8 +1442,11 @@ function Composer({
   submitLabel: string;
   onSubmit: (answer: string) => void;
   onCancel?: () => void;
-  onSkip?: () => void;
+  // Told what's typed, so it can be kept rather than dropped.
+  onSkip?: (typed: string) => void;
   skipLabel?: string;
+  // Keeps what's typed (not yet sent) in this tab under this key, and brings it back.
+  draftKey?: string;
 }) {
   const [text, setText] = useState(initial);
   const [talking, setTalking] = useState(false);
@@ -1457,6 +1477,23 @@ function Composer({
     onTextChange?.(text);
   }, [text, onTextChange]);
 
+  // An unsent answer comes back when the box does (after a tab switch or a reload), unless the
+  // box opened with something in it already.
+  useEffect(() => {
+    if (!draftKey || initial) return;
+    const saved = readKept(draftKey);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restored once on mount; storage isn't readable during render without a hydration mismatch
+    if (saved) setText(saved);
+  }, [draftKey, initial]);
+  useEffect(() => {
+    if (draftKey) writeKept(draftKey, text === initial ? "" : text);
+  }, [draftKey, text, initial]);
+
+  function send(answer: string) {
+    if (draftKey) writeKept(draftKey, "");
+    onSubmit(answer);
+  }
+
   const canSubmit = !disabled && !talking && text.trim().length > 0;
 
   return (
@@ -1464,7 +1501,7 @@ function Composer({
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canSubmit) onSubmit(text);
+        if (canSubmit) send(text);
       }}
     >
       <label className="sr-only" htmlFor={fieldId}>
@@ -1478,7 +1515,7 @@ function Composer({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSubmit) {
             e.preventDefault();
-            onSubmit(text);
+            send(text);
           }
         }}
         rows={rows}
@@ -1493,16 +1530,25 @@ function Composer({
             onActiveChange={setTalking}
             onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_ANSWER_LENGTH))}
           />
-          {!talking && (
+          {/* Simulated users typed and typed without sending (2026-11-08): once there's text, say
+              how to send it. */}
+          {!talking && canSubmit ? (
+            <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
+              Done? Tap {submitLabel} to send it.
+            </span>
+          ) : !talking ? (
             <span className="hidden text-xs text-slate-400 sm:inline">
               Ctrl or ⌘ + Enter to send
             </span>
-          )}
+          ) : null}
         </div>
         {onSkip && !talking && (
           <button
             type="button"
-            onClick={onSkip}
+            onClick={() => {
+              if (draftKey) writeKept(draftKey, "");
+              onSkip(text);
+            }}
             disabled={disabled}
             className="rounded-xl px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             data-testid="skip-follow-ups"
@@ -1529,6 +1575,23 @@ function Composer({
       </div>
     </form>
   );
+}
+
+// Unsent answers, per tab. Storage can be blocked (private windows), so every call is guarded.
+function readKept(key: string): string {
+  try {
+    return window.sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+function writeKept(key: string, text: string) {
+  try {
+    if (text.trim()) window.sessionStorage.setItem(key, text);
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // Not kept; the box still works.
+  }
 }
 
 // "Tell me about yourself" only: Map my role, for people who find it hard to put their work into

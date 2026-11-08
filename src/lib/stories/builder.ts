@@ -47,6 +47,7 @@ import {
 } from "./prompts";
 import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
+import { dropRepeats } from "./repeats";
 import type { BuilderTargets } from "./targets";
 import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryNumber } from "@/lib/numbers/checklist";
@@ -71,7 +72,10 @@ export async function probeStory(
     probeSystem(storyType, round, targets),
     probeMessages(content, storyType, past, resume, numbers, targets),
   );
-  return parseProbe(text, round);
+  const asked = parseProbe(text, round);
+  const fresh = dropRepeats(asked, (content.followUps ?? []).map((f) => f.question));
+  // The first round must ask something, even if the model only repeated itself.
+  return fresh.length === 0 && round <= 1 ? asked.slice(0, 1) : fresh;
 }
 
 // "Tell me about yourself": one question aimed at the part the grader scored weakest. Returns at

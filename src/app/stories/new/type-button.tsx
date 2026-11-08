@@ -60,6 +60,38 @@ export function TypeButton({
   );
 }
 
+// Any interview question, typed in the user's words: the story type is picked for it.
+export function OwnQuestion() {
+  const { pending, data } = useFormStatus();
+  const starting = pending && data?.get("storyType") === "auto";
+  return (
+    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+      <label htmlFor="own-question" className="sr-only">
+        The interview question
+      </label>
+      <input
+        id="own-question"
+        name="asked"
+        required
+        maxLength={300}
+        placeholder="e.g. Tell me about a time you spotted a problem nobody asked you to look for."
+        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-ink-600 focus:ring-2 focus:ring-ink-600/20"
+        data-testid="own-question"
+      />
+      <button
+        type="submit"
+        name="storyType"
+        value="auto"
+        disabled={pending}
+        className="shrink-0 rounded-xl bg-ink-800 px-5 py-3 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60"
+        data-testid="own-question-start"
+      >
+        {starting ? "Opening…" : "Answer it"}
+      </button>
+    </div>
+  );
+}
+
 // A likely interview question with no story yet: starts the story that answers it.
 export function QuestionButton({
   storyType,
