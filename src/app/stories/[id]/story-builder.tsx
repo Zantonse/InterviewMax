@@ -725,9 +725,12 @@ export function StoryBuilder({
                         type="button"
                         onClick={strengthen}
                         disabled={busy !== null}
+                        aria-busy={busy === "probing"}
                         className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
                       >
-                        Ask me more to make it stronger
+                        {/* The questions appear on the Build tab; until then this is the only sign
+                            on this tab that anything is happening (round 27 personas read it as dead). */}
+                        {busy === "probing" ? "Finding more questions…" : "Ask me more to make it stronger"}
                       </button>
                     )}
                     <button
