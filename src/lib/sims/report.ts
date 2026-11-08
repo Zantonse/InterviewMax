@@ -103,6 +103,24 @@ Transcripts:
 ${runs.map((r) => transcriptForAnalyst(r)).join("\n\n---\n\n")}`;
 }
 
+// The stories the personas ended with, as written by the app, so story quality can be judged
+// across runs without opening the transcripts.
+export function storiesAppendix(runs: PersonaRun[]): string[] {
+  const written = runs.filter((r) => r.metrics.story?.draftText);
+  if (!written.length) return [];
+  const out = ["## The stories", ""];
+  for (const { persona, metrics } of written) {
+    const s = metrics.story!;
+    const grade = s.graded ? `${s.tier}${s.score !== undefined ? `, ${s.score}/100` : ""}` : "not graded";
+    out.push(`### ${persona.name}: ${s.title} (${grade}, ${pct(s.ownWords)} own words)`, "");
+    if (s.asked) out.push(`_Question: ${s.asked}_`, "");
+    out.push(s.draftText!.trim(), "");
+    if (s.summary) out.push(`**Grader:** ${s.summary}`, "");
+    if (s.fixes.length) out.push(...s.fixes.map((f) => `- ${f}`), "");
+  }
+  return out;
+}
+
 export function reportMarkdown(input: {
   runs: PersonaRun[];
   insights: string;
@@ -127,6 +145,7 @@ export function reportMarkdown(input: {
     "",
     input.insights.trim() || "_The analyst model didn't answer, so there are no insights this run. The transcripts are in the run's files._",
     "",
+    ...storiesAppendix(input.runs),
     "---",
     `_AI personas can't feel dread or tiredness, and AI judging AI is biased: use this to catch breakage and friction, and real testers to confirm what matters.${input.runnerCostUsd !== undefined ? ` Persona and analyst calls cost $${input.runnerCostUsd.toFixed(3)}; the app's own builder and grader calls are on the app's OpenRouter key._` : "_"}`,
   ].join("\n");
