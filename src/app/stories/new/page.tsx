@@ -9,7 +9,7 @@ import { listStories } from "@/lib/stories/data";
 import { requiredStoryStatus } from "@/lib/stories/required";
 import { REQUIRED_STORY_TYPE_ID, STORY_TYPES, getStoryType } from "@/lib/stories/story-types";
 import { startStory } from "./actions";
-import { QuestionButton, TypeButton } from "./type-button";
+import { OwnQuestion, QuestionButton, TypeButton } from "./type-button";
 
 export const metadata: Metadata = { title: "Build a story · InterviewMax" };
 
@@ -40,15 +40,38 @@ export default function NewStoryPage() {
 
 // The likely questions for the user's jobs that no story answers yet: the most concrete place to
 // start, since it's what they'll actually be asked. Hidden until a job has its questions.
-async function loadQuestions(): Promise<QuestionToBuild[]> {
+async function loadQuestions(): Promise<{ questions: QuestionToBuild[]; hasJob: boolean }> {
   try {
     const [jobs, stories] = await Promise.all([listJobs(), listStories()]);
-    return questionsToBuild(jobs, stories);
+    return { questions: questionsToBuild(jobs, stories), hasJob: jobs.length > 0 };
   } catch (err) {
     unstable_rethrow(err);
     console.error("Story picker: loading likely questions failed", err);
-    return [];
+    // Unknown: don't nag about adding a job.
+    return { questions: [], hasJob: true };
   }
+}
+
+// With no target job, a story can't be checked against the level it's for, and the likely
+// questions above stay empty. Simulated juniors skipped adding one (2026-11-08), so it's offered
+// here, where they start, without blocking the story.
+function AddJobNudge() {
+  return (
+    <Link
+      href="/jobs/new"
+      className="mt-8 flex max-w-2xl items-center justify-between gap-4 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-ink-700/30 transition hover:ring-ink-700/60"
+      data-testid="add-job-nudge"
+    >
+      <span>
+        <span className="block font-semibold text-slate-900">Add the job you&apos;re going for first</span>
+        <span className="block text-sm text-slate-600">
+          Paste the posting. Then I can tell you the questions it&apos;s likely to ask and
+          pitch your story at the level it expects.
+        </span>
+      </span>
+      <span className="shrink-0 font-semibold text-ink-800">Add a job →</span>
+    </Link>
+  );
 }
 
 function JobQuestions({ questions }: { questions: QuestionToBuild[] }) {
@@ -77,9 +100,22 @@ function JobQuestions({ questions }: { questions: QuestionToBuild[] }) {
 }
 
 async function Picker() {
-  const [required, questions] = await Promise.all([requiredStoryStatus(), loadQuestions()]);
+  const [required, { questions, hasJob }] = await Promise.all([
+    requiredStoryStatus(),
+    loadQuestions(),
+  ]);
   return (
     <>
+      {!hasJob && <AddJobNudge />}
+      <section className="mt-8 max-w-2xl" data-testid="own-question-section">
+        <h2 className="text-lg font-bold text-slate-900">Have a question in mind?</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Type it the way you&apos;d be asked, and I&apos;ll set up the story that answers it.
+        </p>
+        <form action={startStory}>
+          <OwnQuestion />
+        </form>
+      </section>
       {questions.length > 0 && <JobQuestions questions={questions} />}
       <Link
         href="/stories/find"

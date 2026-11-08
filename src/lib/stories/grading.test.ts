@@ -69,6 +69,26 @@ describe("quick checks", () => {
     expect(result.find((c) => c.id === "traced")?.detail).toContain("40%");
   });
 
+  it("passes a result that pays off a number set up at the start", () => {
+    const d = draft({
+      ...goodStar.parts,
+      situation: "Aurelia Bank was a $2.4M first-year deal against two incumbents.",
+      result: "Product pulled lineage forward and we won the deal against both incumbents.",
+    });
+    const number = quickChecks(d, stakeholder).find((c) => c.id === "number");
+    expect(number?.pass).toBe(true);
+    expect(number?.detail).toContain("$2.4M");
+  });
+
+  it("still fails a result with no outcome even when the start has a number", () => {
+    const d = draft({
+      ...goodStar.parts,
+      situation: "It was a $2.4M deal.",
+      result: "Product talked about it for a while.",
+    });
+    expect(quickChecks(d, stakeholder).find((c) => c.id === "number")?.pass).toBe(false);
+  });
+
   it("looks for the number in the proof point of Tell me about yourself", () => {
     const d = draft({
       present: "I lead solutions engineering.",
@@ -143,6 +163,19 @@ describe("tierFor", () => {
     expect(tierFor(scores(STAR_CRITERIA, 4), checks({ traced: false }))).toBe("not_yet");
     expect(tierFor([], checks())).toBe("not_yet");
   });
+
+  it("keeps a story with no lesson out of Strong without making it Not yet", () => {
+    const noLesson = [
+      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 4),
+      { id: "reflection", score: 1, note: "" },
+    ];
+    expect(tierFor(noLesson, checks())).toBe("good_enough");
+    const weakCore = [
+      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 2),
+      { id: "reflection", score: 4, note: "" },
+    ];
+    expect(tierFor(weakCore, checks())).toBe("not_yet");
+  });
 });
 
 describe("combineGrade", () => {
@@ -176,6 +209,34 @@ describe("combineGrade", () => {
     });
     expect(grade.bankRole).toBeUndefined();
     expect(grade.tier).toBe("good_enough");
+  });
+
+  it("holds a story below every target job's level at Good enough, with a fix", () => {
+    const job = (match: "below" | "matches") => ({
+      jobId: "j",
+      title: "Principal SE",
+      company: "Acme",
+      fit: "partial" as const,
+      proves: [],
+      misses: [],
+      answers: [],
+      level: { match, note: "" },
+    });
+    const graded = (jobs: ReturnType<typeof job>[]) =>
+      combineGrade({
+        criteria: scores(STAR_CRITERIA, 4),
+        checks: checks(),
+        modelFixes: [],
+        content: { jobs, unused: [], model: "m" },
+        storyType: stakeholder,
+        model: "m",
+        draftWrittenAt: "t",
+      });
+    const below = graded([job("below")]);
+    expect(below.tier).toBe("good_enough");
+    expect(below.fixes[0]).toMatch(/Show the scope Principal SE at Acme expects/);
+    expect(graded([job("below"), job("matches")]).tier).toBe("strong");
+    expect(graded([]).tier).toBe("strong");
   });
 });
 
@@ -331,7 +392,7 @@ describe("cutting the fluff", () => {
 
   it("holds Tell me about yourself to about a minute (90 seconds at most) and a story to about two minutes", () => {
     expect(lengthRange(aboutMe)).toEqual({ min: 120, max: 225 });
-    expect(lengthRange(stakeholder)).toEqual({ min: 180, max: 300 });
+    expect(lengthRange(stakeholder)).toEqual({ min: 150, max: 300 });
   });
 
   it("catches puffery as filler", () => {
@@ -375,5 +436,13 @@ describe("scoreOutOf100", () => {
   });
   it("is undefined with nothing scored", () => {
     expect(scoreOutOf100([])).toBeUndefined();
+  });
+
+  it("never contradicts the tier", () => {
+    const fours = [c(4), c(4), c(3), c(4), c(4)];
+    expect(scoreOutOf100(fours, "not_yet")).toBe(69);
+    expect(scoreOutOf100(fours, "good_enough")).toBe(89);
+    expect(scoreOutOf100(fours, "strong")).toBe(95);
+    expect(scoreOutOf100([c(2), c(2)], "good_enough")).toBe(50);
   });
 });

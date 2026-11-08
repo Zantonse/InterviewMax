@@ -25,8 +25,10 @@ import {
   type Turn,
 } from "../../src/lib/sims/agent";
 import { ANALYST_MODELS, PERSONA_MODELS, assignModels, availableModels } from "../../src/lib/sims/models";
+import { COMPARE_GRADERS, appGrade, gradableStory, graderMessages, graderResult, type GraderResult } from "../../src/lib/sims/graders";
 import { PERSONAS, type Persona } from "../../src/lib/sims/personas";
-import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, type PersonaRun } from "../../src/lib/sims/report";
+import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, transcriptForAnalyst, type PersonaRun } from "../../src/lib/sims/report";
+import { JUDGE_MODEL, JUDGE_SYSTEM, judgePrompt, parseJudge, parseSurvey, surveyPrompt } from "../../src/lib/sims/rubric";
 import { scoreRun, type ResultPayload, type StepRecord } from "../../src/lib/sims/score";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
@@ -37,6 +39,11 @@ const secret = process.env.SIM_USERS_SECRET ?? "";
 const apiKey = process.env.OPENROUTER_API_KEY ?? "";
 const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "";
 const maxSteps = Number(process.env.SIM_MAX_STEPS ?? 80);
+// Comparison graders for each written story; SIM_GRADERS=none turns it off.
+const graderModels =
+  process.env.SIM_GRADERS === "none"
+    ? []
+    : (process.env.SIM_GRADERS ?? COMPARE_GRADERS.join(",")).split(",").map((m) => m.trim()).filter(Boolean);
 const runNumber = Number(process.env.SIM_RUN_NUMBER ?? process.env.GITHUB_RUN_NUMBER ?? Date.now() / 86_400_000);
 const outDir = process.env.SIM_OUT ?? "sims-out";
 const commit = process.env.SIM_COMMIT;
@@ -54,7 +61,12 @@ const notes: string[] = [];
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: number; temperature: number }) {
+async function chat(
+  model: string,
+  messages: ChatMessage[],
+  opts: { maxTokens: number; temperature: number; effort?: "low" | "medium" },
+  attempt = 0,
+): Promise<string> {
   const res = await fetch(`${OPENROUTER}/chat/completions`, {
     method: "POST",
     headers: {
@@ -70,7 +82,7 @@ async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: n
       usage: { include: true },
       // Thinking models (e.g. Qwen 3) can spend the whole token budget reasoning and return an
       // empty reply; keep it short and out of the answer.
-      reasoning: { effort: "low", exclude: true },
+      reasoning: { effort: opts.effort ?? "low", exclude: true },
       // Same rule as the app: providers that train on prompts are never used.
       provider: { data_collection: "deny" },
     }),
@@ -81,7 +93,15 @@ async function chat(model: string, messages: ChatMessage[], opts: { maxTokens: n
     usage?: { cost?: number };
     error?: { message?: string };
   };
-  if (!res.ok) throw new Error(`${model}: ${body.error?.message ?? res.status}`);
+  if (!res.ok) {
+    const message = body.error?.message ?? String(res.status);
+    // Credit reserved by calls in flight, or a rate limit: wait and try again a few times.
+    if (attempt < 3 && /credits|rate limit|429/i.test(`${message} ${res.status}`)) {
+      await new Promise((r) => setTimeout(r, 5_000 * (attempt + 1)));
+      return chat(model, messages, opts, attempt + 1);
+    }
+    throw new Error(`${model}: ${message}`);
+  }
   costUsd += body.usage?.cost ?? 0;
   return body.choices?.[0]?.message?.content ?? "";
 }
@@ -151,7 +171,13 @@ async function observe(page: Page): Promise<Observation> {
         id: id++,
         kind,
         label,
-        value: kind === "textbox" ? (el as HTMLInputElement).value.slice(0, 200) : undefined,
+        // Long values keep their end too, so text a chip appends still shows as a change.
+        value:
+          kind === "textbox"
+            ? ((v: string) => (v.length > 200 ? `${v.slice(0, 120)} … ${v.slice(-80)} (${v.length} chars)` : v))(
+                (el as HTMLInputElement).value,
+              )
+            : undefined,
         placeholder: el.getAttribute("placeholder") ?? undefined,
         options:
           el instanceof HTMLSelectElement ? Array.from(el.options).map((o) => o.text.trim()) : undefined,
@@ -189,6 +215,9 @@ async function settle(page: Page): Promise<void> {
   }
 }
 
+// Paths the current persona has been on (goto may only go back to one of these).
+const visited = new Set<string>();
+
 async function act(page: Page, action: Action): Promise<string | null> {
   const target = (id: number) => page.locator(`[data-sim-id="${id}"]`).first();
   try {
@@ -207,9 +236,13 @@ async function act(page: Page, action: Action): Promise<string | null> {
         else await el.click({ timeout: 10_000 });
         return null;
       }
-      case "goto":
+      case "goto": {
+        // Only back to a page it has been on: an invented address 404s and reads as an app bug.
+        const target = new URL(action.path, baseUrl).pathname;
+        if (!visited.has(target)) return `${target} isn't a page you've been on; use the links on the page.`;
         await page.goto(new URL(action.path, baseUrl).toString(), { timeout: 60_000 });
         return null;
+      }
       case "wait":
         await page.waitForTimeout(5000);
         return null;
@@ -237,6 +270,61 @@ async function nextTurn(model: string, system: string, prompt: string): Promise<
     );
   }
   return { thought: "(the model never gave a valid action)", action: { type: "give_up", reason: `persona model gave no valid action (last reply: ${JSON.stringify(raw.slice(0, 300))})` } };
+}
+
+// Grades the persona's written story again with each comparison grader (src/lib/sims/graders.ts).
+async function compareGraders(result: ResultPayload | null, title: string | undefined) {
+  const row = result?.stories.find((r) => r.title === title && gradableStory(r));
+  const story = row ? gradableStory(row) : null;
+  if (!row || !story || graderModels.length === 0) return undefined;
+  const own = appGrade(row);
+  // One at a time: OpenRouter reserves credit per call in flight, and several personas grade at
+  // once, so parallel calls hit "would exceed your available credits" (run 25).
+  const others: GraderResult[] = [];
+  for (const m of graderModels) {
+    try {
+      const text = await chat(m, graderMessages(story), { maxTokens: 4000, temperature: 0.2, effort: "medium" });
+      others.push(graderResult(m, text, story));
+    } catch (err) {
+      others.push({ model: m, criteria: {}, error: String(err).slice(0, 200) });
+    }
+  }
+  return [...(own ? [own] : []), ...others];
+}
+
+// The rubric (src/lib/sims/rubric.ts): the persona answers an exit survey in character, then a
+// judge from a third vendor scores the run against the persona's real history.
+const judgeModel = process.env.SIM_JUDGE || JUDGE_MODEL;
+async function rubric(run: PersonaRun) {
+  if (run.crashed || process.env.SIM_RUBRIC === "none") return;
+  try {
+    const text = await chat(
+      run.model,
+      [
+        { role: "system", content: personaSystemPrompt(run.persona) },
+        { role: "user", content: surveyPrompt(run) },
+      ],
+      { maxTokens: 1500, temperature: 0.7 },
+    );
+    run.survey = parseSurvey(text);
+    if (!run.survey) notes.push(`${run.persona.id}: the exit survey answer couldn't be read.`);
+  } catch (err) {
+    notes.push(`${run.persona.id}: the exit survey failed (${String(err).slice(0, 200)}).`);
+  }
+  try {
+    const text = await chat(
+      judgeModel,
+      [
+        { role: "system", content: JUDGE_SYSTEM },
+        { role: "user", content: judgePrompt(run, transcriptForAnalyst(run)) },
+      ],
+      { maxTokens: 3000, temperature: 0.2, effort: "medium" },
+    );
+    run.judge = parseJudge(text);
+    if (!run.judge) notes.push(`${run.persona.id}: the judge's scorecard couldn't be read.`);
+  } catch (err) {
+    notes.push(`${run.persona.id}: the judge failed (${String(err).slice(0, 200)}).`);
+  }
 }
 
 async function runPersona(context: BrowserContext, persona: Persona, model: string): Promise<PersonaRun> {
@@ -273,6 +361,7 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
     let lastTypedId: number | undefined;
     for (let step = 1; step <= maxSteps; step++) {
       const before = await observe(page);
+      visited.add(before.path.split("?")[0]);
       const turn = await nextTurn(
         model,
         system,
@@ -311,7 +400,9 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
         errors: [...stepErrors],
         screenshot: shot,
       });
-      console.log(`[${persona.id}] ${step}. ${steps.at(-1)!.summary}`);
+      // The page it landed on, so a 404 or a wrong turn can be traced from the log alone.
+      const moved = after.path !== before.path ? ` -> ${after.path}` : "";
+      console.log(`[${persona.id}] ${step}. ${steps.at(-1)!.summary}${moved}`);
       if (turn.action.type === "done" || turn.action.type === "give_up") break;
       stuck = noChange ? stuck + 1 : 0;
       if (turn.action.type === "type" && !failure) {
@@ -350,7 +441,9 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
   await page.close().catch(() => {});
 
   const metrics = scoreRun({ steps, result, startedAt, endedAt: Date.now(), crashed });
-  const run: PersonaRun = { persona, model, metrics, steps, crashed };
+  const graders = await compareGraders(result, metrics.story?.title);
+  const run: PersonaRun = { persona, model, metrics, steps, crashed, graders };
+  await rubric(run);
   await writeFile(path.join(dir, "transcript.json"), JSON.stringify({ ...run, result }, null, 2));
   return run;
 }
@@ -422,7 +515,7 @@ async function main() {
         commit,
         analyst,
         runnerCostUsd: costUsd,
-        runs: runs.map((r) => ({ persona: r.persona.id, model: r.model, ...r.metrics, story: { ...r.metrics.story, draftText: undefined } })),
+        runs: runs.map((r) => ({ persona: r.persona.id, model: r.model, ...r.metrics, story: { ...r.metrics.story, draftText: undefined }, survey: r.survey, judge: r.judge })),
       },
       null,
       2,

@@ -91,7 +91,7 @@ export function EvaluationPanel({
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  const score = grade ? scoreOutOf100(grade.criteria) : undefined;
+  const score = grade ? scoreOutOf100(grade.criteria, grade.tier) : undefined;
 
   return (
     <section
@@ -411,7 +411,8 @@ function ScoreHeadline({ score }: { score: number | undefined }) {
       </div>
       <p className="text-xs text-slate-500">
         Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100. The level
-        above, not this number, decides when a story is Strong.
+        above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for
+        Good enough.
       </p>
     </div>
   );

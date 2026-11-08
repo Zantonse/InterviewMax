@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignModels, availableModels } from "./models";
 import { PERSONAS } from "./personas";
 import { metricsTable, reportMarkdown, transcriptForAnalyst } from "./report";
-import { bestStory, scoreRun, type ResultPayload, type StepRecord } from "./score";
+import { bestStory, orderedDraft, scoreRun, type ResultPayload, type StepRecord } from "./score";
 
 function step(n: number, over: Partial<StepRecord> = {}): StepRecord {
   return {
@@ -170,5 +170,12 @@ describe("models", () => {
   it("skips models the catalog doesn't list", () => {
     expect(availableModels(["x", "y"], new Set(["y"]))).toEqual({ ok: ["y"], missing: ["x"] });
     expect(availableModels(["x"], null)).toEqual({ ok: ["x"], missing: [] });
+  });
+});
+
+describe("orderedDraft", () => {
+  it("puts parts back in story order whatever order the database returns", () => {
+    const parts = { role: "R", result: "Res", actions: "A", situation: "S", reflection: "L" };
+    expect(orderedDraft(parts)).toBe("S\n\nR\n\nA\n\nRes\n\nL");
   });
 });

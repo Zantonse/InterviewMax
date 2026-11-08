@@ -118,9 +118,13 @@ describe("personas", () => {
     const ids = PERSONAS.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
     ids.forEach((id) => expect(id).toMatch(/^[a-z][a-z0-9-]{1,29}$/));
-    expect(PERSONAS.map((p) => p.field).sort()).toEqual(
-      ["data_governance", "product_design", "sales_engineering"].sort(),
+    expect(new Set(PERSONAS.map((p) => p.field))).toEqual(
+      new Set(["data_governance", "product_design", "sales_engineering"]),
     );
+    const se = PERSONAS.filter((p) => p.field === "sales_engineering").map((p) => p.level);
+    expect(se.sort()).toEqual(["Junior", "Principal", "Senior"]);
+    const dg = PERSONAS.filter((p) => p.field === "data_governance").map((p) => p.level);
+    expect(dg.sort()).toEqual(["Junior", "Principal", "Senior"]);
   });
 });
 

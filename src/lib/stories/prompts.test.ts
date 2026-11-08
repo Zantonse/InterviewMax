@@ -628,3 +628,14 @@ describe("a story started from an interview question", () => {
     expect(isUntouched({ ...emptyContent(), answers: { start: "We lost a deal." } })).toBe(false);
   });
 });
+
+describe("what published strong answers do", () => {
+  const star = getStoryType("major_project");
+  it("asks for the before and the reach of the result, and writes them in", () => {
+    expect(probeSystem(star, 1)).toMatch(/before and the after/);
+    expect(probeSystem(star, 1)).toMatch(/whether it spread/);
+    expect(writeSystem(star)).toMatch(/from X to Y/);
+    expect(writeSystem(star)).toMatch(/reach of the work/);
+    expect(writeSystem(star)).toMatch(/longest part of the story/);
+  });
+});

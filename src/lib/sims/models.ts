@@ -4,14 +4,14 @@
 //
 // Persona models come from different vendors on purpose: each writes differently (chatty, terse,
 // vague, polished), which is the point. Edit this list to swap them. A slug OpenRouter doesn't
-// list on the day is skipped with a note in the report.
+// list on the day is skipped with a note in the report. Mistral Small and Qwen were dropped
+// 2026-11-08: over three rounds they often gave no valid action, which read as the app failing.
 
 export const PERSONA_MODELS: readonly string[] = [
   "google/gemini-2.5-flash",
   "meta-llama/llama-3.3-70b-instruct",
-  "mistralai/mistral-small-3.2-24b-instruct",
-  "qwen/qwen3.6-35b-a3b",
   "openai/gpt-oss-120b",
+  "anthropic/claude-haiku-5.5",
 ];
 
 // Reads every transcript and writes the report: cheap, with a long context (Craig, Nov 7:

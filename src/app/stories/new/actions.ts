@@ -4,14 +4,19 @@ import { redirect } from "next/navigation";
 import { emptyContent, type StoryContent } from "@/lib/stories/content";
 import { insertStory } from "@/lib/stories/data";
 import { requiredStoryStatus } from "@/lib/stories/required";
+import { storyTypeForQuestion } from "@/lib/stories/question-match";
 import { REQUIRED_STORY_TYPE_ID, cleanAsked, getStoryType } from "@/lib/stories/story-types";
 import { trackEvent } from "@/lib/usage/track";
 
 // Opens the builder for a behavioral story, optionally answering one interview question ("asked").
 // Nothing is saved yet: the story is created with the user's first answer (createStory), so
 // tapping a story and leaving doesn't leave an empty one behind.
+// storyType "auto": the user typed their own question, and it picks the story type for it.
 export async function startStory(formData: FormData) {
-  const storyType = getStoryType(String(formData.get("storyType") ?? ""));
+  const typed = String(formData.get("storyType") ?? "");
+  const askedFirst = cleanAsked(formData.get("asked"));
+  if (typed === "auto" && !askedFirst) redirect("/stories/new");
+  const storyType = getStoryType(typed === "auto" ? storyTypeForQuestion(askedFirst ?? "") : typed);
   if (!storyType) redirect("/stories/new");
 
   // There's one "Tell me about yourself", saved straight away so Map my role (which needs a saved
@@ -29,7 +34,7 @@ export async function startStory(formData: FormData) {
     redirect(`/stories/${id}`);
   }
 
-  const asked = cleanAsked(formData.get("asked"));
+  const asked = askedFirst;
   redirect(`/stories/new/${storyType.id}${asked ? `?q=${encodeURIComponent(asked)}` : ""}`);
 }
 

@@ -30,7 +30,7 @@ const CHECKLIST = `- Situation: where they were, their role, and what was at sta
 - Actions: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
 - Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
-- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
+- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one. Strong answers give the before and the after ("from 62% to 91%"), so if they gave only one, ask for the other. If the result is there but nothing says how far the work reached (adopted by other teams, reused, made into a process or policy), ask once whether it spread: reach is what shows senior scope.
 - Reflection: a specific lesson or something they'd do differently.`;
 
 const GAPS = ["situation", "ownership", "actions", "obstacle", "decision", "result", "reflection"] as const;
@@ -114,8 +114,8 @@ Make it strong, not just accurate: put their most impressive numbers where they 
 Write these parts:
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
-- result: 1 to 2 sentences on the outcome, with their number.
+- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"). If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
 - reflection: 1 to 2 sentences on what they learned or would do differently.
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.

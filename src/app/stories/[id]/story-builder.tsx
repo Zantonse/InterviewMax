@@ -58,8 +58,15 @@ import {
   type BuilderResult,
 } from "./actions";
 import { createStory } from "@/app/stories/new/actions";
-import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
+import {
+  type BuilderTargets,
+  GUIDED_START_PROMPTS,
+  guidedStart,
+  nextRoleHint,
+  openingHint,
+} from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
+import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
@@ -146,11 +153,16 @@ export function StoryBuilder({
   // The saved story's id, read when each action runs (a new story gets one with its first answer).
   const idRef = useRef(storyId);
   const sid = (): string => idRef.current ?? "";
+  // Whether a chain of actions is running (read in the tap handler, before any render).
+  const running = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
-  // Text a memory jogger adds to the answer box; `n` makes each tap count.
-  const [insert, setInsert] = useState<{ text: string; n: number } | undefined>();
+  // Text a memory jogger adds to (or, tapped again, takes out of) the answer box; `n` makes each
+  // tap count.
+  const [insert, setInsert] = useState<Insert | undefined>();
+  // What's in the answer box now, so a tapped starter can show it's in there.
+  const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
     initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
@@ -161,14 +173,31 @@ export function StoryBuilder({
 
   // Runs a chain of actions, applying each result. Stops at the first error.
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    // One chain at a time: a second tap while one runs does nothing.
+    if (running.current) return;
+    running.current = true;
     setError(null);
+    // Shown straight away, outside the transition: React holds updates made inside an async
+    // transition before its first await until the whole chain ends, so the button looked dead for
+    // the length of the model call and simulated users tapped it again and again (2026-11-08).
+    setBusy(!idRef.current && newStory ? "saving" : steps[0].busy);
     startTransition(async () => {
+      try {
+        await runSteps(steps);
+      } finally {
+        running.current = false;
+        setBusy(null);
+      }
+    });
+  }
+
+  async function runSteps(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    {
       if (!idRef.current && newStory) {
         setBusy("saving");
         const created = await createStory(newStory.storyType, newStory.asked);
         if (!created.ok) {
           setError(created.error);
-          setBusy(null);
           return;
         }
         idRef.current = created.id;
@@ -214,8 +243,7 @@ export function StoryBuilder({
           steps.push({ busy: "grading", action: () => gradeDraft(sid()) });
         }
       }
-      setBusy(null);
-    });
+    }
   }
 
   // "Tell me about yourself": whether the path question can be read from a document instead.
@@ -248,14 +276,26 @@ export function StoryBuilder({
   }
 
   // Drops the unanswered follow-ups. Without a draft, the chain goes on to write it; on a drafted
-  // story, it's rewritten only if this round's answers added something.
-  function skipRest() {
+  // story, it's rewritten only if this round's answers added something. Text typed in the box but
+  // not sent is kept as the open question's answer first: simulated users typed and then tapped
+  // Skip, and lost it (2026-11-08).
+  function skipRest(typed = "") {
     setEditing(null);
+    const open = nextFollowUpIndex(content);
+    const keep = typed.trim() && open !== undefined ? { index: open, answer: typed } : undefined;
     const round = Math.max(0, ...(content.followUps ?? []).map((f) => f.round ?? 1));
-    const addedThisRound = (content.followUps ?? []).some(
-      (f) => (f.round ?? 1) === round && f.answer?.trim(),
-    );
+    const addedThisRound =
+      Boolean(keep) ||
+      (content.followUps ?? []).some((f) => (f.round ?? 1) === round && f.answer?.trim());
     run([
+      ...(keep
+        ? [
+            {
+              busy: "saving" as const,
+              action: () => saveFollowUpAnswer(sid(), keep.index, keep.answer),
+            },
+          ]
+        : []),
       { busy: "saving", action: () => skipFollowUps(sid()) },
       ...(content.draft && addedThisRound
         ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }]
@@ -295,6 +335,8 @@ export function StoryBuilder({
   const weak = busy ? undefined : weakIntroPart(content, storyType);
   const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
+  // Where an unsent answer is kept, so leaving the box (another tab, a reload) doesn't lose it.
+  const draftScope = `imx-answer:${storyId ?? `new-${storyTypeId}`}`;
   const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
   // With an uploaded answer the remaining scripted questions are skipped. Answers to the old
   // scripted questions (stories started before "tell it your way") are still shown.
@@ -471,8 +513,11 @@ export function StoryBuilder({
                         index === currentFollowUp && f.options?.length ? (
                           <TapOptions
                             options={f.options}
+                            answerText={answerText}
                             disabled={busy !== null}
-                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                            onPick={(text, remove) =>
+                              setInsert((n) => ({ text, n: (n?.n ?? 0) + 1, remove }))
+                            }
                           />
                         ) : undefined
                       }
@@ -534,7 +579,14 @@ export function StoryBuilder({
                   <Composer
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
+                    draftKey={inferredNow ? undefined : `${draftScope}:core-${currentCore}`}
                     insert={insert}
+                    onTextChange={setAnswerText}
+                    placeholder={
+                      currentCore === "start" && guidedStart(targets, storyType)
+                        ? `${GUIDED_START_PROMPTS.join("\n")}\n\nA line or two for each is plenty.`
+                        : undefined
+                    }
                     rows={currentCore === "start" && storyType?.format !== "intro" ? 6 : 3}
                     disabled={busy !== null}
                     submitLabel="Next"
@@ -545,11 +597,13 @@ export function StoryBuilder({
                 <Composer
                   key={`follow-up-${currentFollowUp}`}
                   initial=""
+                  draftKey={`${draftScope}:fu-${currentFollowUp}`}
                   insert={insert}
+                  onTextChange={setAnswerText}
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
-                  onSkip={skipRest}
+                  onSkip={(typed) => skipRest(typed)}
                   skipLabel={content.draft ? "Skip the rest" : "Skip the rest and write it"}
                 />
               ) : busy ? null : stage === "probe" ? (
@@ -687,9 +741,12 @@ export function StoryBuilder({
                         type="button"
                         onClick={strengthen}
                         disabled={busy !== null}
+                        aria-busy={busy === "probing"}
                         className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
                       >
-                        Ask me more to make it stronger
+                        {/* The questions appear on the Build tab; until then this is the only sign
+                            on this tab that anything is happening (round 27 personas read it as dead). */}
+                        {busy === "probing" ? "Finding more questions…" : "Ask me more to make it stronger"}
                       </button>
                     )}
                     <button
@@ -1091,32 +1148,50 @@ function Joggers({
 }
 
 // Under a follow-up about a kind of thing (their part, the stakes, the kind of result): the coach's
-// starters. A tap puts one in the answer box to finish in their own words.
+// starters. A tap puts one in the answer box to finish in their own words; one that's in the box
+// shows as picked, and tapping it again takes it out (simulated users tapped a starter dozens of
+// times when nothing on the chip changed, 2026-11-08).
 function TapOptions({
   options,
+  answerText,
   disabled,
   onPick,
 }: {
   options: string[];
+  answerText: string;
   disabled: boolean;
-  onPick: (text: string) => void;
+  onPick: (text: string, remove: boolean) => void;
 }) {
+  const picked = options.filter((o) => answerText.includes(o));
   return (
     <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="tap-options">
       <div className="flex flex-wrap gap-2" data-stagger>
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(`${o}. `)}
-            className="rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50"
-          >
-            {o}
-          </button>
-        ))}
+        {options.map((o) => {
+          const on = picked.includes(o);
+          return (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={on}
+              disabled={disabled}
+              onClick={() => onPick(`${o}. `, on)}
+              className={`rounded-full px-3 py-1.5 text-left text-sm ring-1 disabled:opacity-50 ${
+                on
+                  ? "bg-ink-800 text-white ring-ink-800 hover:bg-ink-900"
+                  : "bg-white text-slate-700 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
+              }`}
+            >
+              {on && <span aria-hidden="true">✓ </span>}
+              {o}
+            </button>
+          );
+        })}
       </div>
-      <p className="text-xs text-slate-500">Tap one to start, then add a sentence in your words.</p>
+      <p className="text-xs text-slate-500" aria-live="polite">
+        {picked.length
+          ? "Added to your answer below. Finish it with a sentence in your words, then tap Next."
+          : "Tap one to start, then add a sentence in your words."}
+      </p>
     </div>
   );
 }
@@ -1345,6 +1420,8 @@ function Exchange({
 function Composer({
   initial,
   insert,
+  onTextChange,
+  placeholder,
   rows = 3,
   disabled,
   submitLabel,
@@ -1352,17 +1429,24 @@ function Composer({
   onCancel,
   onSkip,
   skipLabel,
+  draftKey,
 }: {
   initial: string;
   // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
-  insert?: { text: string; n: number };
+  insert?: Insert;
+  // Told what's in the box as it changes.
+  onTextChange?: (text: string) => void;
+  placeholder?: string;
   rows?: number;
   disabled: boolean;
   submitLabel: string;
   onSubmit: (answer: string) => void;
   onCancel?: () => void;
-  onSkip?: () => void;
+  // Told what's typed, so it can be kept rather than dropped.
+  onSkip?: (typed: string) => void;
   skipLabel?: string;
+  // Keeps what's typed (not yet sent) in this tab under this key, and brings it back.
+  draftKey?: string;
 }) {
   const [text, setText] = useState(initial);
   const [talking, setTalking] = useState(false);
@@ -1375,11 +1459,39 @@ function Composer({
   }, []);
 
   // A tapped jogger is added to whatever is typed so far (state adjusted during render, not in an
-  // effect, so it lands in one pass).
+  // effect, so it lands in one pass), and the cursor goes to the end to keep typing.
   const [inserted, setInserted] = useState(insert?.n);
   if (insert && insert.n !== inserted) {
     setInserted(insert.n);
-    setText((t) => (t.trim() ? `${t.trimEnd()}\n${insert.text}` : insert.text));
+    setText((t) => applyInsert(t, insert));
+  }
+  useEffect(() => {
+    if (inserted === undefined) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [inserted]);
+
+  useEffect(() => {
+    onTextChange?.(text);
+  }, [text, onTextChange]);
+
+  // An unsent answer comes back when the box does (after a tab switch or a reload), unless the
+  // box opened with something in it already.
+  useEffect(() => {
+    if (!draftKey || initial) return;
+    const saved = readKept(draftKey);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restored once on mount; storage isn't readable during render without a hydration mismatch
+    if (saved) setText(saved);
+  }, [draftKey, initial]);
+  useEffect(() => {
+    if (draftKey) writeKept(draftKey, text === initial ? "" : text);
+  }, [draftKey, text, initial]);
+
+  function send(answer: string) {
+    if (draftKey) writeKept(draftKey, "");
+    onSubmit(answer);
   }
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;
@@ -1389,7 +1501,7 @@ function Composer({
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canSubmit) onSubmit(text);
+        if (canSubmit) send(text);
       }}
     >
       <label className="sr-only" htmlFor={fieldId}>
@@ -1403,12 +1515,12 @@ function Composer({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSubmit) {
             e.preventDefault();
-            onSubmit(text);
+            send(text);
           }
         }}
         rows={rows}
         maxLength={MAX_ANSWER_LENGTH}
-        placeholder="Type or tap Talk. Plain notes are fine."
+        placeholder={placeholder ?? "Type or tap Talk. Plain notes are fine."}
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1418,16 +1530,25 @@ function Composer({
             onActiveChange={setTalking}
             onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_ANSWER_LENGTH))}
           />
-          {!talking && (
+          {/* Simulated users typed and typed without sending (2026-11-08): once there's text, say
+              how to send it. */}
+          {!talking && canSubmit ? (
+            <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
+              Done? Tap {submitLabel} to send it.
+            </span>
+          ) : !talking ? (
             <span className="hidden text-xs text-slate-400 sm:inline">
               Ctrl or ⌘ + Enter to send
             </span>
-          )}
+          ) : null}
         </div>
         {onSkip && !talking && (
           <button
             type="button"
-            onClick={onSkip}
+            onClick={() => {
+              if (draftKey) writeKept(draftKey, "");
+              onSkip(text);
+            }}
             disabled={disabled}
             className="rounded-xl px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             data-testid="skip-follow-ups"
@@ -1454,6 +1575,23 @@ function Composer({
       </div>
     </form>
   );
+}
+
+// Unsent answers, per tab. Storage can be blocked (private windows), so every call is guarded.
+function readKept(key: string): string {
+  try {
+    return window.sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+function writeKept(key: string, text: string) {
+  try {
+    if (text.trim()) window.sessionStorage.setItem(key, text);
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // Not kept; the box still works.
+  }
 }
 
 // "Tell me about yourself" only: Map my role, for people who find it hard to put their work into

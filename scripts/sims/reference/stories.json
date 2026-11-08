@@ -1,0 +1,189 @@
+{
+  "note": "Reference answers for grader calibration (scripts/sims/README.md). 'published' answers are example answers that interview prep sites present as strong, quoted with their source for internal testing only; they are expert-written illustrations, not real candidates' answers. 'planted' answers are weakened copies written for this test, each with one known flaw. Collected 2026-11-08.",
+  "stories": [
+    {
+      "id": "mo-customer-obsession",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Product Manager",
+      "question": "Tell me about a time you went above and beyond for a customer.",
+      "expect": "strong",
+      "parts": {
+        "situation": "Our SaaS product had a customer segment — mid-market HR teams — that showed 25% higher churn than other segments. Three customers had escalated through support in the same month.",
+        "role": "I needed to find the root cause and propose a fix before our next quarterly business review.",
+        "actions": "I pulled support ticket data for the past 6 months and tagged each by feature area. 68% of HR team complaints pointed to the same workflow — bulk employee import. I then called 5 of the churning customers directly (not through support). Three said the same thing: \"We expected it to work like uploading a spreadsheet, but it requires field mapping every time.\" I wrote a 1-pager proposing a \"smart mapping\" feature that remembers previous imports. I got engineering buy-in by showing the projected churn reduction ($180K ARR at risk). The feature shipped in 6 weeks.",
+        "result": "Bulk import completion rate went from 62% to 91%. HR segment churn dropped from 25% to 14% in the next quarter. The feature was later extended to all customer segments.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "mo-ownership",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Software Engineer",
+      "question": "Tell me about a time you took on something outside your responsibilities.",
+      "expect": "strong",
+      "parts": {
+        "situation": "Our CI/CD pipeline was breaking 3-4 times per week due to flaky integration tests. It wasn't anyone's assigned project — the DevOps team said it was a test quality issue, and the test team said it was infrastructure instability.",
+        "role": "No one owned it, and the broken pipeline was blocking 12 engineers' deployments. I decided to investigate despite this not being in my sprint plan.",
+        "actions": "I dedicated my Friday focus days to this for 2 weeks. I built a dashboard tracking every CI failure with root cause tags. 72% were caused by shared test database state — tests were stepping on each other. I proposed and implemented test isolation using per-run database schemas. I also added automatic retry with exponential backoff for the remaining network-related flakes.",
+        "result": "Pipeline reliability went from 72% to 97%. Mean time to deploy dropped from 4.2 hours to 45 minutes. The company-wide \"Engineering Quality\" survey showed a 15-point improvement in developer satisfaction.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "mo-simplify",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Data Scientist",
+      "question": "Describe a time you simplified a complex process.",
+      "expect": "strong",
+      "parts": {
+        "situation": "Our recommendation engine relied on a 14-stage feature extraction pipeline. Each model update took 3 days of compute and required a data engineer to babysit the jobs.",
+        "role": "With a new model release deadline 4 weeks away, I proposed simplifying the pipeline to make it self-service for data scientists.",
+        "actions": "I profiled each pipeline stage and found that 6 stages were historical artifacts — transformations that newer model architectures (transformers) handled internally. I removed them, consolidated the remaining 8 into 4 parallelized stages, and wrote a single config file that data scientists could modify without touching code. I also added automated validation checks between stages to catch data drift.",
+        "result": "Pipeline runtime went from 3 days to 8 hours. Data scientists could now trigger and monitor their own training runs. We shipped the new model 2 weeks ahead of deadline.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "mo-bias-for-action",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Operations Manager",
+      "question": "Tell me about a decision you made with incomplete data.",
+      "expect": "strong",
+      "parts": {
+        "situation": "A key supplier notified us at 2pm on a Thursday that they couldn't fulfill next week's order — 40% of our inventory. Our warehouse had 3 days of buffer stock.",
+        "role": "I had to decide between (a) splitting the order across two backup suppliers at higher cost, or (b) negotiating a partial delivery from the original supplier and adjusting our sales forecast.",
+        "actions": "I didn't have time to run a full cost analysis. I estimated the revenue risk of stockouts ($350K) vs. the premium from backup suppliers ($45K). I called both backup suppliers within the hour, split the order, and locked in delivery dates. Then I notified sales to hold any new promotions until stock levels normalized.",
+        "result": "We had zero stockouts. The extra $45K in supplier costs was offset by maintaining our revenue target.",
+        "reflection": "Post-mortem: I proposed a dual-supplier policy that the company adopted the following quarter."
+      }
+    },
+    {
+      "id": "mo-backbone",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Product Manager",
+      "question": "Tell me about a time you disagreed with your manager.",
+      "expect": "strong",
+      "parts": {
+        "situation": "My VP wanted to launch a new tier in our pricing model — a \"Pro Plus\" plan targeting enterprise customers. The research I'd done showed that our existing enterprise customers were confused by 3 tiers already.",
+        "role": "I needed to push back on the VP's plan while maintaining the relationship and being prepared to commit if overruled.",
+        "actions": "I compiled data from our customer success team: 60% of enterprise deal conversations included \"which plan is right for me?\" as a blocker. I created a mock-up of the pricing page with 4 tiers and ran a 5-second test with 30 prospects — 73% couldn't identify the right plan. I presented this data in our planning meeting and proposed an alternative: keep 3 tiers but add configurable add-ons. The VP initially disagreed but asked for a week to review my data. After reviewing, she approved the add-on approach.",
+        "result": "After launching the add-on model, enterprise conversion rate increased 22% and average deal size went up 18% (customers self-selected higher-value add-ons). Time-to-close dropped by 8 days.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "mo-deliver-results",
+      "kind": "published",
+      "source": "https://manyoffer.com/blog/amazon-star-method-examples",
+      "role": "Software Engineer",
+      "question": "Tell me about a time you delivered despite significant obstacles.",
+      "expect": "strong",
+      "parts": {
+        "situation": "Two weeks before our product launch, a critical dependency — a third-party payment provider's API — changed their authentication protocol with zero migration documentation.",
+        "role": "Our launch date was non-negotiable (tied to a partner announcement). I needed to migrate payment integration in under 10 days.",
+        "actions": "I reverse-engineered the new auth flow from their SDK source code (the docs hadn't been updated). I built a compatibility layer that worked with both old and new authentication, so we could roll out gradually. I set up a parallel testing environment and ran 5,000 synthetic transactions to validate. I also negotiated with the provider's technical team to get a 48-hour preview of their upcoming documentation.",
+        "result": "We launched on time with zero payment failures. The compatibility layer also allowed us to migrate 3 other services at our own pace over the next month, instead of a risky big-bang switch.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "aced-short-term-sacrifice",
+      "kind": "published",
+      "source": "https://www.aced.io/blog/how-to-nail-amazons-behavioral-interview-questions",
+      "role": "Product Manager",
+      "question": "Tell me about a time you had to make a decision to make short-term sacrifices for long-term gains.",
+      "expect": "good_enough",
+      "parts": {
+        "situation": "I was working on a product launch for North America when I was told the launch would need to include Europe in the same timeframe. Knowing the complexity of globalization (languages, regulations, currencies), I knew immediately this timeline wouldn't work.",
+        "role": "I needed to speak with my Head of Sales to understand what was driving the request, so I could figure out how to move forward.",
+        "actions": "I set up a meeting with the Head of Sales and, in parallel, scheduled time with my Tech Lead to scope the additional work. After speaking with Sales, I learned a potential European client had budget in Q3 they wanted to spend on our product. This was good for our revenue targets, but I knew rushing the launch would result in a poor experience. So I asked to speak directly with the client, explained the realistic timeline, and gave them the revised launch date for the following quarter so they could budget accordingly.",
+        "result": "The client appreciated the transparency and was able to reallocate their budget to become a customer in Q4. While we missed some Q3 revenue, we built a trusting, long-lasting relationship that was worth more in the long run.",
+        "reflection": ""
+      }
+    },
+    {
+      "id": "aced-mistake",
+      "kind": "published",
+      "source": "https://www.aced.io/blog/how-to-nail-amazons-behavioral-interview-questions",
+      "role": "Product Manager",
+      "question": "Tell me about a mistake.",
+      "expect": "good_enough",
+      "parts": {
+        "situation": "A website I managed suddenly showed slow performance. Our mistake was that it went unnoticed until a user reported it to management.",
+        "role": "As PM for that project, I took full responsibility and worked with the engineering team to resolve it quickly.",
+        "actions": "After deploying the fix, I put an application management tool in place with email and PagerDuty alerts when performance exceeded set thresholds. I learned the tool myself to analyze past issues and identify optimization areas for engineering.",
+        "result": "We achieved consistent page load times under 3 seconds.",
+        "reflection": "I also shared my learnings in a brown bag session with other PMs so they could apply the same monitoring to their products."
+      }
+    },
+    {
+      "id": "planted-all-we",
+      "kind": "planted",
+      "flaw": "Every action is the team's ('we'); no personal contribution.",
+      "basedOn": "mo-ownership",
+      "role": "Software Engineer",
+      "question": "Tell me about a time you took on something outside your responsibilities.",
+      "expect": "not_yet",
+      "parts": {
+        "situation": "Our CI/CD pipeline was breaking 3-4 times per week due to flaky integration tests. It wasn't anyone's assigned project.",
+        "role": "The team was involved in looking into it.",
+        "actions": "We spent a couple of weeks on it. We built a dashboard tracking CI failures, and we found most were caused by shared test database state. We implemented test isolation and the team added retries for network flakes.",
+        "result": "Pipeline reliability went from 72% to 97%. Mean time to deploy dropped from 4.2 hours to 45 minutes.",
+        "reflection": "We learned that flaky tests are worth fixing."
+      }
+    },
+    {
+      "id": "planted-no-result",
+      "kind": "planted",
+      "flaw": "Result is vague, with no number or concrete outcome.",
+      "basedOn": "mo-customer-obsession",
+      "role": "Product Manager",
+      "question": "Tell me about a time you went above and beyond for a customer.",
+      "expect": "not_yet",
+      "parts": {
+        "situation": "Our SaaS product had a customer segment — mid-market HR teams — that was churning more than others. Several customers had escalated through support.",
+        "role": "I needed to find the root cause and propose a fix before our next quarterly business review.",
+        "actions": "I went through support tickets and called some of the churning customers directly. They said the bulk employee import required field mapping every time. I wrote a 1-pager proposing a feature that remembers previous imports and got engineering to build it.",
+        "result": "Customers were a lot happier and things improved for that segment. The feedback was really positive.",
+        "reflection": "I learned to talk to customers directly."
+      }
+    },
+    {
+      "id": "planted-vague-actions",
+      "kind": "planted",
+      "flaw": "Actions are generic process words with no specific steps or decision.",
+      "basedOn": "mo-backbone",
+      "role": "Product Manager",
+      "question": "Tell me about a time you disagreed with your manager.",
+      "expect": "not_yet",
+      "parts": {
+        "situation": "My VP wanted to launch a new pricing tier for enterprise customers, and I didn't think it was a good idea.",
+        "role": "I had to push back.",
+        "actions": "I raised my concerns, aligned with stakeholders, and communicated the risks. We had some good discussions and eventually got on the same page.",
+        "result": "We went with a different approach and enterprise conversion increased 22%.",
+        "reflection": "Disagreeing respectfully is important."
+      }
+    },
+    {
+      "id": "planted-no-stakes",
+      "kind": "planted",
+      "flaw": "No situation or stakes: why it mattered is missing.",
+      "basedOn": "mo-simplify",
+      "role": "Data Scientist",
+      "question": "Describe a time you simplified a complex process.",
+      "expect": "not_yet",
+      "parts": {
+        "situation": "There was a pipeline.",
+        "role": "I worked on it.",
+        "actions": "I profiled each pipeline stage and removed 6 stages that newer model architectures handled internally. I consolidated the remaining 8 into 4 parallelized stages and wrote a single config file data scientists could modify.",
+        "result": "Pipeline runtime went from 3 days to 8 hours.",
+        "reflection": ""
+      }
+    }
+  ]
+}

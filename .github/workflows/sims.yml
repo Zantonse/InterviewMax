@@ -2,17 +2,25 @@ name: Simulated users
 
 # AI personas build a story end to end on a Vercel preview, then a cheap model writes an
 # insights report (scripts/sims/README.md). Runs:
-#   - every 3 days: pushes main to the sims/main branch, Vercel builds a preview of it, and the
-#     preview's deployment event starts the run
-#   - on PRs that change the story builder, once their preview is ready
-#   - from the Run workflow button (optionally against a preview URL you paste)
-# The report is on the run's Summary page; transcripts and screenshots are in its files.
+#   - every 3 days: points the sims/main branch at main, waits for Vercel's preview of it, then
+#     runs against it
+#   - from the Run workflow button: paste a preview URL (e.g. a story builder PR's preview), or
+#     leave it empty for a fresh preview of main
+# The live Vercel project sends GitHub no deployment events, so runs never start from one.
+# The report is on the run's Summary page and at the end of the "Run the personas" log;
+# transcripts and screenshots are in the run's files.
 
 on:
   schedule:
     - cron: "23 9 */3 * *"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "personas = run the personas on a preview; calibrate = grade the reference answers only (no preview)"
+        required: false
+        default: personas
+        type: choice
+        options: [personas, calibrate]
       url:
         description: "Preview URL to test (leave empty to build a fresh preview of main)"
         required: false
@@ -22,98 +30,76 @@ on:
       models:
         description: "OpenRouter persona models, comma-separated (empty = the list in src/lib/sims/models.ts)"
         required: false
-  deployment_status:
-  # The live Vercel project doesn't create GitHub deployments; it sends this event instead.
-  repository_dispatch:
-    types: [vercel.deployment.success]
 
-# One group per deployment, so the old work project's deployment event can't take the slot of the
-# live one (a pending run in a shared group gets replaced by the next one).
+# Runs share the persona accounts, so never two at once.
 concurrency:
-  group: simulated-users-${{ github.event.deployment.id || github.event.client_payload.id || github.run_id }}
+  group: simulated-users
   cancel-in-progress: false
 
 jobs:
-  # Scheduled runs, and Run without a URL: refresh the sims/main branch so Vercel builds a preview
-  # of main. Its deployment event then starts the `run` job below.
-  refresh-preview:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.url == '')
+  run:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-      - name: Point sims/main at main, with a marker commit so Vercel always builds
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
-          git checkout -B sims/main
-          git commit --allow-empty -m "Simulated users run ${{ github.run_number }}"
-          git push --force origin sims/main
-
-  run:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.url != '') ||
-      (github.event_name == 'deployment_status' &&
-       github.event.deployment_status.state == 'success' &&
-       !contains(github.event.deployment.environment, 'Production') &&
-       contains(format('{0} {1}', github.event.deployment_status.environment_url, github.event.deployment_status.target_url),
-                vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects')) ||
-      (github.event_name == 'repository_dispatch' &&
-       github.event.client_payload.environment != 'production' &&
-       contains(github.event.client_payload.url, vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
+    env:
+      SIM_USERS_SECRET: ${{ secrets.SIM_USERS_SECRET }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      # The branch preview URL Vercel gives sims/main on the live project.
+      MAIN_PREVIEW_URL: ${{ vars.SIM_MAIN_PREVIEW_URL || 'https://interview-max-git-sims-main-craigverzosa-5395s-projects.vercel.app' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Decide whether this deployment needs a run
+      - name: Check setup
         id: check
         env:
-          EVENT: ${{ github.event_name }}
-          REF: ${{ github.event.deployment.ref || github.event.client_payload.git.ref }}
-          SHA: ${{ github.event.deployment.sha || github.event.client_payload.git.sha }}
-          URL_INPUT: ${{ inputs.url }}
-          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || github.event.client_payload.url }}
-          # The Vercel team slug in preview URLs. Override with the SIM_PREVIEW_TEAM repo variable.
-          PREVIEW_TEAM: ${{ vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects' }}
           HAS_SECRETS: ${{ secrets.SIM_USERS_SECRET != '' && secrets.SIMS_OPENROUTER_API_KEY != '' }}
+          URL_INPUT: ${{ inputs.url }}
+          MODE: ${{ inputs.mode || 'personas' }}
         run: |
           # Until the one-time setup is done (scripts/sims/README.md), skip instead of failing.
           if [ "$HAS_SECRETS" != "true" ]; then
             echo "Simulated users aren't set up yet: add SIM_USERS_SECRET and SIMS_OPENROUTER_API_KEY (scripts/sims/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "run=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          if [ "$EVENT" = "workflow_dispatch" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"; echo "url=$URL_INPUT" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          case "$DEPLOY_URL" in http*) ;; *) DEPLOY_URL="https://$DEPLOY_URL" ;; esac
-          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
-          # Two Vercel projects deploy this repo (the old work one too); only test the live one.
-          case "$DEPLOY_URL" in
-            *"$PREVIEW_TEAM"*) ;;
-            *) echo "Not a $PREVIEW_TEAM preview ($DEPLOY_URL); skipping."; echo "run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
-          esac
-          # Vercel sends the commit SHA as the ref, so match the sims/main branch by its SHA.
-          git fetch --quiet origin main sims/main 2>/dev/null || git fetch --quiet origin main
-          if [ "$REF" = "sims/main" ] || [ "$SHA" = "$(git rev-parse --verify --quiet origin/sims/main || true)" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          # A PR preview: only when the story builder (or these runs) changed.
-          changed=$(git diff --name-only "origin/main...$SHA" || true)
-          if echo "$changed" | grep -qE '^(src/app/stories/|src/lib/stories/|src/lib/ai/|src/lib/sims/|src/app/api/sims/|scripts/sims/)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No story builder changes in $REF; skipping."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          [ "$MODE" = "calibrate" ] && echo "calibrate=true" >> "$GITHUB_OUTPUT" || echo "calibrate=false" >> "$GITHUB_OUTPUT"
+          echo "url=${URL_INPUT:-$MAIN_PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+          [ -n "$URL_INPUT" ] && echo "fresh=false" >> "$GITHUB_OUTPUT" || echo "fresh=true" >> "$GITHUB_OUTPUT"
+
+      # No URL given: point sims/main at main with a marker commit (so Vercel always builds), then
+      # wait until the branch preview serves that commit.
+      - name: Build a fresh preview of main
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true' && steps.check.outputs.fresh == 'true'
+        id: fresh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git checkout -B sims/main origin/main
+          git commit --allow-empty -m "Simulated users run ${{ github.run_number }}"
+          git push --force origin sims/main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the preview
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
+        env:
+          URL: ${{ steps.check.outputs.url }}
+          WANT: ${{ steps.fresh.outputs.sha }}
+        run: |
+          for i in $(seq 1 60); do
+            got=$(curl -s -X POST "$URL/api/sims/result" \
+              -H "x-sim-secret: $SIM_USERS_SECRET" -H "content-type: application/json" \
+              -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+              -d '{"version":true}' | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
+            if [ -n "$got" ] && { [ -z "$WANT" ] || [ "$got" = "$WANT" ]; }; then
+              echo "Preview ready at commit $got"; exit 0
+            fi
+            echo "Waiting for the preview (serving: ${got:-nothing yet})"; sleep 20
+          done
+          echo "The preview at $URL never served ${WANT:-a working sims route} after 20 minutes." | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - uses: actions/setup-node@v4
         if: steps.check.outputs.run == 'true'
@@ -122,20 +108,25 @@ jobs:
           cache: npm
       - if: steps.check.outputs.run == 'true'
         run: npm ci
-      - if: steps.check.outputs.run == 'true'
+      - if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Grade the reference answers
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate == 'true'
+        env:
+          SIM_OUT: sims-out
+          OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
+        run: npm run sims:calibrate
+
       - name: Run the personas
-        if: steps.check.outputs.run == 'true'
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
         env:
           SIM_BASE_URL: ${{ steps.check.outputs.url }}
-          SIM_COMMIT: ${{ github.event.deployment.sha || github.event.client_payload.git.sha || github.sha }}
+          SIM_COMMIT: ${{ steps.fresh.outputs.sha || github.sha }}
           SIM_PERSONAS: ${{ inputs.personas }}
           SIM_MODELS: ${{ inputs.models }}
           SIM_OUT: sims-out
-          SIM_USERS_SECRET: ${{ secrets.SIM_USERS_SECRET }}
           OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: npm run sims
 
       - uses: actions/upload-artifact@v4

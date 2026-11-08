@@ -310,7 +310,9 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     untraced: draft.untracedNumbers,
     range: lengthRange(storyType),
     where: storyType?.format === "intro" ? "your proof point" : "the result",
-    ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
+    ...(storyType?.format === "intro"
+      ? { maxFigures: INTRO_MAX_FIGURES }
+      : { stakeText: draft.parts.situation ?? "" }),
   });
   return draft.ownWords === undefined ? checks : [...checks, ownWordsCheck(draft.ownWords)];
 }
@@ -326,6 +328,10 @@ export function ownWordsCheck(share: number): CheckResult {
         : `Only about ${pct}% of it is phrased the way you said it, so it may not sound like you. Rewrite it, or add more in your own words.`,
   };
 }
+
+// A result that settles the stakes set up earlier: the deal was won, the audit passed.
+const OUTCOME_RE =
+  /\b(won|win|closed|signed|renewed|kept|saved|passed|hit|met|beat|shipped|launched|delivered|landed|retained|recovered|avoided)\b/i;
 
 // The figures an introduction says, as written, once each. Years ("since 2019") aren't metrics.
 export function introFigures(text: string): string[] {
@@ -347,9 +353,19 @@ export function checkScript(input: {
   where: string;
   // An introduction leads with its most important figure and saves the rest for follow-ups.
   maxFigures?: number;
+  // Where the stakes were set up. A result like "we won the deal" after a "$2.4M deal" opening
+  // carries that number, so it passes (a principal persona's story was held at Not yet for this,
+  // 2026-11-08), with a nudge to say the figure again where it lands.
+  stakeText?: string;
 }): CheckResult[] {
   const { text, untraced, where } = input;
   const numbers = findNumbers(input.numberText, { includeCommonWords: false });
+  const carried =
+    numbers.length === 0 && input.stakeText && OUTCOME_RE.test(input.numberText)
+      ? findNumbers(input.stakeText, { includeCommonWords: false }).filter(
+          (n) => !/^(19|20)\d\d$/.test(n.raw),
+        )
+      : [];
   const { i, we } = pronounCounts(text);
   const words = countWords(text);
   const { min, max } = input.range;
@@ -361,10 +377,12 @@ export function checkScript(input: {
   const results: CheckResult[] = [
     {
       id: "number",
-      pass: numbers.length > 0,
+      pass: numbers.length > 0 || carried.length > 0,
       detail: numbers.length
         ? `${where[0].toUpperCase()}${where.slice(1)} includes ${numbers.map((n) => n.raw).join(", ")}.`
-        : `There's no number in ${where}. Add one to your answers, or a labelled estimate.`,
+        : carried.length
+          ? `${where[0].toUpperCase()}${where.slice(1)} pays off ${carried[0].raw} from the start. Say it again where it lands to make it stick.`
+          : `There's no number in ${where}. Add one to your answers, or a labelled estimate.`,
     },
     {
       id: "traced",
@@ -419,24 +437,35 @@ function formatSeconds(seconds: number) {
 // The score out of 100 shown on a graded story: the criteria's average on the 1-4 scale, as a share
 // of 4 (so all Solid is 75, all Strong is 100). Undefined when nothing was scored. The tier, not
 // this number, decides "Strong"; the score just shows how far along the story is.
-export function scoreOutOf100(criteria: CriterionScore[]): number | undefined {
+// With the tier, the score can't contradict it: Not yet tops out at 69 and Good enough at 89. Without
+// this, a story held at Not yet by a quick check (no number in the result) still showed 95.
+export const TIER_SCORE_CAP: Record<Tier, number> = { not_yet: 69, good_enough: 89, strong: 100 };
+export function scoreOutOf100(criteria: CriterionScore[], tier?: Tier): number | undefined {
   if (criteria.length === 0) return undefined;
   const avg = criteria.reduce((sum, c) => sum + c.score, 0) / criteria.length;
-  return Math.round((avg / 4) * 100);
+  const raw = Math.round((avg / 4) * 100);
+  return tier ? Math.min(raw, TIER_SCORE_CAP[tier]) : raw;
 }
 
 // The tier, from the grader's scores and the quick checks.
-//   not yet:     any criterion missing, an average under 2.5, no number, or an untraced number
+//   not yet:     any core criterion missing, a core average under 2.5, no number, or an untraced number
 //   strong:      every criterion solid or better, an average of 3.5 or more, and every check passing
 //   good enough: everything in between
+// Reflection isn't core: published strong answers often end on the result (grader calibration,
+// 2026-11-08: every graded one without a lesson came back Not yet), so a missing lesson keeps a
+// story from Strong but doesn't make it Not yet on its own.
+const OPTIONAL_FOR_NOT_YET = new Set(["reflection"]);
+
 export function tierFor(criteria: CriterionScore[], checks: CheckResult[]): Tier {
   const scores = criteria.map((c) => c.score);
   if (scores.length === 0) return "not_yet";
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const core = criteria.filter((c) => !OPTIONAL_FOR_NOT_YET.has(c.id)).map((c) => c.score);
+  const coreAvg = core.length ? core.reduce((a, b) => a + b, 0) / core.length : 0;
   const passed = (id: CheckId) => checks.find((c) => c.id === id)?.pass ?? false;
 
   if (!passed("number") || !passed("traced")) return "not_yet";
-  if (Math.min(...scores) <= 1 || avg < 2.5) return "not_yet";
+  if (core.length === 0 || Math.min(...core) <= 1 || coreAvg < 2.5) return "not_yet";
   if (Math.min(...scores) >= 3 && avg >= 3.5 && checks.every((c) => c.pass)) return "strong";
   return "good_enough";
 }
@@ -512,8 +541,13 @@ export function combineGrade(input: {
   draftWrittenAt: string;
 }): StoryGrade {
   const { criteria, checks, storyType } = input;
-  const tier = tierFor(criteria, checks);
-  const fixes = [...checkFixes(checks, storyType), ...input.modelFixes].slice(0, 2);
+  const below = belowLevel(input.content);
+  const tier = capForLevel(tierFor(criteria, checks), below);
+  const fixes = [
+    ...checkFixes(checks, storyType),
+    ...(below && tier !== tierFor(criteria, checks) ? [levelFix(below)] : []),
+    ...input.modelFixes,
+  ].slice(0, 2);
   return {
     tier,
     fixes,
@@ -529,6 +563,28 @@ export function combineGrade(input: {
     draftWrittenAt: input.draftWrittenAt,
     gradedAt: new Date().toISOString(),
   };
+}
+
+// A story whose scope is below the level of every target job the fit check judged (a hands-on
+// story for a principal role) can't be Strong: it's held at Good enough, with a fix saying why.
+// Craig decided this 2026-11-08 after simulated users showed a mid-level story scoring 90 for a
+// Principal job. Returns the job it fell short of, or undefined.
+export function belowLevel(content: ContentCheck | undefined): JobLevelShort | undefined {
+  const judged = (content?.jobs ?? []).filter((j) => j.level);
+  if (judged.length === 0 || !judged.every((j) => j.level?.match === "below")) return undefined;
+  const job = judged[0];
+  return { title: job.title, company: job.company, note: job.level?.note ?? "" };
+}
+
+type JobLevelShort = { title: string; company: string; note: string };
+
+export function capForLevel(tier: Tier, below: JobLevelShort | undefined): Tier {
+  return below && tier === "strong" ? "good_enough" : tier;
+}
+
+function levelFix(job: JobLevelShort): string {
+  const name = job.company ? `${job.title} at ${job.company}` : job.title;
+  return `Show the scope ${name} expects: what you decided or changed beyond your own work (other teams, the org, the customer's business), if that's true.`;
 }
 
 // The grader's prompt. Scores only; the tier is worked out in code.
