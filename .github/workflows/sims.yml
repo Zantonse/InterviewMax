@@ -23,11 +23,14 @@ on:
         description: "OpenRouter persona models, comma-separated (empty = the list in src/lib/sims/models.ts)"
         required: false
   deployment_status:
+  # The live Vercel project doesn't create GitHub deployments; it sends this event instead.
+  repository_dispatch:
+    types: [vercel.deployment.success]
 
 # One group per deployment, so the old work project's deployment event can't take the slot of the
 # live one (a pending run in a shared group gets replaced by the next one).
 concurrency:
-  group: simulated-users-${{ github.event.deployment.id || github.run_id }}
+  group: simulated-users-${{ github.event.deployment.id || github.event.client_payload.id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -58,7 +61,10 @@ jobs:
        github.event.deployment_status.state == 'success' &&
        !contains(github.event.deployment.environment, 'Production') &&
        contains(format('{0} {1}', github.event.deployment_status.environment_url, github.event.deployment_status.target_url),
-                vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects'))
+                vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects')) ||
+      (github.event_name == 'repository_dispatch' &&
+       github.event.client_payload.environment != 'production' &&
+       contains(github.event.client_payload.url, vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -72,10 +78,10 @@ jobs:
         id: check
         env:
           EVENT: ${{ github.event_name }}
-          REF: ${{ github.event.deployment.ref }}
-          SHA: ${{ github.event.deployment.sha }}
+          REF: ${{ github.event.deployment.ref || github.event.client_payload.git.ref }}
+          SHA: ${{ github.event.deployment.sha || github.event.client_payload.git.sha }}
           URL_INPUT: ${{ inputs.url }}
-          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || github.event.client_payload.url }}
           # The Vercel team slug in preview URLs. Override with the SIM_PREVIEW_TEAM repo variable.
           PREVIEW_TEAM: ${{ vars.SIM_PREVIEW_TEAM || 'craigverzosa-5395s-projects' }}
           HAS_SECRETS: ${{ secrets.SIM_USERS_SECRET != '' && secrets.SIMS_OPENROUTER_API_KEY != '' }}
@@ -88,6 +94,7 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "url=$URL_INPUT" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          case "$DEPLOY_URL" in http*) ;; *) DEPLOY_URL="https://$DEPLOY_URL" ;; esac
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           # Two Vercel projects deploy this repo (the old work one too); only test the live one.
           case "$DEPLOY_URL" in
@@ -122,7 +129,7 @@ jobs:
         if: steps.check.outputs.run == 'true'
         env:
           SIM_BASE_URL: ${{ steps.check.outputs.url }}
-          SIM_COMMIT: ${{ github.event.deployment.sha || github.sha }}
+          SIM_COMMIT: ${{ github.event.deployment.sha || github.event.client_payload.git.sha || github.sha }}
           SIM_PERSONAS: ${{ inputs.personas }}
           SIM_MODELS: ${{ inputs.models }}
           SIM_OUT: sims-out
