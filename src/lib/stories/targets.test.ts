@@ -4,6 +4,7 @@ import { probeMessages, probeSystem } from "./prompts";
 import { getStoryType } from "./story-types";
 import {
   builderTargets,
+  guidedStart,
   hasTargets,
   nextRoleHint,
   openingHint,
@@ -140,5 +141,15 @@ describe("hints under the scripted questions", () => {
     expect(
       nextRoleHint(builderTargets({ jobs: [], storyType: aboutMe })),
     ).toBeUndefined();
+  });
+});
+
+describe("guidedStart", () => {
+  const brief = (level: string | null) => ({ title: "Analyst", company: null, level, focus: [], questions: [] });
+  it("guides the opening only when every target job is entry level", () => {
+    expect(guidedStart({ jobs: [brief("entry")] }, stakeholder)).toBe(true);
+    expect(guidedStart({ jobs: [brief("entry"), brief("senior")] }, stakeholder)).toBe(false);
+    expect(guidedStart({ jobs: [brief("entry")] }, aboutMe)).toBe(false);
+    expect(guidedStart(undefined, stakeholder)).toBe(false);
   });
 });

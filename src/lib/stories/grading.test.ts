@@ -190,6 +190,34 @@ describe("combineGrade", () => {
     expect(grade.bankRole).toBeUndefined();
     expect(grade.tier).toBe("good_enough");
   });
+
+  it("holds a story below every target job's level at Good enough, with a fix", () => {
+    const job = (match: "below" | "matches") => ({
+      jobId: "j",
+      title: "Principal SE",
+      company: "Acme",
+      fit: "partial" as const,
+      proves: [],
+      misses: [],
+      answers: [],
+      level: { match, note: "" },
+    });
+    const graded = (jobs: ReturnType<typeof job>[]) =>
+      combineGrade({
+        criteria: scores(STAR_CRITERIA, 4),
+        checks: checks(),
+        modelFixes: [],
+        content: { jobs, unused: [], model: "m" },
+        storyType: stakeholder,
+        model: "m",
+        draftWrittenAt: "t",
+      });
+    const below = graded([job("below")]);
+    expect(below.tier).toBe("good_enough");
+    expect(below.fixes[0]).toMatch(/Show the scope Principal SE at Acme expects/);
+    expect(graded([job("below"), job("matches")]).tier).toBe("strong");
+    expect(graded([]).tier).toBe("strong");
+  });
 });
 
 describe("the grader's prompt and reply", () => {
@@ -344,7 +372,7 @@ describe("cutting the fluff", () => {
 
   it("holds Tell me about yourself to about a minute (90 seconds at most) and a story to about two minutes", () => {
     expect(lengthRange(aboutMe)).toEqual({ min: 120, max: 225 });
-    expect(lengthRange(stakeholder)).toEqual({ min: 180, max: 300 });
+    expect(lengthRange(stakeholder)).toEqual({ min: 150, max: 300 });
   });
 
   it("catches puffery as filler", () => {

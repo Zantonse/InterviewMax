@@ -58,8 +58,15 @@ import {
   type BuilderResult,
 } from "./actions";
 import { createStory } from "@/app/stories/new/actions";
-import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
+import {
+  type BuilderTargets,
+  GUIDED_START_PROMPTS,
+  guidedStart,
+  nextRoleHint,
+  openingHint,
+} from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
+import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
@@ -146,11 +153,16 @@ export function StoryBuilder({
   // The saved story's id, read when each action runs (a new story gets one with its first answer).
   const idRef = useRef(storyId);
   const sid = (): string => idRef.current ?? "";
+  // Whether a chain of actions is running (read in the tap handler, before any render).
+  const running = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
-  // Text a memory jogger adds to the answer box; `n` makes each tap count.
-  const [insert, setInsert] = useState<{ text: string; n: number } | undefined>();
+  // Text a memory jogger adds to (or, tapped again, takes out of) the answer box; `n` makes each
+  // tap count.
+  const [insert, setInsert] = useState<Insert | undefined>();
+  // What's in the answer box now, so a tapped starter can show it's in there.
+  const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
     initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
@@ -161,14 +173,31 @@ export function StoryBuilder({
 
   // Runs a chain of actions, applying each result. Stops at the first error.
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    // One chain at a time: a second tap while one runs does nothing.
+    if (running.current) return;
+    running.current = true;
     setError(null);
+    // Shown straight away, outside the transition: React holds updates made inside an async
+    // transition before its first await until the whole chain ends, so the button looked dead for
+    // the length of the model call and simulated users tapped it again and again (2026-11-08).
+    setBusy(!idRef.current && newStory ? "saving" : steps[0].busy);
     startTransition(async () => {
+      try {
+        await runSteps(steps);
+      } finally {
+        running.current = false;
+        setBusy(null);
+      }
+    });
+  }
+
+  async function runSteps(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    {
       if (!idRef.current && newStory) {
         setBusy("saving");
         const created = await createStory(newStory.storyType, newStory.asked);
         if (!created.ok) {
           setError(created.error);
-          setBusy(null);
           return;
         }
         idRef.current = created.id;
@@ -214,8 +243,7 @@ export function StoryBuilder({
           steps.push({ busy: "grading", action: () => gradeDraft(sid()) });
         }
       }
-      setBusy(null);
-    });
+    }
   }
 
   // "Tell me about yourself": whether the path question can be read from a document instead.
@@ -471,8 +499,11 @@ export function StoryBuilder({
                         index === currentFollowUp && f.options?.length ? (
                           <TapOptions
                             options={f.options}
+                            answerText={answerText}
                             disabled={busy !== null}
-                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                            onPick={(text, remove) =>
+                              setInsert((n) => ({ text, n: (n?.n ?? 0) + 1, remove }))
+                            }
                           />
                         ) : undefined
                       }
@@ -535,6 +566,12 @@ export function StoryBuilder({
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
                     insert={insert}
+                    onTextChange={setAnswerText}
+                    placeholder={
+                      currentCore === "start" && guidedStart(targets, storyType)
+                        ? `${GUIDED_START_PROMPTS.join("\n")}\n\nA line or two for each is plenty.`
+                        : undefined
+                    }
                     rows={currentCore === "start" && storyType?.format !== "intro" ? 6 : 3}
                     disabled={busy !== null}
                     submitLabel="Next"
@@ -546,6 +583,7 @@ export function StoryBuilder({
                   key={`follow-up-${currentFollowUp}`}
                   initial=""
                   insert={insert}
+                  onTextChange={setAnswerText}
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
@@ -1091,32 +1129,50 @@ function Joggers({
 }
 
 // Under a follow-up about a kind of thing (their part, the stakes, the kind of result): the coach's
-// starters. A tap puts one in the answer box to finish in their own words.
+// starters. A tap puts one in the answer box to finish in their own words; one that's in the box
+// shows as picked, and tapping it again takes it out (simulated users tapped a starter dozens of
+// times when nothing on the chip changed, 2026-11-08).
 function TapOptions({
   options,
+  answerText,
   disabled,
   onPick,
 }: {
   options: string[];
+  answerText: string;
   disabled: boolean;
-  onPick: (text: string) => void;
+  onPick: (text: string, remove: boolean) => void;
 }) {
+  const picked = options.filter((o) => answerText.includes(o));
   return (
     <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="tap-options">
       <div className="flex flex-wrap gap-2" data-stagger>
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(`${o}. `)}
-            className="rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50"
-          >
-            {o}
-          </button>
-        ))}
+        {options.map((o) => {
+          const on = picked.includes(o);
+          return (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={on}
+              disabled={disabled}
+              onClick={() => onPick(`${o}. `, on)}
+              className={`rounded-full px-3 py-1.5 text-left text-sm ring-1 disabled:opacity-50 ${
+                on
+                  ? "bg-ink-800 text-white ring-ink-800 hover:bg-ink-900"
+                  : "bg-white text-slate-700 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
+              }`}
+            >
+              {on && <span aria-hidden="true">✓ </span>}
+              {o}
+            </button>
+          );
+        })}
       </div>
-      <p className="text-xs text-slate-500">Tap one to start, then add a sentence in your words.</p>
+      <p className="text-xs text-slate-500" aria-live="polite">
+        {picked.length
+          ? "Added to your answer below. Finish it with a sentence in your words, then tap Next."
+          : "Tap one to start, then add a sentence in your words."}
+      </p>
     </div>
   );
 }
@@ -1345,6 +1401,8 @@ function Exchange({
 function Composer({
   initial,
   insert,
+  onTextChange,
+  placeholder,
   rows = 3,
   disabled,
   submitLabel,
@@ -1355,7 +1413,10 @@ function Composer({
 }: {
   initial: string;
   // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
-  insert?: { text: string; n: number };
+  insert?: Insert;
+  // Told what's in the box as it changes.
+  onTextChange?: (text: string) => void;
+  placeholder?: string;
   rows?: number;
   disabled: boolean;
   submitLabel: string;
@@ -1375,18 +1436,23 @@ function Composer({
   }, []);
 
   // A tapped jogger is added to whatever is typed so far (state adjusted during render, not in an
-  // effect, so it lands in one pass). Tapping one that's already in the box adds nothing.
+  // effect, so it lands in one pass), and the cursor goes to the end to keep typing.
   const [inserted, setInserted] = useState(insert?.n);
   if (insert && insert.n !== inserted) {
     setInserted(insert.n);
-    setText((t) =>
-      t.includes(insert.text.trim())
-        ? t
-        : t.trim()
-          ? `${t.trimEnd()}\n${insert.text}`
-          : insert.text,
-    );
+    setText((t) => applyInsert(t, insert));
   }
+  useEffect(() => {
+    if (inserted === undefined) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [inserted]);
+
+  useEffect(() => {
+    onTextChange?.(text);
+  }, [text, onTextChange]);
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;
 
@@ -1414,7 +1480,7 @@ function Composer({
         }}
         rows={rows}
         maxLength={MAX_ANSWER_LENGTH}
-        placeholder="Type or tap Talk. Plain notes are fine."
+        placeholder={placeholder ?? "Type or tap Talk. Plain notes are fine."}
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
       <div className="flex flex-wrap items-center justify-end gap-2">

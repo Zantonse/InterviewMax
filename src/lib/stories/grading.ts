@@ -523,8 +523,13 @@ export function combineGrade(input: {
   draftWrittenAt: string;
 }): StoryGrade {
   const { criteria, checks, storyType } = input;
-  const tier = tierFor(criteria, checks);
-  const fixes = [...checkFixes(checks, storyType), ...input.modelFixes].slice(0, 2);
+  const below = belowLevel(input.content);
+  const tier = capForLevel(tierFor(criteria, checks), below);
+  const fixes = [
+    ...checkFixes(checks, storyType),
+    ...(below && tier !== tierFor(criteria, checks) ? [levelFix(below)] : []),
+    ...input.modelFixes,
+  ].slice(0, 2);
   return {
     tier,
     fixes,
@@ -540,6 +545,28 @@ export function combineGrade(input: {
     draftWrittenAt: input.draftWrittenAt,
     gradedAt: new Date().toISOString(),
   };
+}
+
+// A story whose scope is below the level of every target job the fit check judged (a hands-on
+// story for a principal role) can't be Strong: it's held at Good enough, with a fix saying why.
+// Craig decided this 2026-11-08 after simulated users showed a mid-level story scoring 90 for a
+// Principal job. Returns the job it fell short of, or undefined.
+export function belowLevel(content: ContentCheck | undefined): JobLevelShort | undefined {
+  const judged = (content?.jobs ?? []).filter((j) => j.level);
+  if (judged.length === 0 || !judged.every((j) => j.level?.match === "below")) return undefined;
+  const job = judged[0];
+  return { title: job.title, company: job.company, note: job.level?.note ?? "" };
+}
+
+type JobLevelShort = { title: string; company: string; note: string };
+
+export function capForLevel(tier: Tier, below: JobLevelShort | undefined): Tier {
+  return below && tier === "strong" ? "good_enough" : tier;
+}
+
+function levelFix(job: JobLevelShort): string {
+  const name = job.company ? `${job.title} at ${job.company}` : job.title;
+  return `Show the scope ${name} expects: what you decided or changed beyond your own work (other teams, the org, the customer's business), if that's true.`;
 }
 
 // The grader's prompt. Scores only; the tier is worked out in code.

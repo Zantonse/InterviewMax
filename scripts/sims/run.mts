@@ -25,7 +25,7 @@ import {
   type Turn,
 } from "../../src/lib/sims/agent";
 import { ANALYST_MODELS, PERSONA_MODELS, assignModels, availableModels } from "../../src/lib/sims/models";
-import { COMPARE_GRADERS, appGrade, gradableStory, graderMessages, graderResult } from "../../src/lib/sims/graders";
+import { COMPARE_GRADERS, appGrade, gradableStory, graderMessages, graderResult, type GraderResult } from "../../src/lib/sims/graders";
 import { PERSONAS, type Persona } from "../../src/lib/sims/personas";
 import { ANALYST_SYSTEM, analystPrompt, reportMarkdown, transcriptForAnalyst, type PersonaRun } from "../../src/lib/sims/report";
 import { JUDGE_MODEL, JUDGE_SYSTEM, judgePrompt, parseJudge, parseSurvey, surveyPrompt } from "../../src/lib/sims/rubric";
@@ -65,7 +65,8 @@ async function chat(
   model: string,
   messages: ChatMessage[],
   opts: { maxTokens: number; temperature: number; effort?: "low" | "medium" },
-) {
+  attempt = 0,
+): Promise<string> {
   const res = await fetch(`${OPENROUTER}/chat/completions`, {
     method: "POST",
     headers: {
@@ -92,7 +93,15 @@ async function chat(
     usage?: { cost?: number };
     error?: { message?: string };
   };
-  if (!res.ok) throw new Error(`${model}: ${body.error?.message ?? res.status}`);
+  if (!res.ok) {
+    const message = body.error?.message ?? String(res.status);
+    // Credit reserved by calls in flight, or a rate limit: wait and try again a few times.
+    if (attempt < 3 && /credits|rate limit|429/i.test(`${message} ${res.status}`)) {
+      await new Promise((r) => setTimeout(r, 5_000 * (attempt + 1)));
+      return chat(model, messages, opts, attempt + 1);
+    }
+    throw new Error(`${model}: ${message}`);
+  }
   costUsd += body.usage?.cost ?? 0;
   return body.choices?.[0]?.message?.content ?? "";
 }
@@ -206,6 +215,9 @@ async function settle(page: Page): Promise<void> {
   }
 }
 
+// Paths the current persona has been on (goto may only go back to one of these).
+const visited = new Set<string>();
+
 async function act(page: Page, action: Action): Promise<string | null> {
   const target = (id: number) => page.locator(`[data-sim-id="${id}"]`).first();
   try {
@@ -224,9 +236,13 @@ async function act(page: Page, action: Action): Promise<string | null> {
         else await el.click({ timeout: 10_000 });
         return null;
       }
-      case "goto":
+      case "goto": {
+        // Only back to a page it has been on: an invented address 404s and reads as an app bug.
+        const target = new URL(action.path, baseUrl).pathname;
+        if (!visited.has(target)) return `${target} isn't a page you've been on; use the links on the page.`;
         await page.goto(new URL(action.path, baseUrl).toString(), { timeout: 60_000 });
         return null;
+      }
       case "wait":
         await page.waitForTimeout(5000);
         return null;
@@ -262,16 +278,17 @@ async function compareGraders(result: ResultPayload | null, title: string | unde
   const story = row ? gradableStory(row) : null;
   if (!row || !story || graderModels.length === 0) return undefined;
   const own = appGrade(row);
-  const others = await Promise.all(
-    graderModels.map(async (m) => {
-      try {
-        const text = await chat(m, graderMessages(story), { maxTokens: 4000, temperature: 0.2, effort: "medium" });
-        return graderResult(m, text, story);
-      } catch (err) {
-        return { model: m, criteria: {}, error: String(err).slice(0, 200) };
-      }
-    }),
-  );
+  // One at a time: OpenRouter reserves credit per call in flight, and several personas grade at
+  // once, so parallel calls hit "would exceed your available credits" (run 25).
+  const others: GraderResult[] = [];
+  for (const m of graderModels) {
+    try {
+      const text = await chat(m, graderMessages(story), { maxTokens: 4000, temperature: 0.2, effort: "medium" });
+      others.push(graderResult(m, text, story));
+    } catch (err) {
+      others.push({ model: m, criteria: {}, error: String(err).slice(0, 200) });
+    }
+  }
   return [...(own ? [own] : []), ...others];
 }
 
@@ -344,6 +361,7 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
     let lastTypedId: number | undefined;
     for (let step = 1; step <= maxSteps; step++) {
       const before = await observe(page);
+      visited.add(before.path.split("?")[0]);
       const turn = await nextTurn(
         model,
         system,
@@ -382,7 +400,9 @@ async function runPersona(context: BrowserContext, persona: Persona, model: stri
         errors: [...stepErrors],
         screenshot: shot,
       });
-      console.log(`[${persona.id}] ${step}. ${steps.at(-1)!.summary}`);
+      // The page it landed on, so a 404 or a wrong turn can be traced from the log alone.
+      const moved = after.path !== before.path ? ` -> ${after.path}` : "";
+      console.log(`[${persona.id}] ${step}. ${steps.at(-1)!.summary}${moved}`);
       if (turn.action.type === "done" || turn.action.type === "give_up") break;
       stuck = noChange ? stuck + 1 : 0;
       if (turn.action.type === "type" && !failure) {
