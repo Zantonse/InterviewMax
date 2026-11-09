@@ -6,6 +6,7 @@ import { deleteAuth0Users } from "@/lib/auth0/management";
 import { authProvider } from "@/lib/auth0/provider";
 import { saveCoachingStyle } from "@/lib/coaching/data";
 import { type CoachingStyle, parseCoachingStyle } from "@/lib/coaching/style";
+import { saveExecMode } from "@/lib/exec/settings";
 import { saveUserField } from "@/lib/field/data";
 import { type FieldId, parseFieldId } from "@/lib/field/fields";
 import { DELETE_CONFIRM_WORD as CONFIRM_WORD } from "@/lib/privacy/contact";
@@ -13,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type DeleteState = { error?: string } | null;
 export type StyleState = { error?: string; saved?: CoachingStyle } | null;
+export type ExecModeState = { error?: string; saved?: boolean } | null;
 export type FieldState = { error?: string; saved?: { id: FieldId; name: string | null } } | null;
 
 // Saves how the coach talks to the user (tone only; see src/lib/coaching/style.ts).
@@ -25,6 +27,21 @@ export async function saveStyle(_prev: StyleState, formData: FormData): Promise<
     return { error: "That didn't save. Try again." };
   }
   return { saved: style };
+}
+
+// Turns the Exec version card on written stories on or off (see src/lib/exec).
+export async function saveExecModeSetting(
+  _prev: ExecModeState,
+  formData: FormData,
+): Promise<ExecModeState> {
+  const on = formData.get("on") === "on";
+  try {
+    await saveExecMode(on);
+  } catch (err) {
+    console.error("Exec mode: saving failed", err);
+    return { error: "That didn't save. Try again." };
+  }
+  return { saved: on };
 }
 
 // Saves the user's field (see src/lib/field/fields.ts).

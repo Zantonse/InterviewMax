@@ -99,10 +99,23 @@ function toProgress(row: ProgressRow): UserProgress {
   };
 }
 
+// Persona accounts from simulated-user runs on previews (src/lib/sims). They share this database,
+// so every count, funnel and list below leaves them out. Empty until the is_simulated column
+// exists (supabase/migrations/20261107000000_simulated_users.sql).
+async function simulatedUserIds(admin: Admin): Promise<Set<string>> {
+  const { data, error } = await admin.supabase.from("profiles").select("id").eq("is_simulated", true);
+  if (error?.code === UNDEFINED_COLUMN) return new Set();
+  if (error) throw new Error(`Couldn't load simulated accounts: ${error.message}`);
+  return new Set((data as { id: string }[]).map((row) => row.id));
+}
+
 export async function listUserProgress(admin: Admin): Promise<UserProgress[]> {
-  const { data, error } = await admin.supabase.rpc("admin_user_progress");
+  const [{ data, error }, simulated] = await Promise.all([
+    admin.supabase.rpc("admin_user_progress"),
+    simulatedUserIds(admin),
+  ]);
   if (error) throw new Error(`Couldn't load users: ${error.message}`);
-  return (data as ProgressRow[]).map(toProgress);
+  return (data as ProgressRow[]).filter((row) => !simulated.has(row.user_id)).map(toProgress);
 }
 
 type FirstRow = {
@@ -114,10 +127,13 @@ type FirstRow = {
 };
 
 export async function listEventFirsts(admin: Admin): Promise<EventFirst[]> {
-  const { data, error } = await admin.supabase.rpc("admin_event_firsts");
+  const [{ data, error }, simulated] = await Promise.all([
+    admin.supabase.rpc("admin_event_firsts"),
+    simulatedUserIds(admin),
+  ]);
   if (error) throw new Error(`Couldn't load activity: ${error.message}`);
   return (data as FirstRow[]).flatMap((row) =>
-    isUsageEvent(row.event)
+    isUsageEvent(row.event) && !simulated.has(row.user_id)
       ? [
           {
             userId: row.user_id,
@@ -197,10 +213,11 @@ export async function listEventsSince(
     if (since) query = query.gte("created_at", since.toISOString());
     return query.order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
   }, "usage events");
+  const simulated = await simulatedUserIds(admin);
   return {
     truncated,
     rows: rows.flatMap((row) =>
-      isUsageEvent(row.event)
+      isUsageEvent(row.event) && !simulated.has(row.user_id)
         ? [{ userId: row.user_id, event: row.event, at: row.created_at, estimated: row.estimated }]
         : [],
     ),
@@ -222,10 +239,11 @@ export async function listSignalsSince(
     if (since) query = query.gte("created_at", since.toISOString());
     return query.order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
   }, "click signals");
+  const simulated = await simulatedUserIds(admin);
   return {
     truncated,
     rows: rows.flatMap((row) =>
-      isSignalKind(row.kind)
+      isSignalKind(row.kind) && !simulated.has(row.user_id)
         ? [{ userId: row.user_id, kind: row.kind, path: row.path, at: row.created_at }]
         : [],
     ),

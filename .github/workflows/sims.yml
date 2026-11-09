@@ -1,0 +1,137 @@
+name: Simulated users
+
+# AI personas build a story end to end on a Vercel preview, then a cheap model writes an
+# insights report (scripts/sims/README.md). Runs:
+#   - every 3 days: points the sims/main branch at main, waits for Vercel's preview of it, then
+#     runs against it
+#   - from the Run workflow button: paste a preview URL (e.g. a story builder PR's preview), or
+#     leave it empty for a fresh preview of main
+# The live Vercel project sends GitHub no deployment events, so runs never start from one.
+# The report is on the run's Summary page and at the end of the "Run the personas" log;
+# transcripts and screenshots are in the run's files.
+
+on:
+  schedule:
+    - cron: "23 9 */3 * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "personas = run the personas on a preview; calibrate = grade the reference answers only (no preview)"
+        required: false
+        default: personas
+        type: choice
+        options: [personas, calibrate]
+      url:
+        description: "Preview URL to test (leave empty to build a fresh preview of main)"
+        required: false
+      personas:
+        description: "Persona ids, comma-separated (empty = all)"
+        required: false
+      models:
+        description: "OpenRouter persona models, comma-separated (empty = the list in src/lib/sims/models.ts)"
+        required: false
+
+# Runs share the persona accounts, so never two at once.
+concurrency:
+  group: simulated-users
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      SIM_USERS_SECRET: ${{ secrets.SIM_USERS_SECRET }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      # The branch preview URL Vercel gives sims/main on the live project.
+      MAIN_PREVIEW_URL: ${{ vars.SIM_MAIN_PREVIEW_URL || 'https://interview-max-git-sims-main-craigverzosa-5395s-projects.vercel.app' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check setup
+        id: check
+        env:
+          HAS_SECRETS: ${{ secrets.SIM_USERS_SECRET != '' && secrets.SIMS_OPENROUTER_API_KEY != '' }}
+          URL_INPUT: ${{ inputs.url }}
+          MODE: ${{ inputs.mode || 'personas' }}
+        run: |
+          # Until the one-time setup is done (scripts/sims/README.md), skip instead of failing.
+          if [ "$HAS_SECRETS" != "true" ]; then
+            echo "Simulated users aren't set up yet: add SIM_USERS_SECRET and SIMS_OPENROUTER_API_KEY (scripts/sims/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "run=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          [ "$MODE" = "calibrate" ] && echo "calibrate=true" >> "$GITHUB_OUTPUT" || echo "calibrate=false" >> "$GITHUB_OUTPUT"
+          echo "url=${URL_INPUT:-$MAIN_PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+          [ -n "$URL_INPUT" ] && echo "fresh=false" >> "$GITHUB_OUTPUT" || echo "fresh=true" >> "$GITHUB_OUTPUT"
+
+      # No URL given: point sims/main at main with a marker commit (so Vercel always builds), then
+      # wait until the branch preview serves that commit.
+      - name: Build a fresh preview of main
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true' && steps.check.outputs.fresh == 'true'
+        id: fresh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+          git checkout -B sims/main origin/main
+          git commit --allow-empty -m "Simulated users run ${{ github.run_number }}"
+          git push --force origin sims/main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the preview
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
+        env:
+          URL: ${{ steps.check.outputs.url }}
+          WANT: ${{ steps.fresh.outputs.sha }}
+        run: |
+          for i in $(seq 1 60); do
+            got=$(curl -s -X POST "$URL/api/sims/result" \
+              -H "x-sim-secret: $SIM_USERS_SECRET" -H "content-type: application/json" \
+              -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+              -d '{"version":true}' | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
+            if [ -n "$got" ] && { [ -z "$WANT" ] || [ "$got" = "$WANT" ]; }; then
+              echo "Preview ready at commit $got"; exit 0
+            fi
+            echo "Waiting for the preview (serving: ${got:-nothing yet})"; sleep 20
+          done
+          echo "The preview at $URL never served ${WANT:-a working sims route} after 20 minutes." | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.check.outputs.run == 'true'
+        run: npm ci
+      - if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Grade the reference answers
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate == 'true'
+        env:
+          SIM_OUT: sims-out
+          OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
+        run: npm run sims:calibrate
+
+      - name: Run the personas
+        if: steps.check.outputs.run == 'true' && steps.check.outputs.calibrate != 'true'
+        env:
+          SIM_BASE_URL: ${{ steps.check.outputs.url }}
+          SIM_COMMIT: ${{ steps.fresh.outputs.sha || github.sha }}
+          SIM_PERSONAS: ${{ inputs.personas }}
+          SIM_MODELS: ${{ inputs.models }}
+          SIM_OUT: sims-out
+          OPENROUTER_API_KEY: ${{ secrets.SIMS_OPENROUTER_API_KEY }}
+        run: npm run sims
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.check.outputs.run == 'true'
+        with:
+          name: simulated-users-${{ github.run_number }}
+          path: sims-out
+          retention-days: 30

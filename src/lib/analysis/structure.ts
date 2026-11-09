@@ -31,7 +31,7 @@ const STAR: FormatGuide = {
     'Behavioral questions ("Tell me about a time…") are how interviewers check a skill by asking for proof from your past. Most score your answer against a short list: was the situation real and hard, what did you personally do, how did you think, what changed because of it, and what did you take from it. This story is built in that order so the interviewer can follow it the first time and tick each box as they listen.',
   // The same length the writer and grader aim for.
   words: STAR_LENGTH,
-  spoken: "about 1¼ to 2 minutes",
+  spoken: "about 1 to 2 minutes",
   parts: {
     situation: {
       why: "Gives the interviewer just enough context to care: what was going on and what was at stake. Without stakes, nothing that follows sounds hard, so your actions can't impress.",

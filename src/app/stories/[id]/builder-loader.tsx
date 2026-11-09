@@ -1,8 +1,11 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { DeleteStoryButton } from "@/components/delete-story-button";
 import { startStory } from "@/app/stories/new/actions";
 import { type NextStory, nextStoryToBuild } from "@/lib/guide/journey";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
+import { jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
@@ -28,7 +31,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.
-  const [prep, jobs, stories, checklist, targets, finder, field] = await Promise.all([
+  const [prep, jobs, stories, checklist, targets, finder, field, execMode] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
     intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
@@ -36,6 +39,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
     loadBuilderTargets(getStoryType(story.storyType)),
     intro ? null : getStoryFinder().catch(() => null),
     getUserFieldSafely(),
+    intro ? false : getExecModeSafely(),
   ]);
   // Story finder moments for this story type become memory joggers on the opening question.
   const moments = (finder?.moments ?? [])
@@ -43,6 +47,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
     .slice(0, 3)
     .map((m) => ({ moment: m.moment, quote: m.quote, sourceLabel: SOURCE_LABELS[m.source] }));
   const resume = Boolean(prep.resume);
+  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
   return (
     <StoryBuilder
       storyId={story.id}
@@ -57,8 +62,9 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       hasResume={resume}
       moments={moments}
       field={field.id}
+      execMode={execMode}
       targets={targets}
-      afterStory={intro && <TailorLinks jobs={jobs} content={story.content} />}
+      afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={
         !intro && (
           <NextUp
@@ -84,22 +90,37 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
 
 // "Tell me about yourself" is built per target job, company first; each job's version lives on its
 // job page.
-function TailorLinks({ jobs, content }: { jobs: TargetJob[]; content: StoryContent }) {
-  // The first job without its own version gets the main button: the general "why this next role"
-  // stays generic until it's rebuilt around one company.
-  const next = jobs.find((job) => !content.tailored?.[job.id]?.draft);
+function TailorLinks({
+  jobs,
+  content,
+  today,
+}: {
+  jobs: TargetJob[];
+  content: StoryContent;
+  today: string;
+}) {
+  // The job that most needs its own version gets the main button, nearest interview first: the
+  // general "why this next role" stays generic until it's rebuilt around one company.
+  const first = jobsToShapeIntroFor(jobs, (id) => Boolean(content.tailored?.[id]?.draft), today)[0];
+  const next = first?.job;
+  const soon = first && first.days !== null ? first.days : null;
+  const company = next ? next.company || next.title : "";
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className={`rounded-3xl p-5 shadow-sm sm:p-6 ${
+        soon !== null ? "bg-amber-50 ring-1 ring-amber-200" : "bg-white ring-1 ring-black/5"
+      }`}
       data-testid="tailor-links"
     >
       <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
-        Next: make it company-first for each job
+        {soon !== null
+          ? `Your ${company} interview is ${whenLabel(soon)}`
+          : "Next: make it company-first for each job"}
       </h2>
       <p className="mt-2 text-sm text-slate-600">
-        This is your general answer, so &ldquo;why this next role&rdquo; can only be general. For
-        each job, tell me in a line why you want that company, and I&apos;ll rebuild it around what
-        they most need to hear.
+        {soon !== null
+          ? `Make this answer for ${company} before you go. Your general version can only end on a general \u201cwhy this next role\u201d. Tell me in a line why you want ${company}, and I'll rebuild it around what they most need to hear.`
+          : "This is your general answer, so \u201cwhy this next role\u201d can only be general. For each job, tell me in a line why you want that company, and I'll rebuild it around what they most need to hear."}
       </p>
       {jobs.length === 0 ? (
         <p className="mt-3 text-sm text-slate-600">

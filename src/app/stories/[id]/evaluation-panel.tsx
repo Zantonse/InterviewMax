@@ -8,6 +8,7 @@ import {
   SCORE_LABELS,
   TIERS,
   gradingCriteria,
+  scoreOutOf100,
   THINKING_LEVELS,
   type StoryGrade,
   type ThinkingFeedback,
@@ -90,9 +91,7 @@ export function EvaluationPanel({
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  const average = grade?.criteria.length
-    ? grade.criteria.reduce((sum, c) => sum + c.score, 0) / grade.criteria.length
-    : undefined;
+  const score = grade ? scoreOutOf100(grade.criteria, grade.tier) : undefined;
 
   return (
     <section
@@ -119,9 +118,9 @@ export function EvaluationPanel({
               {TIERS.find((t) => t.id === grade.tier)?.label}
             </span>
           )}
-          {average !== undefined && (
-            <span className="text-sm text-slate-500" data-testid="average">
-              {average.toFixed(1)} / 4
+          {score !== undefined && (
+            <span className="text-sm font-semibold text-slate-600" data-testid="score-pill">
+              {score}/100
             </span>
           )}
         </span>
@@ -176,13 +175,17 @@ export function EvaluationPanel({
       </div>
 
       <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
-        {grade && <ContentFit content={grade.content} />}
-
-        <div>
-          <h3 className="text-sm font-bold text-slate-700">
+        <div
+          className="rounded-2xl p-4 ring-1 ring-ink-800/15 sm:p-5"
+          data-testid="score-section"
+          aria-label="Score"
+          role="group"
+        >
+          <ScoreHeadline score={score} />
+          <h3 className="mt-4 text-sm font-bold text-slate-700">
             How it scores, criterion by criterion
           </h3>
-          <ul className="mt-2 flex flex-col gap-3" data-testid="criteria">
+          <ul className="mt-2 flex flex-col gap-3" data-testid="criteria" data-stagger>
             {criteria.map((c) => {
               const scored = grade?.criteria.find((s) => s.id === c.id);
               return (
@@ -212,9 +215,11 @@ export function EvaluationPanel({
           </ul>
         </div>
 
+        {grade && <ContentFit content={grade.content} />}
+
         <div>
           <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
-          <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks">
+          <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks" data-stagger>
             {CHECKS.filter(
               // Some checks apply to one format only ("A few key figures" is for About me), and
               // "In your own words" only to drafts written since it was measured.
@@ -372,6 +377,47 @@ function Summary({ grade }: { grade: StoryGrade }) {
   );
 }
 
+// The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) with a bar,
+// and how it's worked out, so it isn't read as a pass mark.
+function ScoreHeadline({ score }: { score: number | undefined }) {
+  const tone =
+    score === undefined
+      ? "bg-slate-200"
+      : score >= 75
+        ? "bg-emerald-600"
+        : score >= 50
+          ? "bg-amber-300"
+          : "bg-amber-500";
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-base font-bold text-slate-900">Score</h3>
+        <p className="text-slate-500" data-testid="score-total">
+          {score === undefined ? (
+            <span className="text-sm">Not graded yet</span>
+          ) : (
+            <>
+              <span className="text-3xl font-bold tabular-nums text-slate-900">{score}</span>
+              <span className="text-sm"> / 100</span>
+            </>
+          )}
+        </p>
+      </div>
+      <div
+        className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+        role="presentation"
+      >
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${score ?? 0}%` }} />
+      </div>
+      <p className="text-xs text-slate-500">
+        Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100. The level
+        above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for
+        Good enough.
+      </p>
+    </div>
+  );
+}
+
 function ScoreBar({ score }: { score: number }) {
   return (
     <span className="flex shrink-0 items-center gap-2" data-testid="score">
@@ -431,52 +477,103 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
       </div>
     );
   }
+  // Folded by default: with several target jobs this is the longest part of the page. The closed
+  // line still says how the story fits, so the detail is there only for those who want it.
   return (
-    <div className="flex flex-col gap-3" data-testid="content-fit">
-      <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
-      {content.jobs.map((job) => (
-        <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-semibold text-slate-800">
-              {job.title}
-              {job.company && <span className="font-normal text-slate-500"> at {job.company}</span>}
-            </span>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
-            >
-              {FIT_LABELS[job.fit].label}
-            </span>
+    <details className="group" data-testid="content-fit">
+      <summary className="flex cursor-pointer list-none flex-col gap-0.5 rounded-2xl bg-slate-50 px-3 py-2.5 ring-1 ring-black/5 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="text-xs text-slate-500 transition-transform group-open:rotate-90"
+          >
+            ▶
+          </span>
+          <h3 className="flex-1 text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+          <span className="shrink-0 text-sm font-medium text-ink-800 group-open:hidden">
+            Show details
+          </span>
+          <span className="hidden shrink-0 text-sm font-medium text-ink-800 group-open:inline">
+            Hide
+          </span>
+        </span>
+        <span className="pl-5 text-sm text-slate-600" data-testid="content-fit-summary">
+          {fitSummary(content)}
+        </span>
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        {content.jobs.map((job) => (
+          <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-slate-800">
+                {job.title}
+                {job.company && (
+                  <span className="font-normal text-slate-500"> at {job.company}</span>
+                )}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
+              >
+                {FIT_LABELS[job.fit].label}
+              </span>
+            </div>
+            <FitList title="It proves" mark="✓" markClass="text-emerald-700" items={job.proves} />
+            <FitList
+              title="It doesn't show"
+              mark="–"
+              markClass="text-amber-700"
+              items={job.misses}
+            />
+            <FitList
+              title="Good answer to"
+              mark="•"
+              markClass="text-slate-400"
+              items={job.answers.map((q) => `“${q}”`)}
+            />
+            {job.level && (
+              <p className="text-sm text-slate-700">
+                <span className="font-semibold">{LEVEL_LABELS[job.level.match]}. </span>
+                {job.level.note}
+              </p>
+            )}
           </div>
-          <FitList title="It proves" mark="✓" markClass="text-emerald-700" items={job.proves} />
-          <FitList title="It doesn't show" mark="–" markClass="text-amber-700" items={job.misses} />
-          <FitList
-            title="Good answer to"
-            mark="•"
-            markClass="text-slate-400"
-            items={job.answers.map((q) => `“${q}”`)}
-          />
-          {job.level && (
-            <p className="text-sm text-slate-700">
-              <span className="font-semibold">{LEVEL_LABELS[job.level.match]}. </span>
-              {job.level.note}
+        ))}
+        {content.unused.length > 0 && (
+          <div data-testid="unused">
+            <p className="text-sm font-semibold text-slate-700">
+              Strong material from your answers that isn&apos;t in the story:
             </p>
-          )}
-        </div>
-      ))}
-      {content.unused.length > 0 && (
-        <div data-testid="unused">
-          <p className="text-sm font-semibold text-slate-700">
-            Strong material from your answers that isn&apos;t in the story:
-          </p>
-          <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
-            {content.unused.map((u, i) => (
-              <li key={i}>{u}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+            <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+              {content.unused.map((u, i) => (
+                <li key={i}>{u}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </details>
   );
+}
+
+// One line for the closed fit section, e.g. "Strong fit for 2 of 3 jobs, partial for 1".
+// With one job it names the fit directly: "Partial fit".
+function fitSummary(content: ContentCheck): string {
+  const total = content.jobs.length;
+  if (total === 1) return FIT_LABELS[content.jobs[0].fit].label;
+  const order: FitLevel[] = ["strong", "partial", "weak"];
+  const parts = order
+    .map((level) => ({
+      level,
+      n: content.jobs.filter((j) => j.fit === level).length,
+    }))
+    .filter((p) => p.n > 0)
+    .map((p, i) => {
+      const word = FIT_LABELS[p.level].label.split(" ")[0];
+      return i === 0
+        ? `${word} fit for ${p.n === total ? `all ${total}` : `${p.n} of ${total}`} jobs`
+        : `${word.toLowerCase()} for ${p.n}`;
+    });
+  return parts.join(", ");
 }
 
 function FitList({

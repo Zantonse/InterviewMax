@@ -315,3 +315,25 @@ function answersStep(job: PlanJob, stories: StoryLike[], limit?: number): PlanSt
     done: answered === questions.length,
   };
 }
+
+// "Tell me about yourself" for a job with an interview coming up: the general answer can only end
+// on a general "why this next role", so within this many days the job's own version comes first
+// (tester data, Nov 6: an interview the next day, and the button pointed at another job).
+export const SHAPE_INTRO_DAYS = 7;
+
+// The jobs still waiting for their own "Tell me about yourself", nearest interview first (within
+// SHAPE_INTRO_DAYS), then the rest in their usual order. Finished jobs are left out.
+export function jobsToShapeIntroFor<J extends PlanJob>(
+  jobs: J[],
+  shaped: (jobId: string) => boolean,
+  today: string,
+): { job: J; days: number | null }[] {
+  const open = jobs
+    .filter((j) => !j.outcome && !shaped(j.id))
+    .map((job) => {
+      const days = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
+      return { job, days: days !== null && days >= 0 && days <= SHAPE_INTRO_DAYS ? days : null };
+    });
+  const soon = open.filter((o) => o.days !== null).sort((a, b) => a.days! - b.days!);
+  return [...soon, ...open.filter((o) => o.days === null)];
+}

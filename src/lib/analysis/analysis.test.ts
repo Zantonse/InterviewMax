@@ -167,7 +167,7 @@ describe("structure guide", () => {
   it("checks the whole story's length", () => {
     const guide = formatGuide(conflict);
     expect(totalLength(300, guide).verdict).toBe("fits");
-    expect(totalLength(150, guide).verdict).toBe("short");
+    expect(totalLength(100, guide).verdict).toBe("short");
     expect(totalLength(500, guide).verdict).toBe("long");
   });
 });

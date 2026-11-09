@@ -2,7 +2,9 @@ import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map
 import { parseAnalysis, type StoryAnalysis } from "@/lib/analysis/content";
 import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
-import { coreQuestions, type StoryType } from "./story-types";
+import { INTRO_PARTS, coreQuestions, type StoryType } from "./story-types";
+import { parseExecVersion, type ExecVersion } from "@/lib/exec/content";
+import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
 
 // What the builder keeps in stories.content (jsonb).
 export type FollowUp = {
@@ -21,6 +23,11 @@ export type FollowUp = {
   // Tap options the coach suggested for a "kind of thing" question (their part, the stakes, the
   // kind of result): short starters the user taps and then finishes in their own words.
   options?: string[];
+  // Set when the question was asked to fix one weak part of a graded "Tell me about yourself"
+  // (see weakIntroPart): the part's id. Its answer rewrites that part only.
+  fixes?: string;
+  // Set once that one-part rewrite has run, so a later Rewrite rewrites the whole answer again.
+  applied?: boolean;
 };
 
 // Tap options are starters, not answers: 2 to 4 short ones, and never a figure, because a tapped
@@ -151,6 +158,12 @@ export type StoryContent = {
   // The interview question the user picked to answer with this story (from a job's likely
   // questions, the question library or a past interview), asked as the opening question.
   asked?: string;
+  // "Also answers": the other interview questions the written story can answer (see
+  // src/lib/reuse). Stale once the draft is rewritten.
+  alsoAnswers?: StoryAlsoAnswers;
+  // "Exec version": the 30-second, answer-first version of the written story (see src/lib/exec).
+  // Stale once the draft is rewritten.
+  exec?: ExecVersion;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -250,6 +263,47 @@ export function canStrengthen(content: StoryContent): boolean {
   return Boolean(content.draft) && probeRounds(content) < MAX_STRENGTHEN_ROUNDS;
 }
 
+// "Tell me about yourself": a part the grader scored this low or lower gets one targeted question
+// (tester data, Nov 6: a "why this next role" scored 2 of 4 and nothing asked about it again).
+export const WEAK_PART_SCORE = 2;
+// How many times one part can be sent back this way, so a part that stays thin doesn't loop.
+export const MAX_FIX_ASKS = 2;
+
+export type WeakPart = { id: string; label: string; score: number; note: string; improve: string };
+
+// The weakest graded part of a "Tell me about yourself" draft, when one scored WEAK_PART_SCORE or
+// lower: the lowest score wins, ties go to the earlier part. Only on a current grade, with no
+// questions open, and not for a part already asked about MAX_FIX_ASKS times.
+export function weakIntroPart(
+  content: StoryContent,
+  storyType: StoryType | undefined,
+): WeakPart | undefined {
+  if (storyType?.format !== "intro" || !gradeIsCurrent(content)) return undefined;
+  if (nextFollowUpIndex(content) !== undefined) return undefined;
+  let weakest: WeakPart | undefined;
+  for (const part of INTRO_PARTS) {
+    const c = content.grade?.criteria.find((x) => x.id === part.id);
+    if (!c || c.score > WEAK_PART_SCORE) continue;
+    const asked = (content.followUps ?? []).filter((f) => f.fixes === part.id).length;
+    if (asked >= MAX_FIX_ASKS) continue;
+    if (!weakest || c.score < weakest.score) {
+      const improve = c.improve ?? "";
+      weakest = { id: part.id, label: part.label, score: c.score, note: c.note, improve };
+    }
+  }
+  return weakest;
+}
+
+// The part the latest round's answered question was asked to fix, when that round was a
+// weak-part question: the rewrite then changes that part only.
+export function partToFix(content: StoryContent): string | undefined {
+  if (!content.draft) return undefined;
+  const round = probeRounds(content);
+  const latest = (content.followUps ?? []).filter((f) => (f.round ?? 1) === round);
+  const fix = latest.find((f) => f.fixes && f.answer?.trim() && !f.applied);
+  return fix && latest.every((f) => f.fixes === fix.fixes) ? fix.fixes : undefined;
+}
+
 export function builderStage(
   content: StoryContent,
   storyType: StoryType | undefined,
@@ -333,6 +387,8 @@ export function parseContent(raw: unknown): StoryContent {
               ...(f.source === "practice" ? { source: "practice" as const } : {}),
               ...(f.skipped === true ? { skipped: true } : {}),
               ...(cleanOptions(f.options).length ? { options: cleanOptions(f.options) } : {}),
+              ...(typeof f.fixes === "string" && f.fixes ? { fixes: f.fixes } : {}),
+              ...(f.applied === true ? { applied: true } : {}),
             },
           ]
         : [],
@@ -378,6 +434,12 @@ export function parseContent(raw: unknown): StoryContent {
   }
 
   if (typeof raw.asked === "string" && raw.asked.trim()) content.asked = raw.asked.trim();
+
+  const alsoAnswers = parseAlsoAnswers(raw.alsoAnswers);
+  if (alsoAnswers) content.alsoAnswers = alsoAnswers;
+
+  const exec = parseExecVersion(raw.exec);
+  if (exec) content.exec = exec;
 
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {

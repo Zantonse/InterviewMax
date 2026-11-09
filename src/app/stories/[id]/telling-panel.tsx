@@ -199,7 +199,7 @@ function Coached({
           this
         </p>
 
-        <ol className="mt-4 flex flex-col gap-3" data-testid="telling-script">
+        <ol className="mt-4 flex flex-col gap-3" data-testid="telling-script" data-stagger>
           <Line label="Hook" text={hook} emphasize />
           {beats.map((b, i) => (
             <Line

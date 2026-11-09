@@ -150,7 +150,7 @@ async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRe
 }
 
 function FocusQuestion({ question, stories }: { question: LikelyQuestion; stories: StoryRecord[] }) {
-  const coverage = coverageFor(question.theme, stories);
+  const coverage = coverageFor(question.theme, stories, question.question);
   return (
     <li className="text-sm">
       <p className="font-medium text-slate-900">{question.question}</p>

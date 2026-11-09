@@ -2,7 +2,7 @@ import type { ChatMessage } from "@/lib/ai/types";
 import { type StoryNumber, numbersTranscript } from "@/lib/numbers/checklist";
 import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
-import { cleanOptions, type FollowUp, type StoryContent } from "./content";
+import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import {
   INTRO_LENGTH,
@@ -30,7 +30,7 @@ const CHECKLIST = `- Situation: where they were, their role, and what was at sta
 - Actions: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
 - Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
-- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
+- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one. Strong answers give the before and the after ("from 62% to 91%"), so if they gave only one, ask for the other. If the result is there but nothing says how far the work reached (adopted by other teams, reused, made into a process or policy), ask once whether it spread: reach is what shows senior scope.
 - Reflection: a specific lesson or something they'd do differently.`;
 
 const GAPS = ["situation", "ownership", "actions", "obstacle", "decision", "result", "reflection"] as const;
@@ -114,8 +114,8 @@ Make it strong, not just accurate: put their most impressive numbers where they 
 Write these parts:
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
-- result: 1 to 2 sentences on the outcome, with their number.
+- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"). If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
 - reflection: 1 to 2 sentences on what they learned or would do differently.
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
@@ -142,6 +142,8 @@ ${INTRO_CHECKLIST}
 ${PROBE_RULES}
 
 The answer stays high level and uses one or two figures at most, so ask for a number only where the headline result has none, and spend the other questions on the why behind their moves, what they enjoy, and what they want next.
+
+What they want next closes the answer, and a generic one ("a big, well-known company", "smart, ambitious people", "a place to grow") makes the whole answer sound generic. When their answer about what's next doesn't name the kind of role or problem they want to work on and why now, one of your questions must ask about it, tied to their target jobs when they have any (e.g. "What about designing for advertisers at that scale pulls you?").
 
 Reply with JSON only, no other text:
 {"followUps": [{"question": "…", "gap": "one of ${INTRO_GAPS.join(", ")}", "options": ["…"]}]}`;
@@ -240,6 +242,24 @@ export function probeSystem(
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
   const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
   return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${roundInstructions(round, storyType)}`;
+}
+
+// "Tell me about yourself": one question aimed at the one part the grader scored weakest (see
+// weakIntroPart). It runs as a probe round of its own; its answer rewrites that part only.
+export function weakPartInstructions(part: WeakPart, round: number): string {
+  return `This is round ${round}, after the answer was written and graded. This round fixes one part only: "${part.label}" (${part.id}), which the grader scored ${part.score} of 4.
+The grader's note: ${part.note}
+${part.improve ? `What would raise it: ${part.improve}\n` : ""}Ask exactly one question, in one or two short sentences, that draws out what this part is missing, in their own words. Build on what they already said for it, and never ask for something they already answered. Its gap must be "${part.id}". Give tap options only if it asks for a kind of thing, never for a reason or a number.`;
+}
+
+export function weakPartProbeSystem(
+  storyType: StoryType | undefined,
+  part: WeakPart,
+  round: number,
+  targets?: BuilderTargets,
+): string {
+  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
+  return `${INTRO_PROBE_SYSTEM}${tailor}\n\n${weakPartInstructions(part, round)}`;
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
@@ -341,6 +361,7 @@ export function writeMessages(
   retry?: WriteRetry,
   numbers: StoryNumber[] = [],
   targets?: BuilderTargets,
+  focus?: WriteFocus,
 ): ChatMessage[] {
   // "Tell me about yourself" hints at what the target jobs look for; a behavioral story is written
   // from the answers alone (its follow-ups were already aimed at the jobs).
@@ -352,8 +373,25 @@ export function writeMessages(
       content: `Write my story from these answers.\n\n${answersTranscript(content, storyType)}${withNumbers(numbers, false)}${preparing}`,
     },
   ];
+  if (focus) messages.push(...focusMessages(focus, storyType));
   if (retry) messages.push(...retryMessages(retry));
   return messages;
+}
+
+// A rewrite of one part only, after a weak-part question: the rest of the draft stays as it was.
+export type WriteFocus = { part: string; previous: Record<string, string> };
+
+function focusMessages(focus: WriteFocus, storyType: StoryType | undefined): ChatMessage[] {
+  const parts = storyParts(storyType);
+  const label = parts.find((p) => p.id === focus.part)?.label ?? focus.part;
+  const previous = JSON.stringify({ parts: focus.previous });
+  return [
+    { role: "assistant", content: previous },
+    {
+      role: "user",
+      content: `I answered one more question to strengthen "${label}". Rewrite only the "${focus.part}" part using that answer, so it says something specific to me instead of something generic. Keep it the same length or shorter, and make it flow from the part before it. Return every other part exactly as it is above, word for word.`,
+    },
+  ];
 }
 
 // What was wrong with a draft, for the writer's second try.

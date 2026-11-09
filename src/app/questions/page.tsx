@@ -55,7 +55,7 @@ async function LibraryContent() {
     bank: bank.map((q) => ({ question: q.question, theme: q.theme, label: askedLabel(q) })),
   });
   const items: LibraryItem[] = entries.map((e) => {
-    const coverage = coverageFor(e.theme, stories);
+    const coverage = coverageFor(e.theme, stories, e.question);
     return {
       ...e,
       coverage:

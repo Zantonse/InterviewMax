@@ -44,6 +44,24 @@ export function MomentButton({
   );
 }
 
+// True once `pending` has lasted `ms`: a slow model call says it's still working instead of looking
+// stuck (simulated users gave up on "Finding your stories…", 2026-11-08).
+function useSlow(pending: boolean, ms = 25_000) {
+  const [slowSince, setSlowSince] = useState<number | null>(null);
+  useEffect(() => {
+    if (!pending) return;
+    const started = Date.now();
+    const timer = setTimeout(() => setSlowSince(started), ms);
+    return () => {
+      clearTimeout(timer);
+      setSlowSince(null);
+    };
+  }, [pending, ms]);
+  return pending && slowSince !== null;
+}
+
+const SLOW_NOTE = "Still reading. This can take up to two minutes; you can leave this page open.";
+
 function capitalize(text: string) {
   return text ? text[0].toUpperCase() + text.slice(1) : text;
 }
@@ -53,6 +71,7 @@ export function AutoFind({ reading }: { reading: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const started = useRef(false);
+  const slow = useSlow(pending);
 
   function find() {
     setError(null);
@@ -85,9 +104,12 @@ export function AutoFind({ reading }: { reading: string }) {
           </button>
         </>
       ) : (
-        <p className="animate-pulse text-slate-600" data-testid="finding">
-          Reading {reading} for story moments…
-        </p>
+        <>
+          <p className="animate-pulse text-slate-600" data-testid="finding">
+            Reading {reading} for story moments…
+          </p>
+          {slow && <p className="mt-2 text-sm text-slate-500">{SLOW_NOTE}</p>}
+        </>
       )}
     </section>
   );
@@ -125,6 +147,7 @@ export function FindAgainButton() {
 export function QuickQuestions({ initial }: { initial: Record<string, string> }) {
   const [state, action, pending] = useActionState(saveQuickAnswers, null);
   const [talking, setTalking] = useState(false);
+  const slow = useSlow(pending);
   return (
     <form action={action} className="mt-5 space-y-4" data-testid="quick-questions">
       {QUICK_QUESTIONS.map((q, i) => (
@@ -149,6 +172,7 @@ export function QuickQuestions({ initial }: { initial: Record<string, string> })
       >
         {pending ? "Finding your stories…" : "Find my stories"}
       </button>
+      {slow && <p className="text-sm text-slate-500" role="status">{SLOW_NOTE}</p>}
     </form>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useId, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
 import { type FieldId, fieldJoggers } from "@/lib/field/fields";
@@ -9,6 +10,8 @@ import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
   canStrengthen,
+  weakIntroPart,
+  type WeakPart,
   gradeIsCurrent,
   isRoughDraft,
   nextCoreQuestion,
@@ -40,6 +43,7 @@ import {
 import {
   addVividDetail,
   analyzeDraft,
+  askAboutWeakPart,
   askFollowUps,
   coachDraft,
   gradeDraft,
@@ -55,12 +59,21 @@ import {
   type BuilderResult,
 } from "./actions";
 import { createStory } from "@/app/stories/new/actions";
-import { type BuilderTargets, nextRoleHint, openingHint } from "@/lib/stories/targets";
+import {
+  type BuilderTargets,
+  GUIDED_START_PROMPTS,
+  guidedStart,
+  nextRoleHint,
+  openingHint,
+} from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
+import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
 import { TellingPanel } from "./telling-panel";
+import { AlsoAnswersPanel } from "./also-answers-panel";
+import { ExecPanel } from "./exec-panel";
 import { AiNotice } from "@/components/ai-notice";
 
 type Busy =
@@ -108,6 +121,7 @@ export function StoryBuilder({
   menu,
   beside,
   field = null,
+  execMode = false,
 }: {
   // Null for a new story that isn't saved yet: the first action creates it from newStory.
   storyId: string | null;
@@ -133,6 +147,8 @@ export function StoryBuilder({
   beside?: React.ReactNode;
   // The user's field (Settings): picks the examples and memory joggers.
   field?: FieldId | null;
+  // Exec mode (Settings, off by default): shows the Exec version card on the written story.
+  execMode?: boolean;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -141,11 +157,16 @@ export function StoryBuilder({
   // The saved story's id, read when each action runs (a new story gets one with its first answer).
   const idRef = useRef(storyId);
   const sid = (): string => idRef.current ?? "";
+  // Whether a chain of actions is running (read in the tap handler, before any render).
+  const running = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [, startTransition] = useTransition();
-  // Text a memory jogger adds to the answer box; `n` makes each tap count.
-  const [insert, setInsert] = useState<{ text: string; n: number } | undefined>();
+  // Text a memory jogger adds to (or, tapped again, takes out of) the answer box; `n` makes each
+  // tap count.
+  const [insert, setInsert] = useState<Insert | undefined>();
+  // What's in the answer box now, so a tapped starter can show it's in there.
+  const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
     initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
@@ -156,14 +177,31 @@ export function StoryBuilder({
 
   // Runs a chain of actions, applying each result. Stops at the first error.
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    // One chain at a time: a second tap while one runs does nothing.
+    if (running.current) return;
+    running.current = true;
     setError(null);
+    // Shown straight away, outside the transition: React holds updates made inside an async
+    // transition before its first await until the whole chain ends, so the button looked dead for
+    // the length of the model call and simulated users tapped it again and again (2026-11-08).
+    setBusy(!idRef.current && newStory ? "saving" : steps[0].busy);
     startTransition(async () => {
+      try {
+        await runSteps(steps);
+      } finally {
+        running.current = false;
+        setBusy(null);
+      }
+    });
+  }
+
+  async function runSteps(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
+    {
       if (!idRef.current && newStory) {
         setBusy("saving");
         const created = await createStory(newStory.storyType, newStory.asked);
         if (!created.ok) {
           setError(created.error);
-          setBusy(null);
           return;
         }
         idRef.current = created.id;
@@ -209,8 +247,7 @@ export function StoryBuilder({
           steps.push({ busy: "grading", action: () => gradeDraft(sid()) });
         }
       }
-      setBusy(null);
-    });
+    }
   }
 
   // "Tell me about yourself": whether the path question can be read from a document instead.
@@ -243,14 +280,26 @@ export function StoryBuilder({
   }
 
   // Drops the unanswered follow-ups. Without a draft, the chain goes on to write it; on a drafted
-  // story, it's rewritten only if this round's answers added something.
-  function skipRest() {
+  // story, it's rewritten only if this round's answers added something. Text typed in the box but
+  // not sent is kept as the open question's answer first: simulated users typed and then tapped
+  // Skip, and lost it (2026-11-08).
+  function skipRest(typed = "") {
     setEditing(null);
+    const open = nextFollowUpIndex(content);
+    const keep = typed.trim() && open !== undefined ? { index: open, answer: typed } : undefined;
     const round = Math.max(0, ...(content.followUps ?? []).map((f) => f.round ?? 1));
-    const addedThisRound = (content.followUps ?? []).some(
-      (f) => (f.round ?? 1) === round && f.answer?.trim(),
-    );
+    const addedThisRound =
+      Boolean(keep) ||
+      (content.followUps ?? []).some((f) => (f.round ?? 1) === round && f.answer?.trim());
     run([
+      ...(keep
+        ? [
+            {
+              busy: "saving" as const,
+              action: () => saveFollowUpAnswer(sid(), keep.index, keep.answer),
+            },
+          ]
+        : []),
       { busy: "saving", action: () => skipFollowUps(sid()) },
       ...(content.draft && addedThisRound
         ? [{ busy: "writing" as const, action: () => writeDraft(sid()) }]
@@ -287,8 +336,11 @@ export function StoryBuilder({
     run([{ busy: "reading", action: () => importLinkedIn(sid(), formData) }]);
   }
 
+  const weak = busy ? undefined : weakIntroPart(content, storyType);
   const currentCore = nextCoreQuestion(content, storyType);
   const currentFollowUp = nextFollowUpIndex(content);
+  // Where an unsent answer is kept, so leaving the box (another tab, a reload) doesn't lose it.
+  const draftScope = `imx-answer:${storyId ?? `new-${storyTypeId}`}`;
   const coreAnswered = questions.filter((q) => content.answers[q.id]?.trim()).length;
   // With an uploaded answer the remaining scripted questions are skipped. Answers to the old
   // scripted questions (stories started before "tell it your way") are still shown.
@@ -324,29 +376,7 @@ export function StoryBuilder({
           {progressLabel(stage, coreAnswered, questions.length, content)}
         </p>
         <div className="ml-auto flex items-center gap-2">
-          <div
-            role="tablist"
-            aria-label="Story views"
-            className="flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
-          >
-            {VIEWS.map((v, i) => (
-              <button
-                key={v.id}
-                type="button"
-                role="tab"
-                aria-selected={view === v.id}
-                onClick={() => setView(v.id)}
-                className={`rounded-full px-3.5 py-1.5 transition ${
-                  view === v.id
-                    ? "bg-white text-ink-800 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                data-testid={`tab-${v.id}`}
-              >
-                {i + 1} · {v.label}
-              </button>
-            ))}
-          </div>
+          <ViewTabs view={view} onChange={setView} />
           {menu && (
             <details className="relative" data-testid="story-menu">
               <summary
@@ -355,7 +385,7 @@ export function StoryBuilder({
               >
                 ⋯
               </summary>
-              <div className="absolute right-0 z-10 mt-2 w-72 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/10">
+              <div className="absolute right-0 z-10 mt-2 w-72 origin-top-right animate-pop rounded-2xl bg-white p-4 shadow-lg ring-1 ring-black/10">
                 {menu}
               </div>
             </details>
@@ -364,7 +394,7 @@ export function StoryBuilder({
       </div>
 
       {view === "build" ? (
-        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           {/* The conversation: its own scrolling pane, with the answer box pinned under it. */}
           <section
             className="flex h-[calc(100dvh-12rem)] min-h-[26rem] flex-col rounded-3xl bg-white shadow-sm ring-1 ring-black/5"
@@ -376,7 +406,7 @@ export function StoryBuilder({
               data-testid="chat"
             >
               {!content.imported && !content.linkedin && (
-                <li className="text-sm text-slate-500" data-testid="builder-intro">
+                <li className="animate-enter text-sm text-slate-500" data-testid="builder-intro">
                   {storyType?.format === "intro"
                     ? `How this works: answer ${questions.length} short questions in plain notes, typed or spoken. Then I'll ask a few follow-ups where it's thin and write your answer from your words, ready to shape for each target job.`
                     : "How this works: tell me what happened, your way. Messy notes or a minute of talking is plenty. I'll write a rough draft straight away, then ask a few questions about what's missing to make it stronger."}
@@ -487,8 +517,11 @@ export function StoryBuilder({
                         index === currentFollowUp && f.options?.length ? (
                           <TapOptions
                             options={f.options}
+                            answerText={answerText}
                             disabled={busy !== null}
-                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                            onPick={(text, remove) =>
+                              setInsert((n) => ({ text, n: (n?.n ?? 0) + 1, remove }))
+                            }
                           />
                         ) : undefined
                       }
@@ -550,7 +583,14 @@ export function StoryBuilder({
                   <Composer
                     key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
                     initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
+                    draftKey={inferredNow ? undefined : `${draftScope}:core-${currentCore}`}
                     insert={insert}
+                    onTextChange={setAnswerText}
+                    placeholder={
+                      currentCore === "start" && guidedStart(targets, storyType)
+                        ? `${GUIDED_START_PROMPTS.join("\n")}\n\nA line or two for each is plenty.`
+                        : undefined
+                    }
                     rows={currentCore === "start" && storyType?.format !== "intro" ? 6 : 3}
                     disabled={busy !== null}
                     submitLabel="Next"
@@ -561,11 +601,13 @@ export function StoryBuilder({
                 <Composer
                   key={`follow-up-${currentFollowUp}`}
                   initial=""
+                  draftKey={`${draftScope}:fu-${currentFollowUp}`}
                   insert={insert}
+                  onTextChange={setAnswerText}
                   disabled={busy !== null}
                   submitLabel="Next"
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
-                  onSkip={skipRest}
+                  onSkip={(typed) => skipRest(typed)}
                   skipLabel={content.draft ? "Skip the rest" : "Skip the rest and write it"}
                 />
               ) : busy ? null : stage === "probe" ? (
@@ -666,7 +708,7 @@ export function StoryBuilder({
           </aside>
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-4">
             <StoryPanel
               title={title}
@@ -684,6 +726,16 @@ export function StoryBuilder({
               )}
               {content.draft ? (
                 <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5">
+                  {weak && (
+                    <WeakPartCallout
+                      part={weak}
+                      disabled={busy !== null}
+                      busy={busy === "probing"}
+                      onAsk={() =>
+                        run([{ busy: "probing", action: () => askAboutWeakPart(sid()) }])
+                      }
+                    />
+                  )}
                   {content.nothingMoreToAsk && (
                     <p className="text-sm text-slate-600">
                       I couldn&apos;t find anything more to ask. Change an answer and I&apos;ll look
@@ -696,9 +748,12 @@ export function StoryBuilder({
                         type="button"
                         onClick={strengthen}
                         disabled={busy !== null}
+                        aria-busy={busy === "probing"}
                         className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
                       >
-                        Ask me more to make it stronger
+                        {/* The questions appear on the Build tab; until then this is the only sign
+                            on this tab that anything is happening (round 27 personas read it as dead). */}
+                        {busy === "probing" ? "Finding more questions…" : "Ask me more to make it stronger"}
                       </button>
                     )}
                     <button
@@ -737,6 +792,22 @@ export function StoryBuilder({
                 ])
               }
             />
+            {execMode && (
+              <ExecPanel
+                storyId={sid}
+                content={content}
+                storyType={storyType}
+                disabled={busy !== null}
+                onContent={setContent}
+              />
+            )}
+            <AlsoAnswersPanel
+              storyId={sid}
+              content={content}
+              storyType={storyType}
+              disabled={busy !== null}
+              onContent={setContent}
+            />
             {content.draft && nextUp}
             {afterStory}
           </div>
@@ -758,6 +829,57 @@ const VIEWS = [
   { id: "build", label: "Build" },
   { id: "story", label: "Story & score" },
 ] as const;
+
+// Build | Story & score. One white pill slides between the tabs (the same object moving, not one
+// disappearing and another appearing). Before it's measured, the selected tab draws its own pill.
+function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  const tabs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({});
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const el = tabs.current[view];
+      if (el) setPill({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [view]);
+  return (
+    <div
+      role="tablist"
+      aria-label="Story views"
+      className="relative flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
+    >
+      {pill && (
+        <span
+          aria-hidden
+          className="absolute inset-y-1 left-0 rounded-full bg-white shadow-sm transition-[translate,width] duration-250 ease-in-out"
+          style={{ translate: `${pill.left}px 0`, width: pill.width }}
+        />
+      )}
+      {VIEWS.map((v, i) => (
+        <button
+          key={v.id}
+          ref={(el) => {
+            tabs.current[v.id] = el;
+          }}
+          type="button"
+          role="tab"
+          aria-selected={view === v.id}
+          onClick={() => onChange(v.id)}
+          className={`relative rounded-full px-3.5 py-1.5 transition-colors duration-200 ${
+            view === v.id
+              ? `text-ink-800 ${pill ? "" : "bg-white shadow-sm"}`
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          data-testid={`tab-${v.id}`}
+        >
+          {i + 1} · {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 type View = (typeof VIEWS)[number]["id"];
 
@@ -794,7 +916,7 @@ function AnswerChecklist({
           return (
             <li key={part.id} className="flex items-center gap-2">
               <span
-                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors duration-300 ${
                   done
                     ? "border-ink-800 bg-ink-800"
                     : current
@@ -992,7 +1114,7 @@ function Joggers({
           <p className="text-sm text-slate-600">
             From {moments[0].sourceLabel || "your resume"}, one of these might fit:
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-stagger>
             {moments.map((m) => (
               <button
                 key={m.moment}
@@ -1013,7 +1135,7 @@ function Joggers({
           <p className="text-sm text-slate-600">
             {moments.length > 0 ? "Or think of:" : "Stuck on which one? Think of:"}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-stagger>
             {general.map((j) => (
               <button
                 key={j}
@@ -1033,32 +1155,50 @@ function Joggers({
 }
 
 // Under a follow-up about a kind of thing (their part, the stakes, the kind of result): the coach's
-// starters. A tap puts one in the answer box to finish in their own words.
+// starters. A tap puts one in the answer box to finish in their own words; one that's in the box
+// shows as picked, and tapping it again takes it out (simulated users tapped a starter dozens of
+// times when nothing on the chip changed, 2026-11-08).
 function TapOptions({
   options,
+  answerText,
   disabled,
   onPick,
 }: {
   options: string[];
+  answerText: string;
   disabled: boolean;
-  onPick: (text: string) => void;
+  onPick: (text: string, remove: boolean) => void;
 }) {
+  const picked = options.filter((o) => answerText.includes(o));
   return (
     <div className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="tap-options">
-      <div className="flex flex-wrap gap-2">
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(`${o}. `)}
-            className="rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50"
-          >
-            {o}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2" data-stagger>
+        {options.map((o) => {
+          const on = picked.includes(o);
+          return (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={on}
+              disabled={disabled}
+              onClick={() => onPick(`${o}. `, on)}
+              className={`rounded-full px-3 py-1.5 text-left text-sm ring-1 disabled:opacity-50 ${
+                on
+                  ? "bg-ink-800 text-white ring-ink-800 hover:bg-ink-900"
+                  : "bg-white text-slate-700 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
+              }`}
+            >
+              {on && <span aria-hidden="true">✓ </span>}
+              {o}
+            </button>
+          );
+        })}
       </div>
-      <p className="text-xs text-slate-500">Tap one to start, then add a sentence in your words.</p>
+      <p className="text-xs text-slate-500" aria-live="polite">
+        {picked.length
+          ? "Added to your answer below. Finish it with a sentence in your words, then tap Next."
+          : "Tap one to start, then add a sentence in your words."}
+      </p>
     </div>
   );
 }
@@ -1077,6 +1217,7 @@ function DraftSoFar({
   onShowStory: () => void;
 }) {
   const draft = content.draft;
+  const justWritten = useJustWritten(draft);
   if (!draft) {
     const told = Boolean(content.answers.start?.trim());
     const steps = [
@@ -1096,7 +1237,7 @@ function DraftSoFar({
           {steps.map((step, i) => (
             <li key={step} className="flex items-center gap-2">
               <span
-                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors duration-300 ${
                   i < current
                     ? "border-ink-800 bg-ink-800"
                     : i === current
@@ -1119,7 +1260,7 @@ function DraftSoFar({
   const pending = pendingFollowUps(content);
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 ${justWritten ? "animate-success" : ""}`}
       data-testid="draft-so-far"
     >
       <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
@@ -1136,9 +1277,9 @@ function DraftSoFar({
           draft.parts[p.id]?.trim() ? (
             <p
               key={p.id}
-              className={
-                p.id === marked ? "-mx-2 rounded-lg bg-accent-50 px-2 py-1 ring-1 ring-accent-300" : ""
-              }
+              className={`-mx-2 rounded-lg px-2 py-1 ring-1 transition-[background-color,box-shadow] duration-300 ${
+                p.id === marked ? "bg-accent-50 ring-accent-300" : "ring-transparent"
+              }`}
               data-testid={p.id === marked ? "draft-part-marked" : undefined}
             >
               {p.id === marked && (
@@ -1221,7 +1362,7 @@ function Exchange({
   onSubmit: (answer: string) => void;
 }) {
   return (
-    <li className="flex flex-col gap-2">
+    <li className="flex animate-enter flex-col gap-2">
       {improves && (
         <p className="pl-1 text-xs font-semibold uppercase tracking-wide text-ink-700">
           Improves: {improves}
@@ -1265,7 +1406,7 @@ function Exchange({
         />
       ) : answer ? (
         <div className="flex flex-col items-end gap-1">
-          <p className="max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-4 py-3 text-white">
+          <p className="max-w-[90%] origin-bottom-right animate-pop whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-4 py-3 text-white">
             {answer}
           </p>
           {source && <p className="text-xs text-slate-500">{source}</p>}
@@ -1286,6 +1427,8 @@ function Exchange({
 function Composer({
   initial,
   insert,
+  onTextChange,
+  placeholder,
   rows = 3,
   disabled,
   submitLabel,
@@ -1293,17 +1436,24 @@ function Composer({
   onCancel,
   onSkip,
   skipLabel,
+  draftKey,
 }: {
   initial: string;
   // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
-  insert?: { text: string; n: number };
+  insert?: Insert;
+  // Told what's in the box as it changes.
+  onTextChange?: (text: string) => void;
+  placeholder?: string;
   rows?: number;
   disabled: boolean;
   submitLabel: string;
   onSubmit: (answer: string) => void;
   onCancel?: () => void;
-  onSkip?: () => void;
+  // Told what's typed, so it can be kept rather than dropped.
+  onSkip?: (typed: string) => void;
   skipLabel?: string;
+  // Keeps what's typed (not yet sent) in this tab under this key, and brings it back.
+  draftKey?: string;
 }) {
   const [text, setText] = useState(initial);
   const [talking, setTalking] = useState(false);
@@ -1316,11 +1466,39 @@ function Composer({
   }, []);
 
   // A tapped jogger is added to whatever is typed so far (state adjusted during render, not in an
-  // effect, so it lands in one pass).
+  // effect, so it lands in one pass), and the cursor goes to the end to keep typing.
   const [inserted, setInserted] = useState(insert?.n);
   if (insert && insert.n !== inserted) {
     setInserted(insert.n);
-    setText((t) => (t.trim() ? `${t.trimEnd()}\n${insert.text}` : insert.text));
+    setText((t) => applyInsert(t, insert));
+  }
+  useEffect(() => {
+    if (inserted === undefined) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [inserted]);
+
+  useEffect(() => {
+    onTextChange?.(text);
+  }, [text, onTextChange]);
+
+  // An unsent answer comes back when the box does (after a tab switch or a reload), unless the
+  // box opened with something in it already.
+  useEffect(() => {
+    if (!draftKey || initial) return;
+    const saved = readKept(draftKey);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restored once on mount; storage isn't readable during render without a hydration mismatch
+    if (saved) setText(saved);
+  }, [draftKey, initial]);
+  useEffect(() => {
+    if (draftKey) writeKept(draftKey, text === initial ? "" : text);
+  }, [draftKey, text, initial]);
+
+  function send(answer: string) {
+    if (draftKey) writeKept(draftKey, "");
+    onSubmit(answer);
   }
 
   const canSubmit = !disabled && !talking && text.trim().length > 0;
@@ -1330,7 +1508,7 @@ function Composer({
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canSubmit) onSubmit(text);
+        if (canSubmit) send(text);
       }}
     >
       <label className="sr-only" htmlFor={fieldId}>
@@ -1344,12 +1522,12 @@ function Composer({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSubmit) {
             e.preventDefault();
-            onSubmit(text);
+            send(text);
           }
         }}
         rows={rows}
         maxLength={MAX_ANSWER_LENGTH}
-        placeholder="Type or tap Talk. Plain notes are fine."
+        placeholder={placeholder ?? "Type or tap Talk. Plain notes are fine."}
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1359,16 +1537,25 @@ function Composer({
             onActiveChange={setTalking}
             onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_ANSWER_LENGTH))}
           />
-          {!talking && (
+          {/* Simulated users typed and typed without sending (2026-11-08): once there's text, say
+              how to send it. */}
+          {!talking && canSubmit ? (
+            <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
+              Done? Tap {submitLabel} to send it.
+            </span>
+          ) : !talking ? (
             <span className="hidden text-xs text-slate-400 sm:inline">
               Ctrl or ⌘ + Enter to send
             </span>
-          )}
+          ) : null}
         </div>
         {onSkip && !talking && (
           <button
             type="button"
-            onClick={onSkip}
+            onClick={() => {
+              if (draftKey) writeKept(draftKey, "");
+              onSkip(text);
+            }}
             disabled={disabled}
             className="rounded-xl px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             data-testid="skip-follow-ups"
@@ -1395,6 +1582,23 @@ function Composer({
       </div>
     </form>
   );
+}
+
+// Unsent answers, per tab. Storage can be blocked (private windows), so every call is guarded.
+function readKept(key: string): string {
+  try {
+    return window.sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+function writeKept(key: string, text: string) {
+  try {
+    if (text.trim()) window.sessionStorage.setItem(key, text);
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // Not kept; the box still works.
+  }
 }
 
 // "Tell me about yourself" only: Map my role, for people who find it hard to put their work into
@@ -1514,19 +1718,19 @@ function UploadOption({
 
 function CoachBubble({ children }: { children: React.ReactNode }) {
   return (
-    <p className="max-w-[90%] rounded-2xl rounded-bl-md bg-ink-50 px-4 py-3 text-slate-800">
+    <p className="max-w-[90%] origin-bottom-left animate-pop rounded-2xl rounded-bl-md bg-ink-50 px-4 py-3 text-slate-800">
       {children}
     </p>
   );
 }
 
 function CoachLine({ children }: { children: React.ReactNode }) {
-  return <li className="pt-2 text-sm font-semibold text-ink-900">{children}</li>;
+  return <li className="animate-enter pt-2 text-sm font-semibold text-ink-900">{children}</li>;
 }
 
 function Thinking({ children }: { children: React.ReactNode }) {
   return (
-    <li role="status" className="flex items-center gap-2 text-sm text-slate-600">
+    <li role="status" className="flex animate-fade items-center gap-2 text-sm text-slate-600">
       <span className="h-2 w-2 animate-pulse rounded-full bg-ink-600" />
       {children}
     </li>
@@ -1576,6 +1780,24 @@ function ActionLine({
   );
 }
 
+// True for a moment after the written story changes (a draft or a rewrite just landed), so the
+// story can pulse once to say so. Not on first load.
+function useJustWritten(draft: StoryContent["draft"]) {
+  const text = draft ? Object.values(draft.parts).join("\n") : "";
+  const [was, setWas] = useState(text);
+  const [pulse, setPulse] = useState(false);
+  if (text !== was) {
+    setWas(text);
+    if (text) setPulse(true);
+  }
+  useEffect(() => {
+    if (!pulse) return;
+    const t = setTimeout(() => setPulse(false), 800);
+    return () => clearTimeout(t);
+  }, [pulse]);
+  return pulse;
+}
+
 function StoryPanel({
   title,
   content,
@@ -1607,12 +1829,13 @@ function StoryPanel({
   const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
   // At an interview pace of about 150 words a minute.
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
+  const justWritten = useJustWritten(draft);
 
   return (
     <section
       className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
         writing ? "opacity-60" : ""
-      }`}
+      } ${justWritten ? "animate-success" : ""}`}
       aria-label="Your story"
     >
       <div className="flex items-start justify-between gap-3">
@@ -1819,5 +2042,43 @@ function Highlighted({ text, marks }: { text: string; marks: string[] }) {
         ),
       )}
     </>
+  );
+}
+
+// "Tell me about yourself": the part the grader scored weakest, with one question to fix it.
+function WeakPartCallout({
+  part,
+  disabled,
+  busy,
+  onAsk,
+}: {
+  part: WeakPart;
+  disabled: boolean;
+  busy: boolean;
+  onAsk: () => void;
+}) {
+  return (
+    <div
+      className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200"
+      data-testid="weak-part"
+    >
+      <p className="text-sm font-semibold text-amber-900">
+        Weakest part: {part.label} ({SCORE_LABELS[part.score] ?? part.score}, {part.score} of 4)
+      </p>
+      {(part.improve || part.note) && (
+        <p className="mt-1 text-sm text-amber-900/90">{part.improve || part.note}</p>
+      )}
+      <button
+        type="button"
+        onClick={onAsk}
+        disabled={disabled}
+        className="mt-3 rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+      >
+        {busy ? "Thinking of a question…" : "Answer one question to fix it"}
+      </button>
+      <p className="mt-2 text-xs text-amber-900/70">
+        I&apos;ll rewrite only this part from your answer and leave the rest as it is.
+      </p>
+    </div>
   );
 }

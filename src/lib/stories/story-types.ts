@@ -310,7 +310,9 @@ export function coreQuestionText(
 //   "Tell me about yourself", general or for one job: about a minute, 90 seconds at most
 //   a behavioral story: about two minutes
 export const INTRO_LENGTH = { min: 120, max: 225 };
-export const STAR_LENGTH = { min: 180, max: 300 };
+// 150: published strong examples run 137 to 196 words, and every one failed a 180 minimum (grader
+// calibration, 2026-11-08; Craig agreed to lower it).
+export const STAR_LENGTH = { min: 150, max: 300 };
 
 // An introduction leads with the one figure that matters most and saves the rest for follow-up
 // questions (tester feedback: a list of metrics buries the point; Oct 16: keep it high level, not
