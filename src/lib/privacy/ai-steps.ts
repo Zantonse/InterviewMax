@@ -55,6 +55,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "How to tell it (storytelling coach)",
     sends: "The written story, your answers behind it, its thinking feedback, your target jobs and your field",
   },
+  storyAnalyze: {
+    feature: "Why it works (what each part of a story gives the interviewer)",
+    sends: "The written story, the question it answers, your target jobs and your field",
+  },
   storyGrade: {
     feature: "Grading a story",
     sends: "The written story, the story type and your target jobs",

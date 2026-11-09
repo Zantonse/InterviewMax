@@ -397,6 +397,7 @@ export const FIELD_STEPS: readonly Step[] = [
   "storyWrite",
   "storyTailor",
   "storyTell",
+  "storyAnalyze",
   "storyFind",
   "toughAnswer",
   "likelyQuestions",
