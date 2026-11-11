@@ -24,7 +24,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { canUseCurriculum } from "@/lib/curriculum/access";
 import { progress } from "@/lib/curriculum/content";
 import { removeJob } from "../actions";
-import { InterviewDateForm, JobOutcomeForm, LevelForm, PendingButton, PredictForm } from "../forms";
+import {
+  InterviewDateForm,
+  JobOutcomeForm,
+  LevelForm,
+  NextStageForm,
+  PendingButton,
+  PredictForm,
+} from "../forms";
 import { outcomeSummary } from "@/lib/jobs/outcome";
 import { roleTitles } from "@/lib/jobs/roles";
 import { RolesCard } from "./roles-card";
@@ -39,6 +46,7 @@ import { RESTORE_TAB } from "./tabs";
 import { TailoredIntroPanel } from "./tailored-intro";
 import { InterviewTimeline } from "./timeline";
 import { buildTimeline } from "@/lib/transcripts/timeline";
+import { STAGE_GUIDES, stageFor } from "@/lib/stages/stages";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
 
@@ -80,6 +88,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   const interviews = transcripts.filter((t) => t.targetJobId === job.id);
   // Interview timeline: this job's rounds in order, from its transcripts and any at the company.
   const timeline = buildTimeline(job, transcripts);
+  // The stage the brief, warm-up and practice prep for: the one set, else the timeline's guess.
+  const stage = stageFor(job.nextStage, timeline.next.id);
   // Case and technical questions real interviewers asked, which no story answers.
   // Plus common ones for their field (a guessed field reads this job's title instead).
   const caseField = field.guessed ? (guessField([job.title]) ?? field.id) : field.id;
@@ -161,7 +171,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           >
             <p className="min-w-0 flex-1 text-sm text-slate-600">
               <span className="font-semibold text-slate-900">Interview day?</span> Your one-page
-              brief has your questions, stories, numbers and gaps.
+              brief has your questions, stories, numbers and gaps
+              {stage ? `, shaped for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}` : ""}.
             </p>
             <Link
               href={`/jobs/${job.id}/brief`}
@@ -227,6 +238,23 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               About me; two weeks, your whole story bank.
             </p>
             <InterviewDateForm jobId={job.id} date={job.interviewDate} />
+          </section>
+          <section
+            id="next-stage"
+            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          >
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              Next stage
+            </h2>
+            <p className="mb-4 text-sm text-slate-600">
+              A recruiter screen and a hiring manager check different things. Your brief, warm-up
+              and practice put that stage&apos;s questions first.
+            </p>
+            <NextStageForm
+              jobId={job.id}
+              stage={job.nextStage}
+              guessed={stage?.guessed ? stage.id : null}
+            />
           </section>
           <section
             id="level"

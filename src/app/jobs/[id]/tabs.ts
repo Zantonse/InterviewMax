@@ -15,6 +15,7 @@ export const SECTION_TAB: Record<string, JobTabId> = {
   cases: "prep",
   practice: "prep",
   "interview-date": "overview",
+  "next-stage": "overview",
   outcome: "interviews",
   timeline: "interviews",
   "past-interviews": "interviews",

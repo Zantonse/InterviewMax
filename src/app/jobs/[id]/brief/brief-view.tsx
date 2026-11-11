@@ -25,7 +25,8 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
         {job.company ? ` at ${job.company}` : ""}
       </Link>
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink-700 print:mt-0">
-        Pre-interview brief{days !== null ? ` · interview ${whenLabel(days)}` : ""}
+        Pre-interview brief{brief.stage ? ` · ${brief.stage.label}` : ""}
+        {days !== null ? ` · interview ${whenLabel(days)}` : ""}
       </p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl print:text-xl">
         {job.title}
@@ -49,6 +50,38 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
       </p>
 
       <div className="mt-6 space-y-4 print:mt-3 print:space-y-3" data-testid="brief">
+        {brief.stage ? (
+          <Section title={`For the ${brief.stage.label.toLowerCase()}`} testId="brief-stage">
+            <p className="text-slate-700">{brief.stage.checks}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-800">
+              {brief.stage.tips.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-slate-500 print:hidden">
+              {brief.stage.guessed
+                ? "Guessed from your past interviews here. "
+                : "The questions below put this stage first. "}
+              <Link
+                href={`/jobs/${job.id}#next-stage`}
+                className="font-semibold text-ink-800 underline"
+              >
+                {brief.stage.guessed ? "Set the stage" : "Change the stage"}
+              </Link>
+            </p>
+          </Section>
+        ) : (
+          <p className="text-sm text-slate-600 print:hidden" data-testid="brief-no-stage">
+            Recruiter screen or hiring manager?{" "}
+            <Link
+              href={`/jobs/${job.id}#next-stage`}
+              className="font-semibold text-ink-800 underline"
+            >
+              Set the next stage
+            </Link>{" "}
+            and this brief puts what that stage asks first.
+          </p>
+        )}
         <Section title={`Why ${company}`} testId="brief-why">
           {brief.intro ? (
             <>

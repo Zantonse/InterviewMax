@@ -129,6 +129,20 @@ function Card({ card }: { card: WarmUpCard }) {
   const shell = "rounded-3xl bg-white p-6 shadow-sm sm:p-8";
   const label = "text-xs font-bold uppercase tracking-wide text-ink-700";
 
+  if (card.kind === "stage") {
+    return (
+      <div className={shell} data-testid="warm-up-card" data-kind="stage">
+        <p className={label}>{card.stage.label}</p>
+        <p className="mt-3 text-xl font-bold tracking-tight text-slate-900">{card.stage.checks}</p>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-lg leading-relaxed text-slate-800">
+          {card.stage.tips.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
   if (card.kind === "intro") {
     return (
       <div className={shell} data-testid="warm-up-card" data-kind="intro">
