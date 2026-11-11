@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { AddJobForm } from "@/app/jobs/forms";
 import { getAssessmentSafely } from "@/lib/assessment/data";
-import { gradeJourney } from "@/lib/assessment/journey";
+import { gradeJourney, knownProgress } from "@/lib/assessment/journey";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
@@ -213,7 +213,7 @@ async function loadPlan() {
     assessment === undefined
       ? undefined
       : assessment && "answers" in assessment
-        ? gradeJourney(assessment.answers, { hasJob: true }).level
+        ? gradeJourney(assessment.answers, knownProgress(stories, true)).level
         : null;
   return { plan, job, nextInterview, journey };
 }

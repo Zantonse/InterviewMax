@@ -1,4 +1,4 @@
-import { gradeJourney, type Assessment } from "@/lib/assessment/journey";
+import { gradeJourney, knownProgress, type Assessment } from "@/lib/assessment/journey";
 import { isLevel, levelLabel } from "@/lib/jobs/content";
 import { checklistItems, filledCount, type NumbersChecklist } from "@/lib/numbers/checklist";
 import type { PracticeItem } from "@/lib/practice/content";
@@ -793,7 +793,11 @@ function delivery(practice: PracticeLike[], transcripts: TranscriptLike[], point
   };
 }
 
-function readiness(assessment: Assessment | null | undefined, jobs: JobLike[]): CriterionResult {
+function readiness(
+  assessment: Assessment | null | undefined,
+  jobs: JobLike[],
+  stories: StoryLike[],
+): CriterionResult {
   const base = { id: "readiness" as const, label: "Readiness" };
   if (!assessment || !("answers" in assessment)) {
     return {
@@ -806,12 +810,12 @@ function readiness(assessment: Assessment | null | undefined, jobs: JobLike[]): 
       next: { label: "Take the journey check", href: "/assessment" },
     };
   }
-  const grade = gradeJourney(assessment.answers, { hasJob: jobs.length > 0 });
+  const grade = gradeJourney(assessment.answers, knownProgress(stories, jobs.length > 0));
   return {
     ...base,
     status: statusFor(grade.score, 65, 35),
     score: grade.score,
-    headline: `Journey grade ${grade.score} of 100: ${grade.level}.`,
+    headline: `Journey check: ${grade.level}.`,
     details: grade.gaps.map((g) => g.title),
     citations: [{ label: "Your journey check", href: "/assessment" }],
     next: { label: "Retake the journey check", href: "/assessment" },
@@ -917,7 +921,7 @@ export function assessProfile(input: ProfileInput): ProfileResult {
     fit(stories, jobs, points),
     patterns(transcripts, stories, points),
     delivery(practice, transcripts, points),
-    readiness(assessment, jobs),
+    readiness(assessment, jobs, stories),
   ];
   const tendencies = interviewTendencies(transcripts);
   tendencyPoints(tendencies, points);
