@@ -17,6 +17,21 @@ import {
 } from "@/lib/stories/grading";
 import type { ContentCheck, FitLevel, LevelMatch } from "@/lib/stories/fit";
 import type { StoryType } from "@/lib/stories/story-types";
+import {
+  LEVELS,
+  TOP_LEVEL,
+  levelForGrade,
+  levelScore,
+  usesLevels,
+  type StoryLevel,
+} from "@/lib/stories/levels";
+import { Ladder } from "./level-card";
+
+const LEVEL_STYLES: Record<StoryLevel, string> = {
+  1: "bg-amber-100 text-amber-900",
+  2: "bg-emerald-100 text-emerald-900",
+  3: "bg-emerald-700 text-white",
+};
 
 const TIER_STYLES: Record<Tier, string> = {
   not_yet: "bg-amber-100 text-amber-900",
@@ -30,8 +45,7 @@ const TIER_MEANINGS: Record<Tier, string> = {
     "A key part is missing or thin, or the result has no number from your answers. An interviewer would be left guessing.",
   good_enough:
     "Every part is there and an interviewer could follow it. Fine to use; the fixes make it stick.",
-  strong:
-    "Every part is solid or better and all the quick checks pass. Ready to say out loud.",
+  strong: "Every part is solid or better and all the quick checks pass. Ready to say out loud.",
 };
 
 const THINKING_STYLES: Record<ThinkingLevel, string> = {
@@ -40,8 +54,9 @@ const THINKING_STYLES: Record<ThinkingLevel, string> = {
   missing: "bg-amber-100 text-amber-900",
 };
 
-// "Show your thinking" under Actions: feedback only, never part of the score or the tier.
-function ThinkingNote({ thinking }: { thinking: ThinkingFeedback }) {
+// "Show your thinking" under Actions: never part of the score or the tier, but a behavioral story
+// needs it shown to reach Level 3 (levels.ts).
+function ThinkingNote({ thinking, levels }: { thinking: ThinkingFeedback; levels: boolean }) {
   const label = THINKING_LEVELS.find((l) => l.id === thinking.level)?.label;
   return (
     <div
@@ -55,7 +70,9 @@ function ThinkingNote({ thinking }: { thinking: ThinkingFeedback }) {
         >
           {label}
         </span>
-        <span className="text-xs text-slate-500">Feedback only, not part of the score</span>
+        <span className="text-xs text-slate-500">
+          {levels ? "Needed for Level 3" : "Feedback only, not part of the score"}
+        </span>
       </div>
       {thinking.note && <p className="text-sm text-slate-700">{thinking.note}</p>}
       {thinking.improve && (
@@ -91,7 +108,13 @@ export function EvaluationPanel({
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  const score = grade ? scoreOutOf100(grade.criteria, grade.tier) : undefined;
+  // Behavioral stories show a level (see levels.ts) where other stories show the tier.
+  const level = grade && usesLevels(storyType, content) ? levelForGrade(grade) : undefined;
+  const score = grade
+    ? level !== undefined
+      ? levelScore(grade)
+      : scoreOutOf100(grade.criteria, grade.tier)
+    : undefined;
 
   return (
     <section
@@ -110,13 +133,22 @@ export function EvaluationPanel({
           <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
             Evaluation
           </span>
-          {grade && (
+          {grade && level !== undefined ? (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${TIER_STYLES[grade.tier]}`}
-              data-testid="tier"
+              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[level]}`}
+              data-testid="level-pill"
             >
-              {TIERS.find((t) => t.id === grade.tier)?.label}
+              Level {level} of {TOP_LEVEL}
             </span>
+          ) : (
+            grade && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${TIER_STYLES[grade.tier]}`}
+                data-testid="tier"
+              >
+                {TIERS.find((t) => t.id === grade.tier)?.label}
+              </span>
+            )
           )}
           {score !== undefined && (
             <span className="text-sm font-semibold text-slate-600" data-testid="score-pill">
@@ -170,7 +202,7 @@ export function EvaluationPanel({
             </button>
           </div>
         ) : (
-          <Summary grade={grade} />
+          <Summary grade={grade} level={level} />
         )}
       </div>
 
@@ -181,7 +213,7 @@ export function EvaluationPanel({
           aria-label="Score"
           role="group"
         >
-          <ScoreHeadline score={score} />
+          <ScoreHeadline score={score} levels={level !== undefined} />
           <h3 className="mt-4 text-sm font-bold text-slate-700">
             How it scores, criterion by criterion
           </h3>
@@ -207,7 +239,7 @@ export function EvaluationPanel({
                     </p>
                   )}
                   {c.id === "actions" && grade?.thinking && (
-                    <ThinkingNote thinking={grade.thinking} />
+                    <ThinkingNote thinking={grade.thinking} levels={level !== undefined} />
                   )}
                 </li>
               );
@@ -290,7 +322,11 @@ export function EvaluationPanel({
 
         {grade && (
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-            <span>Strong needs every criterion solid or better and every quick check passing.</span>
+            <span>
+              {level !== undefined
+                ? "Level 3 needs every criterion solid or better, every quick check passing, and your thinking shown."
+                : "Strong needs every criterion solid or better and every quick check passing."}
+            </span>
             <button
               type="button"
               onClick={onGrade}
@@ -306,43 +342,73 @@ export function EvaluationPanel({
   );
 }
 
-function Summary({ grade }: { grade: StoryGrade }) {
+function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
   const current = TIERS.findIndex((t) => t.id === grade.tier);
   return (
     <div className="flex flex-col gap-3">
-      <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Tier">
-        {TIERS.map((t, i) => (
-          <li key={t.id} className="flex items-center gap-1">
-            {i > 0 && <span className="text-slate-300">→</span>}
-            <span
-              aria-current={i === current ? "step" : undefined}
-              className={
-                i === current
-                  ? "font-semibold text-slate-900"
-                  : i < current
-                    ? "text-ink-700"
-                    : "text-slate-400"
-              }
-            >
-              {t.label}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <details className="text-sm text-slate-600" data-testid="tier-legend">
-        <summary className="cursor-pointer font-medium text-ink-800">What the levels mean</summary>
-        <ul className="mt-1 flex flex-col gap-1">
-          {TIERS.map((t) => (
-            <li key={t.id}>
-              <span className="font-semibold text-slate-800">{t.label}:</span> {TIER_MEANINGS[t.id]}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-1">
-          Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
-          with why it got that score.
-        </p>
-      </details>
+      {level !== undefined ? (
+        <>
+          <Ladder level={level} />
+          <details className="text-sm text-slate-600" data-testid="level-legend">
+            <summary className="cursor-pointer font-medium text-ink-800">
+              What the levels mean
+            </summary>
+            <ul className="mt-1 flex flex-col gap-1">
+              {LEVELS.map((l) => (
+                <li key={l.level}>
+                  <span className="font-semibold text-slate-800">
+                    Level {l.level}, {l.name.toLowerCase()}:
+                  </span>{" "}
+                  {l.hears}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
+              with why it got that score.
+            </p>
+          </details>
+        </>
+      ) : (
+        <>
+          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Tier">
+            {TIERS.map((t, i) => (
+              <li key={t.id} className="flex items-center gap-1">
+                {i > 0 && <span className="text-slate-300">→</span>}
+                <span
+                  aria-current={i === current ? "step" : undefined}
+                  className={
+                    i === current
+                      ? "font-semibold text-slate-900"
+                      : i < current
+                        ? "text-ink-700"
+                        : "text-slate-400"
+                  }
+                >
+                  {t.label}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <details className="text-sm text-slate-600" data-testid="tier-legend">
+            <summary className="cursor-pointer font-medium text-ink-800">
+              What the levels mean
+            </summary>
+            <ul className="mt-1 flex flex-col gap-1">
+              {TIERS.map((t) => (
+                <li key={t.id}>
+                  <span className="font-semibold text-slate-800">{t.label}:</span>{" "}
+                  {TIER_MEANINGS[t.id]}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
+              with why it got that score.
+            </p>
+          </details>
+        </>
+      )}
       {grade.summary && <p className="text-slate-800">{grade.summary}</p>}
       {grade.strengths.length > 0 && (
         <div data-testid="strengths">
@@ -362,7 +428,9 @@ function Summary({ grade }: { grade: StoryGrade }) {
       {grade.fixes.length > 0 ? (
         <div data-testid="fixes" className="rounded-xl bg-amber-50 p-3">
           <p className="text-sm font-semibold text-amber-900">
-            {grade.tier === "strong" ? "To polish it further:" : "What to fix next:"}
+            {(level !== undefined ? level === TOP_LEVEL : grade.tier === "strong")
+              ? "To polish it further:"
+              : "What to fix next:"}
           </p>
           <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-slate-800">
             {grade.fixes.map((f, i) => (
@@ -371,7 +439,9 @@ function Summary({ grade }: { grade: StoryGrade }) {
           </ol>
         </div>
       ) : (
-        <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
+        (level === undefined || level === TOP_LEVEL) && (
+          <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
+        )
       )}
     </div>
   );
@@ -379,7 +449,7 @@ function Summary({ grade }: { grade: StoryGrade }) {
 
 // The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) with a bar,
 // and how it's worked out, so it isn't read as a pass mark.
-function ScoreHeadline({ score }: { score: number | undefined }) {
+function ScoreHeadline({ score, levels }: { score: number | undefined; levels: boolean }) {
   const tone =
     score === undefined
       ? "bg-slate-200"
@@ -403,16 +473,14 @@ function ScoreHeadline({ score }: { score: number | undefined }) {
           )}
         </p>
       </div>
-      <div
-        className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
-        role="presentation"
-      >
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="presentation">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${score ?? 0}%` }} />
       </div>
       <p className="text-xs text-slate-500">
-        Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100. The level
-        above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for
-        Good enough.
+        Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100.{" "}
+        {levels
+          ? "The level above decides how far the story has come, and caps this number: up to 69 at Level 1, 89 at Level 2."
+          : "The level above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for Good enough."}
       </p>
     </div>
   );

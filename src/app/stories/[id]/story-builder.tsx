@@ -45,6 +45,8 @@ import {
   analyzeDraft,
   askAboutWeakPart,
   askFollowUps,
+  dismissLevelUp,
+  levelUp,
   coachDraft,
   gradeDraft,
   pickHook,
@@ -71,6 +73,8 @@ import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
+import { LevelCard } from "./level-card";
+import { TOP_LEVEL, levelInfo, storyLevel, usesLevels } from "@/lib/stories/levels";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
 import { ExecPanel } from "./exec-panel";
@@ -82,6 +86,7 @@ type Busy =
   | "reading"
   | "inferring"
   | "probing"
+  | "leveling"
   | "writing"
   | "grading"
   | "coaching"
@@ -174,6 +179,9 @@ export function StoryBuilder({
 
   const questions = coreQuestions(storyType);
   const stage = builderStage(content, storyType);
+  // Story levels: below the top level, "Help me reach Level N" replaces "Ask me more".
+  const level = storyLevel(content, storyType);
+  const levelLeads = level !== undefined && level < TOP_LEVEL && gradeIsCurrent(content);
 
   // Runs a chain of actions, applying each result. Stops at the first error.
   function run(steps: { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> }[]) {
@@ -221,8 +229,22 @@ export function StoryBuilder({
         const next = builderStage(result.content, storyType);
         // A finished draft is shown with its score; a rough one stays beside the follow-ups.
         if (step.busy === "writing" && next !== "probe") setView("story");
-        if (step.busy === "probing" && nextFollowUpIndex(result.content) !== undefined) {
+        if (
+          (step.busy === "probing" || step.busy === "leveling") &&
+          nextFollowUpIndex(result.content) !== undefined
+        ) {
           setView("build");
+        }
+        // A level-up with nothing to ask goes straight on to the rewrite.
+        if (
+          step.busy === "leveling" &&
+          i === steps.length - 1 &&
+          result.content.levelUp &&
+          result.content.levelUp.reached === undefined &&
+          nextFollowUpIndex(result.content) === undefined
+        ) {
+          steps.push({ busy: "writing", action: () => writeDraft(sid()) });
+          continue;
         }
         // Only the last step queued picks what runs next.
         if (i < steps.length - 1) continue;
@@ -324,6 +346,11 @@ export function StoryBuilder({
 
   function strengthen() {
     run([{ busy: "probing", action: () => askFollowUps(sid()) }]);
+  }
+
+  // Story levels: questions aimed at the next level, then (once answered) the rewrite and grade.
+  function climb() {
+    run([{ busy: "leveling", action: () => levelUp(sid()) }]);
   }
 
   function submitUpload(formData: FormData) {
@@ -498,11 +525,15 @@ export function StoryBuilder({
                     {opensPractice && <CoachLine>Added from your practice answers:</CoachLine>}
                     {opensRound && !fromPractice && (
                       <CoachLine>
-                        {round === 1
-                          ? content.draft && storyType?.format !== "intro"
-                            ? "I've written a rough draft. A few quick questions to make it stronger, easiest first:"
-                            : "Thanks. A few quick follow-ups, easiest first:"
-                          : "Good. A few more, so the numbers and examples carry it:"}
+                        {round === content.levelUp?.round
+                          ? `To reach Level ${content.levelUp.target}, ${levelInfo(content.levelUp.target).name.toLowerCase()}: ${levelInfo(content.levelUp.target).lesson} A few questions about just that:`
+                          : round === 1
+                            ? content.draft && usesLevels(storyType, content)
+                              ? "I've written a rough draft. That's Level 1: it happened. A few quick questions to get it to Level 2, so it proves something, easiest first:"
+                              : content.draft && storyType?.format !== "intro"
+                                ? "I've written a rough draft. A few quick questions to make it stronger, easiest first:"
+                                : "Thanks. A few quick follow-ups, easiest first:"
+                            : "Good. A few more, so the numbers and examples carry it:"}
                       </CoachLine>
                     )}
                     <Exchange
@@ -630,13 +661,19 @@ export function StoryBuilder({
                 />
               ) : stage === "drafted" ? (
                 <ActionLine
-                  text="Your story is written."
+                  text={
+                    level !== undefined && gradeIsCurrent(content)
+                      ? `Your story is at Level ${level}: ${levelInfo(level).name.toLowerCase()}.`
+                      : "Your story is written."
+                  }
                   button="See story & score"
                   onClick={() => setView("story")}
                   extra={
-                    canStrengthen(content) && !content.nothingMoreToAsk
-                      ? { button: "Ask me more to make it stronger", onClick: strengthen }
-                      : undefined
+                    levelLeads
+                      ? { button: `Help me reach Level ${(level ?? 1) + 1}`, onClick: climb }
+                      : canStrengthen(content) && !content.nothingMoreToAsk
+                        ? { button: "Ask me more to make it stronger", onClick: strengthen }
+                        : undefined
                   }
                   secondary
                 />
@@ -743,7 +780,7 @@ export function StoryBuilder({
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2">
-                    {canStrengthen(content) && !content.nothingMoreToAsk && (
+                    {canStrengthen(content) && !content.nothingMoreToAsk && !levelLeads && (
                       <button
                         type="button"
                         onClick={strengthen}
@@ -778,6 +815,15 @@ export function StoryBuilder({
                 </div>
               )}
             </StoryPanel>
+            <LevelCard
+              content={content}
+              storyType={storyType}
+              busy={busy === "leveling" ? "asking" : busy === "writing" && content.levelUp && content.levelUp.reached === undefined ? "writing" : null}
+              disabled={busy !== null}
+              onLevelUp={climb}
+              onDismiss={() => run([{ busy: "saving", action: () => dismissLevelUp(sid()) }])}
+              onShowQuestions={() => setView("build")}
+            />
             <TellingPanel
               content={content}
               storyType={storyType}

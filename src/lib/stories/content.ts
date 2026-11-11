@@ -5,6 +5,7 @@ import { parseStoredGrade, type StoryGrade } from "./grading";
 import { INTRO_PARTS, coreQuestions, type StoryType } from "./story-types";
 import { parseExecVersion, type ExecVersion } from "@/lib/exec/content";
 import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
+import { parseLevelUp, type LevelUp, type StoryLevel } from "./levels";
 
 // What the builder keeps in stories.content (jsonb).
 export type FollowUp = {
@@ -186,6 +187,10 @@ export type StoryContent = {
   // "Why it works": what each paragraph gives the interviewer (see src/lib/analysis). Stale once the
   // draft is rewritten.
   analysis?: StoryAnalysis;
+  // Behavioral stories: a level-up the user started (see levels.ts), kept for the before and after.
+  levelUp?: LevelUp;
+  // Behavioral stories: the highest level the story has reached, so reaching a level is counted once.
+  levelReached?: StoryLevel;
 };
 
 // Where the user is in the builder, derived from what has been saved.
@@ -487,6 +492,12 @@ export function parseContent(raw: unknown): StoryContent {
 
   const analysis = content.draft ? parseAnalysis(raw.analysis, content.draft.parts) : undefined;
   if (analysis) content.analysis = analysis;
+
+  const levelUp = parseLevelUp(raw.levelUp);
+  if (levelUp) content.levelUp = levelUp;
+  if (raw.levelReached === 1 || raw.levelReached === 2 || raw.levelReached === 3) {
+    content.levelReached = raw.levelReached;
+  }
 
   return content;
 }
