@@ -4,6 +4,7 @@ import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
+import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
@@ -31,7 +32,7 @@ const CHECKLIST = `- Principle: how they think about this kind of problem, the m
 - Actions: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
 - Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
-- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one.
+- Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one. Strong answers give the before and the after ("from 62% to 91%"), so if they gave only one, ask for the other. If the result is there but nothing says how far the work reached (adopted by other teams, reused, made into a process or policy), ask once whether it spread: reach is what shows senior scope.
 - Reflection: a specific lesson or something they'd do differently.`;
 
 const GAPS = [
@@ -125,8 +126,8 @@ Write these parts:
 - principle: 1 sentence, at most 2, said before the story starts: the mental model, principle or way they think about this kind of problem, in their own words (e.g. "The way I see it, a launch date is a promise to the customer, so scope is what moves."). The story then shows it in action, so the actions should visibly follow from it. Write it only from a principle they stated in their answers; if they gave none, leave it as an empty string "". Never make one up from the story.
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
-- result: 1 to 2 sentences on the outcome, with their number.
+- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"). If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
 - reflection: 1 to 2 sentences on what they learned or would do differently. When there's a principle, don't restate it; it can close the loop in a few words (whether the story confirmed or changed how they think).
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
@@ -244,15 +245,21 @@ export function parsePrefill(text: string): Record<string, string> {
 }
 
 // With target jobs or a role they want, the follow-ups are also aimed at what those need.
+// A level-up round (see levels.ts) replaces the usual round instructions with questions aimed at
+// what stands between the story and the next level.
 export function probeSystem(
   storyType: StoryType | undefined,
   round = 1,
   targets?: BuilderTargets,
+  levelUp?: { target: StoryLevel; gaps: LevelGap[] },
 ): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
   const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
-  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${roundInstructions(round, storyType)}`;
+  const round_ = levelUp
+    ? levelUpInstructions(levelUp.target, levelUp.gaps, round)
+    : roundInstructions(round, storyType);
+  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${round_}`;
 }
 
 // "Tell me about yourself": one question aimed at the one part the grader scored weakest (see

@@ -219,7 +219,7 @@ describe("a question's steps", () => {
 describe("timing", () => {
   it("uses the recorded time when there is one", () => {
     const t = timingFor({ question: "q", answer: "word ".repeat(200), seconds: 95 }, "impact");
-    expect(t).toMatchObject({ seconds: 95, measured: true, words: 200, min: 72, max: 120 });
+    expect(t).toMatchObject({ seconds: 95, measured: true, words: 200, min: 60, max: 120 });
     expect(timingVerdict(t)).toBe("ok");
     expect(timingNote(t)).toContain("right in range");
   });

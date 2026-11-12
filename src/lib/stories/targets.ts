@@ -165,6 +165,22 @@ export function targetRules(storyType: StoryType | undefined): string {
 }
 
 // A one-line nudge under the first scripted question, so they pick a story that fits. Code only.
+// Entry-level candidates get the opening question in three short prompts instead of one open box:
+// simulated junior users stalled on "tell it your way" (0 of 4 finished a story, 2026-11-08).
+export const GUIDED_START_PROMPTS = [
+  "What was going on?",
+  "What did you do?",
+  "What happened in the end?",
+] as const;
+
+export function guidedStart(
+  targets: BuilderTargets | undefined,
+  storyType: StoryType | undefined,
+): boolean {
+  if (!hasTargets(targets) || !storyType || storyType.format === "intro") return false;
+  return topLevel(targets.jobs) === "entry";
+}
+
 export function openingHint(
   targets: BuilderTargets | undefined,
   storyType: StoryType | undefined,

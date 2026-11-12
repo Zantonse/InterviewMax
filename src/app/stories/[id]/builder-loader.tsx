@@ -5,6 +5,7 @@ import { startStory } from "@/app/stories/new/actions";
 import { type NextStory, nextStoryToBuild } from "@/lib/guide/journey";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
 import { jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
@@ -30,7 +31,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   const intro = story.storyType === REQUIRED_STORY_TYPE_ID;
   // Background: the resume and jobs plan (what to build next), and for "Tell me about yourself" the
   // target jobs. Optional, so a failure to load them never blocks the builder.
-  const [prep, jobs, stories, checklist, targets, finder, field] = await Promise.all([
+  const [prep, jobs, stories, checklist, targets, finder, field, execMode] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
     intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
@@ -38,6 +39,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
     loadBuilderTargets(getStoryType(story.storyType)),
     intro ? null : getStoryFinder().catch(() => null),
     getUserFieldSafely(),
+    intro ? false : getExecModeSafely(),
   ]);
   // Story finder moments for this story type become memory joggers on the opening question.
   const moments = (finder?.moments ?? [])
@@ -60,6 +62,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       hasResume={resume}
       moments={moments}
       field={field.id}
+      execMode={execMode}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={

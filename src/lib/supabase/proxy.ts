@@ -3,8 +3,17 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseEnv } from "./env";
 
 // Paths a signed-out visitor may open: the public homepage, sign-in, the policies, and the page
-// shown after an account is deleted.
-const PUBLIC_PATHS = ["/welcome", "/login", "/auth", "/privacy", "/ai-usage", "/account-deleted"];
+// shown after an account is deleted. /api/sims is the preview-only persona sign-in, which checks
+// its own secret and answers 404 everywhere else (src/lib/sims/access.ts).
+const PUBLIC_PATHS = [
+  "/welcome",
+  "/login",
+  "/auth",
+  "/privacy",
+  "/ai-usage",
+  "/account-deleted",
+  "/api/sims",
+];
 
 export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

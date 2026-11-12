@@ -47,10 +47,12 @@ import {
 } from "./prompts";
 import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
+import { dropRepeats } from "./repeats";
 import type { BuilderTargets } from "./targets";
 import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryNumber } from "@/lib/numbers/checklist";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
+import { MAX_LEVEL_GAPS, type LevelGap, type StoryLevel } from "./levels";
 
 // Call one: assess the answers so far and return follow-up questions aimed at the gaps. Round 1
 // returns 3–5; round 2 returns up to 3, or none when the answers are already strong.
@@ -65,13 +67,18 @@ export async function probeStory(
   resume?: string,
   numbers: StoryNumber[] = [],
   targets?: BuilderTargets,
+  levelUp?: { target: StoryLevel; gaps: LevelGap[] },
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    probeSystem(storyType, round, targets),
+    probeSystem(storyType, round, targets, levelUp),
     probeMessages(content, storyType, past, resume, numbers, targets),
   );
-  return parseProbe(text, round);
+  const asked = parseProbe(text, round);
+  const fresh = dropRepeats(asked, (content.followUps ?? []).map((f) => f.question));
+  // The first round must ask something, even if the model only repeated itself.
+  if (levelUp) return fresh.slice(0, MAX_LEVEL_GAPS);
+  return fresh.length === 0 && round <= 1 ? asked.slice(0, 1) : fresh;
 }
 
 // "Tell me about yourself": one question aimed at the part the grader scored weakest. Returns at

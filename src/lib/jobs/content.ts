@@ -3,7 +3,8 @@ import { STORY_TYPES, REQUIRED_STORY_TYPE_ID, type StoryTypeId } from "@/lib/sto
 // Target jobs (PRD, step 1): the user's resume, the jobs they're going for, and one model call's read
 // of what the jobs share, where each differs, and which stories to build first.
 
-export const MAX_JOBS = 5;
+// Job searches run to a dozen companies at once (tester data, Oct 18: 11 companies, several rounds each).
+export const MAX_JOBS = 15;
 export const MAX_TITLE_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 15000;
 // A posting shorter than this is usually just a title; ask for the full text.

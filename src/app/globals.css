@@ -126,3 +126,136 @@ body {
   border-color: var(--color-ink-800);
   color: var(--color-slate-900);
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Motion. Small and quick: things fade up as they arrive, menus grow from what opened them,
+   buttons give under a press, and a story pulses once when it's written. Nothing bounces.
+   Exits are about 20% shorter than entrances. All of it switches off with "reduce motion".
+   --------------------------------------------------------------------------------------------- */
+@theme {
+  /* Ease-out for things arriving, ease-in-out for things moving from one place to another. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --animate-enter: enter 220ms var(--ease-out) both;
+  --animate-pop: pop 180ms var(--ease-out) both;
+  --animate-fade: fade 180ms var(--ease-out) both;
+  --animate-swap: swap 180ms var(--ease-out) both;
+  --animate-success: success 700ms var(--ease-out) 1;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.95;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  /* A label or icon swapping for another (Copy to Copied): crossfade through a slight blur. */
+  @keyframes swap {
+    from {
+      opacity: 0;
+      filter: blur(2px);
+    }
+  }
+  /* One ring that spreads and fades, to say "done". */
+  @keyframes success {
+    from {
+      outline: 2px solid color-mix(in srgb, var(--color-emerald-500) 55%, transparent);
+      outline-offset: 0;
+    }
+    to {
+      outline: 2px solid transparent;
+      outline-offset: 10px;
+    }
+  }
+}
+
+@layer base {
+  /* Buttons give a little under a press. Hover colours ease instead of snapping. */
+  button,
+  summary,
+  a[class*="rounded-xl"],
+  a[class*="rounded-full"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, scale, translate;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+  button:not(:disabled):active,
+  summary:active,
+  a[class*="rounded-xl"]:active,
+  a[class*="rounded-full"]:active {
+    scale: 0.97;
+  }
+
+  /* An opened section's content fades up from its heading. */
+  details[open] > :not(summary) {
+    animation: var(--animate-enter);
+  }
+}
+
+/* Lists marked data-stagger bring their rows in one after another, 30ms apart (capped, so a long
+   list never makes anyone wait). */
+[data-stagger] > * {
+  animation: var(--animate-enter);
+}
+[data-stagger] > :nth-child(2) { animation-delay: 30ms; }
+[data-stagger] > :nth-child(3) { animation-delay: 60ms; }
+[data-stagger] > :nth-child(4) { animation-delay: 90ms; }
+[data-stagger] > :nth-child(5) { animation-delay: 120ms; }
+[data-stagger] > :nth-child(6) { animation-delay: 150ms; }
+[data-stagger] > :nth-child(7) { animation-delay: 180ms; }
+[data-stagger] > :nth-child(n + 8) { animation-delay: 210ms; }
+
+/* The sidebar's group arrows turn, and a group's links fade in as it opens. */
+[data-nav-chevron] {
+  transition: rotate 200ms var(--ease-in-out), transform 200ms var(--ease-in-out);
+}
+[data-nav-children] {
+  animation: var(--animate-fade);
+}
+
+/* The phone menu slides in (240ms) and back out a little faster (190ms), instead of vanishing. */
+#app-nav {
+  transition:
+    translate 190ms var(--ease-in-out),
+    visibility 0s linear 190ms;
+}
+#app-nav[data-open] {
+  transition:
+    translate 240ms var(--ease-out),
+    visibility 0s;
+}
+@media (width >= 64rem) {
+  #app-nav {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  button:not(:disabled):active,
+  summary:active,
+  a[class*="rounded-xl"]:active,
+  a[class*="rounded-full"]:active {
+    scale: none;
+  }
+}

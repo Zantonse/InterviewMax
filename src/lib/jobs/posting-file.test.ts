@@ -5,6 +5,7 @@ import {
   parsePostingExtract,
   parsePostingScreenshot,
   postingExtractMessages,
+  looksLikePostingText,
   postingFileKind,
   postingScreenshotMessages,
   savedPageHtml,
@@ -157,5 +158,18 @@ describe("parsePostingScreenshot", () => {
       "text",
     ]);
     expect(POSTING_SCREENSHOT_SYSTEM).toContain("copy only text you can actually see");
+  });
+});
+
+describe("looksLikePostingText", () => {
+  it("spots a pasted posting", () => {
+    expect(looksLikePostingText("Northbeam Data — Sales Engineer.\nPartner with Account Executives")).toBe(true);
+    expect(looksLikePostingText("We're looking for a Principal Sales Engineer to lead technical evaluations")).toBe(true);
+  });
+  it("leaves links and short text alone", () => {
+    expect(looksLikePostingText("https://jobs.lever.co/acme/123")).toBe(false);
+    expect(looksLikePostingText("  www.acme.com/jobs/1 ")).toBe(false);
+    expect(looksLikePostingText("acme sales engineer")).toBe(false);
+    expect(looksLikePostingText("")).toBe(false);
   });
 });

@@ -43,6 +43,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Also answers (other questions a written story can answer)",
     sends: "The written story, the question it was built for, the questions it's checked against (likely questions for your target jobs, questions from your past interviews and ones asked recently at those companies) and your field",
   },
+  storyExec: {
+    feature: "Exec version (Exec mode in Settings): a 30-second, answer-first version of a written story",
+    sends: "The written story, the question it was built for, your answers behind it and your field",
+  },
   toughAnswer: {
     feature: "Tough questions",
     sends: "Your answers about that question and, if you pick one, that job’s posting, and your field",
@@ -50,6 +54,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   storyTell: {
     feature: "How to tell it (storytelling coach)",
     sends: "The written story, your answers behind it, its thinking feedback, your target jobs and your field",
+  },
+  storyAnalyze: {
+    feature: "Why it works (what each part of a story gives the interviewer)",
+    sends: "The written story, the question it answers, your target jobs and your field",
   },
   storyGrade: {
     feature: "Grading a story",
@@ -129,6 +137,7 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
 
 const VENDORS: Record<string, string> = {
   anthropic: "Anthropic",
+  deepseek: "DeepSeek",
   openai: "OpenAI",
   google: "Google",
   "meta-llama": "Meta",

@@ -1,8 +1,11 @@
 import { type RoleMap, parseRoleMap, roleAnswerText } from "@/lib/roles/role-map";
+import { parseAnalysis, type StoryAnalysis } from "@/lib/analysis/content";
 import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
 import { INTRO_PARTS, coreQuestions, type StoryType } from "./story-types";
+import { parseExecVersion, type ExecVersion } from "@/lib/exec/content";
 import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
+import { parseLevelUp, type LevelUp, type StoryLevel } from "./levels";
 
 // What the builder keeps in stories.content (jsonb).
 export type FollowUp = {
@@ -159,6 +162,9 @@ export type StoryContent = {
   // "Also answers": the other interview questions the written story can answer (see
   // src/lib/reuse). Stale once the draft is rewritten.
   alsoAnswers?: StoryAlsoAnswers;
+  // "Exec version": the 30-second, answer-first version of the written story (see src/lib/exec).
+  // Stale once the draft is rewritten.
+  exec?: ExecVersion;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -178,6 +184,13 @@ export type StoryContent = {
   grade?: StoryGrade;
   // "How to tell it" coaching of the draft (see src/lib/telling). Stale once the draft is rewritten.
   telling?: StoryTelling;
+  // "Why it works": what each paragraph gives the interviewer (see src/lib/analysis). Stale once the
+  // draft is rewritten.
+  analysis?: StoryAnalysis;
+  // Behavioral stories: a level-up the user started (see levels.ts), kept for the before and after.
+  levelUp?: LevelUp;
+  // Behavioral stories: the highest level the story has reached, so reaching a level is counted once.
+  levelReached?: StoryLevel;
 };
 
 // Where the user is in the builder, derived from what has been saved.
@@ -430,6 +443,9 @@ export function parseContent(raw: unknown): StoryContent {
   const alsoAnswers = parseAlsoAnswers(raw.alsoAnswers);
   if (alsoAnswers) content.alsoAnswers = alsoAnswers;
 
+  const exec = parseExecVersion(raw.exec);
+  if (exec) content.exec = exec;
+
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {
       moment: raw.seed.moment,
@@ -473,6 +489,15 @@ export function parseContent(raw: unknown): StoryContent {
 
   const telling = parseTelling(raw.telling);
   if (telling) content.telling = telling;
+
+  const analysis = content.draft ? parseAnalysis(raw.analysis, content.draft.parts) : undefined;
+  if (analysis) content.analysis = analysis;
+
+  const levelUp = parseLevelUp(raw.levelUp);
+  if (levelUp) content.levelUp = levelUp;
+  if (raw.levelReached === 1 || raw.levelReached === 2 || raw.levelReached === 3) {
+    content.levelReached = raw.levelReached;
+  }
 
   return content;
 }

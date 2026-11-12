@@ -397,6 +397,7 @@ export const FIELD_STEPS: readonly Step[] = [
   "storyWrite",
   "storyTailor",
   "storyTell",
+  "storyAnalyze",
   "storyFind",
   "toughAnswer",
   "likelyQuestions",
@@ -407,6 +408,7 @@ export const FIELD_STEPS: readonly Step[] = [
   "casePractice",
   "profileSummary",
   "storyQuestions",
+  "storyExec",
 ];
 
 // The line added to a field step's system prompt, or "" when it adds nothing (general).

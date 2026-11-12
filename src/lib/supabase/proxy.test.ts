@@ -15,6 +15,8 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/privacy")).toBe(true);
     expect(isPublicPath("/ai-usage")).toBe(true);
     expect(isPublicPath("/account-deleted")).toBe(true);
+    expect(isPublicPath("/api/sims/session")).toBe(true);
+    expect(isPublicPath("/api/simsx")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);
   });
 

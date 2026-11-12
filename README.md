@@ -2,7 +2,7 @@
 
 A guided path that turns an experienced candidate's own work history into metric-backed behavioral interview stories aimed at the jobs they're targeting.
 
-Live: [interview-max-mauve.vercel.app](https://interview-max-mauve.vercel.app). Product spec: [PRD v0.3](https://claude.ai/code/artifact/3178b97a-ea69-472a-b407-c4f511895d27). What shipped and why: [docs/build-diary.md](docs/build-diary.md).
+Live: [interview-max-self.vercel.app](https://interview-max-self.vercel.app). Product spec: [PRD v0.3](https://claude.ai/code/artifact/3178b97a-ea69-472a-b407-c4f511895d27). What shipped and why: [docs/build-diary.md](docs/build-diary.md).
 
 Stack: Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres, email sign-in, row-level security), Vercel, Vitest and Playwright. Model calls go through our own thin layer over OpenRouter, the Claude API and the OpenAI API.
 
@@ -97,7 +97,7 @@ Code calls `generateForStep("storyWrite", { system, messages })` from `src/lib/a
 
 | Provider | Key | Notes |
 | --- | --- | --- |
-| OpenRouter | `OPENROUTER_API_KEY` | Every step for now: Claude and GPT by OpenRouter slug, e.g. `anthropic/claude-opus-5.5` |
+| OpenRouter | `OPENROUTER_API_KEY` | Every step for now: DeepSeek, GPT and Whisper by OpenRouter slug, e.g. `deepseek/deepseek-v4.1-flash` |
 | Claude API | `ANTHROPIC_API_KEY` | Optional; switch a step's provider to `anthropic` to use it |
 | OpenAI API | `OPENAI_API_KEY` | Optional; switch a step's provider to `openai` to use it |
 

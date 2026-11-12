@@ -8,6 +8,7 @@ import {
   SCORE_LABELS,
   TIERS,
   gradingCriteria,
+  scoreOutOf100,
   THINKING_LEVELS,
   type StoryGrade,
   type ThinkingFeedback,
@@ -16,6 +17,20 @@ import {
 } from "@/lib/stories/grading";
 import type { ContentCheck, FitLevel, LevelMatch } from "@/lib/stories/fit";
 import type { StoryType } from "@/lib/stories/story-types";
+import {
+  LEVELS,
+  TOP_LEVEL,
+  levelForGrade,
+  levelScore,
+  usesLevels,
+  type StoryLevel,
+} from "@/lib/stories/levels";
+
+const LEVEL_STYLES: Record<StoryLevel, string> = {
+  1: "bg-amber-100 text-amber-900",
+  2: "bg-emerald-100 text-emerald-900",
+  3: "bg-emerald-700 text-white",
+};
 
 const TIER_STYLES: Record<Tier, string> = {
   not_yet: "bg-amber-100 text-amber-900",
@@ -29,8 +44,7 @@ const TIER_MEANINGS: Record<Tier, string> = {
     "A key part is missing or thin, or the result has no number from your answers. An interviewer would be left guessing.",
   good_enough:
     "Every part is there and an interviewer could follow it. Fine to use; the fixes make it stick.",
-  strong:
-    "Every part is solid or better and all the quick checks pass. Ready to say out loud.",
+  strong: "Every part is solid or better and all the quick checks pass. Ready to say out loud.",
 };
 
 const THINKING_STYLES: Record<ThinkingLevel, string> = {
@@ -39,8 +53,9 @@ const THINKING_STYLES: Record<ThinkingLevel, string> = {
   missing: "bg-amber-100 text-amber-900",
 };
 
-// "Show your thinking" under Actions: feedback only, never part of the score or the tier.
-function ThinkingNote({ thinking }: { thinking: ThinkingFeedback }) {
+// "Show your thinking" under Actions: never part of the score or the tier, but a behavioral story
+// needs it shown to reach Level 3 (levels.ts).
+function ThinkingNote({ thinking, levels }: { thinking: ThinkingFeedback; levels: boolean }) {
   const label = THINKING_LEVELS.find((l) => l.id === thinking.level)?.label;
   return (
     <div
@@ -54,7 +69,9 @@ function ThinkingNote({ thinking }: { thinking: ThinkingFeedback }) {
         >
           {label}
         </span>
-        <span className="text-xs text-slate-500">Feedback only, not part of the score</span>
+        <span className="text-xs text-slate-500">
+          {levels ? "Needed for Level 3" : "Feedback only, not part of the score"}
+        </span>
       </div>
       {thinking.note && <p className="text-sm text-slate-700">{thinking.note}</p>}
       {thinking.improve && (
@@ -90,8 +107,12 @@ export function EvaluationPanel({
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  const average = grade?.criteria.length
-    ? grade.criteria.reduce((sum, c) => sum + c.score, 0) / grade.criteria.length
+  // Behavioral stories show a level (see levels.ts) where other stories show the tier.
+  const level = grade && usesLevels(storyType, content) ? levelForGrade(grade) : undefined;
+  const score = grade
+    ? level !== undefined
+      ? levelScore(grade)
+      : scoreOutOf100(grade.criteria, grade.tier)
     : undefined;
 
   return (
@@ -111,17 +132,26 @@ export function EvaluationPanel({
           <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
             Evaluation
           </span>
-          {grade && (
+          {grade && level !== undefined ? (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${TIER_STYLES[grade.tier]}`}
-              data-testid="tier"
+              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[level]}`}
+              data-testid="level-pill"
             >
-              {TIERS.find((t) => t.id === grade.tier)?.label}
+              Level {level} of {TOP_LEVEL}
             </span>
+          ) : (
+            grade && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${TIER_STYLES[grade.tier]}`}
+                data-testid="tier"
+              >
+                {TIERS.find((t) => t.id === grade.tier)?.label}
+              </span>
+            )
           )}
-          {average !== undefined && (
-            <span className="text-sm text-slate-500" data-testid="average">
-              {average.toFixed(1)} / 4
+          {score !== undefined && (
+            <span className="text-sm font-semibold text-slate-600" data-testid="score-pill">
+              {score}/100
             </span>
           )}
         </span>
@@ -171,88 +201,68 @@ export function EvaluationPanel({
             </button>
           </div>
         ) : (
-          <Summary grade={grade} />
+          <Summary grade={grade} level={level} />
         )}
       </div>
 
       <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
-        {grade && <ContentFit content={grade.content} />}
-
-        <div>
-          <h3 className="text-sm font-bold text-slate-700">
-            How it scores, criterion by criterion
+        <div
+          className="rounded-2xl p-4 ring-1 ring-ink-800/15 sm:p-5"
+          data-testid="score-section"
+          aria-label="Score"
+          role="group"
+        >
+          <ScoreHeadline score={score} levels={level !== undefined} />
+          <h3 className="mt-4 text-sm font-bold text-slate-700">
+            Criteria
           </h3>
-          <ul className="mt-2 flex flex-col gap-3" data-testid="criteria">
+          <ul className="mt-2 flex flex-col gap-1" data-testid="criteria" data-stagger>
             {criteria.map((c) => {
               const scored = grade?.criteria.find((s) => s.id === c.id);
+              // Thin or missing criteria open by default: they hold the next fix. The rest are
+              // one line each, a bar and a word, and open to the grader's reasoning.
+              const weak = scored !== undefined && scored.score <= 2;
+              const thinking = c.id === "actions" ? grade?.thinking : undefined;
+              const needsThinking = level !== undefined && thinking && thinking.level !== "shown";
               return (
-                <li
-                  key={c.id}
-                  className="flex flex-col gap-1.5 rounded-2xl bg-slate-50 p-3"
-                  data-testid={`criterion-${c.id}`}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <span className="font-semibold text-slate-800">{c.label}</span>
-                    {scored && <ScoreBar score={scored.score} />}
-                  </div>
-                  <p className="text-xs text-slate-500">{c.question}</p>
-                  {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
-                  {scored?.improve && (
-                    <p className="text-sm text-ink-900">
-                      <span className="font-semibold">To raise it: </span>
-                      {scored.improve}
-                    </p>
-                  )}
-                  {c.id === "actions" && grade?.thinking && (
-                    <ThinkingNote thinking={grade.thinking} />
-                  )}
+                <li key={c.id} data-testid={`criterion-${c.id}`}>
+                  <details
+                    className="group rounded-xl open:bg-slate-50"
+                    open={weak || Boolean(needsThinking)}
+                  >
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-2 py-1.5 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                      <span className="flex items-center gap-1.5 font-medium text-slate-800">
+                        <span
+                          aria-hidden="true"
+                          className="text-[10px] text-slate-400 transition-transform group-open:rotate-90"
+                        >
+                          ▶
+                        </span>
+                        {c.label}
+                      </span>
+                      {scored && <ScoreBar score={scored.score} />}
+                    </summary>
+                    <div className="flex flex-col gap-1.5 px-2 pb-2.5 pl-6">
+                      <p className="text-xs text-slate-500">{c.question}</p>
+                      {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
+                      {scored?.improve && (
+                        <p className="text-sm text-ink-900">
+                          <span className="font-semibold">To raise it: </span>
+                          {scored.improve}
+                        </p>
+                      )}
+                      {thinking && <ThinkingNote thinking={thinking} levels={level !== undefined} />}
+                    </div>
+                  </details>
                 </li>
               );
             })}
           </ul>
         </div>
 
-        <div>
-          <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
-          <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks">
-            {CHECKS.filter(
-              // Some checks apply to one format only ("A few key figures" is for About me), and
-              // "In your own words" only to drafts written since it was measured.
-              (k) =>
-                (k.id !== "focus" && k.id !== "own_words") ||
-                (grade ? grade.checks.some((c) => c.id === k.id) : k.id === "focus"),
-            ).map((k) => {
-              const result = grade?.checks.find((c) => c.id === k.id);
-              return (
-                <li key={k.id} className="flex gap-2 text-sm">
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                      !result
-                        ? "bg-slate-100 text-slate-400"
-                        : result.pass
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-amber-100 text-amber-900"
-                    }`}
-                  >
-                    {!result ? "·" : result.pass ? "✓" : "!"}
-                  </span>
-                  <span>
-                    <span className="font-medium text-slate-800">{k.label}</span>
-                    {result && (
-                      <>
-                        <span className="sr-only">
-                          {result.pass ? " (passes)" : " (needs work)"}
-                        </span>
-                        <span className="text-slate-500"> {result.detail}</span>
-                      </>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {grade && <ContentFit content={grade.content} />}
+
+        <QuickChecks grade={grade} />
 
         {grade?.bankRole && (
           <div>
@@ -285,7 +295,11 @@ export function EvaluationPanel({
 
         {grade && (
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-            <span>Strong needs every criterion solid or better and every quick check passing.</span>
+            <span>
+              {level !== undefined
+                ? "Level 3 needs every criterion solid or better, every quick check passing, and your thinking shown."
+                : "Strong needs every criterion solid or better and every quick check passing."}
+            </span>
             <button
               type="button"
               onClick={onGrade}
@@ -301,43 +315,72 @@ export function EvaluationPanel({
   );
 }
 
-function Summary({ grade }: { grade: StoryGrade }) {
+function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
   const current = TIERS.findIndex((t) => t.id === grade.tier);
   return (
     <div className="flex flex-col gap-3">
-      <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Tier">
-        {TIERS.map((t, i) => (
-          <li key={t.id} className="flex items-center gap-1">
-            {i > 0 && <span className="text-slate-300">→</span>}
-            <span
-              aria-current={i === current ? "step" : undefined}
-              className={
-                i === current
-                  ? "font-semibold text-slate-900"
-                  : i < current
-                    ? "text-ink-700"
-                    : "text-slate-400"
-              }
-            >
-              {t.label}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <details className="text-sm text-slate-600" data-testid="tier-legend">
-        <summary className="cursor-pointer font-medium text-ink-800">What the levels mean</summary>
-        <ul className="mt-1 flex flex-col gap-1">
-          {TIERS.map((t) => (
-            <li key={t.id}>
-              <span className="font-semibold text-slate-800">{t.label}:</span> {TIER_MEANINGS[t.id]}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-1">
-          Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
-          with why it got that score.
-        </p>
-      </details>
+      {level !== undefined ? (
+        <>
+          <details className="text-sm text-slate-600" data-testid="level-legend">
+            <summary className="cursor-pointer font-medium text-ink-800">
+              What the levels mean
+            </summary>
+            <ul className="mt-1 flex flex-col gap-1">
+              {LEVELS.map((l) => (
+                <li key={l.level}>
+                  <span className="font-semibold text-slate-800">
+                    Level {l.level}, {l.name.toLowerCase()}:
+                  </span>{" "}
+                  {l.hears}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
+              with why it got that score.
+            </p>
+          </details>
+        </>
+      ) : (
+        <>
+          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Tier">
+            {TIERS.map((t, i) => (
+              <li key={t.id} className="flex items-center gap-1">
+                {i > 0 && <span className="text-slate-300">→</span>}
+                <span
+                  aria-current={i === current ? "step" : undefined}
+                  className={
+                    i === current
+                      ? "font-semibold text-slate-900"
+                      : i < current
+                        ? "text-ink-700"
+                        : "text-slate-400"
+                  }
+                >
+                  {t.label}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <details className="text-sm text-slate-600" data-testid="tier-legend">
+            <summary className="cursor-pointer font-medium text-ink-800">
+              What the levels mean
+            </summary>
+            <ul className="mt-1 flex flex-col gap-1">
+              {TIERS.map((t) => (
+                <li key={t.id}>
+                  <span className="font-semibold text-slate-800">{t.label}:</span>{" "}
+                  {TIER_MEANINGS[t.id]}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
+              with why it got that score.
+            </p>
+          </details>
+        </>
+      )}
       {grade.summary && <p className="text-slate-800">{grade.summary}</p>}
       {grade.strengths.length > 0 && (
         <div data-testid="strengths">
@@ -357,7 +400,9 @@ function Summary({ grade }: { grade: StoryGrade }) {
       {grade.fixes.length > 0 ? (
         <div data-testid="fixes" className="rounded-xl bg-amber-50 p-3">
           <p className="text-sm font-semibold text-amber-900">
-            {grade.tier === "strong" ? "To polish it further:" : "What to fix next:"}
+            {(level !== undefined ? level === TOP_LEVEL : grade.tier === "strong")
+              ? "To polish it further:"
+              : "What to fix next:"}
           </p>
           <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-slate-800">
             {grade.fixes.map((f, i) => (
@@ -366,9 +411,134 @@ function Summary({ grade }: { grade: StoryGrade }) {
           </ol>
         </div>
       ) : (
-        <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
+        (level === undefined || level === TOP_LEVEL) && (
+          <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
+        )
       )}
     </div>
+  );
+}
+
+// The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) as a ring,
+// with how it's worked out one tap away, so it isn't read as a pass mark.
+function ScoreHeadline({ score, levels }: { score: number | undefined; levels: boolean }) {
+  const tone =
+    score === undefined
+      ? "#e2e8f0"
+      : score >= 75
+        ? "#059669"
+        : score >= 50
+          ? "#fcd34d"
+          : "#f59e0b";
+  return (
+    <div className="flex items-center gap-4">
+      <div
+        className="grid h-20 w-20 shrink-0 place-items-center rounded-full transition-[background] duration-500"
+        style={{
+          background: `conic-gradient(${tone} 0 ${score ?? 0}%, #f1f5f9 ${score ?? 0}% 100%)`,
+        }}
+        role="presentation"
+      >
+        <div className="grid h-[3.9rem] w-[3.9rem] place-items-center rounded-full bg-white">
+          {score === undefined ? (
+            <span className="text-xs text-slate-400">–</span>
+          ) : (
+            <span className="text-2xl font-bold tabular-nums text-slate-900">{score}</span>
+          )}
+        </div>
+      </div>
+      <div className="min-w-0" data-testid="score-total">
+        <h3 className="text-base font-bold text-slate-900">
+          Score{" "}
+          {score === undefined ? (
+            <span className="text-sm font-normal text-slate-500">Not graded yet</span>
+          ) : (
+            <span className="sr-only">
+              {score} / 100
+            </span>
+          )}
+        </h3>
+        {score !== undefined && <p className="text-sm text-slate-500">out of 100</p>}
+        <details className="mt-1 text-xs text-slate-500">
+          <summary className="cursor-pointer list-none font-medium hover:text-ink-800 [&::-webkit-details-marker]:hidden">
+            ⓘ How it&apos;s worked out
+          </summary>
+          <p className="mt-1">
+            Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100.{" "}
+            {levels
+              ? "The level decides how far the story has come, and caps this number: up to 69 at Level 1, 89 at Level 2."
+              : "The level above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for Good enough."}
+          </p>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+// The quick checks as one line when they all pass, opening to the list. Any that fail are shown.
+function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
+  const shown = CHECKS.filter(
+    // Some checks apply to one format only ("A few key figures" is for About me), and "In your
+    // own words" only to drafts written since it was measured.
+    (k) =>
+      (k.id !== "focus" && k.id !== "own_words") ||
+      (grade ? grade.checks.some((c) => c.id === k.id) : k.id === "focus"),
+  );
+  const results = shown.map((k) => ({ k, result: grade?.checks.find((c) => c.id === k.id) }));
+  const passing = results.filter((r) => r.result?.pass).length;
+  const failing = results.filter((r) => r.result && !r.result.pass).length;
+  return (
+    <details className="group" open={!grade || failing > 0}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+        <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
+        {grade && (
+          <span className="flex items-center gap-1.5 text-sm text-slate-600">
+            <span className="flex gap-0.5" aria-hidden="true">
+              {results.map(({ k, result }) => (
+                <span
+                  key={k.id}
+                  className={`h-2 w-2 rounded-full ${result?.pass ? "bg-emerald-500" : result ? "bg-amber-500" : "bg-slate-200"}`}
+                />
+              ))}
+            </span>
+            {passing} of {results.length} pass
+          </span>
+        )}
+        <span
+          aria-hidden="true"
+          className="ml-auto text-[10px] text-slate-400 transition-transform group-open:rotate-90"
+        >
+          ▶
+        </span>
+      </summary>
+      <ul className="mt-2 flex flex-col gap-2" data-testid="quick-checks" data-stagger>
+        {results.map(({ k, result }) => (
+          <li key={k.id} className="flex gap-2 text-sm">
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                !result
+                  ? "bg-slate-100 text-slate-400"
+                  : result.pass
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-900"
+              }`}
+            >
+              {!result ? "·" : result.pass ? "✓" : "!"}
+            </span>
+            <span>
+              <span className="font-medium text-slate-800">{k.label}</span>
+              {result && (
+                <>
+                  <span className="sr-only">{result.pass ? " (passes)" : " (needs work)"}</span>
+                  <span className="text-slate-500"> {result.detail}</span>
+                </>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -431,52 +601,103 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
       </div>
     );
   }
+  // Folded by default: with several target jobs this is the longest part of the page. The closed
+  // line still says how the story fits, so the detail is there only for those who want it.
   return (
-    <div className="flex flex-col gap-3" data-testid="content-fit">
-      <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
-      {content.jobs.map((job) => (
-        <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-semibold text-slate-800">
-              {job.title}
-              {job.company && <span className="font-normal text-slate-500"> at {job.company}</span>}
-            </span>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
-            >
-              {FIT_LABELS[job.fit].label}
-            </span>
+    <details className="group" data-testid="content-fit">
+      <summary className="flex cursor-pointer list-none flex-col gap-0.5 rounded-2xl bg-slate-50 px-3 py-2.5 ring-1 ring-black/5 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="text-xs text-slate-500 transition-transform group-open:rotate-90"
+          >
+            ▶
+          </span>
+          <h3 className="flex-1 text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+          <span className="shrink-0 text-sm font-medium text-ink-800 group-open:hidden">
+            Show details
+          </span>
+          <span className="hidden shrink-0 text-sm font-medium text-ink-800 group-open:inline">
+            Hide
+          </span>
+        </span>
+        <span className="pl-5 text-sm text-slate-600" data-testid="content-fit-summary">
+          {fitSummary(content)}
+        </span>
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        {content.jobs.map((job) => (
+          <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-slate-800">
+                {job.title}
+                {job.company && (
+                  <span className="font-normal text-slate-500"> at {job.company}</span>
+                )}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
+              >
+                {FIT_LABELS[job.fit].label}
+              </span>
+            </div>
+            <FitList title="It proves" mark="✓" markClass="text-emerald-700" items={job.proves} />
+            <FitList
+              title="It doesn't show"
+              mark="–"
+              markClass="text-amber-700"
+              items={job.misses}
+            />
+            <FitList
+              title="Good answer to"
+              mark="•"
+              markClass="text-slate-400"
+              items={job.answers.map((q) => `“${q}”`)}
+            />
+            {job.level && (
+              <p className="text-sm text-slate-700">
+                <span className="font-semibold">{LEVEL_LABELS[job.level.match]}. </span>
+                {job.level.note}
+              </p>
+            )}
           </div>
-          <FitList title="It proves" mark="✓" markClass="text-emerald-700" items={job.proves} />
-          <FitList title="It doesn't show" mark="–" markClass="text-amber-700" items={job.misses} />
-          <FitList
-            title="Good answer to"
-            mark="•"
-            markClass="text-slate-400"
-            items={job.answers.map((q) => `“${q}”`)}
-          />
-          {job.level && (
-            <p className="text-sm text-slate-700">
-              <span className="font-semibold">{LEVEL_LABELS[job.level.match]}. </span>
-              {job.level.note}
+        ))}
+        {content.unused.length > 0 && (
+          <div data-testid="unused">
+            <p className="text-sm font-semibold text-slate-700">
+              Strong material from your answers that isn&apos;t in the story:
             </p>
-          )}
-        </div>
-      ))}
-      {content.unused.length > 0 && (
-        <div data-testid="unused">
-          <p className="text-sm font-semibold text-slate-700">
-            Strong material from your answers that isn&apos;t in the story:
-          </p>
-          <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
-            {content.unused.map((u, i) => (
-              <li key={i}>{u}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+            <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+              {content.unused.map((u, i) => (
+                <li key={i}>{u}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </details>
   );
+}
+
+// One line for the closed fit section, e.g. "Strong fit for 2 of 3 jobs, partial for 1".
+// With one job it names the fit directly: "Partial fit".
+function fitSummary(content: ContentCheck): string {
+  const total = content.jobs.length;
+  if (total === 1) return FIT_LABELS[content.jobs[0].fit].label;
+  const order: FitLevel[] = ["strong", "partial", "weak"];
+  const parts = order
+    .map((level) => ({
+      level,
+      n: content.jobs.filter((j) => j.fit === level).length,
+    }))
+    .filter((p) => p.n > 0)
+    .map((p, i) => {
+      const word = FIT_LABELS[p.level].label.split(" ")[0];
+      return i === 0
+        ? `${word} fit for ${p.n === total ? `all ${total}` : `${p.n} of ${total}`} jobs`
+        : `${word.toLowerCase()} for ${p.n}`;
+    });
+  return parts.join(", ");
 }
 
 function FitList({
