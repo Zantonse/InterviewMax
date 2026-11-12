@@ -71,6 +71,7 @@ import {
 import { appendSpoken } from "@/lib/voice/text";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
+import { ColouredScript, SpokenBar } from "./story-colours";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LevelCard } from "./level-card";
@@ -1943,13 +1944,11 @@ function StoryPanel({
   const draft = content.draft;
   const parts = storyParts(storyType);
   const storyTypeLabel = storyType?.label;
-  // A written story reads as one script to say aloud; the parts view is for checking what went where.
-  const [showParts, setShowParts] = useState(false);
+  // A written story shows each part in its colour, so what's there and what's missing is a picture;
+  // "Plain script" is the version to read aloud.
+  const [plain, setPlain] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
-  const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
-  // At an interview pace of about 150 words a minute.
-  const seconds = Math.round(((words / 150) * 60) / 5) * 5;
   const justWritten = useJustWritten(draft);
 
   return (
@@ -1978,19 +1977,16 @@ function StoryPanel({
       </div>
 
       {draft && (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-          <span data-testid="script-length">
-            {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
-            spoken
-          </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <>
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm">
             {!showWhy && (
               <button
                 type="button"
-                onClick={() => setShowParts((v) => !v)}
+                onClick={() => setPlain((v) => !v)}
                 className="font-medium text-ink-800 hover:underline"
+                data-testid="plain-toggle"
               >
-                {showParts ? "Show as a script" : "Show by part"}
+                {plain ? "Colour by part" : "Plain script"}
               </button>
             )}
             <WhyToggle
@@ -2003,7 +1999,8 @@ function StoryPanel({
               }}
             />
           </div>
-        </div>
+          <SpokenBar draft={draft} storyType={storyType} />
+        </>
       )}
 
       {draft && showWhy ? (
@@ -2014,7 +2011,12 @@ function StoryPanel({
           disabled={disabled}
           onAnalyze={onAnalyze}
         />
-      ) : draft && !showParts ? (
+      ) : draft && !plain ? (
+        <>
+          <ColouredScript draft={draft} storyType={storyType} />
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </>
+      ) : draft ? (
         <div className="mt-5" data-testid="story-script">
           <div className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800">
             {paragraphs.map((text, i) => (
@@ -2026,25 +2028,19 @@ function StoryPanel({
           <NumberCheck untraced={draft.untracedNumbers} />
         </div>
       ) : (
+        // Before the story is written: what each part has to go on so far.
         <div className="mt-5 flex flex-col gap-4">
           {parts.map((part) => {
             const notes = notesForPart(content, storyType, parts, part);
-            const written = draft?.parts[part.id];
             return (
               <div key={part.id} data-testid={`part-${part.id}`}>
                 <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
                   <span
-                    className={`h-2 w-2 rounded-full ${
-                      written ? "bg-ink-600" : notes.length ? "bg-ink-300" : "bg-slate-200"
-                    }`}
+                    className={`h-2 w-2 rounded-full ${notes.length ? "bg-ink-300" : "bg-slate-200"}`}
                   />
                   {part.label}
                 </h3>
-                {written ? (
-                  <p className="mt-1 leading-relaxed text-slate-800">
-                    <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
-                  </p>
-                ) : notes.length ? (
+                {notes.length ? (
                   <ul className="mt-1 flex flex-col gap-1 border-l-2 border-ink-100 pl-3 text-sm text-slate-500">
                     {notes.map((n, i) => (
                       <li key={i} className="line-clamp-3 whitespace-pre-wrap">
@@ -2056,9 +2052,6 @@ function StoryPanel({
                   <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
                     Empty
                   </p>
-                )}
-                {NUMBER_PARTS.has(part.id) && draft && (
-                  <NumberCheck untraced={draft.untracedNumbers} />
                 )}
               </div>
             );
@@ -2098,14 +2091,6 @@ function WhyToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => v
   );
 }
 
-function formatMinutes(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s ? `${m} min ${s} sec` : `${m} min`;
-}
-
-// The part that carries the story's number, where the number check is shown.
-const NUMBER_PARTS = new Set(["result", "highlight"]);
 
 function notesForPart(
   content: StoryContent,
