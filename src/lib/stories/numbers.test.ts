@@ -33,6 +33,26 @@ describe("untracedNumbers", () => {
     expect(untracedNumbers(draft, answers)).toEqual(["45%", "200"]);
   });
 
+  it("flags a percent or money figure that only matches a count of something", () => {
+    // Sims run 30: "rose 15%" came back as "from about 31% to about 46%" and passed on value.
+    const given = "Win rate rose 15% on roughly 20 regulated deals. We had 46 deals in the pipe and 31 reps.";
+    const draft = "Our win rate rose 15%, from about 31% to about 46%, on roughly 20 regulated deals.";
+    expect(untracedNumbers(draft, given)).toEqual(["31%", "46%"]);
+    expect(untracedNumbers("We lost $46 on it.", given)).toEqual(["$46"]);
+  });
+
+  it("lets a bare number or a range back a percent", () => {
+    expect(untracedNumbers("It went from 31% to 46%.", "win rate went from 31 to 46")).toEqual([]);
+    expect(untracedNumbers("It went from 31% to 46%.", "win rate went from 31 to 46%")).toEqual([]);
+    expect(untracedNumbers("It went from 31% to 46%.", "from 31-46% over a year")).toEqual([]);
+    expect(untracedNumbers("Up 15%.", "up 15 percent, or 15 points")).toEqual([]);
+    expect(untracedNumbers("We saved $2.4M.", "saved 2.4 million")).toEqual([]);
+  });
+
+  it("doesn't let a percent back a count or money", () => {
+    expect(untracedNumbers("We won 40 deals.", "up 40% on last year")).toEqual(["40"]);
+  });
+
   it("doesn't flag 'one' or 'half' in ordinary prose", () => {
     expect(untracedNumbers("One of the accounts was half-built.", "no numbers here")).toEqual([]);
   });
