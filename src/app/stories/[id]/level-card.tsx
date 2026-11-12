@@ -14,6 +14,8 @@ import {
 } from "@/lib/stories/levels";
 import { storyParts, type StoryType } from "@/lib/stories/story-types";
 import { wordDiff } from "@/lib/stories/word-diff";
+import type { FieldId } from "@/lib/field/fields";
+import { ExampleLadder } from "@/components/example-ladder";
 
 // Story levels on the written story, as a picture first: the story on a staircase of levels, what
 // the next step is missing as chips, and one button. The explanations open from small "i" lines.
@@ -26,7 +28,10 @@ export function LevelCard({
   onLevelUp,
   onDismiss,
   onShowQuestions,
+  field = null,
 }: {
+  // The user's field: picks the example story.
+  field?: FieldId | null;
   content: StoryContent;
   storyType: StoryType | undefined;
   // "asking" while the level-up questions are found, "writing" while it's rewritten.
@@ -127,6 +132,20 @@ export function LevelCard({
               </span>
             ))}
           </Info>
+          <details className="group mt-3 text-sm" data-testid="level-example">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
+              <span
+                aria-hidden="true"
+                className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold"
+              >
+                ↗
+              </span>
+              See an example at Level {next.level}
+            </summary>
+            <div className="animate-fade mt-2">
+              <ExampleLadder field={field} startAt={next.level} testId="level-example-ladder" />
+            </div>
+          </details>
         </div>
       ) : (
         <p className="mt-4 text-sm text-slate-700" data-testid="level-top">
