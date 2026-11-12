@@ -201,6 +201,11 @@ async function drawRecap(recap: Recap): Promise<Blob> {
     }
   }
 
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = `400 28px ${font}`;
+  ctx.fillText("Made with InterviewMax", W / 2, H - 70);
+
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("No image"))), "image/png"),
   );

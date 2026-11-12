@@ -1241,9 +1241,10 @@ function QuickStart({
             key={row.id}
             role="radiogroup"
             aria-label={row.label}
-            className="flex flex-wrap items-center gap-1.5"
+            className="flex flex-col gap-1 sm:flex-row sm:items-center"
           >
-            <span className="w-24 shrink-0 text-sm font-medium text-slate-600">{row.label}</span>
+            <span className="w-28 shrink-0 text-sm font-medium text-slate-600">{row.label}</span>
+            <span className="flex flex-wrap gap-1.5">
             {row.options.map((o) => {
               const on = picked === o;
               return (
@@ -1274,6 +1275,7 @@ function QuickStart({
                 </button>
               );
             })}
+            </span>
           </div>
         );
       })}

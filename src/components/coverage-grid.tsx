@@ -135,7 +135,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
       {buildRecap(stories, []) && (
         <Link
           href="/recap"
-          className="mt-3 inline-block text-sm font-semibold text-accent-200 hover:underline"
+          className="mt-2 block text-sm font-semibold text-accent-200 hover:underline"
           data-testid="recap-link"
         >
           See your prep recap →
