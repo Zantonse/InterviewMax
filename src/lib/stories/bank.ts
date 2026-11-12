@@ -71,6 +71,31 @@ export function themeCoverage(stories: StoryLike[]): ThemeCoverage[] {
   });
 }
 
+// The story bank by theme, as counts: how many written stories answer each theme, and how many
+// more are started. A story can answer more than one theme, so the counts can add up to more than
+// the number of stories. Most stories first; themes with nothing yet go last, so the gaps read as
+// one block at the bottom.
+export type ThemeCount = ThemeCoverage & { written: number; started: number };
+
+export function themeCounts(stories: StoryLike[]): ThemeCount[] {
+  const coverage = themeCoverage(stories);
+  const counted = coverage.map((theme, index) => {
+    const types: readonly string[] =
+      QUESTION_THEMES.find((t) => t.id === theme.id)?.storyTypes ?? [];
+    const mine = stories.filter((s) => s.storyType && types.includes(s.storyType));
+    const written = mine.filter((s) => hasDraft(s.content)).length;
+    return { theme: { ...theme, written, started: mine.length - written }, index };
+  });
+  return counted
+    .sort(
+      (a, b) =>
+        b.theme.written - a.theme.written ||
+        b.theme.started - a.theme.started ||
+        a.index - b.index,
+    )
+    .map((c) => c.theme);
+}
+
 // A theme counts as covered once a story for it is written.
 export function isCovered(status: ThemeStatus): boolean {
   return STATUS_RANK[status] >= STATUS_RANK.written;

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageGuide } from "@/components/page-guide";
+import { ConfidencePips } from "@/components/practice/confidence-bar";
 import { removePractice } from "@/app/practice/actions";
 import { StartPracticeForm } from "@/app/practice/start-form";
 import { getJob } from "@/lib/jobs/data";
@@ -12,6 +13,7 @@ import {
   SCREEN_THINK_SECONDS,
   currentItemIndex,
   isScreenRound,
+  latestConfidence,
   pickQuestions,
 } from "@/lib/practice/content";
 import { listPracticeSessions } from "@/lib/practice/data";
@@ -40,7 +42,10 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
     listPracticeSessions(id),
   ]);
   if (!job) notFound();
-  const round = job.likelyQuestions ? pickQuestions(job.likelyQuestions.questions, stories) : [];
+  const felt = latestConfidence(sessions);
+  const round = job.likelyQuestions
+    ? pickQuestions(job.likelyQuestions.questions, stories, undefined, felt)
+    : [];
   const inProgress = sessions.find((s) => !s.finishedAt && !isScreenRound(s.items));
   const screenInProgress = sessions.find((s) => !s.finishedAt && isScreenRound(s.items));
 
@@ -87,8 +92,8 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
             This round: {round.length} questions
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            The ones you&apos;re least ready for come first: questions with no story yet, then your
-            weaker stories.
+            The ones you&apos;re least ready for come first: questions with no story yet, then ones
+            that felt shaky, then your weaker stories.
           </p>
           <ol className="mt-4 space-y-2">
             {round.map((q, i) => (
@@ -97,9 +102,12 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
                   <span className="mr-2 text-ink-800">{i + 1}.</span>
                   {q.question}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {REASON_LABELS[q.reason]}
-                  {q.storyTitle ? ` · ${q.storyTitle}` : ""}
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                  <span>
+                    {REASON_LABELS[q.reason]}
+                    {q.storyTitle ? ` · ${q.storyTitle}` : ""}
+                  </span>
+                  {felt.get(q.question) && <ConfidencePips value={felt.get(q.question)!} />}
                 </p>
               </li>
             ))}

@@ -8,6 +8,7 @@ import {
   currentItemIndex,
   isScreenRound,
   itemStep,
+  latestConfidence,
   mustFollowUp,
   nextToAnswer,
   numbersLeftOut,
@@ -119,6 +120,29 @@ describe("pickQuestions", () => {
   it("treats a grade for an older draft as ungraded", () => {
     const round = pickQuestions([q("impact")], [story("p", "major_project", written("strong", true))]);
     expect(round[0].reason).toBe("ungraded");
+  });
+
+  it("brings back questions that felt shaky right after the gaps, and confident ones last", () => {
+    const stories = [
+      story("intro", "about_me", written("strong")),
+      story("proj", "major_project", written("strong")),
+      story("prio", "prioritization", written("good_enough")),
+    ];
+    const felt = latestConfidence([
+      {
+        items: [
+          { question: "A impact question?", theme: "impact", reason: "strong", turns: [], confidence: 2 },
+          { question: "A prioritization question?", theme: "prioritization", reason: "good_enough", turns: [], confidence: 5 },
+        ],
+      },
+    ]);
+    const round = pickQuestions(
+      [q("about_you"), q("impact"), q("prioritization"), q("failure")],
+      stories,
+      undefined,
+      felt,
+    );
+    expect(round.map((i) => i.theme)).toEqual(["failure", "impact", "about_you", "prioritization"]);
   });
 
   it("takes five at most, fewer when the job has fewer", () => {
@@ -382,5 +406,27 @@ describe("parseItems", () => {
       },
     });
     expect(parseItems("nope")).toEqual([]);
+  });
+});
+
+describe("confidence", () => {
+  it("keeps a rating from 1 to 5 and drops anything else", () => {
+    const [kept, dropped] = parseItems([
+      { question: "Q?", theme: "impact", turns: [], confidence: 4 },
+      { question: "Q2?", theme: "impact", turns: [], confidence: 9 },
+    ]);
+    expect(kept.confidence).toBe(4);
+    expect(dropped.confidence).toBeUndefined();
+  });
+
+  it("uses the newest round's rating for a question", () => {
+    const item = (confidence: PracticeItem["confidence"]): PracticeItem => ({
+      question: "Q?",
+      theme: "impact",
+      reason: "strong",
+      turns: [],
+      confidence,
+    });
+    expect(latestConfidence([{ items: [item(4)] }, { items: [item(1)] }]).get("Q?")).toBe(4);
   });
 });
