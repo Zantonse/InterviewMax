@@ -6,7 +6,11 @@ import { AppHeader } from "@/components/app-header";
 import { AskedRecently, QuestionList } from "@/components/question-list";
 import { forJob } from "@/lib/bank/content";
 import { recentSharedQuestions } from "@/lib/bank/data";
-import { StepStrip } from "@/components/step-strip";
+import { StepDots } from "@/components/step-strip";
+import { ReadinessCard } from "@/components/readiness";
+import { questionReadiness } from "@/lib/jobs/readiness";
+import { daysUntil, todayIn } from "@/lib/prep/plan";
+import { headers } from "next/headers";
 import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
 import { jobFolder } from "@/lib/jobs/folder";
@@ -98,6 +102,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     practiced: rounds.some((r) => r.finishedAt),
   });
   const lastRound = rounds[0];
+  // How ready this job is: each likely question's best story level, and the days left.
+  const readiness = questionReadiness(job.likelyQuestions?.questions, stories);
+  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const daysLeft = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
   // The stories the resume bullets read: the newest finished ones, as when they're written.
   const finished = stories
     .filter(isFinishedStory)
@@ -131,7 +139,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </p>
       )}
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
-      <StepStrip label={`Your prep for ${job.title}`} steps={steps} />
+      <StepDots label={`Your prep for ${job.title}`} steps={steps} />
       <JobTabs
         tabs={[
           { id: "overview", label: "Overview" },
@@ -155,6 +163,12 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         data-testid="job-panel-overview"
       >
         <div className="space-y-4 lg:col-span-2">
+          <ReadinessCard
+            rows={readiness.rows}
+            ready={readiness.ready}
+            total={readiness.total}
+            days={daysLeft !== null && daysLeft >= 0 ? daysLeft : null}
+          />
           <div
             className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5"
             data-testid="job-brief"
@@ -222,10 +236,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
               Interview date
             </h2>
-            <p className="mb-4 text-sm text-slate-600">
-              Your plan on the home page fits the time you have: tomorrow, the top 3 questions and
-              About me; two weeks, your whole story bank.
-            </p>
             <InterviewDateForm jobId={job.id} date={job.interviewDate} />
           </section>
           <section

@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
-import { startStory } from "@/app/stories/new/actions";
+import { ReadinessRing, ReadinessRows } from "@/components/readiness";
+import { questionReadiness } from "@/lib/jobs/readiness";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
 import { PrepPath } from "@/components/prep-path";
@@ -10,8 +11,6 @@ import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
-import type { LikelyQuestion } from "@/lib/questions/content";
-import { coverageFor } from "@/lib/questions/coverage";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
@@ -120,21 +119,31 @@ async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRe
   const days = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
   const name = job.company || job.title;
   const questions = job.likelyQuestions?.questions ?? [];
+  const readiness = questionReadiness(questions, stories);
   return (
     <Card title={days !== null && days >= 0 ? `${name} · interview ${whenLabel(days)}` : name}>
       <div data-testid="focus-job">
         {job.company && <p className="-mt-3 mb-3 truncate text-sm text-slate-500">{job.title}</p>}
         {questions.length > 0 ? (
           <>
-            <p className="text-sm font-semibold text-slate-700">Most likely questions</p>
-            <ul className="mt-2 space-y-3">
-              {questions.slice(0, 3).map((q) => (
-                <FocusQuestion key={q.question} question={q} stories={stories} />
-              ))}
-            </ul>
+            <div className="flex items-center gap-3">
+              <ReadinessRing
+                ready={readiness.ready}
+                total={readiness.total}
+                days={days !== null && days >= 0 ? days : null}
+                size="sm"
+              />
+              <p className="text-sm text-slate-600">
+                <span className="font-bold text-slate-900">
+                  {readiness.ready} of {readiness.total} questions ready
+                </span>
+                <span className="block text-xs">Ready = a Level 2+ story</span>
+              </p>
+            </div>
+            <ReadinessRows rows={readiness.rows.slice(0, 3)} />
             <Link
               href={`/jobs/${job.id}`}
-              className="mt-4 inline-block text-sm font-semibold text-ink-800 hover:underline"
+              className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline"
             >
               All {questions.length} questions for this job →
             </Link>
@@ -146,38 +155,6 @@ async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRe
         )}
       </div>
     </Card>
-  );
-}
-
-function FocusQuestion({ question, stories }: { question: LikelyQuestion; stories: StoryRecord[] }) {
-  const coverage = coverageFor(question.theme, stories, question.question);
-  return (
-    <li className="text-sm">
-      <p className="font-medium text-slate-900">{question.question}</p>
-      {coverage?.kind === "story" ? (
-        <Link
-          href={`/stories/${coverage.storyId}`}
-          className="mt-0.5 inline-block text-slate-600 hover:text-ink-800 hover:underline"
-        >
-          <span aria-hidden className={coverage.drafted ? "text-ink-800" : "text-slate-400"}>
-            {coverage.drafted ? "✓ " : "○ "}
-          </span>
-          {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
-        </Link>
-      ) : coverage?.kind === "build" ? (
-        <form action={startStory} className="mt-0.5">
-          <input type="hidden" name="asked" value={question.question} />
-          <button
-            type="submit"
-            name="storyType"
-            value={coverage.storyType}
-            className="text-ink-800 hover:underline"
-          >
-            No story yet · Build one →
-          </button>
-        </form>
-      ) : null}
-    </li>
   );
 }
 
