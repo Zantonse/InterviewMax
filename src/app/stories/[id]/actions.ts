@@ -16,6 +16,7 @@ import {
 import {
   builderStage,
   canStrengthen,
+  gradeIsCurrent,
   maxProbeRounds,
   nextCoreQuestion,
   partToFix,
@@ -26,6 +27,14 @@ import {
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, updateStory } from "@/lib/stories/data";
+import {
+  TOP_LEVEL,
+  levelForGrade,
+  levelGaps,
+  needsAnswers,
+  usesLevels,
+  type StoryLevel,
+} from "@/lib/stories/levels";
 import { MAX_FIT_JOBS, type FitJob } from "@/lib/stories/fit";
 import { answersTranscript } from "@/lib/stories/prompts";
 import { loadBuilderTargets } from "@/lib/stories/targets-data";
@@ -263,6 +272,60 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
   });
 }
 
+// Story levels: "Help me reach Level N". Remembers where the story was (for the before and after),
+// then asks questions aimed only at what stands between it and the next level. When nothing needs
+// asking (only a rewrite can close the gaps, or the answers already cover them), the client goes
+// straight on to rewrite.
+export async function levelUp(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const storyType = getStoryType(story.storyType);
+    const grade = gradeIsCurrent(story.content) ? story.content.grade : undefined;
+    const draft = story.content.draft;
+    if (!usesLevels(storyType, story.content) || !draft || !grade) {
+      return fail("Grade the story first, then I'll help you level it up.");
+    }
+    const from = levelForGrade(grade);
+    if (from >= TOP_LEVEL) return { ok: true, content: story.content, title: story.title };
+    const target = (from + 1) as StoryLevel;
+    const gaps = levelGaps(grade);
+    const started: StoryContent = {
+      ...story.content,
+      levelUp: { from, target, before: draft.parts, startedAt: new Date().toISOString() },
+    };
+    if (!needsAnswers(gaps) || !canStrengthen(story.content)) {
+      await updateStory(storyId, { content: started });
+      return { ok: true, content: started, title: story.title };
+    }
+    const round = probeRounds(story.content) + 1;
+    const [numbers, targets] = await Promise.all([
+      storyNumbers(story.storyType),
+      loadBuilderTargets(storyType),
+    ]);
+    const asked = await probeStory(story.content, storyType, round, undefined, undefined, numbers, targets, {
+      target,
+      gaps,
+    });
+    const content: StoryContent = {
+      ...started,
+      ...(asked.length > 0 ? { levelUp: { ...started.levelUp!, round } } : {}),
+      followUps: [...(story.content.followUps ?? []), ...asked],
+      nothingMoreToAsk: false,
+    };
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
+// Story levels: closes the level-up card.
+export async function dismissLevelUp(storyId: string): Promise<BuilderResult> {
+  return withStory(storyId, async (story) => {
+    const content: StoryContent = { ...story.content };
+    delete content.levelUp;
+    await updateStory(storyId, { content });
+    return { ok: true, content, title: story.title };
+  });
+}
+
 // "Tell me about yourself": one question about the part the grader scored weakest. Its answer
 // then rewrites that part only (writeDraft, via partToFix).
 export async function askAboutWeakPart(storyId: string): Promise<BuilderResult> {
@@ -337,9 +400,22 @@ export async function gradeDraft(storyId: string): Promise<BuilderResult> {
       answers: answersTranscript(story.content, storyType),
       jobs,
     });
-    const content = { ...story.content, grade };
-    await updateStory(storyId, { content });
+    let content: StoryContent = { ...story.content, grade };
     await trackEvent("story_graded");
+    // Story levels: a level-up the user started learns where it landed, and reaching a level for
+    // the first time is counted once.
+    if (usesLevels(storyType, story.content)) {
+      const level = levelForGrade(grade);
+      if (content.levelUp && content.levelUp.reached === undefined) {
+        content = { ...content, levelUp: { ...content.levelUp, reached: level } };
+      }
+      if (level > (content.levelReached ?? 1)) {
+        content = { ...content, levelReached: level };
+        if (level >= 2) await trackEvent("story_level_2");
+        if (level >= 3) await trackEvent("story_level_3");
+      }
+    }
+    await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
 }

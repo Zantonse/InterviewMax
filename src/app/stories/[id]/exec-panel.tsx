@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatYouGet } from "@/components/what-you-get";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { CopyButton } from "@/components/copy-button";
@@ -72,11 +73,19 @@ export function ExecPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          <p className="text-slate-700">
-            {exec
-              ? "You've changed the story since I made this. I'll make one from the new version."
-              : "Executives want the answer first. I'll cut this story to 30 seconds: the result and its number, why it mattered, and the one decision that made it work. The rest waits until they ask."}
-          </p>
+          {exec ? (
+            <p className="text-slate-700">
+              You&apos;ve changed the story since I made this. I&apos;ll make one from the new
+              version.
+            </p>
+          ) : (
+            <>
+              <p className="text-slate-700">Executives want the answer first.</p>
+              <WhatYouGet
+                items={["30 seconds", "Result and its number", "Why it mattered", "The key decision"]}
+              />
+            </>
+          )}
           <div>
             <button
               type="button"
@@ -129,8 +138,7 @@ function Made({
   return (
     <div className="mt-2 flex flex-col gap-5">
       <p className="text-sm text-slate-600">
-        For a director or above, or when they say &ldquo;give me the short version&rdquo;. Say the
-        bottom line, then stop and let them pull the rest.
+        Say the bottom line, then stop and let them pull the rest.
       </p>
 
       <div>

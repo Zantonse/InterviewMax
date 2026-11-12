@@ -40,6 +40,8 @@ export const FUNNEL_STEPS: readonly UsageEvent[] = [
   "story_told",
   "story_finished",
   "story_graded",
+  "story_level_2",
+  "story_level_3",
   "about_me_finished",
 ];
 

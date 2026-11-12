@@ -6,7 +6,11 @@ import { AppHeader } from "@/components/app-header";
 import { AskedRecently, QuestionList } from "@/components/question-list";
 import { forJob } from "@/lib/bank/content";
 import { recentSharedQuestions } from "@/lib/bank/data";
-import { StepStrip } from "@/components/step-strip";
+import { StepDots } from "@/components/step-strip";
+import { ReadinessCard } from "@/components/readiness";
+import { questionReadiness } from "@/lib/jobs/readiness";
+import { daysUntil, todayIn } from "@/lib/prep/plan";
+import { headers } from "next/headers";
 import { jobSteps } from "@/lib/guide/journey";
 import { getJob, getJobsPrep } from "@/lib/jobs/data";
 import { jobFolder } from "@/lib/jobs/folder";
@@ -108,6 +112,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
     practiced: rounds.some((r) => r.finishedAt),
   });
   const lastRound = rounds[0];
+  // How ready this job is: each likely question's best story level, and the days left.
+  const readiness = questionReadiness(job.likelyQuestions?.questions, stories);
+  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const daysLeft = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
   // The stories the resume bullets read: the newest finished ones, as when they're written.
   const finished = stories
     .filter(isFinishedStory)
@@ -141,7 +149,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </p>
       )}
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
-      <StepStrip label={`Your prep for ${job.title}`} steps={steps} />
+      <StepDots label={`Your prep for ${job.title}`} steps={steps} />
       <JobTabs
         tabs={[
           { id: "overview", label: "Overview" },
@@ -165,14 +173,19 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         data-testid="job-panel-overview"
       >
         <div className="space-y-4 lg:col-span-2">
+          <ReadinessCard
+            rows={readiness.rows}
+            ready={readiness.ready}
+            total={readiness.total}
+            days={daysLeft !== null && daysLeft >= 0 ? daysLeft : null}
+          />
           <div
             className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5"
             data-testid="job-brief"
           >
             <p className="min-w-0 flex-1 text-sm text-slate-600">
-              <span className="font-semibold text-slate-900">Interview day?</span> Your one-page
-              brief has your questions, stories, numbers and gaps
-              {stage ? `, shaped for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}` : ""}.
+              <span className="font-semibold text-slate-900">Interview day?</span> Everything on
+              one page{stage ? `, shaped for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}` : ""}.
             </p>
             <Link
               href={`/jobs/${job.id}/brief`}
@@ -233,10 +246,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
               Interview date
             </h2>
-            <p className="mb-4 text-sm text-slate-600">
-              Your plan on the home page fits the time you have: tomorrow, the top 3 questions and
-              About me; two weeks, your whole story bank.
-            </p>
             <InterviewDateForm jobId={job.id} date={job.interviewDate} />
           </section>
           <section
@@ -246,10 +255,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
               Next stage
             </h2>
-            <p className="mb-4 text-sm text-slate-600">
-              A recruiter screen and a hiring manager check different things. Your brief, warm-up
-              and practice put that stage&apos;s questions first.
-            </p>
             <NextStageForm
               jobId={job.id}
               stage={job.nextStage}
@@ -263,9 +268,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
               Role level
             </h2>
-            <p className="mb-4 text-sm text-slate-600">
-              The level sets how senior your stories need to sound and which tier to aim for.
-            </p>
             <LevelForm jobId={job.id} level={job.level} confirmed={job.levelConfirmed} />
             {job.otherRoles.length === 0 && !job.outcome && (
               <p className="mt-4 text-sm text-slate-600" data-testid="add-role-link">
@@ -312,8 +314,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 Optional: add your resume
               </h2>
               <p className="text-sm text-slate-700">
-                I&apos;ll check it against this job: what your history already shows, and what your
-                stories need to cover.
+                See what your history already shows for this job.
               </p>
               <Link
                 href="/jobs"

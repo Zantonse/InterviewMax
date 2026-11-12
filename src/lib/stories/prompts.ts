@@ -4,6 +4,7 @@ import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
+import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
@@ -233,15 +234,21 @@ export function parsePrefill(text: string): Record<string, string> {
 }
 
 // With target jobs or a role they want, the follow-ups are also aimed at what those need.
+// A level-up round (see levels.ts) replaces the usual round instructions with questions aimed at
+// what stands between the story and the next level.
 export function probeSystem(
   storyType: StoryType | undefined,
   round = 1,
   targets?: BuilderTargets,
+  levelUp?: { target: StoryLevel; gaps: LevelGap[] },
 ): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
   const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
-  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${roundInstructions(round, storyType)}`;
+  const round_ = levelUp
+    ? levelUpInstructions(levelUp.target, levelUp.gaps, round)
+    : roundInstructions(round, storyType);
+  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${round_}`;
 }
 
 // "Tell me about yourself": one question aimed at the one part the grader scored weakest (see

@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatYouGet } from "@/components/what-you-get";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { AiNotice } from "@/components/ai-notice";
@@ -68,11 +69,23 @@ export function TellingPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          <p className="text-slate-700">
-            {telling
-              ? "You've rewritten the story since I coached it. I'll coach the new version."
-              : "A strong story can still fall flat out loud. I'll help you tell this one, not read it: an opening line that grabs, the moment it could have gone wrong, one vivid detail, and a clear landing. You get a 30-second and a 2-minute version."}
-          </p>
+          {telling ? (
+            <p className="text-slate-700">
+              You&apos;ve rewritten the story since I coached it. I&apos;ll coach the new version.
+            </p>
+          ) : (
+            <>
+              <p className="text-slate-700">Tell it out loud, not read it.</p>
+              <WhatYouGet
+                items={[
+                  "Opening line",
+                  "The turning point",
+                  "One vivid detail",
+                  "30-sec and 2-min versions",
+                ]}
+              />
+            </>
+          )}
           <div>
             <button
               type="button"
