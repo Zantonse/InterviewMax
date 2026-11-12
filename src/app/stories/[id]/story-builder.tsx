@@ -436,8 +436,8 @@ export function StoryBuilder({
               {!content.imported && !content.linkedin && (
                 <li className="animate-enter text-sm text-slate-500" data-testid="builder-intro">
                   {storyType?.format === "intro"
-                    ? `How this works: answer ${questions.length} short questions in plain notes, typed or spoken. Then I'll ask a few follow-ups where it's thin and write your answer from your words, ready to shape for each target job.`
-                    : "How this works: tell me what happened, your way. Messy notes or a minute of talking is plenty. I'll write a rough draft straight away, then ask a few questions about what's missing to make it stronger."}
+                    ? `Answer ${questions.length} short questions in plain notes, typed or spoken. I write it from your words.`
+                    : "Tell it your way. Messy notes or a minute of talking is plenty."}
                 </li>
               )}
 

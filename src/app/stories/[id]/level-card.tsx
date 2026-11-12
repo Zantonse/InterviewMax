@@ -160,7 +160,7 @@ export function Staircase({
   missing?: string;
   climbingTo?: StoryLevel;
 }) {
-  const heights = ["h-16", "h-20", "h-24"];
+  const heights = ["h-20 sm:h-16", "h-24 sm:h-20", "h-28 sm:h-24"];
   return (
     <ol
       className="grid grid-cols-3 items-end gap-2 pt-9"

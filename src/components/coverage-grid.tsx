@@ -14,14 +14,14 @@ import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { GapButton } from "./gap-button";
 
-// Three looks: a written story is a solid tile with a check and its grade as words, a started one
-// an outlined tile, and an empty theme a dashed "+ Build" (GapButton).
-const STATUS: Record<Exclude<ThemeStatus, "empty">, string> = {
-  strong: "Strong",
-  good_enough: "Good enough",
-  not_yet: "Not yet strong",
-  written: "Not graded yet",
-  in_progress: "In progress",
+// Three looks: a written story is a solid tile with its level as three bars (the story levels:
+// Not yet and ungraded are Level 1, Good enough 2, Strong 3), a started one an outlined tile, and
+// an empty theme a dashed "+ Build" (GapButton).
+const LEVEL: Record<Exclude<ThemeStatus, "empty" | "in_progress">, 1 | 2 | 3> = {
+  strong: 3,
+  good_enough: 2,
+  not_yet: 1,
+  written: 1,
 };
 
 // The story bank against the question themes, on the home page's story bank card. Covered
@@ -74,7 +74,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
                   className="flex h-full flex-col items-start rounded-xl px-3 py-2 ring-1 ring-white/50 ring-inset transition hover:bg-white/10"
                 >
                   <span className="text-sm font-semibold">{theme.label}</span>
-                  <span className="mt-0.5 text-xs text-ink-100">{STATUS.in_progress}</span>
+                  <span className="mt-0.5 text-xs text-ink-100">In progress</span>
                 </Link>
               ) : (
                 <Link
@@ -88,7 +88,23 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
                       ✓
                     </span>
                   </span>
-                  <span className="mt-0.5 text-xs text-ink-700">{STATUS[theme.status]}</span>
+                  <span className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-700">
+                    <span className="flex gap-0.5" aria-hidden="true">
+                      {[1, 2, 3].map((n) => (
+                        <span
+                          key={n}
+                          className={`h-1.5 w-4 rounded-full ${
+                            n > LEVEL[theme.status as keyof typeof LEVEL]
+                              ? "bg-ink-100"
+                              : LEVEL[theme.status as keyof typeof LEVEL] === 3
+                                ? "bg-emerald-600"
+                                : "bg-ink-800"
+                          }`}
+                        />
+                      ))}
+                    </span>
+                    Level {LEVEL[theme.status as keyof typeof LEVEL]}
+                  </span>
                 </Link>
               )}
             </li>

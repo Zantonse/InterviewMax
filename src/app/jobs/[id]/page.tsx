@@ -174,8 +174,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             data-testid="job-brief"
           >
             <p className="min-w-0 flex-1 text-sm text-slate-600">
-              <span className="font-semibold text-slate-900">Interview day?</span> Your one-page
-              brief has your questions, stories, numbers and gaps.
+              <span className="font-semibold text-slate-900">Interview day?</span> Everything on
+              one page.
             </p>
             <Link
               href={`/jobs/${job.id}/brief`}
@@ -245,9 +245,6 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
               Role level
             </h2>
-            <p className="mb-4 text-sm text-slate-600">
-              The level sets how senior your stories need to sound and which tier to aim for.
-            </p>
             <LevelForm jobId={job.id} level={job.level} confirmed={job.levelConfirmed} />
             {job.otherRoles.length === 0 && !job.outcome && (
               <p className="mt-4 text-sm text-slate-600" data-testid="add-role-link">
@@ -294,8 +291,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 Optional: add your resume
               </h2>
               <p className="text-sm text-slate-700">
-                I&apos;ll check it against this job: what your history already shows, and what your
-                stories need to cover.
+                See what your history already shows for this job.
               </p>
               <Link
                 href="/jobs"
