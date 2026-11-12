@@ -1518,9 +1518,11 @@ function DraftSoFar({
   );
 }
 
-// The story part a follow-up's gap lands in.
+// The story part a follow-up's gap lands in. An unknown gap goes to where the story starts, after
+// the optional opening principle.
 function partForGap(gap: string, parts: readonly StoryPart[]): string {
-  return parts.find((p) => p.id === gap)?.id ?? GAP_TO_PART[gap] ?? parts[0].id;
+  const start = parts.find((p) => p.id !== "principle") ?? parts[0];
+  return parts.find((p) => p.id === gap)?.id ?? GAP_TO_PART[gap] ?? start.id;
 }
 
 function partLabelForGap(gap: string, storyType: StoryType | undefined): string | undefined {
@@ -2137,7 +2139,9 @@ function StoryPanel({
                   </ul>
                 ) : (
                   <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
-                    Empty
+                    {part.id === "principle"
+                      ? "Optional: how you think about problems like this, said before the story. Ask me more and I'll ask you for it."
+                      : "Empty"}
                   </p>
                 )}
               </div>
@@ -2185,8 +2189,7 @@ function notesForPart(
   parts: readonly StoryPart[],
   part: StoryPart,
 ): string[] {
-  const partFor = (gap: string) =>
-    parts.find((p) => p.id === gap)?.id ?? GAP_TO_PART[gap] ?? parts[0].id;
+  const partFor = (gap: string) => partForGap(gap, parts);
   return [
     // An uploaded answer isn't split by part until the story is written; show it at the top.
     part.id === parts[0].id ? (content.imported?.text ?? "") : "",

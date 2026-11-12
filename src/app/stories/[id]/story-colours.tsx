@@ -25,8 +25,24 @@ function countWords(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+// The optional opening principle gets its own colour, so the other parts keep theirs whether or
+// not a story has one.
+const PRINCIPLE_COLOUR = {
+  tint: "bg-teal-50",
+  bar: "bg-teal-200",
+  dot: "bg-teal-500",
+  edge: "border-teal-400",
+} as const;
+
 function colourAt(i: number) {
+  if (i < 0) return PRINCIPLE_COLOUR;
   return PART_COLOURS[i % PART_COLOURS.length];
+}
+
+// The colour index of each part: the principle is -1, the rest count from 0 after it.
+function colourIndex(parts: readonly { id: string }[]): number[] {
+  let n = 0;
+  return parts.map((p) => (p.id === "principle" ? -1 : n++));
 }
 
 function spokenSeconds(words: number): number {
@@ -50,9 +66,11 @@ export function SpokenBar({
   storyType: StoryType | undefined;
 }) {
   const guide = formatGuide(storyType);
-  const parts = storyParts(storyType).map((p, i) => {
+  const all = storyParts(storyType);
+  const index = colourIndex(all);
+  const parts = all.map((p, n) => {
     const text = draft.parts[p.id]?.trim() ?? "";
-    return { ...p, i, text, words: countWords(text) };
+    return { ...p, i: index[n], text, words: countWords(text) };
   });
   const total = parts.reduce((n, p) => n + p.words, 0);
   if (total === 0) return null;
@@ -123,9 +141,11 @@ export function ColouredScript({
   storyType: StoryType | undefined;
 }) {
   const [focus, setFocus] = useState<string | null>(null);
-  const parts = storyParts(storyType).map((p, i) => ({
+  const all = storyParts(storyType);
+  const index = colourIndex(all);
+  const parts = all.map((p, n) => ({
     ...p,
-    i,
+    i: index[n],
     text: draft.parts[p.id]?.trim() ?? "",
   }));
   return (
@@ -154,7 +174,11 @@ export function ColouredScript({
                 className={`h-2.5 w-2.5 rounded-sm ${p.text ? c.dot : "bg-slate-200"}`}
               />
               {p.label}
-              {!p.text && <span className="font-normal"> · missing</span>}
+              {!p.text && (
+                <span className="font-normal">
+                  {p.id === "principle" ? " · optional" : " · missing"}
+                </span>
+              )}
             </button>
           );
         })}
