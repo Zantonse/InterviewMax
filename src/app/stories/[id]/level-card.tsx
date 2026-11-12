@@ -13,9 +13,11 @@ import {
   type StoryLevel,
 } from "@/lib/stories/levels";
 import { storyParts, type StoryType } from "@/lib/stories/story-types";
+import { wordDiff } from "@/lib/stories/word-diff";
 
-// Story levels on the written story: where it stands, the one idea that gets it to the next level,
-// and what's missing for it. After a level-up, how far it climbed, with the story before and after.
+// Story levels on the written story, as a picture first: the story on a staircase of levels, what
+// the next step is missing as chips, and one button. The explanations open from small "i" lines.
+// After a level-up, how far it climbed, with the rewrite shown as changes on the story.
 export function LevelCard({
   content,
   storyType,
@@ -44,16 +46,12 @@ export function LevelCard({
     const open = pendingFollowUps(content);
     return (
       <Shell testId="level-card">
-        <Ladder level={levelUp.from} />
-        <p className="mt-3 text-sm text-slate-700">
-          On your way to{" "}
-          <strong>
-            Level {info.level}: {info.name}
-          </strong>
-          . Answer the {open === 1 ? "question" : `${open} questions`} on the Build tab and
-          I&apos;ll rewrite your story with what you add.
+        <Staircase level={levelUp.from} climbingTo={levelUp.target} />
+        <p className="mt-4 text-sm text-slate-700">
+          On your way to <strong>Level {info.level}</strong>. Answer{" "}
+          {open === 1 ? "1 question" : `${open} questions`}, then I rewrite it.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <PrimaryButton onClick={onShowQuestions} disabled={disabled}>
             Answer the questions
           </PrimaryButton>
@@ -89,61 +87,50 @@ export function LevelCard({
           disabled={disabled}
         />
       )}
-      <Ladder level={level} />
-      <p className="mt-3 text-sm text-slate-700" data-testid="level-hears">
-        <span className="font-semibold text-slate-900">
-          Level {level}: {info.name}.
-        </span>{" "}
+      <Staircase level={level} missing={gaps[0]?.label} />
+      <Info label={`What Level ${level} means`} testId="level-hears">
         An interviewer hears {lowerFirst(info.hears)}
-      </p>
+      </Info>
       {next ? (
-        <div
-          className="mt-4 rounded-2xl bg-ink-50 p-4 ring-1 ring-ink-800/10"
-          data-testid="level-next"
-        >
-          <p className="text-sm font-bold text-ink-900">
-            Next: Level {next.level}, {next.name.toLowerCase()}
-          </p>
-          <p className="mt-1 text-sm text-slate-700">{next.lesson}</p>
+        <div className="mt-4" data-testid="level-next">
           {gaps.length > 0 && (
-            <>
-              <p className="mt-3 text-sm font-semibold text-slate-800">What your story needs:</p>
-              <ul className="mt-1 flex flex-col gap-1.5" data-testid="level-gaps">
-                {gaps.map((g) => (
-                  <li key={g.id} className="flex gap-2 text-sm">
-                    <span aria-hidden="true" className="mt-0.5 font-bold text-ink-700">
-                      →
-                    </span>
-                    <span>
-                      <span className="font-medium text-slate-900">{g.label}.</span>{" "}
-                      <span className="text-slate-600">{g.detail}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <ul className="flex flex-wrap gap-1.5" data-testid="level-gaps" aria-label="What your story needs">
+              {gaps.map((g) => (
+                <li
+                  key={g.id}
+                  className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200"
+                >
+                  + {g.label}
+                </li>
+              ))}
+            </ul>
           )}
-          <div className="mt-3">
-            <PrimaryButton onClick={onLevelUp} disabled={disabled} busy={busy !== null}>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <PrimaryButton onClick={onLevelUp} disabled={disabled} busy={busy !== null} accent>
               {busy === "asking"
                 ? "Finding the right questions…"
                 : busy === "writing"
                   ? "Rewriting…"
                   : ask
-                    ? `Help me reach Level ${next.level}`
+                    ? `Climb to Level ${next.level}`
                     : `Rewrite it for Level ${next.level}`}
             </PrimaryButton>
-            <p className="mt-2 text-xs text-slate-500">
-              {ask
-                ? `A few questions about only these, then I'll rewrite it and show you before and after.`
-                : `Nothing to ask: I'll rewrite it to fix these and show you before and after.`}
-            </p>
+            <span className="text-xs text-slate-500">
+              {ask ? "A few questions, then a rewrite" : "A rewrite, nothing to answer"}
+            </span>
           </div>
+          <Info label={`How to reach Level ${next.level}`}>
+            <span className="block">{next.lesson}</span>
+            {gaps.map((g) => (
+              <span key={g.id} className="mt-1 block">
+                <span className="font-medium text-slate-900">{g.label}.</span> {g.detail}
+              </span>
+            ))}
+          </Info>
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-700" data-testid="level-top">
-          That&apos;s the top level for a written story. Next, practice saying it out loud with How
-          to tell it below.
+        <p className="mt-4 text-sm text-slate-700" data-testid="level-top">
+          Top level for a written story. Next, say it out loud with How to tell it below.
         </p>
       )}
     </Shell>
@@ -162,37 +149,92 @@ function Shell({ testId, children }: { testId: string; children: React.ReactNode
   );
 }
 
-// Level 1 → Level 2 → Level 3, with the current one marked.
-export function Ladder({ level }: { level: StoryLevel }) {
+// Level 1 → Level 2 → Level 3 as steps that climb, with the story marked on the one it's reached.
+// The next step says what's missing for it; while a level-up is open, it's the one being climbed.
+export function Staircase({
+  level,
+  missing,
+  climbingTo,
+}: {
+  level: StoryLevel;
+  missing?: string;
+  climbingTo?: StoryLevel;
+}) {
+  const heights = ["h-16", "h-20", "h-24"];
   return (
-    <ol className="grid grid-cols-3 gap-2" aria-label="Story level" data-testid="level-ladder">
-      {LEVELS.map((l) => {
+    <ol
+      className="grid grid-cols-3 items-end gap-2 pt-9"
+      aria-label="Story level"
+      data-testid="level-ladder"
+    >
+      {LEVELS.map((l, i) => {
         const done = l.level <= level;
         const current = l.level === level;
+        const next = l.level === level + 1;
         return (
           <li
             key={l.level}
             aria-current={current ? "step" : undefined}
-            className="flex flex-col gap-1.5"
+            className={`relative flex flex-col justify-start rounded-t-2xl rounded-b-md p-2.5 transition-colors duration-300 sm:p-3 ${heights[i]} ${
+              done
+                ? current
+                  ? "bg-ink-800 text-white"
+                  : "bg-ink-600 text-white"
+                : next
+                  ? `border-2 border-dashed bg-white ${climbingTo === l.level ? "border-accent-500" : "border-accent-300"}`
+                  : "border-2 border-dashed border-slate-200 bg-white"
+            }`}
           >
+            {current && (
+              <span className="animate-pop absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-400 px-2.5 py-1 text-xs font-bold text-ink-950 shadow-sm after:absolute after:left-1/2 after:top-full after:-ml-1 after:border-4 after:border-transparent after:border-t-accent-400">
+                Your story
+              </span>
+            )}
             <span
-              aria-hidden="true"
-              className={`h-1.5 rounded-full ${done ? "bg-ink-700" : "bg-slate-200"}`}
-            />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide ${current ? "text-ink-800" : done ? "text-ink-700/70" : "text-slate-400"}`}
+              className={`text-[11px] font-bold uppercase tracking-wide ${done ? "text-white/70" : "text-slate-400"}`}
             >
               Level {l.level}
             </span>
             <span
-              className={`text-sm leading-tight ${current ? "font-semibold text-slate-900" : done ? "text-slate-600" : "text-slate-400"}`}
+              className={`text-sm font-semibold leading-tight ${done ? "text-white" : next ? "text-slate-700" : "text-slate-400"}`}
             >
               {l.name}
             </span>
+            {next && (climbingTo === l.level || missing) && (
+              <span className="mt-1 hidden text-xs leading-tight text-slate-500 sm:block">
+                {climbingTo === l.level ? "Climbing now" : `Missing: ${lowerFirst(missing ?? "")}`}
+              </span>
+            )}
           </li>
         );
       })}
     </ol>
+  );
+}
+
+// A short line that opens to the longer explanation, so the card leads with the picture.
+function Info({
+  label,
+  testId,
+  children,
+}: {
+  label: string;
+  testId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group mt-3 text-sm" data-testid={testId}>
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
+        <span
+          aria-hidden="true"
+          className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold"
+        >
+          i
+        </span>
+        {label}
+      </summary>
+      <p className="animate-fade mt-1.5 text-slate-600">{children}</p>
+    </details>
   );
 }
 
@@ -213,8 +255,6 @@ function LevelUpResult({
   const climbed = reached > levelUp.from;
   const info = levelInfo(reached);
   const parts = storyParts(storyType);
-  const text = (p: Record<string, string>) =>
-    parts.flatMap((part) => (p[part.id]?.trim() ? [p[part.id].trim()] : []));
   return (
     <div
       className={`mb-4 rounded-2xl p-4 ${climbed ? "bg-emerald-50 ring-1 ring-emerald-200" : "bg-amber-50 ring-1 ring-amber-200"}`}
@@ -241,33 +281,89 @@ function LevelUpResult({
           ? reached >= TOP_LEVEL
             ? "Your story now shows how you think, not just what happened."
             : "Your story now proves something. It's ready to use, and there's one more level."
-          : "The rewrite used your answers, but a few things still hold it back. They're listed below."}
+          : "The rewrite used your answers, but a few things still hold it back."}
       </p>
-      <details className="mt-2 text-sm" data-testid="before-after">
-        <summary className="cursor-pointer font-medium text-ink-800">See before and after</summary>
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-white/70 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Before, Level {levelUp.from}
-            </p>
-            {text(levelUp.before).map((p, i) => (
-              <p key={i} className="mt-2 text-slate-600">
-                {p}
+      <BeforeAfter
+        before={levelUp.before}
+        after={content.draft?.parts ?? {}}
+        parts={parts}
+        from={levelUp.from}
+        reached={reached}
+      />
+    </div>
+  );
+}
+
+// The rewrite as changes on the story itself: added words underlined in green, cut words struck
+// through, part by part, with each changed part named. Unchanged parts fold into one line.
+function BeforeAfter({
+  before,
+  after,
+  parts,
+  from,
+  reached,
+}: {
+  before: Record<string, string>;
+  after: Record<string, string>;
+  parts: readonly { id: string; label: string }[];
+  from: StoryLevel;
+  reached: StoryLevel;
+}) {
+  const rows = parts
+    .map((p) => ({ part: p, pieces: wordDiff(before[p.id] ?? "", after[p.id] ?? "") }))
+    .filter((r) => r.pieces.length > 0);
+  const changed = rows.filter((r) => r.pieces.some((x) => x.kind !== "same"));
+  const unchanged = rows.length - changed.length;
+  return (
+    <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-black/5" data-testid="before-after">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+          What changed, Level {from} to {reached}
+        </p>
+        <p className="flex gap-2 text-xs text-slate-500" aria-hidden="true">
+          <span className="border-b-2 border-emerald-500 bg-emerald-50 px-1">added</span>
+          <span className="text-slate-400 line-through">cut</span>
+        </p>
+      </div>
+      {changed.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-600">The words stayed the same.</p>
+      ) : (
+        <div className="mt-2 flex flex-col gap-3 text-sm leading-relaxed" data-stagger>
+          {changed.map(({ part, pieces }) => (
+            <div key={part.id}>
+              <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200">
+                {part.label}
+              </span>
+              <p className="text-slate-700">
+                {pieces.map((x, i) =>
+                  x.kind === "added" ? (
+                    <ins
+                      key={i}
+                      className="rounded-sm border-b-2 border-emerald-500 bg-emerald-50 px-0.5 text-slate-900 no-underline"
+                    >
+                      {x.text}
+                    </ins>
+                  ) : x.kind === "cut" ? (
+                    <del key={i} className="text-slate-400">
+                      {x.text}
+                    </del>
+                  ) : (
+                    <span key={i}>{x.text}</span>
+                  ),
+                ).reduce<React.ReactNode[]>(
+                  (acc, node, i) => (i === 0 ? [node] : [...acc, " ", node]),
+                  [],
+                )}
               </p>
-            ))}
-          </div>
-          <div className="rounded-xl bg-white p-3 ring-1 ring-black/5">
-            <p className="text-xs font-bold uppercase tracking-wide text-ink-800">
-              Now, Level {reached}
-            </p>
-            {text(content.draft?.parts ?? {}).map((p, i) => (
-              <p key={i} className="mt-2 text-slate-800">
-                {p}
-              </p>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </details>
+      )}
+      {unchanged > 0 && changed.length > 0 && (
+        <p className="mt-2 text-xs text-slate-500">
+          {unchanged === 1 ? "1 part" : `${unchanged} parts`} unchanged.
+        </p>
+      )}
     </div>
   );
 }
@@ -276,11 +372,14 @@ function PrimaryButton({
   onClick,
   disabled,
   busy,
+  accent = false,
   children,
 }: {
   onClick: () => void;
   disabled: boolean;
   busy?: boolean;
+  // The level's main call to action: periwinkle, like the app's other main buttons.
+  accent?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -289,7 +388,11 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
-      className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+      className={`rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
+        accent
+          ? "bg-accent-400 text-ink-950 hover:bg-accent-300"
+          : "bg-ink-800 text-white hover:bg-ink-900"
+      }`}
     >
       {children}
     </button>
