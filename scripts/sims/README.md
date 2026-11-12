@@ -12,7 +12,7 @@ real testers.
 
 ## When it runs
 
-- **Every 3 days** (`.github/workflows/sims.yml`): the workflow points the `sims/main` branch at
+- **Weekly, Mondays** (`.github/workflows/sims.yml`): the workflow points the `sims/main` branch at
   `main`, waits until Vercel's preview of it serves that commit, then runs against it.
 - **Run workflow button** in GitHub Actions → Simulated users. Paste a preview URL to test that
   preview (for a story builder PR, its preview URL from the Vercel comment), and optionally pick
@@ -109,6 +109,7 @@ account afterwards so you can look at it on the preview. Output goes to `sims-ou
 
 ## Cost
 
-Roughly $0.85 a run at Nov 2026 list prices: the app's grader (GPT 5.5) is most of it, on the
-app's OpenRouter key; persona and analyst calls are on `SIMS_OPENROUTER_API_KEY`, and the report
-prints what they cost. Every 3 days is about $8 a month.
+Persona and analyst calls are on `SIMS_OPENROUTER_API_KEY`, and the report prints what they
+cost: about $1 for a 7-persona round (Nov 2026). The app's own builder and grader calls are on
+the app's OpenRouter key on top of that. Runs are weekly (every 3 days until 2026-11-10), so the
+sims key spends about $4-5 a month.
