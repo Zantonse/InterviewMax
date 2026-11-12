@@ -1300,48 +1300,123 @@ function DraftSoFar({
   }
   const rough = isRoughDraft(content);
   const current = nextFollowUpIndex(content);
-  const gap = current !== undefined ? content.followUps?.[current]?.gap : undefined;
+  const followUps = content.followUps ?? [];
+  const gap = current !== undefined ? followUps[current]?.gap : undefined;
   const parts = storyParts(storyType);
   const marked = gap ? partForGap(gap, parts) : undefined;
   const pending = pendingFollowUps(content);
+  // This round's questions, one pip each, so "how many left" is a picture, not a sentence.
+  const round = current !== undefined ? (followUps[current]?.round ?? 1) : undefined;
+  const roundQuestions = followUps
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => f.source !== "practice" && (f.round ?? 1) === round);
+  // Parts a later question in this round will fill in.
+  const coming = new Set(
+    followUps
+      .filter((f, i) => i !== current && !f.answer?.trim() && !f.skipped && f.source !== "practice")
+      .map((f) => partForGap(f.gap, parts)),
+  );
+  const target =
+    content.levelUp && content.levelUp.round === round ? content.levelUp.target : 2;
+  const showLevel = rough && usesLevels(storyType, content);
   return (
     <section
       className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 ${justWritten ? "animate-success" : ""}`}
       data-testid="draft-so-far"
     >
-      <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
-        {rough ? "Your rough draft" : "Your story"}
-      </h2>
-      {rough && (
-        <p className="mt-1 text-sm text-slate-600">
-          {pending === 1 ? "One question left" : `${pending} questions left`}, then I&apos;ll
-          rewrite it with your answers.
-        </p>
-      )}
-      <div className="mt-3 flex max-h-[28rem] flex-col gap-2 overflow-y-auto text-sm leading-relaxed text-slate-700">
-        {parts.map((p) =>
-          draft.parts[p.id]?.trim() ? (
-            <p
-              key={p.id}
-              className={`-mx-2 rounded-lg px-2 py-1 ring-1 transition-[background-color,box-shadow] duration-300 ${
-                p.id === marked ? "bg-accent-50 ring-accent-300" : "ring-transparent"
-              }`}
-              data-testid={p.id === marked ? "draft-part-marked" : undefined}
-            >
-              {p.id === marked && (
-                <span className="block text-xs font-semibold uppercase tracking-wide text-ink-700">
-                  {p.label}: this question improves it
-                </span>
-              )}
-              {draft.parts[p.id]}
-            </p>
-          ) : p.id === marked ? (
-            <p key={p.id} className="-mx-2 rounded-lg bg-accent-50 px-2 py-1 text-slate-500 ring-1 ring-accent-300">
-              {p.label}: missing so far. This question fills it in.
-            </p>
-          ) : null,
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
+          {rough ? "Your story so far" : "Your story"}
+        </h2>
+        {showLevel && (
+          <span className="text-xs font-medium text-slate-500" data-testid="draft-level">
+            Level {target - 1} → {target}
+          </span>
         )}
       </div>
+      {rough && roundQuestions.length > 0 && (
+        <div className="mt-2" data-testid="draft-pips">
+          <div className="flex gap-1" aria-hidden="true">
+            {roundQuestions.map(({ f, i }) => (
+              <span
+                key={i}
+                className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                  i === current
+                    ? "bg-accent-500"
+                    : f.answer?.trim() || f.skipped
+                      ? "bg-ink-800"
+                      : "bg-slate-200"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">
+            {pending === 1 ? "1 question left" : `${pending} questions left`}, then I rewrite it
+          </p>
+        </div>
+      )}
+      <ol
+        className="relative mt-4 flex max-h-[30rem] flex-col gap-1 overflow-y-auto pl-7"
+        data-testid="story-shape"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute bottom-3 left-[0.6rem] top-3 w-0.5 rounded-full bg-slate-200"
+        />
+        {parts.map((p) => {
+          const text = draft.parts[p.id]?.trim();
+          const now = p.id === marked;
+          const state = now ? "now" : text ? "done" : "empty";
+          return (
+            <li
+              key={p.id}
+              className={`relative -ml-2 rounded-xl px-2 py-1.5 transition-colors duration-300 ${
+                now ? "bg-accent-50" : ""
+              }`}
+              data-testid={now ? "draft-part-marked" : `draft-part-${state}`}
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute -left-[1.1rem] top-2 flex h-4 w-4 items-center justify-center rounded-full border-2 transition-colors duration-300 ${
+                  state === "done"
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : state === "now"
+                      ? "border-accent-600 bg-accent-200 ring-4 ring-accent-100"
+                      : "border-slate-300 bg-white"
+                }`}
+              >
+                {state === "done" && (
+                  <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M2.5 6.2 5 8.5l4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+              <p
+                className={`text-sm font-semibold ${state === "empty" ? "text-slate-500" : "text-slate-900"}`}
+              >
+                {p.label}
+                {now && <span className="font-medium text-accent-700"> · answering now</span>}
+              </p>
+              {text ? (
+                <p
+                  key={text}
+                  className={`animate-fade text-sm leading-relaxed text-slate-700 ${now ? "" : "line-clamp-3"}`}
+                >
+                  {text}
+                </p>
+              ) : (
+                <p className="text-sm italic text-slate-400">
+                  {now
+                    ? "Missing so far. This question fills it in."
+                    : coming.has(p.id)
+                      ? "A question coming fills this in."
+                      : "Not in your story yet."}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
       {!rough && (
         <button
           type="button"
