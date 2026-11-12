@@ -7,6 +7,8 @@ import { askFollowUp, giveFeedback } from "@/lib/practice/coach";
 import {
   MAX_PRACTICE_ANSWER_LENGTH,
   type PracticeItem,
+  latestConfidence,
+  parseConfidence,
   currentItemIndex,
   itemStep,
   pickQuestions,
@@ -17,6 +19,7 @@ import {
   deletePracticeSession,
   getPracticeSession,
   insertPracticeSession,
+  listPracticeSessionsSafely,
   savePracticeItems,
 } from "@/lib/practice/data";
 import type { VoiceStats } from "@/lib/practice/delivery";
@@ -46,7 +49,16 @@ export async function startPractice(_prev: StartState, formData: FormData): Prom
     if (!job.likelyQuestions) {
       return { error: "Predict this job's likely questions first, then practice them." };
     }
-    const picked = pickQuestions(job.likelyQuestions.questions, await listStories());
+    const [stories, earlier] = await Promise.all([
+      listStories(),
+      listPracticeSessionsSafely(job.id),
+    ]);
+    const picked = pickQuestions(
+      job.likelyQuestions.questions,
+      stories,
+      undefined,
+      latestConfidence(earlier),
+    );
     if (picked.length === 0) return { error: "This job has no likely questions to practice yet." };
     const items = screen ? picked.map((i) => ({ ...i, screen: true })) : picked;
     id = await insertPracticeSession({ targetJobId: job.id, items });
@@ -91,6 +103,26 @@ export async function answerPractice(
 // Runs the follow-up or feedback a question is waiting on, e.g. after a model call failed.
 export async function continuePractice(sessionId: string, index: number): Promise<PracticeResult> {
   return withSession(sessionId, index, async (session) => advance(session, index));
+}
+
+// "How did that feel?": the user's own read of an answer, from shaky (1) to confident (5). Saved on
+// the question; tapping again changes it.
+export async function rateConfidence(
+  sessionId: string,
+  index: number,
+  value: number,
+): Promise<PracticeResult> {
+  return withSession(sessionId, index, async (session, item) => {
+    const confidence = parseConfidence(value);
+    if (!confidence) return fail("Pick a point on the bar.");
+    if (!item.feedback && !item.skipped && item.turns.every((t) => !t.answer?.trim())) {
+      return fail("Answer the question first.");
+    }
+    if (item.confidence === confidence) return ok(session);
+    const items = replace(session.items, index, { ...item, confidence });
+    await savePracticeItems(session.id, items, session.finishedAt);
+    return { ok: true, items, finishedAt: session.finishedAt };
+  });
 }
 
 export async function skipPractice(sessionId: string, index: number): Promise<PracticeResult> {

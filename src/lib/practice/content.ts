@@ -176,7 +176,38 @@ export type PracticeItem = {
   screen?: boolean;
   feedback?: PracticeFeedback;
   skipped?: boolean;
+  // How the answer felt to the user, tapped on a five-step bar after the feedback (1 shaky to 5
+  // confident). Their own read, not the coach's: the next round brings shaky questions back first.
+  confidence?: Confidence;
 };
+
+export type Confidence = 1 | 2 | 3 | 4 | 5;
+
+export const CONFIDENCE_LABELS: Record<Confidence, string> = {
+  1: "Shaky",
+  2: "Unsure",
+  3: "OK",
+  4: "Solid",
+  5: "Confident",
+};
+
+export function parseConfidence(raw: unknown): Confidence | undefined {
+  return raw === 1 || raw === 2 || raw === 3 || raw === 4 || raw === 5 ? raw : undefined;
+}
+
+// The user's latest rating for each question across a job's earlier rounds (newest round first,
+// as listPracticeSessions returns them), keyed by question text.
+export function latestConfidence(
+  sessions: { items: PracticeItem[] }[],
+): Map<string, Confidence> {
+  const latest = new Map<string, Confidence>();
+  for (const session of sessions) {
+    for (const item of session.items) {
+      if (item.confidence && !latest.has(item.question)) latest.set(item.question, item.confidence);
+    }
+  }
+  return latest;
+}
 
 type StoryLike = {
   id: string;
@@ -198,11 +229,14 @@ export function reasonFor(
 }
 
 // The questions for one round: gaps and weaker stories first, then the rest in the order the job's
-// likely questions rank them. Each comes with the story it should be answered with.
+// likely questions rank them. Each comes with the story it should be answered with. A question the
+// user last rated shaky or unsure comes back right after the gaps; one they rated confident goes
+// to the back.
 export function pickQuestions(
   questions: LikelyQuestion[],
   stories: StoryLike[],
   size = ROUND_SIZE,
+  felt: Map<string, Confidence> = new Map(),
 ): PracticeItem[] {
   return questions
     .map((q, index) => {
@@ -217,7 +251,14 @@ export function pickQuestions(
           : {}),
         turns: [{ question: q.question }],
       };
-      return { item, index, rank: REASON_RANK[reason] };
+      const confidence = felt.get(q.question);
+      const rank =
+        reason !== "gap" && confidence !== undefined && confidence <= 2
+          ? 0.5
+          : confidence === 5
+            ? REASON_RANK[reason] + 10
+            : REASON_RANK[reason];
+      return { item, index, rank };
     })
     .sort((a, b) => a.rank - b.rank || a.index - b.index)
     .slice(0, size)
@@ -465,6 +506,8 @@ export function parseItems(raw: unknown): PracticeItem[] {
       ...(r.screen === true ? { screen: true } : {}),
       ...(r.skipped === true ? { skipped: true } : {}),
     };
+    const confidence = parseConfidence(r.confidence);
+    if (confidence) item.confidence = confidence;
     const feedback = parseStoredFeedback(r.feedback);
     if (feedback) item.feedback = feedback;
     return [item];
