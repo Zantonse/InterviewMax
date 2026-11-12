@@ -4,7 +4,8 @@ import { DeleteStoryButton } from "@/components/delete-story-button";
 import { startStory } from "@/app/stories/new/actions";
 import { type NextStory, nextStoryToBuild } from "@/lib/guide/journey";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
-import { jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { focusJob, jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { finishCounts } from "@/lib/prep/finish-line";
 import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
@@ -33,7 +34,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   // target jobs. Optional, so a failure to load them never blocks the builder.
   const [prep, jobs, stories, checklist, targets, finder, field, execMode] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
-    intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
+    listJobs().catch(() => [] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
@@ -47,7 +48,18 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
     .slice(0, 3)
     .map((m) => ({ moment: m.moment, quote: m.quote, sourceLabel: SOURCE_LABELS[m.source] }));
   const resume = Boolean(prep.resume);
-  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const timeZone = (await headers()).get("x-vercel-ip-timezone");
+  const today = todayIn(timeZone);
+  // The finish line for the user's other stories; the builder adds this one once it's written.
+  const finishBase = intro
+    ? undefined
+    : finishCounts({
+        stories,
+        today,
+        timeZone,
+        interviewDate: focusJob(jobs, today)?.interviewDate,
+        exceptId: story.id,
+      });
   return (
     <StoryBuilder
       storyId={story.id}
@@ -63,6 +75,8 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       moments={moments}
       field={field.id}
       execMode={execMode}
+      priorWritten={finishBase?.written ?? 0}
+      finishBase={finishBase}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={

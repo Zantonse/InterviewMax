@@ -8,7 +8,10 @@ import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
 import { PrepPath } from "@/components/prep-path";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
-import { listJobs, type TargetJob } from "@/lib/jobs/data";
+import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
+import { FinishLineBar } from "@/components/finish-line";
+import { finishCounts, finishLine } from "@/lib/prep/finish-line";
+import { nextStoryToBuild } from "@/lib/guide/journey";
 import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
@@ -79,6 +82,7 @@ async function Dashboard() {
     stories = null;
   }
   if (jobs?.length === 0 && stories?.length === 0) return null;
+  const finish = stories ? <CoreStories stories={stories} jobs={jobs ?? []} /> : null;
   const bank = (
     <Card className="bg-ink-800 text-white" title="Story bank">
       {stories ? (
@@ -90,11 +94,18 @@ async function Dashboard() {
       )}
     </Card>
   );
-  if (jobs?.length === 0) return <div className="mt-4">{bank}</div>;
+  if (jobs?.length === 0)
+    return (
+      <div className="mt-4 space-y-4">
+        <Suspense fallback={null}>{finish}</Suspense>
+        {bank}
+      </div>
+    );
   return (
     <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-3">
       <div className="md:col-span-2">{bank}</div>
       <div className="space-y-4">
+        <Suspense fallback={null}>{finish}</Suspense>
         {jobs ? (
           <FocusJob jobs={jobs} stories={stories ?? []} />
         ) : (
@@ -156,6 +167,25 @@ async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRe
       </div>
     </Card>
   );
+}
+
+// The finish line: how many of the core stories are written, the pace to the interview, and the
+// button to today's story (the next one the user's jobs need, or the one in progress).
+async function CoreStories({ stories, jobs }: { stories: StoryRecord[]; jobs: TargetJob[] }) {
+  const timeZone = (await headers()).get("x-vercel-ip-timezone");
+  const today = todayIn(timeZone);
+  const line = finishLine(
+    finishCounts({ stories, today, timeZone, interviewDate: focusJob(jobs, today)?.interviewDate }),
+  );
+  const { overview } = await getJobsPrep().catch(() => ({ overview: null }));
+  const upNext = overview ? nextStoryToBuild(overview.storyOrder, stories, null) : undefined;
+  const next = upNext
+    ? {
+        href: upNext.storyId ? `/stories/${upNext.storyId}` : `/stories/new/${upNext.storyType}`,
+        label: upNext.label,
+      }
+    : { href: "/stories/new", label: "pick a story" };
+  return <FinishLineBar line={line} next={next} />;
 }
 
 // Only shown once past interviews point at something to fix; the sidebar links to the page itself.

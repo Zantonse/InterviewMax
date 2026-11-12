@@ -76,6 +76,10 @@ import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { quickLine, quickPicked, quickStartRows } from "@/lib/stories/quick-start";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LevelCard } from "./level-card";
+import { ExampleLadder } from "@/components/example-ladder";
+import { helpAmount, type HelpAmount } from "@/lib/stories/help-fade";
+import { FinishLineBar } from "@/components/finish-line";
+import { finishLine, writtenOn, type FinishCounts } from "@/lib/prep/finish-line";
 import { TOP_LEVEL, levelInfo, storyLevel, usesLevels } from "@/lib/stories/levels";
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
@@ -129,6 +133,8 @@ export function StoryBuilder({
   beside,
   field = null,
   execMode = false,
+  priorWritten = 0,
+  finishBase,
 }: {
   // Null for a new story that isn't saved yet: the first action creates it from newStory.
   storyId: string | null;
@@ -156,6 +162,11 @@ export function StoryBuilder({
   field?: FieldId | null;
   // Exec mode (Settings, off by default): shows the Exec version card on the written story.
   execMode?: boolean;
+  // How many behavioral stories the user wrote before this one: the opening help fades with it
+  // (see help-fade.ts).
+  priorWritten?: number;
+  // The finish line from the user's other stories; this one is added once it's written.
+  finishBase?: FinishCounts;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -381,6 +392,11 @@ export function StoryBuilder({
   // A moment picked in the story finder fills in the first answer, for the user to make their own.
   const seed = content.seed && storyType?.format !== "intro" ? content.seed : undefined;
   const seedNow = currentCore === "start" ? seed : undefined;
+  // Behavioral stories open with an example story and help that fades as the user writes more.
+  const behavioral = storyType?.format === "star" && !content.tough;
+  const help = helpAmount(priorWritten);
+  const showExample =
+    behavioral && !content.draft && !content.answers.start?.trim() && !content.imported;
   const hints: Record<string, string | undefined> = {
     // Started from a real question, the question itself says what to pick.
     start: seed ? seedHint(seed) : content.asked ? undefined : openingHint(targets, storyType),
@@ -389,11 +405,13 @@ export function StoryBuilder({
 
   // The chat keeps its newest message in view, unless an earlier answer is open for editing.
   const listRef = useRef<HTMLOListElement>(null);
+  // A first story opens on the example at the top, read top-down to the question under it.
+  const exampleFirst = showExample && help === "full";
   useEffect(() => {
     if (editing || view !== "build") return;
     const list = listRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
-  }, [content, busy, editing, view]);
+    if (list) list.scrollTop = exampleFirst && !busy ? 0 : list.scrollHeight;
+  }, [content, busy, editing, view, exampleFirst]);
 
   return (
     <>
@@ -442,6 +460,28 @@ export function StoryBuilder({
                 </li>
               )}
 
+              {showExample && (
+                <li className="animate-enter" data-testid="example-story" data-help={help}>
+                  {help === "full" ? (
+                    <div className="rounded-2xl bg-ink-50 p-4 ring-1 ring-ink-800/10">
+                      <p className="mb-3 text-sm font-bold text-ink-800">
+                        First, see one story climb from Level 1 to Level 3
+                      </p>
+                      <ExampleLadder field={field} />
+                    </div>
+                  ) : (
+                    <details className="group rounded-2xl bg-ink-50 px-4 py-3 ring-1 ring-ink-800/10">
+                      <summary className="cursor-pointer text-sm font-semibold text-ink-800 hover:underline">
+                        See an example story climb from Level 1 to 3
+                      </summary>
+                      <div className="mt-3">
+                        <ExampleLadder field={field} />
+                      </div>
+                    </details>
+                  )}
+                </li>
+              )}
+
               {content.imported && (
                 <li className="flex flex-col gap-2">
                   <CoachBubble>Here&apos;s the answer you prepared before.</CoachBubble>
@@ -487,23 +527,30 @@ export function StoryBuilder({
                     }
                     joggers={
                       q.id === "start" && !content.answers[q.id]?.trim() && !seed ? (
-                        <>
-                          <Joggers
-                            storyType={storyType}
-                            field={field}
-                            moments={moments}
-                            disabled={busy !== null}
-                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
-                          />
-                          {storyType?.format === "star" && !content.tough && (
-                            <QuickStart
-                              storyTypeId={storyTypeId}
-                              answerText={answerText}
+                        <OpeningHelp
+                          amount={behavioral ? help : "full"}
+                          joggers={
+                            <Joggers
+                              storyType={storyType}
+                              field={field}
+                              moments={moments}
                               disabled={busy !== null}
-                              onPick={(pick) => setInsert((n) => ({ ...pick, n: (n?.n ?? 0) + 1 }))}
+                              onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
                             />
-                          )}
-                        </>
+                          }
+                          quickStart={
+                            behavioral && (
+                              <QuickStart
+                                storyTypeId={storyTypeId}
+                                answerText={answerText}
+                                disabled={busy !== null}
+                                onPick={(pick) =>
+                                  setInsert((n) => ({ ...pick, n: (n?.n ?? 0) + 1 }))
+                                }
+                              />
+                            )
+                          }
+                        />
                       ) : undefined
                     }
                     source={
@@ -828,6 +875,7 @@ export function StoryBuilder({
               )}
             </StoryPanel>
             <LevelCard
+              field={field}
               content={content}
               storyType={storyType}
               busy={busy === "leveling" ? "asking" : busy === "writing" && content.levelUp && content.levelUp.reached === undefined ? "writing" : null}
@@ -866,6 +914,18 @@ export function StoryBuilder({
               disabled={busy !== null}
               onContent={setContent}
             />
+            {content.draft && finishBase && behavioral && (
+              <FinishLineBar
+                line={finishLine({
+                  ...finishBase,
+                  written: finishBase.written + 1,
+                  doneToday:
+                    finishBase.doneToday ||
+                    writtenOn(content.draft.writtenAt, finishBase.today, finishBase.timeZone),
+                })}
+                afterStory
+              />
+            )}
             {content.draft && nextUp}
             {afterStory}
           </div>
@@ -1143,6 +1203,49 @@ function QuestionHelpRow({
       )}
     </div>
   );
+}
+
+// The opening question's memory joggers and Quick start taps, as much as the user still needs (see
+// help-fade.ts): all of it on the first story, Quick start folded on the second, both behind one
+// "Need a nudge?" tap after that.
+function OpeningHelp({
+  amount,
+  joggers,
+  quickStart,
+}: {
+  amount: HelpAmount;
+  joggers: React.ReactNode;
+  quickStart: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  if (amount === "full" || open) {
+    return (
+      <>
+        {joggers}
+        {quickStart}
+      </>
+    );
+  }
+  const button = (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      aria-expanded={false}
+      className="self-start pl-1 text-sm font-medium text-ink-800 hover:underline"
+      data-testid="need-a-nudge"
+    >
+      {amount === "some" ? "Quick start: tap what fits" : "Need a nudge?"}
+    </button>
+  );
+  if (amount === "some") {
+    return (
+      <>
+        {joggers}
+        {quickStart && button}
+      </>
+    );
+  }
+  return button;
 }
 
 // Under the opening question of a behavioral story: a few kinds of moment to jog their memory, and
