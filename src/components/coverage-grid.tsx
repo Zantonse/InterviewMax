@@ -14,6 +14,7 @@ import {
 } from "@/lib/stories/bank";
 import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
+import { buildRecap } from "@/lib/recap/recap";
 import { BankViews } from "./bank-views";
 import { GapButton } from "./gap-button";
 
@@ -130,6 +131,16 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
       )}
 
       <LevelMixLine mix={mix} level={level} />
+
+      {buildRecap(stories, []) && (
+        <Link
+          href="/recap"
+          className="mt-3 inline-block text-sm font-semibold text-accent-200 hover:underline"
+          data-testid="recap-link"
+        >
+          See your prep recap →
+        </Link>
+      )}
     </section>
   );
 }
