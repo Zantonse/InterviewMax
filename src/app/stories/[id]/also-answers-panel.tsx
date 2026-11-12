@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatYouGet } from "@/components/what-you-get";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { getTheme } from "@/lib/questions/themes";
@@ -80,8 +81,7 @@ export function AlsoAnswersPanel({
           )}
           {also.questions.length === 0 ? (
             <p className="mt-2 text-slate-700">
-              I didn&apos;t find another question this story answers well as written. That&apos;s
-              fine: it&apos;s focused. Build another story for your other questions.
+              No other question fits it well as written. It&apos;s focused, and that&apos;s fine.
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2" data-testid="also-answers-list" data-stagger>
@@ -99,11 +99,23 @@ export function AlsoAnswersPanel({
         </>
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          <p className="text-slate-700">
-            {also
-              ? "You've changed the story since I checked. I'll check the new version."
-              : "One good story can answer several questions, worded different ways. I'll check this one against your likely questions, the ones you were asked before and common interview questions, and tell you what to lead with for each."}
-          </p>
+          {also ? (
+            <p className="text-slate-700">
+              You&apos;ve changed the story since I checked. I&apos;ll check the new version.
+            </p>
+          ) : (
+            <>
+              <p className="text-slate-700">One good story answers several questions.</p>
+              <WhatYouGet
+                items={[
+                  "Your likely questions",
+                  "Past interviews",
+                  "Common questions",
+                  "What to lead with",
+                ]}
+              />
+            </>
+          )}
           <div>{button("Find other questions it answers", true)}</div>
           <AiNotice purpose="find the other questions your story answers" />
         </div>

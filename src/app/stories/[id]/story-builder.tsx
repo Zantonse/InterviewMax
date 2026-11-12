@@ -71,6 +71,7 @@ import {
 import { appendSpoken } from "@/lib/voice/text";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
+import { ColouredScript, SpokenBar } from "./story-colours";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LevelCard } from "./level-card";
@@ -435,8 +436,8 @@ export function StoryBuilder({
               {!content.imported && !content.linkedin && (
                 <li className="animate-enter text-sm text-slate-500" data-testid="builder-intro">
                   {storyType?.format === "intro"
-                    ? `How this works: answer ${questions.length} short questions in plain notes, typed or spoken. Then I'll ask a few follow-ups where it's thin and write your answer from your words, ready to shape for each target job.`
-                    : "How this works: tell me what happened, your way. Messy notes or a minute of talking is plenty. I'll write a rough draft straight away, then ask a few questions about what's missing to make it stronger."}
+                    ? `Answer ${questions.length} short questions in plain notes, typed or spoken. I write it from your words.`
+                    : "Tell it your way. Messy notes or a minute of talking is plenty."}
                 </li>
               )}
 
@@ -1300,48 +1301,123 @@ function DraftSoFar({
   }
   const rough = isRoughDraft(content);
   const current = nextFollowUpIndex(content);
-  const gap = current !== undefined ? content.followUps?.[current]?.gap : undefined;
+  const followUps = content.followUps ?? [];
+  const gap = current !== undefined ? followUps[current]?.gap : undefined;
   const parts = storyParts(storyType);
   const marked = gap ? partForGap(gap, parts) : undefined;
   const pending = pendingFollowUps(content);
+  // This round's questions, one pip each, so "how many left" is a picture, not a sentence.
+  const round = current !== undefined ? (followUps[current]?.round ?? 1) : undefined;
+  const roundQuestions = followUps
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => f.source !== "practice" && (f.round ?? 1) === round);
+  // Parts a later question in this round will fill in.
+  const coming = new Set(
+    followUps
+      .filter((f, i) => i !== current && !f.answer?.trim() && !f.skipped && f.source !== "practice")
+      .map((f) => partForGap(f.gap, parts)),
+  );
+  const target =
+    content.levelUp && content.levelUp.round === round ? content.levelUp.target : 2;
+  const showLevel = rough && usesLevels(storyType, content);
   return (
     <section
       className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 ${justWritten ? "animate-success" : ""}`}
       data-testid="draft-so-far"
     >
-      <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
-        {rough ? "Your rough draft" : "Your story"}
-      </h2>
-      {rough && (
-        <p className="mt-1 text-sm text-slate-600">
-          {pending === 1 ? "One question left" : `${pending} questions left`}, then I&apos;ll
-          rewrite it with your answers.
-        </p>
-      )}
-      <div className="mt-3 flex max-h-[28rem] flex-col gap-2 overflow-y-auto text-sm leading-relaxed text-slate-700">
-        {parts.map((p) =>
-          draft.parts[p.id]?.trim() ? (
-            <p
-              key={p.id}
-              className={`-mx-2 rounded-lg px-2 py-1 ring-1 transition-[background-color,box-shadow] duration-300 ${
-                p.id === marked ? "bg-accent-50 ring-accent-300" : "ring-transparent"
-              }`}
-              data-testid={p.id === marked ? "draft-part-marked" : undefined}
-            >
-              {p.id === marked && (
-                <span className="block text-xs font-semibold uppercase tracking-wide text-ink-700">
-                  {p.label}: this question improves it
-                </span>
-              )}
-              {draft.parts[p.id]}
-            </p>
-          ) : p.id === marked ? (
-            <p key={p.id} className="-mx-2 rounded-lg bg-accent-50 px-2 py-1 text-slate-500 ring-1 ring-accent-300">
-              {p.label}: missing so far. This question fills it in.
-            </p>
-          ) : null,
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
+          {rough ? "Your story so far" : "Your story"}
+        </h2>
+        {showLevel && (
+          <span className="text-xs font-medium text-slate-500" data-testid="draft-level">
+            Level {target - 1} → {target}
+          </span>
         )}
       </div>
+      {rough && roundQuestions.length > 0 && (
+        <div className="mt-2" data-testid="draft-pips">
+          <div className="flex gap-1" aria-hidden="true">
+            {roundQuestions.map(({ f, i }) => (
+              <span
+                key={i}
+                className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                  i === current
+                    ? "bg-accent-500"
+                    : f.answer?.trim() || f.skipped
+                      ? "bg-ink-800"
+                      : "bg-slate-200"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">
+            {pending === 1 ? "1 question left" : `${pending} questions left`}, then I rewrite it
+          </p>
+        </div>
+      )}
+      <ol
+        className="relative mt-4 flex max-h-[30rem] flex-col gap-1 overflow-y-auto pl-7"
+        data-testid="story-shape"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute bottom-3 left-[0.6rem] top-3 w-0.5 rounded-full bg-slate-200"
+        />
+        {parts.map((p) => {
+          const text = draft.parts[p.id]?.trim();
+          const now = p.id === marked;
+          const state = now ? "now" : text ? "done" : "empty";
+          return (
+            <li
+              key={p.id}
+              className={`relative -ml-2 rounded-xl px-2 py-1.5 transition-colors duration-300 ${
+                now ? "bg-accent-50" : ""
+              }`}
+              data-testid={now ? "draft-part-marked" : `draft-part-${state}`}
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute -left-[1.1rem] top-2 flex h-4 w-4 items-center justify-center rounded-full border-2 transition-colors duration-300 ${
+                  state === "done"
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : state === "now"
+                      ? "border-accent-600 bg-accent-200 ring-4 ring-accent-100"
+                      : "border-slate-300 bg-white"
+                }`}
+              >
+                {state === "done" && (
+                  <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M2.5 6.2 5 8.5l4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+              <p
+                className={`text-sm font-semibold ${state === "empty" ? "text-slate-500" : "text-slate-900"}`}
+              >
+                {p.label}
+                {now && <span className="font-medium text-accent-700"> · answering now</span>}
+              </p>
+              {text ? (
+                <p
+                  key={text}
+                  className={`animate-fade text-sm leading-relaxed text-slate-700 ${now ? "" : "line-clamp-3"}`}
+                >
+                  {text}
+                </p>
+              ) : (
+                <p className="text-sm italic text-slate-400">
+                  {now
+                    ? "Missing so far. This question fills it in."
+                    : coming.has(p.id)
+                      ? "A question coming fills this in."
+                      : "Not in your story yet."}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
       {!rough && (
         <button
           type="button"
@@ -1868,13 +1944,11 @@ function StoryPanel({
   const draft = content.draft;
   const parts = storyParts(storyType);
   const storyTypeLabel = storyType?.label;
-  // A written story reads as one script to say aloud; the parts view is for checking what went where.
-  const [showParts, setShowParts] = useState(false);
+  // A written story shows each part in its colour, so what's there and what's missing is a picture;
+  // "Plain script" is the version to read aloud.
+  const [plain, setPlain] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
-  const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
-  // At an interview pace of about 150 words a minute.
-  const seconds = Math.round(((words / 150) * 60) / 5) * 5;
   const justWritten = useJustWritten(draft);
 
   return (
@@ -1903,19 +1977,16 @@ function StoryPanel({
       </div>
 
       {draft && (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-          <span data-testid="script-length">
-            {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
-            spoken
-          </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <>
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm">
             {!showWhy && (
               <button
                 type="button"
-                onClick={() => setShowParts((v) => !v)}
+                onClick={() => setPlain((v) => !v)}
                 className="font-medium text-ink-800 hover:underline"
+                data-testid="plain-toggle"
               >
-                {showParts ? "Show as a script" : "Show by part"}
+                {plain ? "Colour by part" : "Plain script"}
               </button>
             )}
             <WhyToggle
@@ -1928,7 +1999,8 @@ function StoryPanel({
               }}
             />
           </div>
-        </div>
+          <SpokenBar draft={draft} storyType={storyType} />
+        </>
       )}
 
       {draft && showWhy ? (
@@ -1939,7 +2011,12 @@ function StoryPanel({
           disabled={disabled}
           onAnalyze={onAnalyze}
         />
-      ) : draft && !showParts ? (
+      ) : draft && !plain ? (
+        <>
+          <ColouredScript draft={draft} storyType={storyType} />
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </>
+      ) : draft ? (
         <div className="mt-5" data-testid="story-script">
           <div className="flex flex-col gap-4 text-lg leading-relaxed text-slate-800">
             {paragraphs.map((text, i) => (
@@ -1951,25 +2028,19 @@ function StoryPanel({
           <NumberCheck untraced={draft.untracedNumbers} />
         </div>
       ) : (
+        // Before the story is written: what each part has to go on so far.
         <div className="mt-5 flex flex-col gap-4">
           {parts.map((part) => {
             const notes = notesForPart(content, storyType, parts, part);
-            const written = draft?.parts[part.id];
             return (
               <div key={part.id} data-testid={`part-${part.id}`}>
                 <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
                   <span
-                    className={`h-2 w-2 rounded-full ${
-                      written ? "bg-ink-600" : notes.length ? "bg-ink-300" : "bg-slate-200"
-                    }`}
+                    className={`h-2 w-2 rounded-full ${notes.length ? "bg-ink-300" : "bg-slate-200"}`}
                   />
                   {part.label}
                 </h3>
-                {written ? (
-                  <p className="mt-1 leading-relaxed text-slate-800">
-                    <Highlighted text={written} marks={draft?.untracedNumbers ?? []} />
-                  </p>
-                ) : notes.length ? (
+                {notes.length ? (
                   <ul className="mt-1 flex flex-col gap-1 border-l-2 border-ink-100 pl-3 text-sm text-slate-500">
                     {notes.map((n, i) => (
                       <li key={i} className="line-clamp-3 whitespace-pre-wrap">
@@ -1981,9 +2052,6 @@ function StoryPanel({
                   <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
                     Empty
                   </p>
-                )}
-                {NUMBER_PARTS.has(part.id) && draft && (
-                  <NumberCheck untraced={draft.untracedNumbers} />
                 )}
               </div>
             );
@@ -2023,14 +2091,6 @@ function WhyToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => v
   );
 }
 
-function formatMinutes(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s ? `${m} min ${s} sec` : `${m} min`;
-}
-
-// The part that carries the story's number, where the number check is shown.
-const NUMBER_PARTS = new Set(["result", "highlight"]);
 
 function notesForPart(
   content: StoryContent,
