@@ -1,5 +1,6 @@
 import "server-only";
 import { generateForStep } from "@/lib/ai";
+import { tellsProblem } from "@/lib/writing/plain";
 import { allAnswerText, type StoryContent } from "@/lib/stories/content";
 import { draftText } from "@/lib/stories/grading";
 import { untracedNumbers } from "@/lib/stories/numbers";
@@ -43,7 +44,7 @@ export async function coachTelling(input: {
     });
     if (result.stopReason === "refusal") throw new Error("The model declined to coach this story.");
     const reply = parseTellReply(result.text);
-    const problems = tellingProblems(reply, answers);
+    const problems = [...tellingProblems(reply, answers), ...tellsProblem(replyText(reply), answers)];
     if (!best || problems.length < best.problems.length) {
       best = { reply, model: result.model, problems };
     }

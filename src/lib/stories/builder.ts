@@ -23,6 +23,7 @@ import {
   type StoryGrade,
 } from "./grading";
 import { keepTracedSentences, untracedNumbers } from "./numbers";
+import { aiTells } from "@/lib/writing/plain";
 import { OWN_WORDS_MIN, ownWordsShare } from "./own-words";
 import {
   PATH_SYSTEM,
@@ -267,8 +268,9 @@ export async function tailorIntro(
   return { draft, checks: tailoredChecks(draft) };
 }
 
-// Writes, then checks the numbers, the length and (when asked) the share in the user's words in code. Up to two retries: the first fixes
-// whatever failed; the second runs only if it still fails.
+// Writes, then checks the numbers, the length, AI-sounding phrasing (aiTells) and (when asked) the
+// share in the user's words in code. Up to two retries: the first fixes whatever failed; the second
+// runs only if it still fails.
 async function writeChecked<T>(input: {
   write: (retry?: WriteRetry) => Promise<{ text: string; model: string }>;
   parse: (text: string) => T;
@@ -298,7 +300,9 @@ async function writeChecked<T>(input: {
     const min = input.minOwnWords;
     const ownWords = min === undefined ? undefined : ownWordsShare(script, input.answers);
     const borrowed = min !== undefined && ownWords !== undefined && ownWords < min;
-    if ((untraced.length === 0 && !over && !tooMany && !borrowed) || attempt >= 2) {
+    const tells = aiTells(script, input.answers);
+    const clean = untraced.length === 0 && !over && !tooMany && !borrowed && tells.length === 0;
+    if (clean || attempt >= 2) {
       return { result, value, untraced, ownWords };
     }
     result = await input.write({
@@ -307,6 +311,7 @@ async function writeChecked<T>(input: {
       ...(over ? { words: { count, max: input.maxWords } } : {}),
       ...(tooMany ? { figures: { found: figures, max } } : {}),
       ...(borrowed ? { ownWords: { share: ownWords, min } } : {}),
+      ...(tells.length > 0 ? { tells } : {}),
     });
     value = input.parse(result.text);
   }

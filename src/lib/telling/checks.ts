@@ -49,6 +49,7 @@ function quoted(quote: string, source: string): boolean {
     s
       .toLowerCase()
       .replace(/[“”"‘’'.,;:!?…]/g, "")
+      .replace(/[—–]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   const q = norm(quote);
