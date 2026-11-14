@@ -15,6 +15,7 @@ import {
   roleMapStage,
   roleVocabulary,
 } from "@/lib/roles/role-map";
+import { AnswerLimit } from "@/components/answer-limit";
 import { MAX_ANSWER_LENGTH, getStoryType } from "@/lib/stories/story-types";
 import { appendSpoken } from "@/lib/voice/text";
 import {
@@ -242,11 +243,11 @@ function WorkField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        maxLength={MAX_ANSWER_LENGTH}
         className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
+      <AnswerLimit text={value} max={MAX_ANSWER_LENGTH} />
       <div className="mt-1">
-        <MicButton onText={(spoken) => onChange(appendSpoken(value, spoken, MAX_ANSWER_LENGTH))} />
+        <MicButton onText={(spoken) => onChange(appendSpoken(value, spoken))} />
       </div>
     </div>
   );

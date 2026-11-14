@@ -5,6 +5,7 @@ import { ModelError } from "@/lib/ai";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
+import { answerProblem } from "@/lib/text/answer";
 import {
   gradeStory,
   inferCareerPath,
@@ -571,9 +572,8 @@ async function withStory(
 function cleanAnswer(answer: unknown): string | BuilderResult {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return fail("Type an answer first.");
-  if (text.length > MAX_ANSWER_LENGTH) {
-    return fail(`Keep it under ${MAX_ANSWER_LENGTH.toLocaleString("en-US")} characters.`);
-  }
+  const problem = answerProblem(text, MAX_ANSWER_LENGTH);
+  if (problem) return fail(problem);
   return text;
 }
 

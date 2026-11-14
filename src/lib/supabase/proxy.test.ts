@@ -20,6 +20,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/settings")).toBe(false);
   });
 
+  it("takes signal beacons from signed-out pages instead of redirecting their POST to /login", () => {
+    expect(isPublicPath("/api/signals")).toBe(true);
+  });
+
   it("protects everything else", () => {
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/stories")).toBe(false);

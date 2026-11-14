@@ -23,7 +23,8 @@ export function cleanTranscript(raw: string): string {
 }
 
 // Adds a newly written-down piece to what's already in an answer box, with one space between.
-export function appendSpoken(existing: string, spoken: string, maxLength: number): string {
+// Without maxLength nothing is cut: the box shows the count and asks the user to trim instead.
+export function appendSpoken(existing: string, spoken: string, maxLength = Infinity): string {
   const piece = spoken.trim();
   if (!piece) return existing;
   const joined = existing.trim() ? `${existing.replace(/\s+$/, "")} ${piece}` : piece;

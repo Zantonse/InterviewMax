@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
+import { AnswerLimit } from "@/components/answer-limit";
 import { MicButton } from "@/components/mic-button";
 import {
   CASE_FRAMES,
@@ -12,6 +13,7 @@ import {
   type CaseFeedback,
   type CaseQuestion,
 } from "@/lib/cases/content";
+import { answerProblem } from "@/lib/text/answer";
 import { appendSpoken } from "@/lib/voice/text";
 import { practiceCase } from "./case-actions";
 
@@ -137,20 +139,25 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={5}
-            maxLength={MAX_CASE_ANSWER_LENGTH}
             placeholder="Answer as you would in the room. Tap Talk to say it out loud."
             className="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none"
             aria-label={`Your answer to: ${q.question}`}
           />
+          <AnswerLimit text={answer} max={MAX_CASE_ANSWER_LENGTH} />
           <div className="flex flex-wrap items-center gap-3">
             <MicButton
               disabled={pending}
               onActiveChange={setTalking}
-              onText={(spoken) => setAnswer((a) => appendSpoken(a, spoken, MAX_CASE_ANSWER_LENGTH))}
+              onText={(spoken) => setAnswer((a) => appendSpoken(a, spoken))}
             />
             <button
               type="button"
-              disabled={pending || talking || !answer.trim()}
+              disabled={
+                pending ||
+                talking ||
+                !answer.trim() ||
+                answerProblem(answer, MAX_CASE_ANSWER_LENGTH) !== null
+              }
               onClick={() =>
                 start(async () => {
                   setError(null);

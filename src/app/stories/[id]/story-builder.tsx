@@ -69,6 +69,8 @@ import {
   openingHint,
 } from "@/lib/stories/targets";
 import { appendSpoken } from "@/lib/voice/text";
+import { answerProblem } from "@/lib/text/answer";
+import { AnswerLimit } from "@/components/answer-limit";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
 import { ColouredScript, SpokenBar } from "./story-colours";
@@ -1710,7 +1712,11 @@ function Composer({
     onSubmit(answer);
   }
 
-  const canSubmit = !disabled && !talking && text.trim().length > 0;
+  const canSubmit =
+    !disabled &&
+    !talking &&
+    text.trim().length > 0 &&
+    answerProblem(text, MAX_ANSWER_LENGTH) === null;
 
   return (
     <form
@@ -1735,16 +1741,16 @@ function Composer({
           }
         }}
         rows={rows}
-        maxLength={MAX_ANSWER_LENGTH}
         placeholder={placeholder ?? "Type or tap Talk. Plain notes are fine."}
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
+      <AnswerLimit text={text} max={MAX_ANSWER_LENGTH} />
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="mr-auto flex flex-wrap items-center gap-3">
           <MicButton
             disabled={disabled}
             onActiveChange={setTalking}
-            onText={(spoken) => setText((t) => appendSpoken(t, spoken, MAX_ANSWER_LENGTH))}
+            onText={(spoken) => setText((t) => appendSpoken(t, spoken))}
           />
           {/* Simulated users typed and typed without sending (2026-11-08): once there's text, say
               how to send it. */}
