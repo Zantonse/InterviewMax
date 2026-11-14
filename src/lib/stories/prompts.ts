@@ -5,6 +5,7 @@ import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
+import { tellsAsk } from "@/lib/writing/plain";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
@@ -411,6 +412,8 @@ export type WriteRetry = {
   figures?: { found: string[]; max: number };
   // Set when too little of the draft is in the user's own words (see own-words.ts).
   ownWords?: { share: number; min: number };
+  // Set when the draft has phrasing that sounds AI-written (see writing/plain.ts).
+  tells?: string[];
 };
 
 function percent(share: number): string {
@@ -434,6 +437,7 @@ export function retryMessages(retry: WriteRetry): ChatMessage[] {
       `Only ${percent(retry.ownWords.share)} of it uses my own phrasing. Rework it from my answers: keep my sentences and phrases, and cut and reorder them instead of rewording them. New words only for bridges.`,
     );
   }
+  if (retry.tells?.length) asks.push(tellsAsk(retry.tells));
   if (retry.figures) {
     asks.push(
       `It uses ${retry.figures.found.length} figures (${retry.figures.found.join(", ")}). Keep at most ${retry.figures.max}: the one that matters most for this audience, with its context. Leave the others for follow-up questions.`,

@@ -5,6 +5,7 @@ import { getUserFieldSafely } from "@/lib/field/data";
 import { isFieldStep, withFieldLine } from "@/lib/field/prompt";
 import { redact, type Redaction } from "@/lib/promotion/content";
 import { getRedactionsSafely } from "@/lib/promotion/data";
+import { isPlainStep, plainPunctuation, withPlainWording } from "@/lib/writing/plain";
 import { STEP_MODELS, type Step, type StepModel } from "./config";
 import { getProvider } from "./registry";
 import { ModelError, type ChatMessage, type GenerateResult } from "./types";
@@ -17,6 +18,8 @@ export { STEP_MODELS, type Step } from "./config";
 // steps get the user's coaching style as one tone line at the end of the system prompt, and the
 // steps in FIELD_STEPS one line naming the user's field (Settings, "Your field"). Names the
 // user asked to redact (PromotionMax) are swapped for their placeholders in everything sent.
+// Writing steps (PLAIN_STEPS) get the plain-wording rules, and dashes in their reply are swapped
+// for commas in code.
 export async function generateForStep(
   step: Step,
   input: { system?: string; messages: ChatMessage[]; maxTokens?: number },
@@ -27,8 +30,12 @@ export async function generateForStep(
     getRedactionsSafely(),
     isFieldStep(step) ? getUserFieldSafely() : null,
   ]);
-  const system = withCoachingTone(step, withFieldLine(step, input.system, field), style);
-  return getProvider(cfg.provider).generate({
+  const system = withCoachingTone(
+    step,
+    withFieldLine(step, withPlainWording(step, input.system), field),
+    style,
+  );
+  const result = await getProvider(cfg.provider).generate({
     model: cfg.model,
     effort: cfg.effort,
     system: system && redact(system, redactions),
@@ -37,6 +44,7 @@ export async function generateForStep(
       : input.messages,
     maxTokens: input.maxTokens ?? cfg.maxTokens,
   });
+  return isPlainStep(step) ? { ...result, text: plainPunctuation(result.text) } : result;
 }
 
 function redactMessage(message: ChatMessage, redactions: Redaction[]): ChatMessage {
