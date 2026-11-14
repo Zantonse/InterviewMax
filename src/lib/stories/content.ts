@@ -4,6 +4,7 @@ import { parseTelling, type StoryTelling } from "@/lib/telling/content";
 import { parseStoredGrade, type StoryGrade } from "./grading";
 import { INTRO_PARTS, coreQuestions, type StoryType } from "./story-types";
 import { parseExecVersion, type ExecVersion } from "@/lib/exec/content";
+import { parseRecruiterVersion, type RecruiterVersion } from "@/lib/recruiter/content";
 import { parseAlsoAnswers, type StoryAlsoAnswers } from "@/lib/reuse/content";
 import { parseLevelUp, type LevelUp, type StoryLevel } from "./levels";
 
@@ -165,6 +166,9 @@ export type StoryContent = {
   // "Exec version": the 30-second, answer-first version of the written story (see src/lib/exec).
   // Stale once the draft is rewritten.
   exec?: ExecVersion;
+  // "Recruiter version": the under-a-minute, plain-words version for a recruiter screen (see
+  // src/lib/recruiter). Stale once the draft is rewritten.
+  recruiter?: RecruiterVersion;
   // Keyed by the story type's core question ids (see coreQuestions).
   answers: Record<string, string>;
   imported?: ImportedAnswer;
@@ -445,6 +449,9 @@ export function parseContent(raw: unknown): StoryContent {
 
   const exec = parseExecVersion(raw.exec);
   if (exec) content.exec = exec;
+
+  const recruiter = parseRecruiterVersion(raw.recruiter);
+  if (recruiter) content.recruiter = recruiter;
 
   if (isRecord(raw.seed) && typeof raw.seed.moment === "string" && raw.seed.moment) {
     content.seed = {

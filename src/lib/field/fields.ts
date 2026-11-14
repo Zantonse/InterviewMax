@@ -409,6 +409,7 @@ export const FIELD_STEPS: readonly Step[] = [
   "profileSummary",
   "storyQuestions",
   "storyExec",
+  "storyRecruiter",
 ];
 
 // The line added to a field step's system prompt, or "" when it adds nothing (general).

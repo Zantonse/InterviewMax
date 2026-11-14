@@ -33,7 +33,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   // target jobs. Optional, so a failure to load them never blocks the builder.
   const [prep, jobs, stories, checklist, targets, finder, field, execMode] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
-    intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
+    listJobs().catch(() => [] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
@@ -63,6 +63,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       moments={moments}
       field={field.id}
       execMode={execMode}
+      recruiterScreen={!intro && jobs.some((j) => !j.outcome && j.nextStage === "recruiter")}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={
