@@ -68,10 +68,11 @@ export async function probeStory(
   numbers: StoryNumber[] = [],
   targets?: BuilderTargets,
   levelUp?: { target: StoryLevel; gaps: LevelGap[] },
+  learning?: string,
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    probeSystem(storyType, round, targets, levelUp),
+    probeSystem(storyType, round, targets, levelUp, learning),
     probeMessages(content, storyType, past, resume, numbers, targets),
   );
   const asked = parseProbe(text, round);

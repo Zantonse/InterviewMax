@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { gradeIsCurrent, pendingFollowUps, type StoryContent } from "@/lib/stories/content";
 import {
   LEVELS,
@@ -14,6 +15,14 @@ import {
 } from "@/lib/stories/levels";
 import { storyParts, type StoryType } from "@/lib/stories/story-types";
 import { wordDiff } from "@/lib/stories/word-diff";
+import {
+  skillInfo,
+  spotChoices,
+  spotHint,
+  spotOutcome,
+  spotTargets,
+  type SkillId,
+} from "@/lib/stories/skills";
 
 // Story levels on the written story, as a picture first: the story on a staircase of levels, what
 // the next step is missing as chips, and one button. The explanations open from small "i" lines.
@@ -75,6 +84,15 @@ export function LevelCard({
   const gaps = next ? levelGaps(grade) : [];
   const ask = needsAnswers(gaps);
   const result = levelUp?.reached !== undefined ? levelUp : undefined;
+  // The staircase names what's missing only once the user has had a go at spotting it.
+  const head = (revealed: boolean) => (
+    <>
+      <Staircase level={level} missing={revealed ? gaps[0]?.label : undefined} />
+      <Info label={`What Level ${level} means`} testId="level-hears">
+        An interviewer hears {lowerFirst(info.hears)}
+      </Info>
+    </>
+  );
 
   return (
     <Shell testId="level-card">
@@ -87,47 +105,58 @@ export function LevelCard({
           disabled={disabled}
         />
       )}
-      <Staircase level={level} missing={gaps[0]?.label} />
-      <Info label={`What Level ${level} means`} testId="level-hears">
-        An interviewer hears {lowerFirst(info.hears)}
-      </Info>
+      {!next && head(true)}
       {next ? (
-        <div className="mt-4" data-testid="level-next">
-          {gaps.length > 0 && (
-            <ul className="flex flex-wrap gap-1.5" data-testid="level-gaps" aria-label="What your story needs">
-              {gaps.map((g) => (
-                <li
-                  key={g.id}
-                  className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200"
-                >
-                  + {g.label}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <PrimaryButton onClick={onLevelUp} disabled={disabled} busy={busy !== null} accent>
-              {busy === "asking"
-                ? "Finding the right questions…"
-                : busy === "writing"
-                  ? "Rewriting…"
-                  : ask
-                    ? `Climb to Level ${next.level}`
-                    : `Rewrite it for Level ${next.level}`}
-            </PrimaryButton>
-            <span className="text-xs text-slate-500">
-              {ask ? "A few questions, then a rewrite" : "A rewrite, nothing to answer"}
-            </span>
-          </div>
-          <Info label={`How to reach Level ${next.level}`}>
-            <span className="block">{next.lesson}</span>
-            {gaps.map((g) => (
-              <span key={g.id} className="mt-1 block">
-                <span className="font-medium text-slate-900">{g.label}.</span> {g.detail}
+        <SpotGate
+          header={head}
+          key={grade.draftWrittenAt}
+          storyKey={grade.draftWrittenAt}
+          target={next.level}
+          targets={spotTargets(gaps)}
+          disabled={disabled}
+          onJustFix={onLevelUp}
+        >
+          <div className="mt-4" data-testid="level-next">
+            {gaps.length > 0 && (
+              <ul
+                className="flex flex-wrap gap-1.5"
+                data-testid="level-gaps"
+                aria-label="What your story needs"
+              >
+                {gaps.map((g) => (
+                  <li
+                    key={g.id}
+                    className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200"
+                  >
+                    + {g.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <PrimaryButton onClick={onLevelUp} disabled={disabled} busy={busy !== null} accent>
+                {busy === "asking"
+                  ? "Finding the right questions…"
+                  : busy === "writing"
+                    ? "Rewriting…"
+                    : ask
+                      ? `Climb to Level ${next.level}`
+                      : `Rewrite it for Level ${next.level}`}
+              </PrimaryButton>
+              <span className="text-xs text-slate-500">
+                {ask ? "A few questions, then a rewrite" : "A rewrite, nothing to answer"}
               </span>
-            ))}
-          </Info>
-        </div>
+            </div>
+            <Info label={`How to reach Level ${next.level}`}>
+              <span className="block">{next.lesson}</span>
+              {gaps.map((g) => (
+                <span key={g.id} className="mt-1 block">
+                  <span className="font-medium text-slate-900">{g.label}.</span> {g.detail}
+                </span>
+              ))}
+            </Info>
+          </div>
+        </SpotGate>
       ) : (
         <p className="mt-4 text-sm text-slate-700" data-testid="level-top">
           Top level for a written story. Next, say it out loud with How to tell it below.
@@ -335,25 +364,27 @@ function BeforeAfter({
                 {part.label}
               </span>
               <p className="text-slate-700">
-                {pieces.map((x, i) =>
-                  x.kind === "added" ? (
-                    <ins
-                      key={i}
-                      className="rounded-sm border-b-2 border-emerald-500 bg-emerald-50 px-0.5 text-slate-900 no-underline"
-                    >
-                      {x.text}
-                    </ins>
-                  ) : x.kind === "cut" ? (
-                    <del key={i} className="text-slate-400">
-                      {x.text}
-                    </del>
-                  ) : (
-                    <span key={i}>{x.text}</span>
-                  ),
-                ).reduce<React.ReactNode[]>(
-                  (acc, node, i) => (i === 0 ? [node] : [...acc, " ", node]),
-                  [],
-                )}
+                {pieces
+                  .map((x, i) =>
+                    x.kind === "added" ? (
+                      <ins
+                        key={i}
+                        className="rounded-sm border-b-2 border-emerald-500 bg-emerald-50 px-0.5 text-slate-900 no-underline"
+                      >
+                        {x.text}
+                      </ins>
+                    ) : x.kind === "cut" ? (
+                      <del key={i} className="text-slate-400">
+                        {x.text}
+                      </del>
+                    ) : (
+                      <span key={i}>{x.text}</span>
+                    ),
+                  )
+                  .reduce<React.ReactNode[]>(
+                    (acc, node, i) => (i === 0 ? [node] : [...acc, " ", node]),
+                    [],
+                  )}
               </p>
             </div>
           ))}
@@ -401,4 +432,150 @@ function PrimaryButton({
 
 function lowerFirst(text: string): string {
   return text ? text[0].toLowerCase() + text.slice(1) : text;
+}
+
+// "Spot it yourself": before the card shows what's missing for the next level, the user picks what
+// they think an interviewer can't tell yet. A miss gets a narrower hint (which part to reread, and
+// what to ask of it), not the answer; a second miss shows it. "Just fix it" skips to the level-up.
+// Remembered for this version of the story in the browser, so a reload doesn't ask again.
+function SpotGate({
+  header,
+  storyKey,
+  target,
+  targets,
+  disabled,
+  onJustFix,
+  children,
+}: {
+  // Shown above, told whether what's missing has been revealed yet.
+  header: (revealed: boolean) => React.ReactNode;
+  storyKey: string;
+  target: StoryLevel;
+  targets: SkillId[];
+  disabled: boolean;
+  onJustFix: () => void;
+  children: React.ReactNode;
+}) {
+  const memoryKey = `spot:${storyKey}`;
+  const [state, setState] = useState<{
+    tries: SkillId[];
+    done?: "found" | "revealed" | "skipped";
+  }>({ tries: [] });
+  // Restored once on mount: storage isn't readable during render without a hydration mismatch.
+  useEffect(() => {
+    try {
+      const saved = window.sessionStorage.getItem(memoryKey);
+      if (saved === "found" || saved === "revealed" || saved === "skipped") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- restored once on mount
+        setState({ tries: [], done: saved });
+      }
+    } catch {
+      // Storage can be blocked; then it just asks again.
+    }
+  }, [memoryKey]);
+  if (targets.length === 0)
+    return (
+      <>
+        {header(true)}
+        {children}
+      </>
+    );
+
+  function finish(done: "found" | "revealed" | "skipped", tries: SkillId[]) {
+    setState({ tries, done });
+    try {
+      window.sessionStorage.setItem(memoryKey, done);
+    } catch {
+      // Not remembered; fine.
+    }
+  }
+
+  function pick(id: SkillId) {
+    const outcome = spotOutcome(id, targets, state.tries.length);
+    const tries = [...state.tries, id];
+    if (outcome === "hint") setState({ tries });
+    else finish(outcome, tries);
+  }
+
+  if (state.done) {
+    const last = state.tries[state.tries.length - 1];
+    return (
+      <>
+        {header(true)}
+        {state.done !== "skipped" && (
+          <p
+            className={`animate-fade mt-4 rounded-xl px-3 py-2 text-sm ${state.done === "found" ? "bg-emerald-50 text-emerald-900" : "bg-slate-50 text-slate-700"}`}
+            role="status"
+            data-testid="spot-result"
+          >
+            {state.done === "found" && last
+              ? `Yes, you spotted it: ${skillInfo(last).label.toLowerCase()}. That's the skill this level is about.`
+              : `It's ${skillInfo(targets[0]).label.toLowerCase()}. ${skillInfo(targets[0]).what} Look for it in your next story too.`}
+          </p>
+        )}
+        {children}
+      </>
+    );
+  }
+
+  const missed = state.tries.length > 0;
+  return (
+    <>
+      {header(false)}
+      <div className="mt-4 rounded-2xl bg-ink-50 p-4 ring-1 ring-ink-800/10" data-testid="spot-it">
+        <p className="text-sm font-bold text-ink-900">
+          {missed
+            ? "Not quite. Try once more."
+            : `Before I show you: what's missing for Level ${target}?`}
+        </p>
+        <p className="mt-1 text-sm text-slate-700">
+          {missed
+            ? spotHint(targets)
+            : "Read your story as the interviewer. Pick what they can't tell yet."}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="What's missing">
+          {spotChoices(target).map((s) => {
+            const tried = state.tries.includes(s.id);
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => pick(s.id)}
+                disabled={disabled || tried}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition-colors disabled:cursor-default ${
+                  tried
+                    ? "bg-white text-slate-400 line-through ring-slate-200"
+                    : "bg-white text-ink-900 ring-ink-800/20 hover:bg-ink-100"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <button
+            type="button"
+            onClick={() => finish("revealed", state.tries)}
+            disabled={disabled}
+            className="font-medium text-ink-800 hover:underline disabled:opacity-50"
+          >
+            Show me
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              finish("skipped", state.tries);
+              onJustFix();
+            }}
+            disabled={disabled}
+            className="font-medium text-slate-500 hover:underline disabled:opacity-50"
+            data-testid="just-fix-it"
+          >
+            Just fix it
+          </button>
+        </div>
+      </div>
+    </>
+  );
 }
