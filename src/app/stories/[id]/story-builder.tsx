@@ -73,6 +73,7 @@ import { analysisIsCurrent } from "@/lib/analysis/content";
 import { AnalysisView } from "./analysis-view";
 import { ColouredScript, SpokenBar } from "./story-colours";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
+import { quickLine, quickPicked, quickStartRows } from "@/lib/stories/quick-start";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LevelCard } from "./level-card";
 import { TOP_LEVEL, levelInfo, storyLevel, usesLevels } from "@/lib/stories/levels";
@@ -486,13 +487,23 @@ export function StoryBuilder({
                     }
                     joggers={
                       q.id === "start" && !content.answers[q.id]?.trim() && !seed ? (
-                        <Joggers
-                          storyType={storyType}
-                          field={field}
-                          moments={moments}
-                          disabled={busy !== null}
-                          onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
-                        />
+                        <>
+                          <Joggers
+                            storyType={storyType}
+                            field={field}
+                            moments={moments}
+                            disabled={busy !== null}
+                            onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
+                          />
+                          {storyType?.format === "star" && !content.tough && (
+                            <QuickStart
+                              storyTypeId={storyTypeId}
+                              answerText={answerText}
+                              disabled={busy !== null}
+                              onPick={(pick) => setInsert((n) => ({ ...pick, n: (n?.n ?? 0) + 1 }))}
+                            />
+                          )}
+                        </>
                       ) : undefined
                     }
                     source={
@@ -1197,6 +1208,82 @@ function Joggers({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Under the opening question of a behavioral story: three rows of taps (what was at stake, their
+// part, how it ended), one pick per row, that start the answer as notes. Picking another option in
+// a row swaps its line; tapping the picked one again takes it out.
+function QuickStart({
+  storyTypeId,
+  answerText,
+  disabled,
+  onPick,
+}: {
+  storyTypeId: string | null;
+  answerText: string;
+  disabled: boolean;
+  onPick: (pick: { text: string; remove?: boolean; replace?: string }) => void;
+}) {
+  const rows = quickStartRows(storyTypeId);
+  const anyPicked = rows.some((row) => quickPicked(row, answerText));
+  return (
+    <div
+      className="flex max-w-[90%] flex-col gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+      data-testid="quick-start"
+    >
+      <p className="text-xs font-bold uppercase tracking-wide text-ink-800">Quick start: tap what fits</p>
+      {rows.map((row) => {
+        const picked = quickPicked(row, answerText);
+        return (
+          <div
+            key={row.id}
+            role="radiogroup"
+            aria-label={row.label}
+            className="flex flex-col gap-1 sm:flex-row sm:items-center"
+          >
+            <span className="w-28 shrink-0 text-sm font-medium text-slate-600">{row.label}</span>
+            <span className="flex flex-wrap gap-1.5">
+            {row.options.map((o) => {
+              const on = picked === o;
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  disabled={disabled}
+                  onClick={() =>
+                    onPick(
+                      on
+                        ? { text: quickLine(row, o), remove: true }
+                        : picked
+                          ? { text: quickLine(row, o), replace: quickLine(row, picked) }
+                          : { text: quickLine(row, o) },
+                    )
+                  }
+                  className={`rounded-full px-3 py-1 text-sm ring-1 transition-colors disabled:opacity-50 ${
+                    on
+                      ? "bg-ink-800 text-white ring-ink-800"
+                      : "bg-white text-slate-700 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
+                  }`}
+                  data-testid={`quick-${row.id}`}
+                >
+                  {on && <span aria-hidden="true">✓ </span>}
+                  {o}
+                </button>
+              );
+            })}
+            </span>
+          </div>
+        );
+      })}
+      <p className="text-xs text-slate-500" aria-live="polite">
+        {anyPicked
+          ? "Now add what happened in a sentence or two, then send."
+          : "Each tap adds a line to your answer."}
+      </p>
     </div>
   );
 }

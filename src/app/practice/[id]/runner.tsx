@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { AnswerComposer } from "@/components/practice/answer-composer";
 import { FeedbackCard } from "@/components/practice/feedback-card";
+import { ConfidenceBar, ConfidencePips } from "@/components/practice/confidence-bar";
 import {
   MAX_FOLLOW_UPS,
   type PracticeItem,
@@ -21,6 +22,7 @@ import {
   answerPractice,
   continuePractice,
   keepPracticeFact,
+  rateConfidence,
   skipPractice,
 } from "../actions";
 import { StartPracticeForm } from "../start-form";
@@ -224,6 +226,15 @@ export function PracticeRunner({
         />
       )}
 
+      {item.feedback && (
+        <ConfidenceBar
+          key={view}
+          value={item.confidence}
+          disabled={busy !== null}
+          onRate={(value) => run(() => rateConfidence(sessionId, view, value), null)}
+        />
+      )}
+
       {step === "done" && (
         <div className="flex justify-end">
           <button
@@ -309,6 +320,12 @@ function Summary({
         Tap a question to read its feedback again. Fix what was missing in the story, then run
         another round.
       </p>
+      {items.some((i) => i.confidence && i.confidence <= 2) && (
+        <p className="mt-2 text-sm font-medium text-amber-900" data-testid="practice-shaky">
+          {items.filter((i) => i.confidence && i.confidence <= 2).length} felt shaky. They come
+          first next round.
+        </p>
+      )}
       {delivery && (
         <p className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700" data-testid="practice-round-delivery">
           <span className="font-semibold text-slate-900">How you said it: </span>
@@ -354,6 +371,11 @@ function Summary({
                     ? "Skipped"
                     : "Not answered yet"}
               </span>
+              {it.confidence && (
+                <span className="mt-1.5 block text-xs font-medium text-slate-600">
+                  <ConfidencePips value={it.confidence} />
+                </span>
+              )}
             </button>
           </li>
         ))}

@@ -2,7 +2,7 @@ name: Simulated users
 
 # AI personas build a story end to end on a Vercel preview, then a cheap model writes an
 # insights report (scripts/sims/README.md). Runs:
-#   - every 3 days: points the sims/main branch at main, waits for Vercel's preview of it, then
+#   - weekly (Mondays): points the sims/main branch at main, waits for Vercel's preview of it, then
 #     runs against it
 #   - from the Run workflow button: paste a preview URL (e.g. a story builder PR's preview), or
 #     leave it empty for a fresh preview of main
@@ -12,7 +12,7 @@ name: Simulated users
 
 on:
   schedule:
-    - cron: "23 9 */3 * *"
+    - cron: "23 9 * * 1" # Mondays 09:23 UTC (1:23 AM PT in winter)
   workflow_dispatch:
     inputs:
       mode:

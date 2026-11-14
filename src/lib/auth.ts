@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { auth0 } from "@/lib/auth0/client";
 import { authProvider } from "@/lib/auth0/provider";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +32,11 @@ async function getAuth0User(): Promise<CurrentUser> {
   }
   // Finds this Auth0 identity's profile, linking it to an existing tester by verified email or
   // making a new one on first sign-in (supabase/migrations/20261014040000_auth0_sign_in.sql).
+  // Partial prefetching renders an App Shell for each link ahead of the click, and Next rejects
+  // uncached fetches in that render once it finishes. The lookup would then fail, log
+  // "claim_profile failed" and redirect inside a render nobody sees. Waiting for the real request
+  // keeps the lookup out of the shell; on a page load, action or navigation it resolves at once.
+  await connection();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("claim_profile");
   if (error || typeof data !== "string") {
