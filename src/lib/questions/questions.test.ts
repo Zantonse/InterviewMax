@@ -231,3 +231,21 @@ describe("questionsToBuild", () => {
     ]);
   });
 });
+
+describe("likely question stages", () => {
+  it("keeps known stages in the order given and drops the rest", () => {
+    const [q] = parseQuestionList([
+      {
+        question: "Tell me about yourself.",
+        theme: "about_you",
+        stages: ["hiring_manager", "lunch", "recruiter", "recruiter"],
+      },
+    ]);
+    expect(q.stages).toEqual(["hiring_manager", "recruiter"]);
+  });
+
+  it("leaves stages out when none are known", () => {
+    const [q] = parseQuestionList([{ question: "Q?", theme: "impact", stages: ["lunch"] }]);
+    expect(q).not.toHaveProperty("stages");
+  });
+});
