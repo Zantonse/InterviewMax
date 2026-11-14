@@ -25,6 +25,8 @@ import {
 import type { VoiceStats } from "@/lib/practice/delivery";
 import type { PracticeContext } from "@/lib/practice/prompts";
 import { hasDraft, probeRounds } from "@/lib/stories/content";
+import { stageForJob } from "@/lib/stages/data";
+import { questionsForStage } from "@/lib/stages/stages";
 import { getStory, listStories, updateStory } from "@/lib/stories/data";
 import { draftText } from "@/lib/stories/grading";
 import { answersTranscript } from "@/lib/stories/prompts";
@@ -49,12 +51,14 @@ export async function startPractice(_prev: StartState, formData: FormData): Prom
     if (!job.likelyQuestions) {
       return { error: "Predict this job's likely questions first, then practice them." };
     }
-    const [stories, earlier] = await Promise.all([
+    const [stories, earlier, stage] = await Promise.all([
       listStories(),
       listPracticeSessionsSafely(job.id),
+      stageForJob(job),
     ]);
+    // The next stage's questions first, so a recruiter-screen round doesn't drill conflict stories.
     const picked = pickQuestions(
-      job.likelyQuestions.questions,
+      questionsForStage(job.likelyQuestions.questions, stage?.id ?? null),
       stories,
       undefined,
       latestConfidence(earlier),

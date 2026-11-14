@@ -11,6 +11,8 @@ import {
   TAILORED_PARTS,
   getStoryType,
 } from "@/lib/stories/story-types";
+import type { RoundId } from "@/lib/bank/content";
+import { STAGE_GUIDES, orderForStage } from "@/lib/stages/stages";
 import {
   AI_ANSWER_ID,
   getToughQuestion,
@@ -85,8 +87,19 @@ export type BriefAsk = {
 
 export type BriefTough = { id: string; question: string; answer: string; href: string };
 
+// The interview stage the brief is shaped for (recruiter screen, hiring manager…), when known.
+export type BriefStage = {
+  id: RoundId;
+  label: string;
+  // True when it's the interview timeline's guess, not a stage the user picked.
+  guessed: boolean;
+  checks: string;
+  tips: string[];
+};
+
 export type Brief = {
   job: { id: string; title: string; company: string | null };
+  stage: BriefStage | null;
   intro: BriefIntro | null;
   questions: BriefQuestion[];
   // How many likely questions the job has beyond those shown.
@@ -102,10 +115,15 @@ export function buildBrief(input: {
   job: JobLike;
   stories: StoryLike[];
   numbers: NumbersChecklist | null;
+  // The stage to shape it for: its questions, tough answers and questions to ask come first.
+  stage?: { id: RoundId; guessed: boolean } | null;
 }): Brief {
   const { job, stories } = input;
-  const all = job.likelyQuestions?.questions ?? [];
-  const questions = all.slice(0, BRIEF_QUESTIONS).map((q) => briefQuestion(q, stories, job.id));
+  const stageId = input.stage?.id ?? null;
+  const guide = stageId ? STAGE_GUIDES[stageId] : null;
+  const all = orderForStage(job.likelyQuestions?.questions ?? [], stageId);
+  const count = guide?.themes.length ? guide.questions : BRIEF_QUESTIONS;
+  const questions = all.slice(0, count).map((q) => briefQuestion(q, stories, job.id));
   const usedTypes = new Set(
     questions.flatMap((q) => {
       const s = q.story && stories.find((x) => x.id === q.story!.id);
@@ -114,13 +132,23 @@ export function buildBrief(input: {
   );
   return {
     job: { id: job.id, title: job.title, company: job.company },
+    stage:
+      guide && guide.tips.length
+        ? {
+            id: guide.id,
+            label: guide.label,
+            guessed: Boolean(input.stage?.guessed),
+            checks: guide.checks,
+            tips: guide.tips,
+          }
+        : null,
     intro: introFor(job.id, stories),
     questions,
     moreQuestions: Math.max(0, all.length - questions.length),
     numbers: keyNumbers(input.numbers, usedTypes),
     gaps: questions.filter((q) => !q.story?.drafted),
-    tough: toughAnswers(stories, job.id),
-    ask: askFor(job.questionsToAsk?.questions ?? []),
+    tough: toughForStage(toughAnswers(stories, job.id), stories, stageId),
+    ask: askForStage(askFor(job.questionsToAsk?.questions ?? []), stageId),
   };
 }
 
@@ -244,6 +272,38 @@ function toughAnswers(stories: StoryLike[], jobId: string): BriefTough[] {
   ];
 }
 
+// Tough answers this stage asks most first, in the stage's order; the rest keep their order.
+function toughForStage(
+  answers: BriefTough[],
+  stories: StoryLike[],
+  stage: RoundId | null,
+): BriefTough[] {
+  const order = stage ? STAGE_GUIDES[stage].tough.map((id) => toughStoryType(id)) : [];
+  if (!order.length) return answers;
+  const rank = (t: BriefTough) => {
+    const i = order.indexOf(stories.find((s) => s.id === t.id)?.storyType ?? "");
+    return i === -1 ? order.length : i;
+  };
+  return answers
+    .map((t, index) => ({ t, index }))
+    .sort((a, b) => rank(a.t) - rank(b.t) || a.index - b.index)
+    .map((x) => x.t);
+}
+
+// Questions to ask for the person this stage is with first (the recruiter at a recruiter screen).
+function askForStage(ask: BriefAsk, stage: RoundId | null): BriefAsk {
+  const order = stage ? STAGE_GUIDES[stage].audiences : [];
+  if (!order.length) return ask;
+  const rank = (a: AudienceId) => (order.includes(a) ? order.indexOf(a) : order.length);
+  return {
+    ...ask,
+    groups: ask.groups
+      .map((g, index) => ({ g, index }))
+      .sort((a, b) => rank(a.g.audience) - rank(b.g.audience) || a.index - b.index)
+      .map((x) => x.g),
+  };
+}
+
 // The saved questions to ask, by audience, and how many suggestions are still unsaved.
 function askFor(questions: QuestionsToAsk["questions"]): BriefAsk {
   return {
@@ -256,15 +316,17 @@ function askFor(questions: QuestionsToAsk["questions"]): BriefAsk {
   };
 }
 
-// The one-minute warm-up: About me, three numbers, then the top questions with their stories, one
+// The one-minute warm-up: the stage's reminders when one is set, About me, three numbers, then the top questions with their stories, one
 // card at a time, to read or say out loud.
 export type WarmUpCard =
+  | { kind: "stage"; stage: BriefStage }
   | { kind: "intro"; intro: BriefIntro }
   | { kind: "numbers"; numbers: BriefNumber[] }
   | { kind: "question"; index: number; question: BriefQuestion };
 
 export function warmUpCards(brief: Brief): WarmUpCard[] {
   const cards: WarmUpCard[] = [];
+  if (brief.stage) cards.push({ kind: "stage", stage: brief.stage });
   if (brief.intro) cards.push({ kind: "intro", intro: brief.intro });
   const numbers = brief.numbers.slice(0, WARM_UP_NUMBERS);
   if (numbers.length) cards.push({ kind: "numbers", numbers });

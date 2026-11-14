@@ -12,6 +12,7 @@ import { MAX_ROUND, MAX_ROUND_NAME_LENGTH, OUTCOMES } from "@/lib/jobs/outcome";
 import { POSTING_FILE_ACCEPT, looksLikePostingText, postingFileKind } from "@/lib/jobs/posting-file";
 import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
+import { STAGES } from "@/lib/stages/stages";
 import {
   addJob,
   confirmLevel,
@@ -21,6 +22,7 @@ import {
   rereadJobs,
   saveInterviewDate,
   saveJobOutcome,
+  saveNextStage,
   saveResume,
   type FormState,
 } from "./actions";
@@ -619,6 +621,56 @@ export function InterviewDateForm({ jobId, date }: { jobId: string; date: string
           value="clear"
           formNoValidate
           className="text-sm font-medium text-slate-500 hover:text-red-700"
+        >
+          Clear
+        </button>
+      )}
+    </form>
+  );
+}
+
+// The stage of the next interview, one tap each. `guessed` is the timeline's guess when none is set,
+// shown as a hint, not as a pick.
+export function NextStageForm({
+  jobId,
+  stage,
+  guessed,
+}: {
+  jobId: string;
+  stage: string | null;
+  guessed: string | null;
+}) {
+  return (
+    <form action={saveNextStage} data-testid="next-stage">
+      <input type="hidden" name="jobId" value={jobId} />
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Next stage">
+        {STAGES.map((s) => {
+          const on = s.id === stage;
+          return (
+            <button
+              key={s.id}
+              type="submit"
+              name="stage"
+              value={s.id}
+              aria-pressed={on}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                on
+                  ? "bg-ink-800 text-white"
+                  : `text-ink-800 ring-1 hover:bg-ink-50 ${s.id === guessed ? "ring-ink-800/60" : "ring-ink-800/20"}`
+              }`}
+            >
+              {s.label}
+              {!stage && s.id === guessed ? " (likely)" : ""}
+            </button>
+          );
+        })}
+      </div>
+      {stage && (
+        <button
+          type="submit"
+          name="intent"
+          value="clear"
+          className="mt-3 text-sm font-medium text-slate-500 hover:text-red-700"
         >
           Clear
         </button>
