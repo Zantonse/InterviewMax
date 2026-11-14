@@ -4,7 +4,9 @@ import { supabaseEnv } from "./env";
 
 // Paths a signed-out visitor may open: the public homepage, sign-in, the policies, and the page
 // shown after an account is deleted. /api/sims is the preview-only persona sign-in, which checks
-// its own secret and answers 404 everywhere else (src/lib/sims/access.ts).
+// its own secret and answers 404 everywhere else (src/lib/sims/access.ts). /api/signals takes
+// beacons from signed-out pages too and simply doesn't record them; sent to /login instead, a
+// beacon's POST followed the redirect and logged a 405 on the sign-in page.
 const PUBLIC_PATHS = [
   "/welcome",
   "/login",
@@ -13,6 +15,7 @@ const PUBLIC_PATHS = [
   "/ai-usage",
   "/account-deleted",
   "/api/sims",
+  "/api/signals",
 ];
 
 export function isPublicPath(pathname: string) {

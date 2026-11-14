@@ -37,11 +37,19 @@ async function getAuth0User(): Promise<CurrentUser> {
   // "claim_profile failed" and redirect inside a render nobody sees. Waiting for the real request
   // keeps the lookup out of the shell; on a page load, action or navigation it resolves at once.
   await connection();
+  // claim_profile only links a verified email (it's how a sign-in finds an existing tester's
+  // stories). Say so before asking, with the way to fix it, instead of a failed lookup and a
+  // general "couldn't open your account".
+  if (session.user.email_verified === false) {
+    redirect("/login?error=unverified");
+  }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("claim_profile");
   if (error || typeof data !== "string") {
     console.error("claim_profile failed:", error?.message ?? "no profile id");
-    redirect("/login?error=account");
+    redirect(
+      error?.message?.includes("verified email") ? "/login?error=unverified" : "/login?error=account",
+    );
   }
   return { id: data, email: typeof session.user.email === "string" ? session.user.email : "" };
 }
