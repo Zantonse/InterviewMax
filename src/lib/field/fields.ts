@@ -44,6 +44,9 @@ export type FieldDef = {
   examples?: Partial<Record<string, string>>;
   // Memory joggers that replace a story type's defaults (src/lib/stories/story-types.ts).
   joggers?: Partial<Record<string, readonly string[]>>;
+  // Added to About me's first question: what scope looks like in this field, IC sizes first, so
+  // an individual contributor isn't asked for a team, territory or budget they don't have.
+  scope?: string;
 };
 
 // Intro examples for anyone without a field-specific set: no sales words.
@@ -71,6 +74,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "sales_engineering",
     label: "Solutions / sales engineering",
+    scope:
+      "For an SE, that might be how many reps or accounts you support, or the territory or quota you cover.",
     blurb: "Discovery, demos, proofs of concept and technical wins.",
     situations:
       "technical discovery, demos, proofs of concept, solution design, RFPs and security reviews, working with account executives on deals",
@@ -80,6 +85,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "data_governance",
     label: "Data governance",
+    scope:
+      "In data governance, that might be the data domains you own, how many systems or reports depend on them, or how many teams use the data.",
     blurb: "Data quality, catalogs, lineage, stewardship and policy.",
     situations:
       "data quality rules and issues, catalogs and glossaries, lineage, stewardship, data policy and access, audits",
@@ -121,6 +128,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "product_design",
     label: "Product design / UX",
+    scope:
+      "In design, that might be the product areas you design for, how many people use them, or the teams you work with.",
     blurb: "Research, design, prototyping and shipping with product and engineering.",
     situations:
       "user research and usability tests, design critiques, prototypes, design systems, trade-offs with product managers and engineers, shipped designs and the metrics they moved",
@@ -186,6 +195,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "product_management",
     label: "Product management",
+    scope:
+      "In product, that might be the product or features you own, how many users or customers they reach, or the teams you work with.",
     blurb: "Discovery, roadmaps, launches and working across teams.",
     situations:
       "customer discovery, roadmap and prioritization calls, launches, working with engineering and design, metrics and experiments",
@@ -220,6 +231,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "software_engineering",
     label: "Software engineering",
+    scope:
+      "In engineering, that might be the systems or services you own, how many users or requests they handle, or the teams that depend on them.",
     blurb: "Building, designing and running software.",
     situations:
       "features shipped, system design decisions, incidents and on-call, code review, migrations, technical trade-offs",
@@ -254,6 +267,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "sales",
     label: "Sales / account executive",
+    scope:
+      "In sales, that might be your territory, quota or number of accounts.",
     blurb: "Prospecting, running deals and hitting quota.",
     situations: "prospecting, running deals, negotiations, quota and pipeline, account growth",
     roleFamily: "sales",
@@ -272,6 +287,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "customer_success",
     label: "Customer success / account management",
+    scope:
+      "In customer success, that might be how many accounts you look after, their total value, or your renewal target.",
     blurb: "Onboarding, adoption, renewals and saving accounts.",
     situations: "onboarding, adoption, renewals and expansion, at-risk accounts, escalations",
     roleFamily: "customer_success",
@@ -290,6 +307,8 @@ export const FIELDS: FieldDef[] = [
   {
     id: "finance",
     label: "Finance / FP&A",
+    scope:
+      "In finance, that might be the budget, business units or processes you cover.",
     blurb: "Budgets, forecasts, models and decisions.",
     situations:
       "budgets and forecasts, financial models, month-end close, cost savings, decision support for leaders",
@@ -341,6 +360,11 @@ export function fieldLabel(field: UserField): string {
 // The builder's "Show me a good answer" example for this field, where it has its own.
 export function fieldExample(fieldId: FieldId | null | undefined, key: string): string | undefined {
   return getField(fieldId)?.examples?.[key];
+}
+
+// The field's example of scope for About me's first question, where it has one.
+export function fieldScopeHint(fieldId: FieldId | null | undefined): string | undefined {
+  return getField(fieldId)?.scope;
 }
 
 export function fieldJoggers(

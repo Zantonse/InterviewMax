@@ -5,7 +5,7 @@ import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTrans
 import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
-import { type FieldId, fieldJoggers } from "@/lib/field/fields";
+import { type FieldId, fieldJoggers, fieldScopeHint } from "@/lib/field/fields";
 import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
@@ -513,7 +513,7 @@ export function StoryBuilder({
                     question={
                       inferred
                         ? inferredPathQuestion(inferred.source)
-                        : coreQuestionText(q.id, storyType, content.asked)
+                        : coreQuestionText(q.id, storyType, content.asked, fieldScopeHint(field))
                     }
                     answer={content.answers[q.id]}
                     hint={content.answers[q.id]?.trim() ? undefined : hints[q.id]}
