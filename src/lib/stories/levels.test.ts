@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 import { parseContent } from "./content";
 import type { CheckResult, CriterionScore, StoryGrade } from "./grading";
 import {
+  answeredGaps,
   levelForGrade,
   levelGaps,
   levelScore,
   levelUpInstructions,
   needsAnswers,
   parseLevelUp,
+  readyToMoveOn,
   storyLevel,
   usesLevels,
+  withoutAsked,
 } from "./levels";
 import { getStoryType } from "./story-types";
 
@@ -147,5 +150,67 @@ describe("levels", () => {
     const content = parseContent({ answers: {}, levelUp: raw, levelReached: 2 });
     expect(content.levelUp?.target).toBe(2);
     expect(content.levelReached).toBe(2);
+  });
+});
+
+// A tester's first behavioral story (Nov 16): every part Solid or better, thinking partly shown,
+// average 3.4. He was told only his thinking stood between him and Level 3, asked about it three
+// rounds running, and could not have reached Level 3 whatever he answered.
+describe("the Level 2 to Level 3 loop", () => {
+  const stuck = grade({
+    criteria: crit([3, 3, 3, 4, 4]),
+    thinking: { level: "partly", note: "", improve: "say why" },
+  });
+  const ask = (gap: string, round: number, answer?: string, skipped = false) => ({
+    question: "q",
+    gap,
+    round,
+    ...(answer ? { answer } : {}),
+    ...(skipped ? { skipped } : {}),
+  });
+
+  it("lists the part that holds the average back along with the thinking, from the start", () => {
+    expect(levelGaps(stuck).map((g) => g.id)).toEqual(["thinking", "context"]);
+    // Two steps short of the average: two parts listed.
+    expect(levelGaps(grade({ criteria: crit([3, 3, 3, 3, 4]) })).map((g) => g.id)).toEqual([
+      "context",
+      "ownership",
+    ]);
+    // Nothing extra once the average is there.
+    expect(
+      levelGaps(
+        grade({ tier: "strong", criteria: crit([3, 4, 4, 4, 4]), thinking: { level: "partly", note: "" } }),
+      ).map((g) => g.id),
+    ).toEqual(["thinking"]);
+  });
+
+  it("doesn't ask again about a gap answered or passed on in a level-up round", () => {
+    // The first review round doesn't count: the level-up gets one aimed question per gap.
+    expect([...answeredGaps([ask("decision", 1, "an answer")])]).toEqual([]);
+    expect([...answeredGaps([ask("decision", 2, "an answer")])]).toEqual(["decision"]);
+    expect([...answeredGaps([ask("decision", 3, undefined, true)])]).toEqual(["decision"]);
+    // Still open: not answered yet.
+    expect([...answeredGaps([ask("decision", 2)])]).toEqual([]);
+
+    const gaps = withoutAsked(levelGaps(stuck), [ask("decision", 2, "an answer")]);
+    expect(gaps.map((g) => [g.id, g.gap, g.asked])).toEqual([
+      ["thinking", undefined, true],
+      ["context", "situation", undefined],
+    ]);
+    expect(needsAnswers(gaps)).toBe(true);
+  });
+
+  it("says a Level 2 story is ready to move on from once everything askable is answered", () => {
+    const one = withoutAsked(levelGaps(stuck), [ask("decision", 2, "an answer")]);
+    expect(readyToMoveOn(2, one)).toBe(false);
+    const all = withoutAsked(levelGaps(stuck), [
+      ask("decision", 2, "an answer"),
+      ask("situation", 3, "an answer"),
+    ]);
+    expect(needsAnswers(all)).toBe(false);
+    expect(readyToMoveOn(2, all)).toBe(true);
+    // Level 1 isn't ready to use, and a gap only a rewrite can fix hasn't been tried yet.
+    expect(readyToMoveOn(1, all)).toBe(false);
+    expect(readyToMoveOn(2, levelGaps(grade({ tier: "strong", criteria: crit([4, 4, 4, 4, 4]), checks: checks(["length"]) })))).toBe(false);
   });
 });

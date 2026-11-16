@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gradeIsCurrent, pendingFollowUps, type StoryContent } from "@/lib/stories/content";
 import {
@@ -9,7 +10,9 @@ import {
   levelGaps,
   levelInfo,
   needsAnswers,
+  readyToMoveOn,
   usesLevels,
+  withoutAsked,
   type LevelUp,
   type StoryLevel,
 } from "@/lib/stories/levels";
@@ -86,7 +89,9 @@ export function LevelCard({
   const level = levelForGrade(grade);
   const info = levelInfo(level);
   const next = level < TOP_LEVEL ? levelInfo((level + 1) as StoryLevel) : undefined;
-  const gaps = next ? levelGaps(grade) : [];
+  // What they've already answered a level-up question about isn't asked again.
+  const gaps = next ? withoutAsked(levelGaps(grade), content.followUps) : [];
+  const moveOn = readyToMoveOn(level, gaps);
   const ask = needsAnswers(gaps);
   const result = levelUp?.reached !== undefined ? levelUp : undefined;
   // The staircase names what's missing only once the user has had a go at spotting it.
@@ -110,8 +115,16 @@ export function LevelCard({
           disabled={disabled}
         />
       )}
-      {!next && head(true)}
-      {next ? (
+      {(!next || moveOn) && head(true)}
+      {next && moveOn ? (
+        <MoveOn
+          next={next.level}
+          gaps={gaps}
+          busy={busy}
+          disabled={disabled}
+          onRewrite={onLevelUp}
+        />
+      ) : next ? (
         <SpotGate
           header={head}
           key={grade.draftWrittenAt}
@@ -182,6 +195,56 @@ export function LevelCard({
         </p>
       )}
     </Shell>
+  );
+}
+
+// Level 2, and the user has answered everything the level-up can ask: say plainly that the story
+// is ready to use and point at the next one. One more rewrite stays on offer, quietly.
+function MoveOn({
+  next,
+  gaps,
+  busy,
+  disabled,
+  onRewrite,
+}: {
+  next: StoryLevel;
+  gaps: { id: string; label: string; detail: string }[];
+  busy: "asking" | "writing" | null;
+  disabled: boolean;
+  onRewrite: () => void;
+}) {
+  return (
+    <div className="mt-4" data-testid="level-move-on">
+      <p className="font-bold text-slate-900">This story is ready to use.</p>
+      <p className="mt-1 text-sm text-slate-700">
+        You&apos;ve answered what I had to ask, and I won&apos;t ask it again. Level 2 holds up in an
+        interview. Your next story will help you more than another pass on this one.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Link
+          href="/stories/new"
+          className="rounded-xl bg-accent-400 px-4 py-2 text-sm font-semibold text-ink-950 hover:bg-accent-300"
+        >
+          Build your next story
+        </Link>
+        <button
+          type="button"
+          onClick={onRewrite}
+          disabled={disabled}
+          aria-busy={busy !== null}
+          className="text-sm font-medium text-slate-500 hover:underline disabled:opacity-50"
+        >
+          {busy === "writing" || busy === "asking" ? "Rewriting…" : "Rewrite it once more"}
+        </button>
+      </div>
+      <Info label={`What Level ${next} would still take`}>
+        {gaps.map((g) => (
+          <span key={g.id} className="mt-1 block first:mt-0">
+            <span className="font-medium text-slate-900">{g.label}.</span> {g.detail}
+          </span>
+        ))}
+      </Info>
+    </div>
   );
 }
 
@@ -313,7 +376,9 @@ function LevelUpResult({
         <p className={`font-bold ${climbed ? "text-emerald-900" : "text-amber-900"}`}>
           {climbed
             ? `You reached Level ${reached}: ${info.name}`
-            : `Still Level ${reached}, but closer`}
+            : reached >= 2
+              ? `Still Level ${reached}, and ready to use`
+              : `Still Level ${reached}, but closer`}
         </p>
         <button
           type="button"
@@ -329,7 +394,9 @@ function LevelUpResult({
           ? reached >= TOP_LEVEL
             ? "Your story now shows how you think, not just what happened."
             : "Your story now proves something. It's ready to use, and there's one more level."
-          : "The rewrite used your answers, but a few things still hold it back."}
+          : reached >= 2
+            ? "The rewrite used your answers. Level 2 is a story you can take into an interview, so a second story will help you more than another pass on this one."
+            : "The rewrite used your answers, but a few things still hold it back."}
       </p>
       <BeforeAfter
         before={levelUp.before}

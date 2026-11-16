@@ -8,10 +8,11 @@
 // worked out the same way underneath. "Tell me about yourself" and tough questions keep the tiers.
 // Level 4, "Ready to say out loud" (practiced aloud, handled a follow-up), is planned for later.
 
-import type { StoryContent } from "./content";
+import type { FollowUp, StoryContent } from "./content";
 import {
   CHECKS,
   STAR_CRITERIA,
+  STRONG_AVERAGE,
   TIER_SCORE_CAP,
   belowLevel,
   scoreOutOf100,
@@ -105,6 +106,9 @@ export type LevelGap = {
   gap?: string;
   label: string;
   detail: string;
+  // The user has already answered (or passed on) a level-up question about this. It isn't asked
+  // again: `gap` is cleared, so only a rewrite works on it.
+  asked?: boolean;
 };
 
 // How many gaps one level-up works on: a short list keeps it one idea at a time.
@@ -202,10 +206,15 @@ export function levelGaps(grade: StoryGrade): LevelGap[] {
       detail: check.detail,
     });
   }
-  // Every part Solid and every check passing, but the average is short of Strong: the weakest
-  // parts that aren't Strong yet.
-  if (gaps.length === 0) {
+  // Every part can be Solid and the average still short of Strong. Those parts are a gate too, so
+  // they're listed with the rest from the start: as many of the weakest as need to go up a step.
+  // (A tester was shown only "your thinking" while the average also held him at Level 2, Nov 16.)
+  const scores = grade.criteria.map((c) => c.score);
+  if (scores.length > 0 && Math.min(...scores) >= 3) {
+    const total = scores.reduce((a, b) => a + b, 0);
+    let short = Math.ceil(STRONG_AVERAGE * scores.length - total);
     for (const c of byScore) {
+      if (short <= 0) break;
       if (c.score >= 4) continue;
       gaps.push({
         id: c.id,
@@ -213,9 +222,40 @@ export function levelGaps(grade: StoryGrade): LevelGap[] {
         label: criterionLabel(c.id),
         detail: c.improve || c.note,
       });
+      short--;
     }
   }
   return dedupe(gaps).slice(0, MAX_LEVEL_GAPS);
+}
+
+// Level-up questions the user has already dealt with: the follow-up gaps asked about in a round
+// after the story was written (round 2 on) and answered or passed on. Asking the same thing again
+// in new words is where a tester got stuck (three rounds on one gap, Nov 16): what they gave is
+// what they have.
+export function answeredGaps(followUps: readonly FollowUp[] | undefined): Set<string> {
+  return new Set(
+    (followUps ?? [])
+      .filter((f) => (f.round ?? 1) >= 2 && (f.skipped || f.answer?.trim()))
+      .map((f) => f.gap),
+  );
+}
+
+// The gaps with the already-answered ones marked and no longer askable.
+export function withoutAsked(
+  gaps: LevelGap[],
+  followUps: readonly FollowUp[] | undefined,
+): LevelGap[] {
+  const done = answeredGaps(followUps);
+  return gaps.map((g) => {
+    if (!g.gap || !done.has(g.gap)) return g;
+    return { id: g.id, label: g.label, detail: g.detail, asked: true };
+  });
+}
+
+// Level 2 is a story the user can take into an interview. Once they've answered everything the
+// level-up can ask and it still sits at Level 2, the next story is worth more than another pass.
+export function readyToMoveOn(level: StoryLevel, gaps: LevelGap[]): boolean {
+  return level === 2 && gaps.some((g) => g.asked) && gaps.every((g) => !g.gap);
 }
 
 // Whether answering a question could close any of these gaps (if not, a rewrite is the way up).
