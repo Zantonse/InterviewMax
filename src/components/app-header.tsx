@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth";
 import { listJobs } from "@/lib/jobs/data";
 import { folderLabel } from "@/lib/jobs/folder";
+import { isFinished } from "@/lib/jobs/outcome";
 import { canUsePromotion } from "@/lib/promotion/access";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories } from "@/lib/stories/data";
@@ -233,13 +234,28 @@ async function JobFolders() {
     unstable_rethrow(error);
     return null;
   }
-  return jobs.map((job) => (
-    <li key={job.id} className="nav-collapsed:hidden" data-testid="nav-job">
-      <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
-        <NavIcon name="folder" />
-      </NavLink>
-    </li>
-  ));
+  // Finished jobs (an outcome is set) fold into one link, so the folders are the jobs in play.
+  const finished = jobs.filter(isFinished).length;
+  return (
+    <>
+      {jobs
+        .filter((job) => !isFinished(job))
+        .map((job) => (
+          <li key={job.id} className="nav-collapsed:hidden" data-testid="nav-job">
+            <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
+              <NavIcon name="folder" />
+            </NavLink>
+          </li>
+        ))}
+      {finished > 0 && (
+        <li className="nav-collapsed:hidden" data-testid="nav-finished-jobs">
+          <NavLink href="/jobs?finished=1#finished-jobs" label={`Finished jobs (${finished})`} compact>
+            <NavIcon name="folder" />
+          </NavLink>
+        </li>
+      )}
+    </>
+  );
 }
 
 // Your latest stories; the full list is on the home page. Hidden when the sidebar is icons only.
