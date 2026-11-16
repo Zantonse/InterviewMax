@@ -241,6 +241,8 @@ export function probeSystem(
   round = 1,
   targets?: BuilderTargets,
   levelUp?: { target: StoryLevel; gaps: LevelGap[] },
+  // What this person is still learning across their stories (see weakSkillsInstructions).
+  learning?: string,
 ): string {
   const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
   const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
@@ -248,7 +250,7 @@ export function probeSystem(
   const round_ = levelUp
     ? levelUpInstructions(levelUp.target, levelUp.gaps, round)
     : roundInstructions(round, storyType);
-  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${round_}`;
+  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}${learning ? `\n\n${learning}` : ""}\n\n${round_}`;
 }
 
 // "Tell me about yourself": one question aimed at the one part the grader scored weakest (see

@@ -26,7 +26,8 @@ import {
   writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
-import { getStory, updateStory } from "@/lib/stories/data";
+import { getStory, listStories, updateStory } from "@/lib/stories/data";
+import { skillsMap, weakSkillsInstructions, weakestSkills } from "@/lib/stories/skills";
 import {
   TOP_LEVEL,
   levelForGrade,
@@ -255,12 +256,24 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const past = storyType
       ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
       : undefined;
-    const [resume, numbers, targets] = await Promise.all([
+    const [resume, numbers, targets, learning] = await Promise.all([
       resumeText(),
       storyNumbers(story.storyType),
       loadBuilderTargets(storyType),
+      // A behavioral story's first questions also look at the skills the person is still learning.
+      round === 1 && usesLevels(storyType, story.content) ? learningNote(storyId) : undefined,
     ]);
-    const asked = await probeStory(story.content, storyType, round, past, resume, numbers, targets);
+    const asked = await probeStory(
+      story.content,
+      storyType,
+      round,
+      past,
+      resume,
+      numbers,
+      targets,
+      undefined,
+      learning,
+    );
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
@@ -314,6 +327,19 @@ export async function levelUp(storyId: string): Promise<BuilderResult> {
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
+}
+
+// Story skills map: what the person is still learning across their other stories, for the first
+// questions on a new one. Never blocks the questions.
+async function learningNote(storyId: string): Promise<string | undefined> {
+  try {
+    const others = (await listStories()).filter((s) => s.id !== storyId);
+    return weakSkillsInstructions(weakestSkills(skillsMap(others))) || undefined;
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Couldn't load the skills map for the follow-ups", err);
+    return undefined;
+  }
 }
 
 // Story levels: closes the level-up card.

@@ -6,6 +6,7 @@ import { parseCurriculum, type Curriculum } from "@/lib/curriculum/content";
 import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import { isOutcome, type OutcomeId } from "./outcome";
+import { isRound, type RoundId } from "@/lib/bank/content";
 import { parseOtherRoles, withRoleQuestion, type JobRole } from "./roles";
 import { MAX_QUESTIONS } from "@/lib/questions/content";
 import {
@@ -36,6 +37,8 @@ export type TargetJob = {
   curriculum: Curriculum | null;
   // The next interview for this job, as YYYY-MM-DD, when the user has set one.
   interviewDate: string | null;
+  // The stage of that next interview (recruiter screen, hiring manager…), when the user set one.
+  nextStage: RoundId | null;
   // How the interview process ended; null while it's still in progress.
   outcome: OutcomeId | null;
   roundReached: number | null;
@@ -64,6 +67,7 @@ type Row = {
   resume_bullets: unknown;
   curriculum: unknown;
   interview_date: string | null;
+  next_stage: string | null;
   outcome: string | null;
   round_reached: number | null;
   round_name: string | null;
@@ -74,7 +78,7 @@ type Row = {
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, outcome, round_reached, round_name, finished_on, other_roles, offered_role, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, next_stage, outcome, round_reached, round_name, finished_on, other_roles, offered_role, created_at";
 
 function toJob(row: Row): TargetJob {
   const otherRoles = parseOtherRoles(row.other_roles);
@@ -105,6 +109,7 @@ function toJob(row: Row): TargetJob {
     resumeBullets: parseResumeSet(row.resume_bullets),
     curriculum: parseCurriculum(row.curriculum),
     interviewDate: row.interview_date,
+    nextStage: isRound(row.next_stage) ? row.next_stage : null,
     outcome: isOutcome(row.outcome) ? row.outcome : null,
     roundReached: row.round_reached,
     roundName: row.round_name ?? "",
@@ -198,6 +203,20 @@ export async function setInterviewDate(id: string, date: string | null): Promise
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the interview date: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Sets or clears (null) the stage of the next interview for a job.
+export async function setNextStage(id: string, stage: RoundId | null): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ next_stage: stage })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the stage: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

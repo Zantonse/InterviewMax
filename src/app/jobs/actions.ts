@@ -24,6 +24,7 @@ import {
   saveJobsPrep,
   setInterviewDate,
   setJobLevel,
+  setNextStage,
   setJobOutcome,
 } from "@/lib/jobs/data";
 import {
@@ -43,6 +44,7 @@ import {
 } from "@/lib/jobs/read-posting-file";
 import { readResumeFile } from "@/lib/jobs/resume";
 import { isDate } from "@/lib/prep/plan";
+import { isStage } from "@/lib/stages/stages";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
 import { predictQuestions } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
@@ -255,6 +257,17 @@ export async function saveInterviewDate(formData: FormData): Promise<void> {
     await setInterviewDate(jobId, date);
     await trackEvent("prep_plan_set");
   } else return;
+  refresh();
+}
+
+// Sets the stage of the next interview (recruiter screen, hiring manager…), which shapes the brief,
+// the warm-up and practice for it. "clear" removes it.
+export async function saveNextStage(formData: FormData): Promise<void> {
+  const jobId = String(formData.get("jobId") ?? "");
+  const stage = formData.get("stage");
+  if (formData.get("intent") === "clear") await setNextStage(jobId, null);
+  else if (isStage(stage)) await setNextStage(jobId, stage);
+  else return;
   refresh();
 }
 

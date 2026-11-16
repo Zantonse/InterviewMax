@@ -7,6 +7,7 @@ import { buildBrief } from "@/lib/brief/brief";
 import { getJob } from "@/lib/jobs/data";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { daysUntil, todayIn } from "@/lib/prep/plan";
+import { stageForJob } from "@/lib/stages/data";
 import { listStories } from "@/lib/stories/data";
 import { BriefView } from "./brief-view";
 import { trackEvent } from "@/lib/usage/track";
@@ -38,7 +39,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/brief">["para
   ]);
   if (!job) notFound();
   await trackEvent("brief_opened");
-  const brief = buildBrief({ job, stories, numbers });
+  const brief = buildBrief({ job, stories, numbers, stage: await stageForJob(job) });
   const today = todayIn(requestHeaders.get("x-vercel-ip-timezone"));
   const days =
     job.interviewDate && daysUntil(job.interviewDate, today) >= 0

@@ -41,6 +41,8 @@ export type NextRound = {
   // The round that usually comes next, or null when the last one was the final round or no round
   // is known.
   label: string | null;
+  // Its id, alongside the label, so other pages can prep for it.
+  id: RoundId | null;
   // Answers that didn't land, worst first: worth preparing before the next round.
   prepare: { question: string; landed: "weak" | "mixed"; theme: string | null }[];
   // Themes asked in more than one round: they'll likely come up again.
@@ -186,6 +188,7 @@ function nextRound(steps: TimelineStep[], transcripts: TimelineTranscript[]): Ne
 
   return {
     label: nextId ? (roundLabel(nextId) ?? null) : null,
+    id: nextId ?? null,
     prepare: prepare.slice(0, MAX_PREPARE),
     repeated,
   };

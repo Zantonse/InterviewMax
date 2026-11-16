@@ -281,3 +281,95 @@ describe("questions to ask in the brief", () => {
     expect(brief.ask).toEqual({ groups: [], unsaved: 0 });
   });
 });
+
+describe("buildBrief for a stage", () => {
+  const ask = (id: string, question: string, audience: string, saved: boolean) => ({
+    id,
+    question,
+    audience: audience as "peer",
+    why: "",
+    saved,
+  });
+  const ai = {
+    id: "s-ai",
+    title: "How do you use AI in your work?",
+    storyType: "tough_ai_at_work",
+    content: content({ draft: draft({ answer: "I use Claude for first drafts." }) }),
+  };
+
+  it("has no stage, and keeps the order, when none is given", () => {
+    const brief = buildBrief({ job: JOB, stories, numbers: null });
+    expect(brief.stage).toBeNull();
+    expect(brief.questions.map((x) => x.theme)).toEqual([
+      "about_you",
+      "impact",
+      "conflict",
+      "failure",
+    ]);
+  });
+
+  it("puts a hiring manager's themes first and says how to answer", () => {
+    const brief = buildBrief({
+      job: JOB,
+      stories,
+      numbers: null,
+      stage: { id: "hiring_manager", guessed: false },
+    });
+    expect(brief.questions.map((x) => x.theme)).toEqual([
+      "impact",
+      "conflict",
+      "failure",
+      "about_you",
+    ]);
+    expect(brief.stage).toMatchObject({
+      id: "hiring_manager",
+      label: "Hiring manager",
+      guessed: false,
+    });
+    expect(brief.stage?.tips.length).toBeGreaterThan(0);
+  });
+
+  it("for a recruiter screen: why you're leaving before AI, and the recruiter's questions first", () => {
+    const brief = buildBrief({
+      job: {
+        ...JOB,
+        questionsToAsk: {
+          model: "m",
+          generatedAt: "",
+          questions: [
+            ask("a1", "How do launches get picked?", "hiring_manager", true),
+            ask("a2", "What's next in the process?", "recruiter", true),
+          ],
+        },
+      },
+      stories: [TOUGH, ai],
+      numbers: null,
+      stage: { id: "recruiter", guessed: true },
+    });
+    expect(brief.tough.map((t) => t.id)).toEqual(["s-tough", "s-ai"]);
+    expect(brief.ask.groups.map((g) => g.audience)).toEqual(["recruiter", "hiring_manager"]);
+    expect(brief.stage?.guessed).toBe(true);
+    expect(brief.questions[0].theme).toBe("about_you");
+  });
+
+  it("opens the warm-up with the stage's reminders", () => {
+    const brief = buildBrief({
+      job: JOB,
+      stories,
+      numbers: null,
+      stage: { id: "recruiter", guessed: false },
+    });
+    expect(warmUpCards(brief)[0]).toMatchObject({ kind: "stage" });
+  });
+
+  it("leaves another round unshaped", () => {
+    const brief = buildBrief({
+      job: JOB,
+      stories,
+      numbers: null,
+      stage: { id: "other", guessed: false },
+    });
+    expect(brief.stage).toBeNull();
+    expect(brief.questions).toHaveLength(4);
+  });
+});

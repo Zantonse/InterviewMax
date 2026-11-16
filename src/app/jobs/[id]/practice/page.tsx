@@ -17,6 +17,8 @@ import {
   pickQuestions,
 } from "@/lib/practice/content";
 import { listPracticeSessions } from "@/lib/practice/data";
+import { stageForJob } from "@/lib/stages/data";
+import { STAGE_GUIDES, questionsForStage } from "@/lib/stages/stages";
 import { listStories } from "@/lib/stories/data";
 
 export const metadata: Metadata = { title: "Practice · InterviewMax" };
@@ -43,8 +45,14 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
   ]);
   if (!job) notFound();
   const felt = latestConfidence(sessions);
+  const stage = await stageForJob(job);
   const round = job.likelyQuestions
-    ? pickQuestions(job.likelyQuestions.questions, stories, undefined, felt)
+    ? pickQuestions(
+        questionsForStage(job.likelyQuestions.questions, stage?.id ?? null),
+        stories,
+        undefined,
+        felt,
+      )
     : [];
   const inProgress = sessions.find((s) => !s.finishedAt && !isScreenRound(s.items));
   const screenInProgress = sessions.find((s) => !s.finishedAt && isScreenRound(s.items));
@@ -90,6 +98,9 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
         >
           <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
             This round: {round.length} questions
+            {stage && STAGE_GUIDES[stage.id].themes.length > 0
+              ? ` for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}`
+              : ""}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             The ones you&apos;re least ready for come first: questions with no story yet, then ones

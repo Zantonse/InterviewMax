@@ -6,6 +6,8 @@ import { ReadinessRing, ReadinessRows } from "@/components/readiness";
 import { questionReadiness } from "@/lib/jobs/readiness";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
+import { SkillsMap } from "@/components/skills-map";
+import { hasSkillData, skillsMap } from "@/lib/stories/skills";
 import { PrepPath } from "@/components/prep-path";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
@@ -94,16 +96,27 @@ async function Dashboard() {
       )}
     </Card>
   );
+  // Story skills map: once a behavioral story has been graded.
+  const map = stories ? skillsMap(stories) : [];
+  const skills = hasSkillData(map) ? (
+    <Card title="Your story skills">
+      <SkillsMap map={map} />
+    </Card>
+  ) : null;
   if (jobs?.length === 0)
     return (
       <div className="mt-4 space-y-4">
         <Suspense fallback={null}>{finish}</Suspense>
         {bank}
+        {skills}
       </div>
     );
   return (
     <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-3">
-      <div className="md:col-span-2">{bank}</div>
+      <div className="space-y-4 md:col-span-2">
+        {bank}
+        {skills}
+      </div>
       <div className="space-y-4">
         <Suspense fallback={null}>{finish}</Suspense>
         {jobs ? (
