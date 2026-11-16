@@ -220,7 +220,9 @@ export const INTRO_QUESTIONS = [
   {
     id: "now",
     part: "present",
-    text: "Let's start with today. What's your current role, where do you work, and what are you responsible for? Include the size of your team, territory or budget if that's relevant.",
+    // Fits individual contributors too (tester feedback, Nov 16: an IC was asked for a team,
+    // territory or budget he doesn't have). The builder adds a field-specific example of scope.
+    text: "Let's start with today. What's your current role, where do you work, and what are you responsible for? Give a rough sense of size: what you own and who relies on it, or your team's size if you manage people.",
   },
   {
     id: "path",
@@ -291,7 +293,12 @@ export function coreQuestionText(
   questionId: string,
   storyType: StoryType | undefined,
   asked?: string,
+  // For "now": what scope looks like in their field (fieldScopeHint in src/lib/field/fields.ts).
+  scopeHint?: string,
 ) {
+  if (questionId === "now" && storyType?.format === "intro" && scopeHint) {
+    return `${INTRO_QUESTIONS[0].text} ${scopeHint}`;
+  }
   if (questionId === "start" && storyType?.format !== "intro") {
     if (asked) {
       const question = /[?.!]$/.test(asked) ? asked : `${asked}.`;
