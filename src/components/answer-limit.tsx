@@ -15,7 +15,7 @@ export function AnswerLimit({ text, max }: { text: string; max: number }) {
   const length = text.trim().length;
   if (length < max * 0.8) return null;
   return (
-    <p className="text-right text-xs text-slate-500 tabular-nums" data-testid="answer-count">
+    <p className="text-right text-xs text-slate-600 tabular-nums" data-testid="answer-count">
       {length.toLocaleString("en-US")} / {max.toLocaleString("en-US")} characters
     </p>
   );

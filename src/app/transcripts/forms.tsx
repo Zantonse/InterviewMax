@@ -21,7 +21,7 @@ import {
 import { AiNotice } from "@/components/ai-notice";
 
 const INPUT =
-  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
+  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none";
 const PRIMARY =
   "rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60";
 const SECONDARY =
@@ -46,9 +46,9 @@ export function AddTranscriptForm({
           type="file"
           name="file"
           accept={TRANSCRIPT_EXTENSIONS.join(",")}
-          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:font-semibold file:text-ink-900"
+          className="mt-1 block w-full text-sm text-slate-600"
         />
-        <span className="mt-1 block text-xs font-normal text-slate-500">
+        <span className="mt-1 block text-xs font-normal text-slate-600">
           PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export. Several
           interviews in one file? Head each one &ldquo;Interview 1&rdquo;, &ldquo;Interview 2&rdquo;
           and I&apos;ll review them separately. A job description or feedback notes in the file
@@ -69,7 +69,7 @@ export function AddTranscriptForm({
       </label>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
-          Which interview <span className="font-normal text-slate-500">(optional)</span>
+          Which interview <span className="font-normal text-slate-600">(optional)</span>
           <input
             id={`${id}-title`}
             name="title"
@@ -79,7 +79,7 @@ export function AddTranscriptForm({
           />
         </label>
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-company`}>
-          Company <span className="font-normal text-slate-500">(optional)</span>
+          Company <span className="font-normal text-slate-600">(optional)</span>
           <input
             id={`${id}-company`}
             name="company"
@@ -89,7 +89,7 @@ export function AddTranscriptForm({
           />
         </label>
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-speaker`}>
-          You&apos;re labelled as <span className="font-normal text-slate-500">(optional)</span>
+          You&apos;re labelled as <span className="font-normal text-slate-600">(optional)</span>
           <input
             id={`${id}-speaker`}
             name="speaker"
@@ -164,7 +164,7 @@ function RoundSelect({ defaultValue = "" }: { defaultValue?: string }) {
   const id = useId();
   return (
     <label className="mt-3 block text-sm font-semibold text-slate-700" htmlFor={`${id}-round`}>
-      Which round was it? <span className="font-normal text-slate-500">(optional)</span>
+      Which round was it? <span className="font-normal text-slate-600">(optional)</span>
       <select id={`${id}-round`} name="round" defaultValue={defaultValue} className={INPUT}>
         <option value="">Not sure</option>
         {ROUNDS.map((r) => (
@@ -279,7 +279,7 @@ export function SpeakerTurnsEditor({
           {pending ? "Saving and reviewing…" : "Save and review again"}
         </button>
         {!changed && !pending && (
-          <span className="text-sm text-slate-500">Looks right? Nothing to do.</span>
+          <span className="text-sm text-slate-600">Looks right? Nothing to do.</span>
         )}
         {error && <ErrorLine>{error}</ErrorLine>}
       </div>

@@ -45,7 +45,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
         data-testid="recap-card"
       >
         <p className="text-center text-sm font-bold tracking-tight text-ink-800">InterviewMax</p>
-        <p className="mt-1 text-center text-xs text-slate-500">My prep so far</p>
+        <p className="mt-1 text-center text-xs text-slate-600">My prep so far</p>
         <div className="mt-6 flex items-center gap-4">
           <span
             className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-ink-800 text-2xl font-extrabold text-white"
@@ -63,7 +63,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
             <div key={s.label}>
               <dt className="sr-only">{s.label}</dt>
               <dd className="text-4xl font-extrabold text-slate-900">{s.value}</dd>
-              <dd className="mt-0.5 text-xs leading-tight text-slate-500" aria-hidden="true">
+              <dd className="mt-0.5 text-xs leading-tight text-slate-600" aria-hidden="true">
                 {s.label}
               </dd>
             </div>
@@ -71,7 +71,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
         </dl>
         {recap.best && (
           <div className="mt-6 border-t border-slate-200 pt-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Best story</p>
+            <p className="text-xs font-bold text-slate-600">Best story</p>
             <p className="mt-1 flex items-center justify-between gap-3">
               <span className="truncate font-semibold text-slate-900">{recap.best.title}</span>
               <span className="flex shrink-0 items-center gap-1.5 text-sm text-slate-600">

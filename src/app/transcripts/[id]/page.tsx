@@ -95,7 +95,7 @@ async function TranscriptContent({
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
         {transcript.title}
         {transcript.company && !transcript.title.includes(transcript.company) && (
-          <span className="font-bold text-slate-500"> at {transcript.company}</span>
+          <span className="font-bold text-slate-600"> at {transcript.company}</span>
         )}
       </h1>
       {analysis?.summary && <p className="mt-2 max-w-2xl text-slate-600">{analysis.summary}</p>}
@@ -105,7 +105,7 @@ async function TranscriptContent({
         </p>
       )}
       {job && (
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           For{" "}
           <Link href={`/jobs/${job.id}`} className="font-semibold text-ink-800 hover:underline">
             {job.title}
@@ -117,7 +117,7 @@ async function TranscriptContent({
         <div className="space-y-4 lg:col-span-2">
           {analysis ? (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+              <h2 className="mb-2 text-sm font-bold text-ink-800">
                 What they asked, and how it landed
               </h2>
               <p className="mb-4 text-sm text-slate-600">
@@ -145,7 +145,7 @@ async function TranscriptContent({
               data-testid="who-said-what"
             >
               <summary className="cursor-pointer">
-                <span className="text-sm font-bold uppercase tracking-wide text-ink-800">
+                <span className="text-sm font-bold text-ink-800">
                   Who said what
                 </span>
                 <span className="mt-1 block text-sm text-slate-600">
@@ -157,7 +157,7 @@ async function TranscriptContent({
             </details>
           )}
           <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
+            <summary className="cursor-pointer text-sm font-bold text-ink-800">
               The transcript
             </summary>
             <p className="mt-4 whitespace-pre-line text-slate-700">{transcript.transcript}</p>
@@ -167,7 +167,7 @@ async function TranscriptContent({
         <div className="space-y-4">
           {analysis && analysis.lookingFor.length > 0 && (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">
+              <h2 className="mb-4 text-sm font-bold text-ink-800">
                 What this interviewer looked for
               </h2>
               <ul className="space-y-3" data-testid="looking-for">
@@ -204,7 +204,7 @@ async function TranscriptContent({
             <input type="hidden" name="transcriptId" value={transcript.id} />
             <PendingButton
               pendingText="Removing…"
-              className="text-sm font-medium text-slate-500 hover:text-red-700"
+              className="text-sm font-medium text-slate-600 hover:text-red-700"
             >
               Remove this interview
             </PendingButton>
@@ -248,7 +248,7 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
       {q.evidence && <Quote label="You said">{q.evidence}</Quote>}
       {q.probes.length > 0 && (
         <div className="mt-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold text-slate-600">
             They followed up with
           </p>
           <ul className="mt-1 space-y-1">
@@ -276,7 +276,7 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
       ) : coverage?.kind === "build" ? (
         <form action={startStory} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <input type="hidden" name="asked" value={q.question} />
-          <span className="text-slate-500">No story for this yet.</span>
+          <span className="text-slate-600">No story for this yet.</span>
           <button
             type="submit"
             name="storyType"
@@ -360,7 +360,7 @@ function SharedQuestions({
 }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="shared-questions">
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="mb-2 text-sm font-bold text-ink-800">
         Question bank
       </h2>
       {!sharing ? (
@@ -373,7 +373,7 @@ function SharedQuestions({
           {company ? (
             <ShareQuestionsForm transcriptId={transcriptId} />
           ) : (
-            <p className="text-sm text-slate-500">Add the company to this interview to share its questions.</p>
+            <p className="text-sm text-slate-600">Add the company to this interview to share its questions.</p>
           )}
         </>
       ) : (
@@ -384,7 +384,7 @@ function SharedQuestions({
             Leave out any you&apos;d rather keep to yourself.
           </p>
           {shared.length === 0 ? (
-            <p className="text-sm text-slate-500">No behavioral questions to share from this interview.</p>
+            <p className="text-sm text-slate-600">No behavioral questions to share from this interview.</p>
           ) : (
             <ul className="space-y-2">
               {shared.map((q) => (
@@ -397,7 +397,7 @@ function SharedQuestions({
                     <form action={leaveOutQuestion}>
                       <input type="hidden" name="transcriptId" value={transcriptId} />
                       <input type="hidden" name="questionId" value={q.id} />
-                      <PendingButton pendingText="Removing…" className="text-xs font-medium text-slate-500 hover:text-red-700">
+                      <PendingButton pendingText="Removing…" className="text-xs font-medium text-slate-600 hover:text-red-700">
                         Leave out
                       </PendingButton>
                     </form>
@@ -408,7 +408,7 @@ function SharedQuestions({
           )}
           <form action={withdrawQuestions} className="mt-4">
             <input type="hidden" name="transcriptId" value={transcriptId} />
-            <PendingButton pendingText="Withdrawing…" className="text-sm font-medium text-slate-500 hover:text-red-700">
+            <PendingButton pendingText="Withdrawing…" className="text-sm font-medium text-slate-600 hover:text-red-700">
               Stop sharing and withdraw them all
             </PendingButton>
           </form>
@@ -422,7 +422,7 @@ function SharedQuestions({
 function SurenessCard({ sure }: { sure: Sureness }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="sureness">
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">How sure you sounded</h2>
+      <h2 className="mb-2 text-sm font-bold text-ink-800">How sure you sounded</h2>
       <p className="text-sm text-slate-700">
         {sure.hedgeCount === 0
           ? "No hedges in your answers. You stated what you did."
@@ -450,7 +450,7 @@ function SurenessCard({ sure }: { sure: Sureness }) {
           &ldquo;What I did was…&rdquo; instead of &ldquo;I think I kind of…&rdquo;.
         </p>
       )}
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-slate-600">
         Counted in your turns only. Speech-to-text can add or drop a few.
       </p>
     </section>

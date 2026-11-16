@@ -81,7 +81,7 @@ export function Auth0Buttons() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 py-1 text-xs text-slate-400">
+      <div className="flex items-center gap-3 py-1 text-xs text-slate-500">
         <span className="h-px flex-1 bg-slate-200" />
         or continue with
         <span className="h-px flex-1 bg-slate-200" />
@@ -138,7 +138,7 @@ function LastUsedDot() {
 
 function LastUsed() {
   return (
-    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-900">
+    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-900">
       Last used
     </span>
   );
