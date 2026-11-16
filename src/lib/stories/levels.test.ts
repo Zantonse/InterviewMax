@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseContent } from "./content";
 import type { CheckResult, CriterionScore, StoryGrade } from "./grading";
 import {
+  displayLevel,
   levelForGrade,
   levelGaps,
   levelScore,
@@ -147,5 +148,20 @@ describe("levels", () => {
     const content = parseContent({ answers: {}, levelUp: raw, levelReached: 2 });
     expect(content.levelUp?.target).toBe(2);
     expect(content.levelReached).toBe(2);
+  });
+});
+
+describe("displayLevel", () => {
+  it("uses the level ladder for behavioral stories", () => {
+    const star = getStoryType("difficult_stakeholder");
+    // Strong without the thinking shown is still Level 2 on the ladder.
+    expect(displayLevel(grade({ tier: "strong", thinking: { level: "partly", note: "" } }), star)).toBe(2);
+  });
+
+  it("maps tiers straight to levels for stories off the ladder (About me)", () => {
+    const intro = getStoryType("about_me");
+    expect(displayLevel(grade({ tier: "not_yet" }), intro)).toBe(1);
+    expect(displayLevel(grade({ tier: "good_enough" }), intro)).toBe(2);
+    expect(displayLevel(grade({ tier: "strong", thinking: { level: "partly", note: "" } }), intro)).toBe(3);
   });
 });
