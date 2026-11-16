@@ -24,13 +24,13 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
         ← {job.title}
         {job.company ? ` at ${job.company}` : ""}
       </Link>
-      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-ink-700 print:mt-0">
+      <p className="mt-3 text-xs font-bold text-ink-700 print:mt-0">
         Pre-interview brief{brief.stage ? ` · ${brief.stage.label}` : ""}
         {days !== null ? ` · interview ${whenLabel(days)}` : ""}
       </p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl print:text-xl">
         {job.title}
-        {job.company && <span className="font-bold text-slate-500"> at {job.company}</span>}
+        {job.company && <span className="font-bold text-slate-600"> at {job.company}</span>}
       </h1>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 print:hidden">
@@ -45,7 +45,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
         ) : null}
         <PrintButton />
       </div>
-      <p className="mt-2 text-sm print:text-xs text-slate-500 print:hidden">
+      <p className="mt-2 text-sm print:text-xs text-slate-600 print:hidden">
         For the hour before: About me, three numbers and your top questions, one at a time.
       </p>
 
@@ -58,7 +58,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                 <li key={t}>{t}</li>
               ))}
             </ul>
-            <p className="mt-3 text-sm text-slate-500 print:hidden">
+            <p className="mt-3 text-sm text-slate-600 print:hidden">
               {brief.stage.guessed
                 ? "Guessed from your past interviews here. "
                 : "The questions below put this stage first. "}
@@ -90,7 +90,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                   {brief.intro.whyCompany}
                 </p>
               )}
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="mb-1 text-xs font-semibold text-slate-600">
                 Tell me about yourself
                 {brief.intro.kind === "tailored" ? `, for ${company}` : ""}
               </p>
@@ -100,7 +100,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                 ))}
               </div>
               {brief.intro.kind === "general" && (
-                <p className="mt-3 text-sm print:text-xs text-slate-500 print:hidden">
+                <p className="mt-3 text-sm print:text-xs text-slate-600 print:hidden">
                   This is your general version.{" "}
                   <Link
                     href={`/jobs/${job.id}#about-me`}
@@ -135,7 +135,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                 ))}
               </ol>
               {brief.moreQuestions > 0 && (
-                <p className="mt-3 text-sm print:text-xs text-slate-500 print:hidden">
+                <p className="mt-3 text-sm print:text-xs text-slate-600 print:hidden">
                   {brief.moreQuestions} more on{" "}
                   <Link href={`/jobs/${job.id}#questions`} className="text-ink-800 underline">
                     the job page
@@ -164,7 +164,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
               <dl className="space-y-1.5">
                 {brief.numbers.map((n) => (
                   <div key={n.id}>
-                    <dt className="text-sm print:text-xs text-slate-500">{n.label}</dt>
+                    <dt className="text-sm print:text-xs text-slate-600">{n.label}</dt>
                     <dd className="font-semibold text-slate-900">{n.value}</dd>
                   </div>
                 ))}
@@ -228,7 +228,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
               <div className="space-y-3 print:space-y-2">
                 {brief.ask.groups.map((g) => (
                   <div key={g.audience}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold text-slate-600">
                       {g.label}
                     </p>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-800">
@@ -238,7 +238,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                     </ul>
                   </div>
                 ))}
-                <p className="text-sm print:text-xs text-slate-500 print:hidden">
+                <p className="text-sm print:text-xs text-slate-600 print:hidden">
                   <Link href={`/jobs/${job.id}#ask`} className="text-ink-800 underline">
                     Edit your questions
                   </Link>
@@ -251,7 +251,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                     <li key={q}>{q}</li>
                   ))}
                 </ul>
-                <p className="mt-2 text-sm print:text-xs text-slate-500 print:hidden">
+                <p className="mt-2 text-sm print:text-xs text-slate-600 print:hidden">
                   Good for any interview.{" "}
                   <Link
                     href={`/jobs/${job.id}#ask`}
@@ -294,7 +294,7 @@ function Section({
       className="break-inside-avoid rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 print:rounded-none print:p-0 print:shadow-none print:ring-0"
       data-testid={testId}
     >
-      <h2 className="mb-3 text-sm print:text-xs font-bold uppercase tracking-wide text-ink-800 print:mb-1">
+      <h2 className="mb-3 text-sm print:text-xs font-bold text-ink-800 print:mb-1">
         {title}
       </h2>
       {children}

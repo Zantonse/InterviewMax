@@ -115,7 +115,7 @@ export function TailoredIntroPanel({
       {draft && (
         <div className={`flex flex-col gap-3 ${pending ? "opacity-60" : ""}`}>
           {draft.angle && <p className="text-sm text-slate-600">{draft.angle}</p>}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
             <span data-testid="tailored-length">
               {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
               spoken
@@ -210,7 +210,7 @@ function ClosingPicker({
                 />
                 <span className="font-semibold text-slate-900">{o.label}</span>
               </span>
-              <span className="text-xs text-slate-500">{o.hint}</span>
+              <span className="text-xs text-slate-600">{o.hint}</span>
               <span className="text-slate-700">{o.text}</span>
             </label>
           );
