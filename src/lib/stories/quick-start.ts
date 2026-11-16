@@ -39,9 +39,16 @@ const ENDING_BY_TYPE: Partial<Record<StoryTypeId, QuickRow>> = {
   },
 };
 
-export function quickStartRows(storyTypeId: string | null | undefined): QuickRow[] {
+// `fit` swaps in taps for the user's situation (stakesFor and partsFor in situation.ts): what's at
+// stake in their field or at entry level, and a manager's part.
+export function quickStartRows(
+  storyTypeId: string | null | undefined,
+  fit: { stakes?: readonly string[]; parts?: readonly string[] } = {},
+): QuickRow[] {
   const ending = ENDING_BY_TYPE[storyTypeId as StoryTypeId] ?? ENDING;
-  return [STAKES, PART, ending];
+  const stakes = fit.stakes?.length ? { ...STAKES, options: fit.stakes } : STAKES;
+  const part = fit.parts?.length ? { ...PART, options: fit.parts } : PART;
+  return [stakes, part, ending];
 }
 
 // The line one pick adds to the answer, e.g. "At stake: A customer. "

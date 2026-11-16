@@ -5,6 +5,7 @@ import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
+import { type Situation, audienceFor, situationRules } from "./situation";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
@@ -243,9 +244,11 @@ export function probeSystem(
   levelUp?: { target: StoryLevel; gaps: LevelGap[] },
   // What this person is still learning across their stories (see weakSkillsInstructions).
   learning?: string,
+  // Entry level, manager or IC (see situation.ts).
+  situation?: Situation,
 ): string {
-  const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
-  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
+  const base = forAudience(storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM, situation);
+  const tailor = `${hasTargets(targets) ? `\n\n${targetRules(storyType)}` : ""}${withSituation(situation)}`;
   const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
   const round_ = levelUp
     ? levelUpInstructions(levelUp.target, levelUp.gaps, round)
@@ -266,9 +269,20 @@ export function weakPartProbeSystem(
   part: WeakPart,
   round: number,
   targets?: BuilderTargets,
+  situation?: Situation,
 ): string {
-  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
-  return `${INTRO_PROBE_SYSTEM}${tailor}\n\n${weakPartInstructions(part, round)}`;
+  const tailor = `${hasTargets(targets) ? `\n\n${targetRules(storyType)}` : ""}${withSituation(situation)}`;
+  return `${forAudience(INTRO_PROBE_SYSTEM, situation)}${tailor}\n\n${weakPartInstructions(part, round)}`;
+}
+
+// The coach's first line names who it's helping: entry-level candidates aren't "experienced".
+function forAudience(system: string, situation: Situation | undefined): string {
+  return system.replace("an experienced professional", audienceFor(situation));
+}
+
+function withSituation(situation: Situation | undefined): string {
+  const rules = situationRules(situation);
+  return rules ? `\n\n${rules}` : "";
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {

@@ -5,7 +5,7 @@ import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTrans
 import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
 import { MicButton } from "@/components/mic-button";
-import { type FieldId, fieldJoggers, fieldScopeHint } from "@/lib/field/fields";
+import type { FieldId } from "@/lib/field/fields";
 import { suggestRoleMap } from "@/lib/roles/role-map";
 import {
   builderStage,
@@ -32,7 +32,6 @@ import {
   MAX_UPLOAD_BYTES,
   UPLOAD_EXTENSIONS,
   answerableQuestions,
-  coreQuestionText,
   coreQuestions,
   getStoryType,
   inferredPathQuestion,
@@ -74,6 +73,14 @@ import { AnalysisView } from "./analysis-view";
 import { ColouredScript, SpokenBar } from "./story-colours";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
 import { quickLine, quickPicked, quickStartRows } from "@/lib/stories/quick-start";
+import {
+  type Situation,
+  joggersFor,
+  partsFor,
+  questionFor,
+  stakesFor,
+  storySituation,
+} from "@/lib/stories/situation";
 import { EvaluationPanel } from "./evaluation-panel";
 import { LevelCard } from "./level-card";
 import { ExampleLadder } from "@/components/example-ladder";
@@ -191,6 +198,8 @@ export function StoryBuilder({
   );
 
   const questions = coreQuestions(storyType);
+  // Who they are (field, entry level, whether they manage people), so the questions fit them.
+  const situation = storySituation(content, storyType, targets, field);
   const stage = builderStage(content, storyType);
   // Story levels: below the top level, "Help me reach Level N" replaces "Ask me more".
   const level = storyLevel(content, storyType);
@@ -399,8 +408,8 @@ export function StoryBuilder({
     behavioral && !content.draft && !content.answers.start?.trim() && !content.imported;
   const hints: Record<string, string | undefined> = {
     // Started from a real question, the question itself says what to pick.
-    start: seed ? seedHint(seed) : content.asked ? undefined : openingHint(targets, storyType),
-    next: storyType?.format === "intro" ? nextRoleHint(targets) : undefined,
+    start: seed ? seedHint(seed) : content.asked ? undefined : openingHint(targets, storyType, situation.toManager),
+    next: storyType?.format === "intro" ? nextRoleHint(targets, situation.toManager) : undefined,
   };
 
   // The chat keeps its newest message in view, unless an earlier answer is open for editing.
@@ -513,7 +522,7 @@ export function StoryBuilder({
                     question={
                       inferred
                         ? inferredPathQuestion(inferred.source)
-                        : coreQuestionText(q.id, storyType, content.asked, fieldScopeHint(field))
+                        : questionFor(q.id, storyType, content.asked, situation)
                     }
                     answer={content.answers[q.id]}
                     hint={content.answers[q.id]?.trim() ? undefined : hints[q.id]}
@@ -523,6 +532,7 @@ export function StoryBuilder({
                         : questionHelp(
                             q.id === "start" && storyType?.format !== "intro" ? "telling" : q.part,
                             field,
+                            situation.entry,
                           )
                     }
                     joggers={
@@ -532,7 +542,7 @@ export function StoryBuilder({
                           joggers={
                             <Joggers
                               storyType={storyType}
-                              field={field}
+                              situation={situation}
                               moments={moments}
                               disabled={busy !== null}
                               onPick={(text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))}
@@ -542,6 +552,7 @@ export function StoryBuilder({
                             behavioral && (
                               <QuickStart
                                 storyTypeId={storyTypeId}
+                                situation={situation}
                                 answerText={answerText}
                                 disabled={busy !== null}
                                 onPick={(pick) =>
@@ -602,7 +613,7 @@ export function StoryBuilder({
                       improves={
                         !fromPractice && content.draft ? partLabelForGap(f.gap, storyType) : undefined
                       }
-                      help={index === currentFollowUp ? questionHelp(f.gap, field) : undefined}
+                      help={index === currentFollowUp ? questionHelp(f.gap, field, situation.entry) : undefined}
                       joggers={
                         index === currentFollowUp && f.options?.length ? (
                           <TapOptions
@@ -1252,19 +1263,18 @@ function OpeningHelp({
 // moments the story finder read from their resume or LinkedIn. A tap starts the answer with it.
 function Joggers({
   storyType,
-  field,
+  situation,
   moments,
   disabled,
   onPick,
 }: {
   storyType: StoryType | undefined;
-  field: FieldId | null;
+  situation: Situation;
   moments: JoggerMoment[];
   disabled: boolean;
   onPick: (text: string) => void;
 }) {
-  const general: readonly string[] =
-    fieldJoggers(field, storyType?.id) ?? storyType?.joggers ?? [];
+  const general = joggersFor(storyType, situation);
   if (general.length === 0 && moments.length === 0) return null;
   const chip =
     "rounded-full bg-white px-3 py-1.5 text-left text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30 disabled:opacity-50";
@@ -1320,16 +1330,21 @@ function Joggers({
 // a row swaps its line; tapping the picked one again takes it out.
 function QuickStart({
   storyTypeId,
+  situation,
   answerText,
   disabled,
   onPick,
 }: {
   storyTypeId: string | null;
+  situation: Situation;
   answerText: string;
   disabled: boolean;
   onPick: (pick: { text: string; remove?: boolean; replace?: string }) => void;
 }) {
-  const rows = quickStartRows(storyTypeId);
+  const rows = quickStartRows(storyTypeId, {
+    stakes: stakesFor(situation),
+    parts: partsFor(situation),
+  });
   const anyPicked = rows.some((row) => quickPicked(row, answerText));
   return (
     <div
