@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { AnswerLimit } from "@/components/answer-limit";
 import { MicButton } from "@/components/mic-button";
 import { MAX_PRACTICE_ANSWER_LENGTH, formatDuration } from "@/lib/practice/content";
 import type { VoiceStats } from "@/lib/practice/delivery";
+import { answerProblem } from "@/lib/text/answer";
 import { appendSpoken } from "@/lib/voice/text";
 
 // Where a practice answer is given: tap Talk and say it, or type it. The words appear as the user
@@ -35,7 +37,11 @@ export function AnswerComposer({
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, []);
 
-  const canSubmit = !disabled && !talking && text.trim().length > 0;
+  const canSubmit =
+    !disabled &&
+    !talking &&
+    text.trim().length > 0 &&
+    answerProblem(text, MAX_PRACTICE_ANSWER_LENGTH) === null;
   const send = () => {
     if (canSubmit) onSubmit(text, seconds > 0 ? seconds : null, seconds > 0 ? voice : null);
   };
@@ -60,9 +66,7 @@ export function AnswerComposer({
               longPauses: total.longPauses + v.longPauses,
             }));
           }}
-          onText={(spoken) =>
-            setText((t) => appendSpoken(t, spoken, MAX_PRACTICE_ANSWER_LENGTH))
-          }
+          onText={(spoken) => setText((t) => appendSpoken(t, spoken))}
         />
         {seconds > 0 && !talking && (
           <span className="text-xs text-slate-500 tabular-nums">
@@ -85,10 +89,10 @@ export function AnswerComposer({
           }
         }}
         rows={4}
-        maxLength={MAX_PRACTICE_ANSWER_LENGTH}
         placeholder={placeholder}
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
+      <AnswerLimit text={text} max={MAX_PRACTICE_ANSWER_LENGTH} />
       <div className="flex flex-wrap items-center justify-end gap-2">
         {extra && <div className="mr-auto">{extra}</div>}
         <button

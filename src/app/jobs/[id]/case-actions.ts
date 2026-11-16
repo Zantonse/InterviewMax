@@ -9,6 +9,7 @@ import {
   type CaseFeedback,
 } from "@/lib/cases/content";
 import { caseFeedback } from "@/lib/cases/practice";
+import { answerProblem } from "@/lib/text/answer";
 import { getJob } from "@/lib/jobs/data";
 
 export type CaseResult = { ok: true; feedback: CaseFeedback } | { ok: false; error: string };
@@ -17,8 +18,10 @@ export type CaseResult = { ok: true; feedback: CaseFeedback } | { ok: false; err
 export async function practiceCase(jobId: string, question: string, answer: string): Promise<CaseResult> {
   try {
     const q = String(question ?? "").trim().slice(0, MAX_CASE_QUESTION_LENGTH);
-    const a = String(answer ?? "").trim().slice(0, MAX_CASE_ANSWER_LENGTH);
+    const a = String(answer ?? "").trim();
     if (!q) return { ok: false, error: "Add the question first." };
+    const problem = answerProblem(a, MAX_CASE_ANSWER_LENGTH);
+    if (problem) return { ok: false, error: problem };
     if (a.split(/\s+/).length < 15) return { ok: false, error: "Say a bit more first: a few sentences at least." };
     const job = await getJob(String(jobId));
     if (!job) return { ok: false, error: "We couldn't find that job." };
