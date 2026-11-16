@@ -5,8 +5,8 @@ import { AppHeader } from "@/components/app-header";
 import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
-import { getJobsPrep, listJobs } from "@/lib/jobs/data";
-import { outcomeSummary } from "@/lib/jobs/outcome";
+import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
+import { isFinished, outcomeSummary } from "@/lib/jobs/outcome";
 import { listStories } from "@/lib/stories/data";
 import { removeResume } from "./actions";
 import { AddJobForm, PendingButton, RereadButton, ResumeForm } from "./forms";
@@ -16,7 +16,11 @@ export const metadata: Metadata = { title: "Target jobs · InterviewMax" };
 // Saving a resume reads every job again, which is a model call.
 export const maxDuration = 120;
 
-export default function JobsPage() {
+export default function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ finished?: string }>;
+}) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
@@ -49,19 +53,24 @@ export default function JobsPage() {
           ]}
         />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
-          <JobsContent />
+          <JobsContent searchParams={searchParams} />
         </Suspense>
       </main>
     </div>
   );
 }
 
-async function JobsContent() {
-  const [jobs, { resume, overview }, stories] = await Promise.all([
+async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?: string }> }) {
+  const [jobs, { resume, overview }, stories, params] = await Promise.all([
     listJobs(),
     getJobsPrep(),
     listStories(),
+    searchParams,
   ]);
+  // Finished jobs (an outcome is set) leave the main list for a folded section below it, so the
+  // list shows only the jobs still in play. The sidebar's "Finished jobs" link opens it.
+  const active = jobs.filter((j) => !isFinished(j));
+  const finished = jobs.filter(isFinished);
 
   if (jobs.length === 0) {
     return (
@@ -95,53 +104,48 @@ async function JobsContent() {
           </Card>
         )}
 
-        <ul className="space-y-3" data-testid="job-list">
-          {[...jobs.filter((j) => !j.outcome), ...jobs.filter((j) => j.outcome)].map((job) => {
-            const read = overview?.jobs[job.id];
-            return (
-              <li key={job.id}>
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
-                >
-                  <span className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-lg font-bold text-slate-900">
-                      {job.title}
-                      {job.company && (
-                        <span className="font-normal text-slate-600"> at {job.company}</span>
-                      )}
-                    </span>
-                    <span className="rounded-full bg-ink-50 px-2.5 py-1 text-xs font-semibold text-ink-900">
-                      {levelLabel(job.level) ?? "Level not set"}
-                      {!job.levelConfirmed && " · confirm"}
-                    </span>
-                  </span>
-                  {job.otherRoles.length > 0 && (
-                    <span className="mt-1 block text-sm text-slate-600">
-                      Also up for: {job.otherRoles.map((r) => r.title).join(" · ")}
-                    </span>
-                  )}
-                  {job.outcome && (
-                    <span
-                      className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        job.outcome === "offer"
-                          ? "bg-emerald-100 text-emerald-900"
-                          : "bg-slate-100 text-slate-700"
-                      }`}
-                      data-testid="job-outcome-badge"
-                    >
-                      Finished · {outcomeSummary(job)}
-                    </span>
-                  )}
-                  {read?.summary && <span className="mt-2 block text-slate-600">{read.summary}</span>}
-                  {read?.differs && (
-                    <span className="mt-1 block text-sm text-slate-500">{read.differs}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {active.length > 0 ? (
+          <ul className="space-y-3" data-testid="job-list">
+            {active.map((job) => (
+              <JobRow key={job.id} job={job} read={overview?.jobs[job.id]} />
+            ))}
+          </ul>
+        ) : (
+          <Card title="No jobs in progress">
+            <p className="text-slate-700">
+              Every job here has finished. Add the next one you&apos;re going for and I&apos;ll
+              read it with the rest.
+            </p>
+            <Link
+              href="/jobs/new"
+              className="mt-4 inline-block font-semibold text-ink-800 hover:underline"
+            >
+              + Add a target job
+            </Link>
+          </Card>
+        )}
+
+        {finished.length > 0 && (
+          <details
+            id="finished-jobs"
+            open={params.finished === "1"}
+            className="group rounded-3xl bg-slate-50 p-5 ring-1 ring-black/5"
+            data-testid="finished-jobs"
+          >
+            <summary className="cursor-pointer list-none font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+              <span className="mr-2 inline-block transition group-open:rotate-90">›</span>
+              Finished jobs ({finished.length})
+              <span className="mt-1 block text-sm font-normal text-slate-500">
+                Kept for their interviews and stories. They don&apos;t count toward your job limit.
+              </span>
+            </summary>
+            <ul className="mt-4 space-y-3" data-testid="finished-job-list">
+              {finished.map((job) => (
+                <JobRow key={job.id} job={job} read={overview?.jobs[job.id]} />
+              ))}
+            </ul>
+          </details>
+        )}
 
         {overview && overview.shared.length > 0 && (
           <Card title={jobs.length > 1 ? "What your jobs share" : "What interviewers will probe"}>
@@ -179,6 +183,53 @@ async function JobsContent() {
         )}
       </div>
     </div>
+  );
+}
+
+type JobRead = NonNullable<Awaited<ReturnType<typeof getJobsPrep>>["overview"]>["jobs"][string];
+
+function JobRow({ job, read }: { job: TargetJob; read: JobRead | undefined }) {
+  return (
+    <li>
+      <Link
+        href={`/jobs/${job.id}`}
+        className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
+      >
+        <span className="flex flex-wrap items-baseline justify-between gap-2">
+          <span className="text-lg font-bold text-slate-900">
+            {job.title}
+            {job.company && (
+              <span className="font-normal text-slate-600"> at {job.company}</span>
+            )}
+          </span>
+          <span className="rounded-full bg-ink-50 px-2.5 py-1 text-xs font-semibold text-ink-900">
+            {levelLabel(job.level) ?? "Level not set"}
+            {!job.levelConfirmed && " · confirm"}
+          </span>
+        </span>
+        {job.otherRoles.length > 0 && (
+          <span className="mt-1 block text-sm text-slate-600">
+            Also up for: {job.otherRoles.map((r) => r.title).join(" · ")}
+          </span>
+        )}
+        {job.outcome && (
+          <span
+            className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
+              job.outcome === "offer"
+                ? "bg-emerald-100 text-emerald-900"
+                : "bg-slate-100 text-slate-700"
+            }`}
+            data-testid="job-outcome-badge"
+          >
+            Finished · {outcomeSummary(job)}
+          </span>
+        )}
+        {read?.summary && <span className="mt-2 block text-slate-600">{read.summary}</span>}
+        {read?.differs && (
+          <span className="mt-1 block text-sm text-slate-500">{read.differs}</span>
+        )}
+      </Link>
+    </li>
   );
 }
 
