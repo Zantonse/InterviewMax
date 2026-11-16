@@ -141,7 +141,7 @@ export default function WelcomePage() {
               src="/home/dashboard.webp"
               width={1600}
               height={1075}
-              alt="The InterviewMax dashboard: a prep plan for an interview in 9 days, the story bank with 4 of 10 question themes covered, and the likely questions for the job."
+              alt="The InterviewMax home: the next step of the prep plan, an interview in 6 days with 3 of 8 likely questions ready and the next one to work on, and the story bank with 7 of 11 question themes covered."
               priority
             />
           </div>
@@ -191,7 +191,7 @@ export default function WelcomePage() {
                 src: "/home/story.webp",
                 width: 1200,
                 height: 977,
-                alt: "A finished story about winning over a skeptical finance VP, next to a criterion-by-criterion evaluation.",
+                alt: "A finished story at Level 2 of 3, what is missing for Level 3, and how it lands with what to fix next.",
               }}
               flip
             />
@@ -249,8 +249,8 @@ export default function WelcomePage() {
                   <Image
                     src="/home/coverage.webp"
                     width={776}
-                    height={322}
-                    alt="Question themes covered: 6 of 10, with tiles for themes like Impact and results, Conflict and difficult people, and Ambiguity and change."
+                    height={273}
+                    alt="Question themes covered: 7 of 11, with a tile and story level for themes like Impact and results, Conflict and difficult people, and Ambiguity and change."
                     sizes="(min-width: 1024px) 740px, 100vw"
                     className="mt-auto h-auto w-full px-3 pb-3 sm:px-4 sm:pb-4"
                   />
@@ -323,7 +323,7 @@ export default function WelcomePage() {
       </main>
 
       <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 sm:px-6">
-        <span className="text-sm text-slate-500">© InterviewMax</span>
+        <span className="text-sm text-slate-600">© InterviewMax</span>
         <PolicyLinks />
       </footer>
     </div>
