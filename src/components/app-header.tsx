@@ -24,10 +24,16 @@ const TOP: readonly NavItem[] = [
   { href: "/profile", label: "Your profile", icon: "user" },
 ];
 
+// Grouped by what you do (design review 2026-11-16, fix 6): Stories holds what you write, Practice
+// is saying it out loud, Library is what you read.
 const PRACTICE: readonly NavItem[] = [
+  { href: "/practice", label: "Start a round", icon: "mic" },
+  { href: "/practice#past-rounds", label: "Past rounds", icon: "chat" },
+];
+
+const LIBRARY: readonly NavItem[] = [
   { href: "/questions", label: "Question library", icon: "book" },
-  { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
-  { href: "/transcripts", label: "Past interviews", icon: "chat" },
+  { href: "/transcripts", label: "Past interviews", icon: "doc" },
 ];
 
 // PromotionMax (beta): the same stories, aimed at the next level instead of a new job.
@@ -140,6 +146,10 @@ async function Sections() {
       <NavGroup id="practice" label="Practice" icon="mic">
         <NavItems items={PRACTICE} compact />
       </NavGroup>
+
+      <NavGroup id="library" label="Library" icon="book">
+        <NavItems items={LIBRARY} compact />
+      </NavGroup>
     </>
   );
 }
@@ -149,11 +159,18 @@ function StoriesGroup({ numbers = false }: { numbers?: boolean }) {
   return (
     <NavGroup id="stories" label="Stories" icon="pen">
       {numbers && (
-        <li>
-          <NavLink href="/numbers" label="Your numbers" compact>
-            <NavIcon name="chart" />
-          </NavLink>
-        </li>
+        <>
+          <li>
+            <NavLink href="/tough-questions" label="Tough questions" compact>
+              <NavIcon name="bolt" />
+            </NavLink>
+          </li>
+          <li>
+            <NavLink href="/numbers" label="Your numbers" compact>
+              <NavIcon name="chart" />
+            </NavLink>
+          </li>
+        </>
       )}
       <Suspense fallback={<StoriesSkeleton />}>
         <RecentStories />
@@ -162,12 +179,14 @@ function StoriesGroup({ numbers = false }: { numbers?: boolean }) {
   );
 }
 
-// Interview / Promotion. Everyone sees PromotionMax marked Beta; only those let into the beta can
-// switch to it (Craig, Oct 18).
+// Interview / Promotion, only for those let into the PromotionMax beta (Craig, Oct 18). Everyone
+// else saw a switch they couldn't use; it's hidden for them now (design review 2026-11-16, fix 6),
+// unless they're somehow in promotion mode and need the way back.
 async function ModeSwitch() {
   const user = await getCurrentUser();
   const allowed = canUsePromotion(user.email);
   const mode = await getAppMode();
+  if (!allowed && mode === "interview") return null;
   const segment =
     "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold";
   const on = `${segment} bg-white text-ink-900`;
@@ -204,7 +223,7 @@ async function ModeSwitch() {
         data-testid="mode-promotion"
       >
         Promotion
-        <span className="rounded-full bg-accent-400/90 px-1.5 text-[0.625rem] font-bold uppercase tracking-wider text-ink-950">
+        <span className="rounded-full bg-accent-400/90 px-1.5 text-xs font-bold text-ink-950">
           Beta
         </span>
       </button>
