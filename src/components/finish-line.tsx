@@ -29,7 +29,7 @@ export function FinishLineBar({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        {!done && <span className="text-sm text-slate-500">{MINUTES_PER_STORY} each</span>}
+        {!done && <span className="text-sm text-slate-600">{MINUTES_PER_STORY} each</span>}
       </div>
       <ol className="mt-3 flex gap-1.5" aria-hidden>
         {Array.from({ length: line.goal }, (_, i) => (

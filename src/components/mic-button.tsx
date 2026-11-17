@@ -306,7 +306,7 @@ export function MicButton({
   // leaving the user wondering where the microphone went.
   if (!supported)
     return (
-      <span className="text-xs text-slate-500" data-testid="mic-unsupported">
+      <span className="text-xs text-slate-600" data-testid="mic-unsupported">
         <MicIcon /> To talk instead of typing, open this page in Safari or Chrome.
       </span>
     );
@@ -347,7 +347,7 @@ export function MicButton({
         </button>
       )}
       {phase === "recording" && (
-        <span className="animate-fade text-xs text-slate-500" role="status">
+        <span className="animate-fade text-xs text-slate-600" role="status">
           Listening. Your words appear as you go; edit them before you send. Speech is written
           down by an AI model and the recording isn&apos;t kept.
         </span>

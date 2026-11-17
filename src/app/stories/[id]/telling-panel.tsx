@@ -56,7 +56,7 @@ export function TellingPanel({
       aria-label="How to tell it"
       data-testid="how-to-tell-it"
     >
-      <p className="text-sm font-bold uppercase tracking-wide text-ink-800">How to tell it</p>
+      <p className="text-sm font-bold text-ink-800">How to tell it</p>
       {current ? (
         <Coached
           telling={telling}
@@ -160,7 +160,7 @@ function Coached({
                 }`}
                 data-testid={`hook-${i}`}
               >
-                <span className="mr-2 text-xs font-bold uppercase tracking-wide text-ink-700">
+                <span className="mr-2 text-xs font-bold text-ink-700">
                   {picked ? "✓ Your opener" : `Option ${i + 1}`}
                 </span>
                 <span className="block font-medium">{h}</span>
@@ -197,7 +197,7 @@ function Coached({
             ))}
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
           <span data-testid="telling-length">
             {VERSIONS.find((v) => v.id === version)?.note}. About{" "}
             {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)} spoken.
@@ -207,7 +207,7 @@ function Coached({
             className="rounded-full px-3 py-1 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
           />
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-600">
           <PauseMark /> pause for a beat · <strong className="text-slate-900">bold</strong> stress
           this
         </p>
@@ -272,7 +272,7 @@ function Line({
 }) {
   return (
     <li className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+      <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
         {pause && <PauseMark />}
         {label}
       </span>

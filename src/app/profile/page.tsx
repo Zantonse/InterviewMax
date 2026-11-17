@@ -4,6 +4,9 @@ import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { startStory } from "@/app/stories/new/actions";
 import { AppHeader } from "@/components/app-header";
+import { CoreStories } from "@/components/core-stories";
+import { SkillsMap } from "@/components/skills-map";
+import { hasSkillData, skillsMap } from "@/lib/stories/skills";
 import { getCurrentUser } from "@/lib/auth";
 import { canUseCurriculum } from "@/lib/curriculum/access";
 import { getAssessmentSafely } from "@/lib/assessment/data";
@@ -109,13 +112,13 @@ async function ProfileContent() {
           <Summary result={result} stored={stored} />
         </Suspense>
         {result.jobs.length > 0 ? (
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2" data-testid="profile-jobs">
+          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="profile-jobs">
             {result.jobs.map((job) => (
-              <li key={job.jobId} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+              <li key={job.jobId} className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/jobs/${job.jobId}`} className="min-w-0 font-semibold text-slate-900 hover:text-ink-800">
                     <span className="block truncate">{job.title}</span>
-                    {job.company && <span className="block truncate text-sm font-normal text-slate-500">{job.company}</span>}
+                    {job.company && <span className="block truncate text-sm font-normal text-slate-600">{job.company}</span>}
                   </Link>
                   <ReadinessPill label={job.label} />
                 </div>
@@ -128,7 +131,7 @@ async function ProfileContent() {
             ))}
           </ul>
         ) : (
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 text-sm text-slate-600">
             <Link href="/jobs/new" className="font-semibold text-ink-800 hover:underline">
               Add a target job
             </Link>{" "}
@@ -136,6 +139,16 @@ async function ProfileContent() {
           </p>
         )}
       </Card>
+
+      {/* Moved here from home (design review 2026-11-16, fix 4). */}
+      <Suspense fallback={null}>
+        <CoreStories stories={stories} jobs={jobs} />
+      </Suspense>
+      {hasSkillData(skillsMap(stories)) && (
+        <Card title="Your story skills">
+          <SkillsMap map={skillsMap(stories)} />
+        </Card>
+      )}
 
       {changes.length > 0 && since && (
         <Card title={`Since ${formatDay(since)}`}>
@@ -159,7 +172,7 @@ async function ProfileContent() {
         <Card title="Top strengths">
           <PointList points={result.strengths} empty="Strengths show up once a few stories are written and graded." testId="profile-strengths" />
         </Card>
-        <Card title="Top weaknesses">
+        <Card title="What to work on next">
           <PointList points={result.weaknesses} empty="Nothing stands out yet." testId="profile-weaknesses" />
         </Card>
       </div>
@@ -217,7 +230,7 @@ function SummaryText({ text, pending = false }: { text: string; pending?: boolea
 }
 
 function PointList({ points, empty, testId }: { points: Point[]; empty: string; testId: string }) {
-  if (points.length === 0) return <p className="text-sm text-slate-500">{empty}</p>;
+  if (points.length === 0) return <p className="text-sm text-slate-600">{empty}</p>;
   return (
     <ul className="space-y-4" data-testid={testId}>
       {points.map((p) => (
@@ -242,7 +255,7 @@ function CitationLine({ citation }: { citation: Citation }) {
   return (
     <p className="mt-1 text-sm text-slate-600">
       {label}
-      {citation.quote && <span className="text-slate-500"> · “{citation.quote}”</span>}
+      {citation.quote && <span className="text-slate-600"> · “{citation.quote}”</span>}
     </p>
   );
 }
@@ -368,7 +381,7 @@ function StatusPill({ status }: { status: Status }) {
 const READINESS_STYLE: Record<ReadinessLabel, string> = {
   ready: "bg-green-100 text-green-900",
   getting_there: "bg-ink-50 text-ink-900",
-  not_ready: "bg-amber-100 text-amber-900",
+  not_ready: "bg-slate-100 text-slate-700",
 };
 
 function ReadinessPill({ label }: { label: ReadinessLabel }) {
@@ -382,7 +395,7 @@ function ReadinessPill({ label }: { label: ReadinessLabel }) {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl bg-white p-6 text-slate-900 shadow-sm ring-1 ring-black/5">
-      <h2 className="text-sm font-bold uppercase tracking-wide opacity-80">{title}</h2>
+      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );

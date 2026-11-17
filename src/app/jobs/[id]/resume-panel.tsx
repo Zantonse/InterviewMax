@@ -102,11 +102,11 @@ export function ResumePanel({
         <div className={`flex flex-col gap-5 ${building ? "opacity-60" : ""}`}>
           {set.summary ? (
             <div className="rounded-2xl bg-ink-50 px-4 py-3 ring-1 ring-ink-800/15">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-ink-800">Summary</h3>
+              <h3 className="text-xs font-bold text-ink-800">Summary</h3>
               <p className="mt-1 text-slate-900" data-testid="resume-summary">
                 {set.summary}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-600">
                 From your About me
                 {set.summarySource === "tailored" ? " for this job" : ""}.{" "}
                 <button
@@ -119,7 +119,7 @@ export function ResumePanel({
               </p>
             </div>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600">
               No summary yet: it comes from{" "}
               <a href="#about-me" className="font-semibold text-ink-800 underline">
                 About me for this job
@@ -133,7 +133,7 @@ export function ResumePanel({
               <h3 className="text-sm font-semibold text-slate-900">
                 {g.role}
                 {g.role === UNNAMED_ROLE && (
-                  <span className="font-normal text-slate-500">
+                  <span className="font-normal text-slate-600">
                     {" "}
                     · edit a bullet to say where it goes
                   </span>
@@ -189,7 +189,7 @@ export function ResumePanel({
           )}
 
           {set.leftOut > 0 && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600">
               {set.leftOut === 1 ? "One bullet was" : `${set.leftOut} bullets were`} left out
               because a figure in it wasn&apos;t in your answers.
             </p>
@@ -227,7 +227,7 @@ export function ResumePanel({
         </p>
       )}
       {!set && finishedCount < GOOD_SET_STORIES && (
-        <p className="-mt-2 text-sm text-slate-500">
+        <p className="-mt-2 text-sm text-slate-600">
           You have {finishedCount} finished {finishedCount === 1 ? "story" : "stories"}. Bullets
           work from what you have, and the set gets stronger at {GOOD_SET_STORIES} or more.
         </p>
@@ -261,7 +261,7 @@ function BulletRow({
       data-testid="resume-bullet"
     >
       <p className="font-medium text-slate-900">• {b.text}</p>
-      <p className="mt-0.5 text-sm text-slate-500">
+      <p className="mt-0.5 text-sm text-slate-600">
         {fit && b.fit !== "none" && <span className="font-semibold text-ink-800">{fit.label}</span>}
         {b.why && <> · {b.why}</>} · from{" "}
         <Link href={`/stories/${b.storyId}`} className="underline hover:text-slate-700">
@@ -275,7 +275,7 @@ function BulletRow({
         </p>
       )}
       {!hasFigure(b.text) && (
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           No number yet. If you know one, add it to{" "}
           <Link href={`/stories/${b.storyId}`} className="font-semibold text-ink-800 underline">
             the story
@@ -305,7 +305,7 @@ function BulletRow({
         <button
           type="button"
           onClick={onRemove}
-          className="font-medium text-slate-500 hover:text-red-700"
+          className="font-medium text-slate-600 hover:text-red-700"
         >
           Leave out
         </button>

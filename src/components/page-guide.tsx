@@ -31,7 +31,7 @@ export function PageGuide({ id, steps }: { id: string; steps: React.ReactNode[] 
       <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-ink-800 hover:underline [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
-          className="flex size-4 items-center justify-center rounded-full bg-ink-800 text-[0.625rem] font-bold text-white"
+          className="flex size-4 items-center justify-center rounded-full bg-ink-800 text-xs font-bold text-white"
         >
           ?
         </span>

@@ -59,7 +59,7 @@ async function Assessment({
   return (
     <>
       <JourneyResult answers={taken.answers} hasJob={hasJob} questionsJobId={questionsJobId} />
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-600">
         From {new Date(taken.completedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}.
         Jobs you&apos;ve added since count already.{" "}
         <Link href="/assessment?retake=1" className="font-semibold text-ink-800 hover:underline">

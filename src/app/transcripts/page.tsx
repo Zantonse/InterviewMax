@@ -80,7 +80,7 @@ async function TranscriptsContent({
             <li>Otter, Fathom, Granola and similar note-takers export a transcript.</li>
             <li>A mock interview with a friend or coach counts too.</li>
           </ul>
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 text-sm text-slate-600">
             Transcripts stay private to you. Only record an interview where everyone agreed to it.
           </p>
         </Card>
@@ -120,7 +120,7 @@ async function TranscriptsContent({
                         : "Not reviewed yet"}
                     </span>
                   </span>
-                  {job && <span className="mt-1 block text-sm text-slate-500">For {job.title}</span>}
+                  {job && <span className="mt-1 block text-sm text-slate-600">For {job.title}</span>}
                   {t.analysis?.summary && (
                     <span className="mt-2 block text-slate-600">{t.analysis.summary}</span>
                   )}
@@ -144,7 +144,7 @@ async function TranscriptsContent({
             className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
             open={Boolean(jobId) || undefined}
           >
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
+            <summary className="cursor-pointer text-sm font-bold text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
@@ -161,7 +161,7 @@ async function TranscriptsContent({
               {insights.recurringGaps.map((g) => (
                 <li key={g.gap} className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold text-slate-900">{gapLabel(g.gap)}</span>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-600">
                     {g.count} answers
                     {insights.analyzed > 1 &&
                       `, ${g.transcripts} ${g.transcripts === 1 ? "interview" : "interviews"}`}
@@ -169,7 +169,7 @@ async function TranscriptsContent({
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-sm text-slate-500">
+            <p className="mt-4 text-sm text-slate-600">
               The story builder&apos;s follow-ups now push on these.
             </p>
           </Card>
@@ -185,14 +185,14 @@ async function TranscriptsContent({
               {insights.themes.map((t) => (
                 <li key={t.theme} className="flex items-baseline justify-between gap-3">
                   <span className="text-slate-800">{getTheme(t.theme)?.label}</span>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-600">
                     {t.asked}×{t.weak > 0 && ` · ${t.weak} didn't land`}
                   </span>
                 </li>
               ))}
             </ul>
             {jobs.length > 0 && (
-              <p className="mt-4 text-sm text-slate-500">
+              <p className="mt-4 text-sm text-slate-600">
                 Predict your likely questions again on a{" "}
                 <Link href="/jobs" className="font-semibold text-ink-800 underline">
                   target job
@@ -218,7 +218,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
       {children}
     </section>
   );

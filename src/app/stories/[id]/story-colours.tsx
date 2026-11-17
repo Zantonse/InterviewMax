@@ -15,7 +15,8 @@ const PART_COLOURS = [
   { tint: "bg-violet-50", bar: "bg-violet-200", dot: "bg-violet-400", edge: "border-violet-300" },
   { tint: "bg-accent-50", bar: "bg-accent-200", dot: "bg-accent-500", edge: "border-accent-400" },
   { tint: "bg-emerald-50", bar: "bg-emerald-200", dot: "bg-emerald-500", edge: "border-emerald-400" },
-  { tint: "bg-rose-50", bar: "bg-rose-200", dot: "bg-rose-400", edge: "border-rose-300" },
+  // The lesson: a calm stone, not pink, which read as an error (design review, Nov 16).
+  { tint: "bg-stone-100", bar: "bg-stone-300", dot: "bg-stone-500", edge: "border-stone-400" },
 ] as const;
 
 // At an interview pace of about 150 words a minute.
@@ -70,12 +71,12 @@ export function SpokenBar({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
         <span className="font-semibold text-slate-800" data-testid="script-length">
           About {formatSpoken(seconds)} spoken
-          <span className="font-normal text-slate-500">
+          <span className="font-normal text-slate-600">
             {" "}
             · {total} words{verdict && `, ${verdict}`}
           </span>
         </span>
-        <span className="text-xs text-slate-500">aim for {guide.spoken}</span>
+        <span className="text-xs text-slate-600">aim for {guide.spoken}</span>
       </div>
       <div
         className="mt-1.5 flex h-6 gap-0.5 overflow-hidden rounded-lg"
@@ -92,7 +93,7 @@ export function SpokenBar({
             return (
               <div
                 key={p.id}
-                className={`flex min-w-0 items-center px-1.5 text-[11px] font-semibold text-slate-800 transition-[flex-grow] duration-500 ${colourAt(p.i).bar}`}
+                className={`flex min-w-0 items-center px-1.5 text-xs font-semibold text-slate-800 transition-[flex-grow] duration-500 ${colourAt(p.i).bar}`}
                 style={{ flexGrow: share, flexBasis: 0 }}
                 title={`${p.label}: about ${spokenSeconds(p.words)} seconds`}
               >
@@ -143,7 +144,7 @@ export function ColouredScript({
               onClick={() => setFocus(on ? null : p.id)}
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 transition-colors ${
                 !p.text
-                  ? "border border-dashed border-slate-300 text-slate-400 ring-transparent"
+                  ? "border border-dashed border-slate-300 text-slate-500 ring-transparent"
                   : on
                     ? "bg-ink-800 text-white ring-ink-800"
                     : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"

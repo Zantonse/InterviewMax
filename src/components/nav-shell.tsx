@@ -141,7 +141,7 @@ export function CollapseButton() {
   );
 }
 
-export type NavGroupId = "jobs" | "stories" | "practice";
+export type NavGroupId = "jobs" | "stories" | "practice" | "library";
 
 function listOf(value: string | undefined) {
   return (value ?? "").split(" ").filter(Boolean);

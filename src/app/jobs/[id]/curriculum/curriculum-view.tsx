@@ -100,7 +100,7 @@ export function CurriculumView({
     >
       {curriculum.summary && (
         <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+          <h2 className="mb-2 text-sm font-bold text-ink-800">
             The job in short
           </h2>
           <p className="text-slate-700">{curriculum.summary}</p>
@@ -143,7 +143,7 @@ export function CurriculumView({
       {areas.map((area) => (
         <section key={area.id}>
           <h2 className="text-lg font-bold text-slate-900">
-            {area.label} <span className="text-sm font-normal text-slate-500">· {area.hint}</span>
+            {area.label} <span className="text-sm font-normal text-slate-600">· {area.hint}</span>
           </h2>
           <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
             {area.topics.map((t) => (
@@ -170,7 +170,7 @@ function TopicCard({
     >
       <div>
         <h3 className="font-semibold text-slate-900">{topic.name}</h3>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-600">
           {topic.quote ? (
             <>
               From the posting: <q className="italic">{topic.quote}</q>

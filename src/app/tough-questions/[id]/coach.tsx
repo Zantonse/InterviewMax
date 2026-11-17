@@ -88,10 +88,10 @@ export function ToughCoach({
                 <label htmlFor={`prompt-${p.id}`} className="block font-semibold text-slate-900">
                   {i + 1}. {p.text}
                   {optional && (
-                    <span className="ml-2 text-xs font-normal text-slate-500">Optional</span>
+                    <span className="ml-2 text-xs font-normal text-slate-600">Optional</span>
                   )}
                 </label>
-                {"hint" in p && p.hint && <p className="mt-0.5 text-sm text-slate-500">{p.hint}</p>}
+                {"hint" in p && p.hint && <p className="mt-0.5 text-sm text-slate-600">{p.hint}</p>}
                 <textarea
                   id={`prompt-${p.id}`}
                   value={answers[p.id] ?? ""}
@@ -126,7 +126,7 @@ export function ToughCoach({
               <label htmlFor="tough-job" className="block font-semibold text-slate-900">
                 Which job is this answer for?
               </label>
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-slate-600">
                 The answer ends by turning toward that role.
                 {question.id === AI_ANSWER_ID &&
                   " You can also write a version for each job from its page, under Your pitch."}
@@ -170,15 +170,15 @@ export function ToughCoach({
           >
             {pending && action === "save" ? "Saving…" : "Save for later"}
           </button>
-          {saved && action === "save" && <span className="text-sm text-slate-500">{saved}</span>}
+          {saved && action === "save" && <span className="text-sm text-slate-600">{saved}</span>}
         </div>
         {missing.length > 0 && (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-600">
             Answer the questions not marked optional to write your answer.
           </p>
         )}
         {draft && content.tough?.edited && (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-600">
             Writing it again replaces the edits you made to your answer.
           </p>
         )}
@@ -193,7 +193,7 @@ export function ToughCoach({
         className="h-fit rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6 lg:sticky lg:top-6"
         data-testid="tough-answer"
       >
-        <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">Your answer</h2>
+        <h2 className="text-sm font-bold text-ink-800">Your answer</h2>
         {!draft ? (
           <p className="mt-2 text-slate-600">
             Once you&apos;ve answered the questions, your answer appears here, about{" "}
@@ -209,7 +209,7 @@ export function ToughCoach({
               className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-lg leading-relaxed text-slate-900 focus:border-ink-700 focus:outline-none focus:ring-2 focus:ring-ink-700/30"
               data-testid="tough-answer-text"
             />
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-600">
               {wordCount(edit)} words · about {speakingSeconds(edit)} seconds out loud
             </p>
             {(content.draft?.untracedNumbers.length ?? 0) > 0 && (
@@ -227,7 +227,7 @@ export function ToughCoach({
               >
                 {pending && action === "edit" ? "Saving…" : "Save my edits"}
               </button>
-              {saved && action === "edit" && <span className="text-sm text-slate-500">{saved}</span>}
+              {saved && action === "edit" && <span className="text-sm text-slate-600">{saved}</span>}
             </div>
             {content.tough?.note && (
               <div className="mt-4 rounded-xl bg-ink-50 p-3 text-sm text-ink-900">

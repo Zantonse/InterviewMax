@@ -34,7 +34,7 @@ export function MomentButton({
     >
       <span className="font-bold text-slate-900 group-hover:text-ink-900">{moment}</span>
       {question && <span className="mt-0.5 text-slate-700">{capitalize(question)}</span>}
-      <span className="mt-2 line-clamp-2 text-sm text-slate-500">
+      <span className="mt-2 line-clamp-2 text-sm text-slate-600">
         From {sourceLabel}: &ldquo;{quote}&rdquo;
       </span>
       <span className="mt-3 text-sm font-semibold text-ink-800">
@@ -108,7 +108,7 @@ export function AutoFind({ reading }: { reading: string }) {
           <p className="animate-pulse text-slate-600" data-testid="finding">
             Reading {reading} for story moments…
           </p>
-          {slow && <p className="mt-2 text-sm text-slate-500">{SLOW_NOTE}</p>}
+          {slow && <p className="mt-2 text-sm text-slate-600">{SLOW_NOTE}</p>}
         </>
       )}
     </section>
@@ -172,7 +172,7 @@ export function QuickQuestions({ initial }: { initial: Record<string, string> })
       >
         {pending ? "Finding your stories…" : "Find my stories"}
       </button>
-      {slow && <p className="text-sm text-slate-500" role="status">{SLOW_NOTE}</p>}
+      {slow && <p className="text-sm text-slate-600" role="status">{SLOW_NOTE}</p>}
     </form>
   );
 }

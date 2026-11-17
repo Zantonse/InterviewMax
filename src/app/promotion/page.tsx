@@ -30,7 +30,7 @@ export default function PromotionPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <PromotionHome />
         </Suspense>
@@ -86,7 +86,7 @@ async function PromotionHome() {
         title="2 · Evidence gap map"
         aside={
           plan.targetLevel ? (
-            <span className="text-sm text-slate-500" data-testid="gap-count">
+            <span className="text-sm text-slate-600" data-testid="gap-count">
               {gaps === 0
                 ? "No gaps"
                 : `${gaps} of ${evidence.length} need a story at ${levelLabel(plan.targetLevel)}`}

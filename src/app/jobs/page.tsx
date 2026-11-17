@@ -95,7 +95,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
     <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
         {stale && (
-          <Card title="Not read yet" className="bg-amber-50">
+          <Card title="Not read yet">
             <p className="mb-4 text-slate-700">
               Your jobs or resume changed since I last read them, so what&apos;s below may be out of
               date.
@@ -135,7 +135,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
             <summary className="cursor-pointer list-none font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
               <span className="mr-2 inline-block transition group-open:rotate-90">›</span>
               Finished jobs ({finished.length})
-              <span className="mt-1 block text-sm font-normal text-slate-500">
+              <span className="mt-1 block text-sm font-normal text-slate-600">
                 Kept for their interviews and stories. They don&apos;t count toward your job limit.
               </span>
             </summary>
@@ -174,7 +174,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
               <>
                 <h3 className="mt-4 font-semibold text-slate-900">Doesn&apos;t show yet</h3>
                 <Bullets items={overview.resumeFit.gaps} />
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-slate-600">
                   Your stories are the place to cover these.
                 </p>
               </>
@@ -226,7 +226,7 @@ function JobRow({ job, read }: { job: TargetJob; read: JobRead | undefined }) {
         )}
         {read?.summary && <span className="mt-2 block text-slate-600">{read.summary}</span>}
         {read?.differs && (
-          <span className="mt-1 block text-sm text-slate-500">{read.differs}</span>
+          <span className="mt-1 block text-sm text-slate-600">{read.differs}</span>
         )}
       </Link>
     </li>
@@ -244,7 +244,7 @@ function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>
           <form action={removeResume}>
             <PendingButton
               pendingText="Removing…"
-              className="text-sm font-medium text-slate-500 hover:text-red-700"
+              className="text-sm font-medium text-slate-600 hover:text-red-700"
             >
               Remove
             </PendingButton>
@@ -271,7 +271,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
       {children}
     </section>
   );

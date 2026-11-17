@@ -69,7 +69,7 @@ export function AnswerComposer({
           onText={(spoken) => setText((t) => appendSpoken(t, spoken))}
         />
         {seconds > 0 && !talking && (
-          <span className="text-xs text-slate-500 tabular-nums">
+          <span className="text-xs text-slate-600 tabular-nums">
             Recorded {formatDuration(seconds)}
           </span>
         )}

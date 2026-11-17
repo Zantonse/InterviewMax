@@ -77,6 +77,18 @@ export function levelForGrade(grade: StoryGrade): StoryLevel {
   return !grade.thinking || grade.thinking.level === "shown" ? 3 : 2;
 }
 
+// The one level shown wherever a graded story is named (design review, 2026-11-16: nine different
+// scales for "how good is this"). Behavioral stories climb the real levels; About me and tough
+// questions keep their tiers underneath, shown on the same 1 to 3 steps.
+export function displayLevel(
+  grade: StoryGrade,
+  storyType: StoryType | undefined,
+  content?: StoryContent,
+): StoryLevel {
+  if (usesLevels(storyType, content)) return levelForGrade(grade);
+  return grade.tier === "not_yet" ? 1 : grade.tier === "good_enough" ? 2 : 3;
+}
+
 // Where the story stands now: undefined until there's a draft (or for stories that don't use
 // levels). A draft with no current grade is Level 1 until it's graded.
 export function storyLevel(

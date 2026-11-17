@@ -51,17 +51,18 @@ export function JobTabs({ tabs }: { tabs: JobTab[] }) {
       className="sticky top-0 z-10 -mx-4 mt-6 scroll-mt-0 border-b border-slate-200 bg-[var(--background)]/95 px-4 backdrop-blur sm:mx-0 sm:px-0"
       data-testid="job-tabs"
     >
-      <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
+      {/* On phones the tabs sit in a 2x2 grid so none is cut off (design review 2026-11-16, fix 8). */}
+      <ul className="grid grid-cols-2 gap-x-1 sm:flex sm:gap-1 sm:overflow-x-auto sm:[scrollbar-width:none]">
         {tabs.map((t) => (
-          <li key={t.id} className="shrink-0">
+          <li key={t.id} className="min-w-0 sm:shrink-0">
             <a
               href={`#${t.id}`}
               aria-current={active === t.id ? "page" : undefined}
               data-tab-link={t.id}
-              className="-mb-px flex items-baseline gap-1.5 border-b-2 border-transparent px-3 py-3 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+              className="-mb-px flex h-full flex-col items-center justify-center gap-x-1.5 border-b-2 border-transparent px-3 py-2.5 text-center text-sm sm:flex-row sm:items-baseline sm:justify-start sm:py-3 sm:text-left font-semibold text-slate-600 transition hover:text-slate-900"
             >
               {t.label}
-              {t.note && <span className="font-normal text-slate-500">{t.note}</span>}
+              {t.note && <span className="whitespace-nowrap text-xs font-normal text-slate-600 sm:text-sm">{t.note}</span>}
             </a>
           </li>
         ))}

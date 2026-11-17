@@ -89,7 +89,7 @@ function Sentence({ sentence }: { sentence: ExampleSentence }) {
         className="animate-enter rounded bg-accent-100 px-0.5 text-slate-900 [box-decoration-break:clone]"
         data-adds={sentence.adds}
       >
-        <span className="mr-1 inline-block rounded-full bg-accent-400 px-1.5 text-[0.7rem] font-bold uppercase tracking-wide text-ink-950 align-[0.1em]">
+        <span className="mr-1 inline-block rounded-full bg-accent-400 px-1.5 text-xs font-bold text-ink-950 align-[0.1em]">
           + {sentence.adds}
         </span>
         {sentence.text}

@@ -65,7 +65,7 @@ export function AiAnswerPanel({
         <>
           {general && (
             <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-black/5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold text-slate-600">
                 Your general answer
               </p>
               <p className="mt-1 whitespace-pre-line text-slate-800">{general}</p>
@@ -86,7 +86,7 @@ export function AiAnswerPanel({
             className="w-full rounded-xl border border-slate-300 px-3 py-2 text-lg leading-relaxed text-slate-900 focus:border-ink-700 focus:outline-none focus:ring-2 focus:ring-ink-700/30"
             data-testid="ai-answer-text"
           />
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             {wordCount(edit)} words · about {speakingSeconds(edit)} seconds out loud
           </p>
           {forJob.untracedNumbers.length > 0 && (
@@ -142,12 +142,12 @@ export function AiAnswerPanel({
               text={edit}
               className="rounded-xl px-4 py-2 text-sm font-semibold text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
             />
-            {saved && <span className="text-sm text-slate-500">Saved</span>}
+            {saved && <span className="text-sm text-slate-600">Saved</span>}
           </>
         )}
       </div>
       {forJob?.edited && (
-        <p className="text-sm text-slate-500">Writing it again replaces your edits.</p>
+        <p className="text-sm text-slate-600">Writing it again replaces your edits.</p>
       )}
       {error && (
         <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">

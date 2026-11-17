@@ -28,7 +28,7 @@ export function JourneyResult({
   return (
     <div className="mt-6 grid grid-cols-1 items-start gap-4 md:grid-cols-5" data-testid="journey-result">
       <section className="rounded-3xl bg-ink-800 p-6 text-white shadow-sm md:col-span-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide opacity-80">Journey grade</h2>
+        <h2 className="text-sm font-bold opacity-80">Journey grade</h2>
         <p className="mt-3 flex items-baseline gap-2">
           <span className="text-5xl font-extrabold" data-testid="journey-score">
             {grade.score}
@@ -74,7 +74,7 @@ export function JourneyResult({
 
       {/* On phones the step to take comes first; the grade follows. */}
       <section className="order-first rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8 md:order-none md:col-span-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-ink-700">Start here</p>
+        <p className="text-xs font-bold text-ink-700">Start here</p>
         {grade.urgent && (
           <p className="mt-1 text-sm text-slate-600">
             Your next interview is days away, so this starts with what can be ready in time.

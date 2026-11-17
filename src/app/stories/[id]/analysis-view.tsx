@@ -88,7 +88,7 @@ export function AnalysisView({
         const partGuide = guide.parts[p.id];
         return (
           <div key={p.id} data-testid={`analysis-${p.id}`}>
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{p.label}</p>
+            <p className="text-xs font-bold text-slate-600">{p.label}</p>
             <p className="mt-1 text-lg leading-relaxed text-slate-800">
               <QuoteMarked text={p.text} quote={note?.quote} />
             </p>

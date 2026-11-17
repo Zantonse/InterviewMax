@@ -122,11 +122,11 @@ function TailorLinks({
   return (
     <section
       className={`rounded-3xl p-5 shadow-sm sm:p-6 ${
-        soon !== null ? "bg-amber-50 ring-1 ring-amber-200" : "bg-white ring-1 ring-black/5"
+        soon !== null ? "bg-ink-50 ring-1 ring-ink-800/20" : "bg-white ring-1 ring-black/5"
       }`}
       data-testid="tailor-links"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="text-sm font-bold text-ink-800">
         {soon !== null
           ? `Your ${company} interview is ${whenLabel(soon)}`
           : "Next: make it company-first for each job"}
@@ -164,7 +164,7 @@ function TailorLinks({
                   >
                     {job.company || job.title}
                     {content.tailored?.[job.id]?.draft && (
-                      <span className="text-xs text-slate-500">written</span>
+                      <span className="text-xs text-slate-600">written</span>
                     )}
                   </Link>
                 </li>
@@ -185,7 +185,7 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
       className="rounded-3xl bg-ink-50 p-5 ring-1 ring-ink-800/10 sm:p-6"
       data-testid="next-up"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">What&apos;s next</h2>
+      <h2 className="text-sm font-bold text-ink-800">What&apos;s next</h2>
       {next ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p className="min-w-0 text-slate-700">

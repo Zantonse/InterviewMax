@@ -66,7 +66,7 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
           {groups.map((g) => (
             <div key={g.id}>
               <h3 className="text-sm font-semibold text-slate-900">
-                {g.label} <span className="font-normal text-slate-500">· {g.hint}</span>
+                {g.label} <span className="font-normal text-slate-600">· {g.hint}</span>
               </h3>
               <ul className="mt-2 space-y-2">
                 {g.questions.map((q) =>
@@ -89,7 +89,7 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
                       data-testid="ask-question"
                     >
                       <p className="font-medium text-slate-900">{q.question}</p>
-                      {q.why && <p className="mt-0.5 text-sm text-slate-500">{q.why}</p>}
+                      {q.why && <p className="mt-0.5 text-sm text-slate-600">{q.why}</p>}
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                         <button
                           type="button"
@@ -109,7 +109,7 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
                         <button
                           type="button"
                           onClick={() => change(questions.filter((x) => x.id !== q.id))}
-                          className="font-medium text-slate-500 hover:text-red-700"
+                          className="font-medium text-slate-600 hover:text-red-700"
                         >
                           Remove
                         </button>
@@ -146,7 +146,7 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
         )}
       </div>
       {suggested && !suggesting && (
-        <p className="-mt-2 text-sm text-slate-500">
+        <p className="-mt-2 text-sm text-slate-600">
           New suggestions replace the ones you haven&apos;t saved. Saved ones and your own stay.
         </p>
       )}

@@ -35,7 +35,7 @@ export function BeforeAfter() {
             after ? "pointer-events-none scale-95 opacity-0" : "opacity-100"
           }`}
         >
-          <figcaption className="text-xs font-semibold text-slate-500">Before</figcaption>
+          <figcaption className="text-xs font-semibold text-slate-600">Before</figcaption>
           <blockquote className="mt-2 text-lg text-slate-600 italic">
             &ldquo;So, there was this onboarding project, and it was kind of a mess, and I helped
             out a lot with fixing things, and in the end it went pretty well, customers liked

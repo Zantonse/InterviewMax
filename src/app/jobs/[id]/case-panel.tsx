@@ -60,7 +60,7 @@ export function CasePanel({ jobId, questions }: { jobId: string; questions: Case
           onChange={(e) => setDraft(e.target.value)}
           maxLength={MAX_CASE_QUESTION_LENGTH}
           placeholder="Add one, e.g. How would you decide whether to launch a new product line?"
-          className="min-w-0 flex-1 rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none"
           aria-label="Add a case or technical question"
         />
         <button
@@ -120,7 +120,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
       ) : (
         <div className="mt-3 space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{frame.blurb}</p>
+            <p className="text-xs font-semibold text-slate-600">{frame.blurb}</p>
             <ol className="mt-1 space-y-0.5 text-sm text-slate-700">
               {frame.steps.map((s, i) => (
                 <li key={s.id}>
@@ -140,7 +140,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
             onChange={(e) => setAnswer(e.target.value)}
             rows={5}
             placeholder="Answer as you would in the room. Tap Talk to say it out loud."
-            className="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none"
+            className="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none"
             aria-label={`Your answer to: ${q.question}`}
           />
           <AnswerLimit text={answer} max={MAX_CASE_ANSWER_LENGTH} />
@@ -191,7 +191,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
                   &ldquo;{feedback.followUp}&rdquo;
                 </p>
               )}
-              <p className="mt-3 text-xs text-slate-500">Practice answers aren&apos;t saved. Edit and try again.</p>
+              <p className="mt-3 text-xs text-slate-600">Practice answers aren&apos;t saved. Edit and try again.</p>
             </div>
           )}
         </div>
