@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageGuide } from "@/components/page-guide";
+import { InterviewProfileCard } from "@/components/interview-profile";
 import { StoryPlan } from "@/components/story-plan";
 import { listJobs } from "@/lib/jobs/data";
 import { getTheme } from "@/lib/questions/themes";
 import { listStories } from "@/lib/stories/data";
 import { MAX_TRANSCRIPTS, gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts } from "@/lib/transcripts/data";
+import { buildInterviewProfile } from "@/lib/transcripts/profile";
 import { leftOutNote } from "@/lib/transcripts/split";
 import { AddTranscriptForm } from "./forms";
 
@@ -66,6 +68,7 @@ async function TranscriptsContent({
     listStories(),
   ]);
   const insights = summarizeTranscripts(transcripts);
+  const profile = buildInterviewProfile(transcripts);
   const jobOptions = jobs.map((j) => ({ id: j.id, title: j.title, company: j.company }));
 
   if (transcripts.length === 0) {
@@ -90,6 +93,9 @@ async function TranscriptsContent({
 
   return (
     <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="lg:col-span-3">
+        <InterviewProfileCard profile={profile} />
+      </div>
       <div className="space-y-4 lg:col-span-2">
         {addedCount > 1 && (
           <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="added-note">

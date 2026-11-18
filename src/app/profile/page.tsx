@@ -179,7 +179,10 @@ async function ProfileContent() {
 
       <Card title="How you interview">
         <p className="-mt-2 mb-4 text-sm text-slate-600">
-          Tendencies from your real past interviews, counted from what you and the interviewer said.
+          Tendencies from your real past interviews, counted from what you and the interviewer said.{" "}
+          <Link href="/transcripts#interview-profile" className="font-semibold text-ink-800 hover:underline">
+            See your interview profile →
+          </Link>
         </p>
         <ul className="divide-y divide-slate-100" data-testid="profile-tendencies">
           {result.tendencies.map((t) => (
