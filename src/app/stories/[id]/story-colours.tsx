@@ -181,7 +181,7 @@ export function ColouredScript({
                   <span
                     className={
                       mark
-                        ? "underline decoration-amber-500 decoration-dotted decoration-2 underline-offset-[6px]"
+                        ? "underline decoration-amber-400 decoration-dotted decoration-1 underline-offset-[6px]"
                         : undefined
                     }
                     data-marked={mark ? "" : undefined}

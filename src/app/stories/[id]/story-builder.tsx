@@ -197,7 +197,12 @@ export function StoryBuilder({
   const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
-    initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
+    // Level-up questions are answered on the story itself, so a story waiting on them opens there.
+    initialContent.draft &&
+      (nextFollowUpIndex(initialContent) === undefined ||
+        inlineLevelQuestions(initialContent).length > 0)
+      ? "story"
+      : "build",
   );
 
   const questions = coreQuestions(storyType);

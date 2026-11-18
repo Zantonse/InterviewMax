@@ -400,7 +400,7 @@ export function glanceFor(questions: BriefQuestion[], stories: StoryLike[]): Bri
 }
 
 const FIGURE = /\$?\d+(?:[.,]\d+)*\s?(?:%|percent\b|[kKmMbB]\b|x\b)?/;
-const MAX_FIGURE_LINE = 90;
+const MAX_FIGURE_LINE = 64;
 
 // The figure an interviewer remembers: the sentence with the first figure in the result, else
 // the first figure anywhere, cut to a line around the figure.
@@ -418,7 +418,7 @@ export function keyFigure(content: StoryContent): string | null {
 function clipAround(sentence: string): string {
   if (sentence.length <= MAX_FIGURE_LINE) return sentence;
   const at = FIGURE.exec(sentence)?.index ?? 0;
-  const from = Math.max(0, sentence.lastIndexOf(" ", Math.max(0, at - 30)));
+  const from = Math.max(0, sentence.lastIndexOf(" ", Math.max(0, at - 24)));
   const to = sentence.indexOf(" ", Math.min(sentence.length, from + MAX_FIGURE_LINE));
   const cut = sentence.slice(from, to < 0 ? undefined : to).trim();
   return `${from > 0 ? "…" : ""}${cut}${to > 0 ? "…" : ""}`;

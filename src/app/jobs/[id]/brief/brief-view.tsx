@@ -62,7 +62,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                     {g.title}
                   </Link>
                   {g.number && (
-                    <p className="text-base font-semibold text-emerald-800 print:text-xs" data-testid="glance-number">
+                    <p className="text-sm font-semibold text-emerald-800 print:text-xs" data-testid="glance-number">
                       {g.number}
                     </p>
                   )}
