@@ -3,6 +3,7 @@ import { parseContent } from "./content";
 import type { CheckResult, CriterionScore, StoryGrade } from "./grading";
 import {
   answeredGaps,
+  displayLevel,
   levelForGrade,
   levelGaps,
   levelScore,
@@ -212,5 +213,20 @@ describe("the Level 2 to Level 3 loop", () => {
     // Level 1 isn't ready to use, and a gap only a rewrite can fix hasn't been tried yet.
     expect(readyToMoveOn(1, all)).toBe(false);
     expect(readyToMoveOn(2, levelGaps(grade({ tier: "strong", criteria: crit([4, 4, 4, 4, 4]), checks: checks(["length"]) })))).toBe(false);
+  });
+});
+
+describe("displayLevel", () => {
+  it("uses the level ladder for behavioral stories", () => {
+    const star = getStoryType("difficult_stakeholder");
+    // Strong without the thinking shown is still Level 2 on the ladder.
+    expect(displayLevel(grade({ tier: "strong", thinking: { level: "partly", note: "" } }), star)).toBe(2);
+  });
+
+  it("maps tiers straight to levels for stories off the ladder (About me)", () => {
+    const intro = getStoryType("about_me");
+    expect(displayLevel(grade({ tier: "not_yet" }), intro)).toBe(1);
+    expect(displayLevel(grade({ tier: "good_enough" }), intro)).toBe(2);
+    expect(displayLevel(grade({ tier: "strong", thinking: { level: "partly", note: "" } }), intro)).toBe(3);
   });
 });

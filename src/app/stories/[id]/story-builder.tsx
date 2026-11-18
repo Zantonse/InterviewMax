@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
+import { END_OF_STORY, inlineLevelQuestions, type InlineQuestion } from "@/lib/stories/inline-questions";
 import { MicButton } from "@/components/mic-button";
 import type { FieldId } from "@/lib/field/fields";
 import { suggestRoleMap } from "@/lib/roles/role-map";
@@ -196,7 +197,12 @@ export function StoryBuilder({
   const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
-    initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
+    // Level-up questions are answered on the story itself, so a story waiting on them opens there.
+    initialContent.draft &&
+      (nextFollowUpIndex(initialContent) === undefined ||
+        inlineLevelQuestions(initialContent).length > 0)
+      ? "story"
+      : "build",
   );
 
   const questions = coreQuestions(storyType);
@@ -254,7 +260,8 @@ export function StoryBuilder({
         // A finished draft is shown with its score; a rough one stays beside the follow-ups.
         if (step.busy === "writing" && next !== "probe") setView("story");
         if (
-          (step.busy === "probing" || step.busy === "leveling") &&
+          // Level-up questions show on the story itself (inline-questions.ts), so leveling stays put.
+          step.busy === "probing" &&
           nextFollowUpIndex(result.content) !== undefined
         ) {
           setView("build");
@@ -426,11 +433,11 @@ export function StoryBuilder({
 
   return (
     <>
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:mt-3 sm:gap-y-2">
+        <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
           {storyType?.label ?? "Your story"}
         </h1>
-        <p className="whitespace-nowrap text-sm text-slate-500" data-testid="progress">
+        <p className="whitespace-nowrap text-xs text-slate-600 sm:text-sm" data-testid="progress">
           {progressLabel(stage, coreAnswered, questions.length, content)}
         </p>
         <div className="ml-auto flex items-center gap-2">
@@ -455,7 +462,7 @@ export function StoryBuilder({
         <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           {/* The conversation: its own scrolling pane, with the answer box pinned under it. */}
           <section
-            className="flex h-[calc(100dvh-12rem)] min-h-[26rem] flex-col rounded-3xl bg-white shadow-sm ring-1 ring-black/5"
+            className="flex h-[calc(100dvh-13.5rem)] min-h-[22rem] flex-col rounded-3xl bg-white shadow-sm ring-1 ring-black/5 sm:h-[calc(100dvh-12rem)] sm:min-h-[26rem]"
             aria-label="Conversation"
           >
             <ol
@@ -463,8 +470,10 @@ export function StoryBuilder({
               className="flex flex-1 flex-col gap-4 overflow-y-scroll overscroll-contain p-5 sm:p-6"
               data-testid="chat"
             >
+              {/* Free space goes above the conversation, so a short one sits on the answer box. */}
+              <li aria-hidden className="mt-auto" />
               {!content.imported && !content.linkedin && (
-                <li className="animate-enter text-sm text-slate-500" data-testid="builder-intro">
+                <li className="animate-enter text-sm text-slate-600" data-testid="builder-intro">
                   {storyType?.format === "intro"
                     ? `Answer ${questions.length} short questions in plain notes, typed or spoken. I write it from your words.`
                     : "Tell it your way. Messy notes or a minute of talking is plenty."}
@@ -501,7 +510,7 @@ export function StoryBuilder({
                       {content.imported.text}
                     </p>
                     {content.imported.fileName && (
-                      <p className="text-xs text-slate-500">From {content.imported.fileName}</p>
+                      <p className="text-xs text-slate-600">From {content.imported.fileName}</p>
                     )}
                   </div>
                 </li>
@@ -575,6 +584,7 @@ export function StoryBuilder({
                             ? `Started from your ${inferred.source === "resume" ? "resume" : "LinkedIn"}`
                             : undefined
                     }
+                    current={q.id === currentCore}
                     isEditing={editing?.kind === "core" && editing.id === q.id}
                     disabled={busy !== null}
                     onEdit={() => setEditing({ kind: "core", id: q.id })}
@@ -638,6 +648,7 @@ export function StoryBuilder({
                           ? (text) => setInsert((n) => ({ text, n: (n?.n ?? 0) + 1 }))
                           : undefined
                       }
+                      current={index === currentFollowUp}
                       isEditing={editing?.kind === "followUp" && editing.index === index}
                       disabled={busy !== null}
                       onEdit={() => setEditing({ kind: "followUp", index })}
@@ -694,9 +705,13 @@ export function StoryBuilder({
                         ? `${GUIDED_START_PROMPTS.join("\n")}\n\nA line or two for each is plenty.`
                         : undefined
                     }
-                    rows={currentCore === "start" && storyType?.format !== "intro" ? 6 : 3}
+                    rows={currentCore === "start" && storyType?.format !== "intro" ? 5 : 3}
                     disabled={busy !== null}
-                    submitLabel="Next"
+                    submitLabel={
+                      storyType?.format !== "intro" && questions.length === 1
+                        ? "Write my rough draft"
+                        : "Next"
+                    }
                     onSubmit={(text) => submitCore(currentCore, text)}
                   />
                 </>
@@ -769,7 +784,7 @@ export function StoryBuilder({
                 onShowStory={() => setView("story")}
               />
             )}
-            {beside}
+            {(content.draft || storyType?.format === "intro") && beside}
             {storyType?.format === "intro" && (canUpload || content.roleMap) && (
               <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <RoleMapCard
@@ -817,12 +832,41 @@ export function StoryBuilder({
           </aside>
         </div>
       ) : (
+        // The level and its one next step lead, then the story; on a phone the grade follows the
+        // story straight away (design review, Nov 16: it sat five screens down). The extras fold
+        // into "More with this story". On a phone the left column's wrapper steps aside
+        // (max-lg:contents) so its cards and the grade can be put in that order.
         <div className="mt-4 grid animate-enter grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4 max-lg:contents">
+            <div className="min-w-0 empty:hidden max-lg:order-1">
+              <LevelCard
+                field={field}
+                content={content}
+                storyType={storyType}
+                busy={busy === "leveling" ? "asking" : busy === "writing" && content.levelUp && content.levelUp.reached === undefined ? "writing" : null}
+                disabled={busy !== null}
+                onLevelUp={climb}
+                onDismiss={() => run([{ busy: "saving", action: () => dismissLevelUp(sid()) }])}
+                onShowQuestions={() => setView("build")}
+              />
+            </div>
+            <div className="min-w-0 max-lg:order-2">
             <StoryPanel
               title={title}
               content={content}
               storyType={storyType}
+              ask={
+                content.levelUp
+                  ? {
+                      questions: inlineLevelQuestions(content),
+                      target: content.levelUp.target,
+                      disabled: busy !== null,
+                      draftScope,
+                      onAnswer: submitFollowUp,
+                      onSkip: skipOne,
+                    }
+                  : undefined
+              }
               writing={busy === "writing"}
               analyzing={busy === "analyzing"}
               disabled={busy !== null}
@@ -887,16 +931,17 @@ export function StoryBuilder({
                 </div>
               )}
             </StoryPanel>
-            <LevelCard
-              field={field}
-              content={content}
-              storyType={storyType}
-              busy={busy === "leveling" ? "asking" : busy === "writing" && content.levelUp && content.levelUp.reached === undefined ? "writing" : null}
-              disabled={busy !== null}
-              onLevelUp={climb}
-              onDismiss={() => run([{ busy: "saving", action: () => dismissLevelUp(sid()) }])}
-              onShowQuestions={() => setView("build")}
-            />
+            </div>
+            <MoreWithStory
+              show={Boolean(content.draft)}
+              className="max-lg:order-4"
+              opened={Boolean(content.telling || content.alsoAnswers || content.exec)}
+              labels={[
+                "How to tell it",
+                ...(execMode ? ["Exec version"] : []),
+                "Other questions it answers",
+              ]}
+            >
             <TellingPanel
               content={content}
               storyType={storyType}
@@ -927,6 +972,8 @@ export function StoryBuilder({
               disabled={busy !== null}
               onContent={setContent}
             />
+            </MoreWithStory>
+            <div className="flex min-w-0 flex-col gap-4 empty:hidden max-lg:order-5">
             {content.draft && finishBase && behavioral && (
               <FinishLineBar
                 line={finishLine({
@@ -941,9 +988,10 @@ export function StoryBuilder({
             )}
             {content.draft && nextUp}
             {afterStory}
+            </div>
           </div>
           <EvaluationPanel
-            className="lg:sticky lg:top-6"
+            className="max-lg:order-3 lg:sticky lg:top-6"
             content={content}
             storyType={storyType}
             grading={busy === "grading"}
@@ -1034,7 +1082,7 @@ function AnswerChecklist({
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
       data-testid="answer-checklist"
     >
-      <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="text-xs font-bold text-ink-800">
         Your answers so far
       </h2>
       <ul className="mt-3 flex flex-col gap-2 text-sm">
@@ -1055,7 +1103,7 @@ function AnswerChecklist({
                       : "border-slate-300"
                 }`}
               />
-              <span className={done || current ? "text-slate-900" : "text-slate-500"}>
+              <span className={done || current ? "text-slate-900" : "text-slate-600"}>
                 {part.label}
               </span>
             </li>
@@ -1067,7 +1115,7 @@ function AnswerChecklist({
           Follow-ups: {followUpsAnswered} of {followUps.length} answered
         </p>
       )}
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-600">
         {content.draft ? (
           <button
             type="button"
@@ -1136,13 +1184,13 @@ function QuestionHelpRow({
   }, [open]);
   return (
     <div ref={ref} className="flex max-w-[90%] flex-col gap-2 pl-1" data-testid="question-help">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <div className="flex flex-wrap gap-2 text-sm">
         {help?.example && (
           <button
             type="button"
             onClick={() => toggle("example")}
             aria-expanded={open === "example"}
-            className="font-medium text-ink-800 hover:underline"
+            className="min-h-9 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
             data-testid="show-example"
           >
             Show me a good answer
@@ -1153,7 +1201,7 @@ function QuestionHelpRow({
             type="button"
             onClick={() => toggle("unsure")}
             aria-expanded={open === "unsure"}
-            className="font-medium text-ink-800 hover:underline"
+            className="min-h-9 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
             data-testid="dont-know"
           >
             {onEstimate ? "I don't remember the number" : "I don't know this"}
@@ -1244,7 +1292,7 @@ function OpeningHelp({
       type="button"
       onClick={() => setOpen(true)}
       aria-expanded={false}
-      className="self-start pl-1 text-sm font-medium text-ink-800 hover:underline"
+      className="min-h-9 self-start rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-slate-300 hover:bg-ink-50 hover:ring-ink-800/30"
       data-testid="need-a-nudge"
     >
       {amount === "some" ? "Quick start: tap what fits" : "Need a nudge?"}
@@ -1353,7 +1401,7 @@ function QuickStart({
       className="flex max-w-[90%] flex-col gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
       data-testid="quick-start"
     >
-      <p className="text-xs font-bold uppercase tracking-wide text-ink-800">Quick start: tap what fits</p>
+      <p className="text-xs font-bold text-ink-800">Quick start: tap what fits</p>
       {rows.map((row) => {
         const picked = quickPicked(row, answerText);
         return (
@@ -1399,7 +1447,7 @@ function QuickStart({
           </div>
         );
       })}
-      <p className="text-xs text-slate-500" aria-live="polite">
+      <p className="text-xs text-slate-600" aria-live="polite">
         {anyPicked
           ? "Now add what happened in a sentence or two, then send."
           : "Each tap adds a line to your answer."}
@@ -1448,7 +1496,7 @@ function TapOptions({
           );
         })}
       </div>
-      <p className="text-xs text-slate-500" aria-live="polite">
+      <p className="text-xs text-slate-600" aria-live="polite">
         {picked.length
           ? "Added to your answer below. Finish it with a sentence in your words, then tap Next."
           : "Tap one to start, then add a sentence in your words."}
@@ -1486,7 +1534,7 @@ function DraftSoFar({
         className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
         data-testid="draft-so-far"
       >
-        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">How this works</h2>
+        <h2 className="text-xs font-bold text-ink-800">How this works</h2>
         <ol className="mt-3 flex flex-col gap-2 text-sm">
           {steps.map((step, i) => (
             <li key={step} className="flex items-center gap-2">
@@ -1499,7 +1547,7 @@ function DraftSoFar({
                       : "border-slate-300"
                 }`}
               />
-              <span className={i <= current ? "text-slate-900" : "text-slate-500"}>{step}</span>
+              <span className={i <= current ? "text-slate-900" : "text-slate-600"}>{step}</span>
             </li>
           ))}
         </ol>
@@ -1533,11 +1581,11 @@ function DraftSoFar({
       data-testid="draft-so-far"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-800">
+        <h2 className="text-xs font-bold text-ink-800">
           {rough ? "Your story so far" : "Your story"}
         </h2>
         {showLevel && (
-          <span className="text-xs font-medium text-slate-500" data-testid="draft-level">
+          <span className="text-xs font-medium text-slate-600" data-testid="draft-level">
             Level {target - 1} → {target}
           </span>
         )}
@@ -1558,7 +1606,7 @@ function DraftSoFar({
               />
             ))}
           </div>
-          <p className="mt-1.5 text-xs text-slate-500">
+          <p className="mt-1.5 text-xs text-slate-600">
             {pending === 1 ? "1 question left" : `${pending} questions left`}, then I rewrite it
           </p>
         </div>
@@ -1600,7 +1648,7 @@ function DraftSoFar({
                 )}
               </span>
               <p
-                className={`text-sm font-semibold ${state === "empty" ? "text-slate-500" : "text-slate-900"}`}
+                className={`text-sm font-semibold ${state === "empty" ? "text-slate-600" : "text-slate-900"}`}
               >
                 {p.label}
                 {now && <span className="font-medium text-accent-700"> · answering now</span>}
@@ -1613,7 +1661,7 @@ function DraftSoFar({
                   {text}
                 </p>
               ) : (
-                <p className="text-sm italic text-slate-400">
+                <p className="text-sm italic text-slate-500">
                   {now
                     ? "Missing so far. This question fills it in."
                     : coming.has(p.id)
@@ -1660,6 +1708,7 @@ function Exchange({
   joggers,
   onDontKnow,
   onEstimate,
+  current,
   isEditing,
   disabled,
   onEdit,
@@ -1667,6 +1716,8 @@ function Exchange({
   onSubmit,
 }: {
   question: string;
+  // The question waiting for an answer now: set large, as the page's heading, not a chat bubble.
+  current?: boolean;
   answer: string | undefined;
   // A nudge under the question, e.g. which target job the story should fit.
   hint?: string;
@@ -1693,11 +1744,18 @@ function Exchange({
   return (
     <li className="flex animate-enter flex-col gap-2">
       {improves && (
-        <p className="pl-1 text-xs font-semibold uppercase tracking-wide text-ink-700">
-          Improves: {improves}
-        </p>
+        <p className="pl-1 text-xs font-semibold text-ink-700">Improves: {improves}</p>
       )}
-      <CoachBubble>{question}</CoachBubble>
+      {current && !answer && !skipped ? (
+        <p
+          className="max-w-[95%] animate-enter pl-1 text-lg font-semibold leading-snug text-slate-900 sm:text-xl"
+          data-testid="current-question"
+        >
+          {question}
+        </p>
+      ) : (
+        <CoachBubble>{question}</CoachBubble>
+      )}
       {hint && (
         <p className="max-w-[90%] pl-1 text-sm text-slate-600" data-testid="question-hint">
           {hint}
@@ -1714,12 +1772,12 @@ function Exchange({
       )}
       {skipped && !isEditing && (
         <div className="flex flex-col items-end gap-1">
-          <p className="text-sm italic text-slate-500">Skipped: I&apos;ll leave this out.</p>
+          <p className="text-sm italic text-slate-600">Skipped: I&apos;ll leave this out.</p>
           <button
             type="button"
             onClick={onEdit}
             disabled={disabled}
-            className="text-xs font-medium text-slate-500 hover:text-ink-800 disabled:opacity-50"
+            className="text-xs font-medium text-slate-600 hover:text-ink-800 disabled:opacity-50"
           >
             Answer it after all
           </button>
@@ -1738,12 +1796,12 @@ function Exchange({
           <p className="max-w-[90%] origin-bottom-right animate-pop whitespace-pre-wrap rounded-2xl rounded-br-md bg-ink-800 px-4 py-3 text-white">
             {answer}
           </p>
-          {source && <p className="text-xs text-slate-500">{source}</p>}
+          {source && <p className="text-xs text-slate-600">{source}</p>}
           <button
             type="button"
             onClick={onEdit}
             disabled={disabled}
-            className="text-xs font-medium text-slate-500 hover:text-ink-800 disabled:opacity-50"
+            className="text-xs font-medium text-slate-600 hover:text-ink-800 disabled:opacity-50"
           >
             Edit
           </button>
@@ -1874,10 +1932,11 @@ function Composer({
               how to send it. */}
           {!talking && canSubmit ? (
             <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
-              Done? Tap {submitLabel} to send it.
+              Done? Tap {submitLabel} to send it
+              <span className="hidden sm:inline"> or press Ctrl/⌘ + Enter</span>.
             </span>
           ) : !talking ? (
-            <span className="hidden text-xs text-slate-400 sm:inline">
+            <span className="hidden text-xs text-slate-600 sm:inline">
               Ctrl or ⌘ + Enter to send
             </span>
           ) : null}
@@ -1908,12 +1967,55 @@ function Composer({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-xl bg-ink-800 px-5 py-2 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-50"
+          className="rounded-xl bg-accent-400 px-5 py-2 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:bg-accent-100 disabled:text-ink-600"
         >
           {disabled ? "Saving…" : submitLabel}
         </button>
       </div>
     </form>
+  );
+}
+
+// The story page's extras (how to tell it, other questions it answers, the exec version), folded
+// under one line so the story and its level lead. Open from the start once any of them has been
+// used, so a result the user made isn't hidden.
+function MoreWithStory({
+  show,
+  opened,
+  labels,
+  className = "",
+  children,
+}: {
+  show: boolean;
+  opened: boolean;
+  labels: string[];
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(opened);
+  const bodyId = useId();
+  if (!show) return null;
+  return (
+    <section className={`flex min-w-0 flex-col gap-4 ${className}`} data-testid="more-with-story">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className="flex w-full items-center justify-between gap-3 rounded-3xl bg-white px-5 py-4 text-left shadow-sm ring-1 ring-black/5 hover:bg-ink-50 sm:px-6"
+      >
+        <span className="min-w-0">
+          <span className="block font-bold text-slate-900">More with this story</span>
+          <span className="block text-sm text-slate-600">{labels.join(" · ")}</span>
+        </span>
+        <span aria-hidden className={`text-ink-800 transition ${open ? "rotate-90" : ""}`}>
+          ›
+        </span>
+      </button>
+      <div id={bodyId} hidden={!open} className="flex flex-col gap-4">
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -2030,7 +2132,7 @@ function UploadOption({
           type="file"
           accept={accept}
           disabled={disabled}
-          className="min-w-0 flex-1 text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-medium file:text-ink-800 file:ring-1 file:ring-ink-800/20"
+          className="min-w-0 flex-1 text-sm text-slate-600"
         />
         <button
           type="submit"
@@ -2135,6 +2237,7 @@ function StoryPanel({
   title,
   content,
   storyType,
+  ask,
   writing,
   analyzing,
   disabled,
@@ -2144,6 +2247,8 @@ function StoryPanel({
   title: string;
   content: StoryContent;
   storyType: StoryType | undefined;
+  // Level-up questions to answer on the story, under the paragraph each one improves.
+  ask?: InlineAsk;
   writing: boolean;
   // "Why it works": what each paragraph gives the interviewer.
   analyzing: boolean;
@@ -2161,6 +2266,9 @@ function StoryPanel({
   const [showWhy, setShowWhy] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
   const justWritten = useJustWritten(draft);
+  const [chosen, setChosen] = useState<number | null>(null);
+  const asking = Boolean(ask && ask.questions.length > 0);
+  const marks = ask && asking ? inlineMarks(ask, chosen, setChosen) : undefined;
 
   return (
     <section
@@ -2171,7 +2279,7 @@ function StoryPanel({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold uppercase tracking-wide text-slate-500">Your story</p>
+          <p className="text-sm font-bold text-slate-600">Your story</p>
           <h2
             className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900"
             data-testid="story-title"
@@ -2214,7 +2322,12 @@ function StoryPanel({
         </>
       )}
 
-      {draft && showWhy ? (
+      {draft && asking ? (
+        <>
+          <ColouredScript draft={draft} storyType={storyType} marks={marks} />
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </>
+      ) : draft && showWhy ? (
         <AnalysisView
           content={content}
           storyType={storyType}
@@ -2252,7 +2365,7 @@ function StoryPanel({
                   {part.label}
                 </h3>
                 {notes.length ? (
-                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-ink-100 pl-3 text-sm text-slate-500">
+                  <ul className="mt-1 flex flex-col gap-1 border-l-2 border-ink-100 pl-3 text-sm text-slate-600">
                     {notes.map((n, i) => (
                       <li key={i} className="line-clamp-3 whitespace-pre-wrap">
                         {n}
@@ -2260,7 +2373,7 @@ function StoryPanel({
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400">
+                  <p className="mt-1 rounded-xl border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-500">
                     Empty
                   </p>
                 )}
@@ -2396,6 +2509,83 @@ function WeakPartCallout({
       <p className="mt-2 text-xs text-amber-900/70">
         I&apos;ll rewrite only this part from your answer and leave the rest as it is.
       </p>
+    </div>
+  );
+}
+
+// Story levels on the story itself (design comparison 2026-11-17, pattern 1, after Grammarly): the
+// level-up questions sit under the paragraph each one would improve. One is open at a time; the
+// rest are a line to tap. Answering the last one rewrites the story and grades it, as in the builder.
+type InlineAsk = {
+  questions: InlineQuestion[];
+  target: number;
+  disabled: boolean;
+  draftScope: string;
+  onAnswer: (index: number, answer: string) => void;
+  onSkip: (index: number) => void;
+};
+
+function inlineMarks(
+  ask: InlineAsk,
+  chosen: number | null,
+  choose: (index: number) => void,
+): Record<string, React.ReactNode> {
+  const open = ask.questions.some((q) => q.index === chosen) ? chosen : ask.questions[0]?.index;
+  const byPart = new Map<string, InlineQuestion[]>();
+  for (const q of ask.questions) byPart.set(q.part, [...(byPart.get(q.part) ?? []), q]);
+  return Object.fromEntries(
+    [...byPart].map(([part, qs]) => [
+      part,
+      <div
+        key={part}
+        className={`flex flex-col gap-2 ${part === END_OF_STORY ? "mt-1" : "ml-3 sm:ml-5"}`}
+        data-testid="inline-asks"
+      >
+        {qs.map((q) =>
+          q.index === open ? (
+            <InlineAskCard key={q.index} q={q} ask={ask} />
+          ) : (
+            <button
+              key={q.index}
+              type="button"
+              onClick={() => choose(q.index)}
+              disabled={ask.disabled}
+              className="self-start rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100 disabled:opacity-50"
+              data-testid="inline-ask-chip"
+            >
+              + {q.label}: one question
+            </button>
+          ),
+        )}
+      </div>,
+    ]),
+  );
+}
+
+function InlineAskCard({ q, ask }: { q: InlineQuestion; ask: InlineAsk }) {
+  return (
+    <div
+      id="inline-question"
+      className="animate-enter scroll-mt-24 rounded-2xl bg-white p-4 text-base shadow-md ring-1 ring-amber-200"
+      data-testid="inline-question"
+    >
+      <p className="text-xs font-semibold text-amber-900">
+        {q.label} · gets you to Level {ask.target}
+      </p>
+      <p className="mt-1 font-semibold text-slate-900">{q.question}</p>
+      <div className="mt-3">
+        <Composer
+          key={q.index}
+          initial=""
+          rows={3}
+          disabled={ask.disabled}
+          submitLabel="Add to story"
+          onSubmit={(answer) => ask.onAnswer(q.index, answer)}
+          onSkip={() => ask.onSkip(q.index)}
+          skipLabel="I don't know this"
+          draftKey={`${ask.draftScope}:fu-${q.index}`}
+        />
+      </div>
     </div>
   );
 }

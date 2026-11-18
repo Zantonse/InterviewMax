@@ -66,17 +66,33 @@ export function LevelCard({
         <Staircase level={levelUp.from} climbingTo={levelUp.target} />
         <p className="mt-4 text-sm text-slate-700">
           On your way to <strong>Level {info.level}</strong>. Answer{" "}
-          {open === 1 ? "1 question" : `${open} questions`}, then I rewrite it.
+          {open === 1 ? "1 question" : `${open} questions`} right on your story, under the part
+          each one improves. Then I rewrite it.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <PrimaryButton onClick={onShowQuestions} disabled={disabled}>
-            Answer the questions
+          <PrimaryButton
+            onClick={() =>
+              document
+                .getElementById("inline-question")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            disabled={disabled}
+          >
+            Show me where
           </PrimaryButton>
+          <button
+            type="button"
+            onClick={onShowQuestions}
+            disabled={disabled}
+            className="text-sm font-medium text-ink-800 hover:underline disabled:opacity-50"
+          >
+            Answer in the builder
+          </button>
           <button
             type="button"
             onClick={onDismiss}
             disabled={disabled}
-            className="text-sm font-medium text-slate-500 hover:underline disabled:opacity-50"
+            className="text-sm font-medium text-slate-600 hover:underline disabled:opacity-50"
           >
             Not now
           </button>
@@ -161,7 +177,7 @@ export function LevelCard({
                       ? `Climb to Level ${next.level}`
                       : `Rewrite it for Level ${next.level}`}
               </PrimaryButton>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-600">
                 {ask ? "A few questions, then a rewrite" : "A rewrite, nothing to answer"}
               </span>
             </div>
@@ -174,10 +190,10 @@ export function LevelCard({
               ))}
             </Info>
             <details className="group mt-3 text-sm" data-testid="level-example">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
                 <span
                   aria-hidden="true"
-                  className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold"
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-bold"
                 >
                   ↗
                 </span>
@@ -302,17 +318,17 @@ export function Staircase({
               </span>
             )}
             <span
-              className={`text-[11px] font-bold uppercase tracking-wide ${done ? "text-white/70" : "text-slate-400"}`}
+              className={`text-xs font-bold ${done ? "text-white/70" : "text-slate-500"}`}
             >
               Level {l.level}
             </span>
             <span
-              className={`text-sm font-semibold leading-tight ${done ? "text-white" : next ? "text-slate-700" : "text-slate-400"}`}
+              className={`text-sm font-semibold leading-tight ${done ? "text-white" : next ? "text-slate-700" : "text-slate-500"}`}
             >
               {l.name}
             </span>
             {next && (climbingTo === l.level || missing) && (
-              <span className="mt-1 hidden text-xs leading-tight text-slate-500 sm:block">
+              <span className="mt-1 hidden text-xs leading-tight text-slate-600 sm:block">
                 {climbingTo === l.level ? "Climbing now" : `Missing: ${lowerFirst(missing ?? "")}`}
               </span>
             )}
@@ -335,10 +351,10 @@ function Info({
 }) {
   return (
     <details className="group mt-3 text-sm" data-testid={testId}>
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden="true"
-          className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold"
+          className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-bold"
         >
           i
         </span>
@@ -384,7 +400,7 @@ function LevelUpResult({
           type="button"
           onClick={onDismiss}
           disabled={disabled}
-          className="shrink-0 text-sm font-medium text-slate-500 hover:underline disabled:opacity-50"
+          className="shrink-0 text-sm font-medium text-slate-600 hover:underline disabled:opacity-50"
         >
           Close
         </button>
@@ -432,12 +448,12 @@ function BeforeAfter({
   return (
     <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-black/5" data-testid="before-after">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        <p className="text-xs font-bold text-slate-600">
           What changed, Level {from} to {reached}
         </p>
-        <p className="flex gap-2 text-xs text-slate-500" aria-hidden="true">
+        <p className="flex gap-2 text-xs text-slate-600" aria-hidden="true">
           <span className="border-b-2 border-emerald-500 bg-emerald-50 px-1">added</span>
-          <span className="text-slate-400 line-through">cut</span>
+          <span className="text-slate-500 line-through">cut</span>
         </p>
       </div>
       {changed.length === 0 ? (
@@ -446,7 +462,7 @@ function BeforeAfter({
         <div className="mt-2 flex flex-col gap-3 text-sm leading-relaxed" data-stagger>
           {changed.map(({ part, pieces }) => (
             <div key={part.id}>
-              <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200">
+              <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200">
                 {part.label}
               </span>
               <p className="text-slate-700">
@@ -460,7 +476,7 @@ function BeforeAfter({
                         {x.text}
                       </ins>
                     ) : x.kind === "cut" ? (
-                      <del key={i} className="text-slate-400">
+                      <del key={i} className="text-slate-500">
                         {x.text}
                       </del>
                     ) : (
@@ -477,7 +493,7 @@ function BeforeAfter({
         </div>
       )}
       {unchanged > 0 && changed.length > 0 && (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-600">
           {unchanged === 1 ? "1 part" : `${unchanged} parts`} unchanged.
         </p>
       )}
@@ -630,7 +646,7 @@ function SpotGate({
                 disabled={disabled || tried}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition-colors disabled:cursor-default ${
                   tried
-                    ? "bg-white text-slate-400 line-through ring-slate-200"
+                    ? "bg-white text-slate-500 line-through ring-slate-200"
                     : "bg-white text-ink-900 ring-ink-800/20 hover:bg-ink-100"
                 }`}
               >
@@ -639,12 +655,12 @@ function SpotGate({
             );
           })}
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           <button
             type="button"
             onClick={() => finish("revealed", state.tries)}
             disabled={disabled}
-            className="font-medium text-ink-800 hover:underline disabled:opacity-50"
+            className="min-h-9 rounded-xl bg-white px-3 py-1.5 font-medium text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-100 disabled:opacity-50"
           >
             Show me
           </button>
@@ -655,7 +671,7 @@ function SpotGate({
               onJustFix();
             }}
             disabled={disabled}
-            className="font-medium text-slate-500 hover:underline disabled:opacity-50"
+            className="min-h-9 rounded-xl px-3 py-1.5 font-medium text-slate-700 hover:bg-white hover:underline disabled:opacity-50"
             data-testid="just-fix-it"
           >
             Just fix it

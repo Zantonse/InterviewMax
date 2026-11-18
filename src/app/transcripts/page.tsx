@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageGuide } from "@/components/page-guide";
+import { InterviewProfileCard } from "@/components/interview-profile";
 import { StoryPlan } from "@/components/story-plan";
 import { listJobs } from "@/lib/jobs/data";
 import { getTheme } from "@/lib/questions/themes";
 import { listStories } from "@/lib/stories/data";
 import { MAX_TRANSCRIPTS, gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts } from "@/lib/transcripts/data";
+import { buildInterviewProfile } from "@/lib/transcripts/profile";
 import { leftOutNote } from "@/lib/transcripts/split";
 import { AddTranscriptForm } from "./forms";
 
@@ -66,6 +68,7 @@ async function TranscriptsContent({
     listStories(),
   ]);
   const insights = summarizeTranscripts(transcripts);
+  const profile = buildInterviewProfile(transcripts);
   const jobOptions = jobs.map((j) => ({ id: j.id, title: j.title, company: j.company }));
 
   if (transcripts.length === 0) {
@@ -80,7 +83,7 @@ async function TranscriptsContent({
             <li>Otter, Fathom, Granola and similar note-takers export a transcript.</li>
             <li>A mock interview with a friend or coach counts too.</li>
           </ul>
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 text-sm text-slate-600">
             Transcripts stay private to you. Only record an interview where everyone agreed to it.
           </p>
         </Card>
@@ -90,6 +93,9 @@ async function TranscriptsContent({
 
   return (
     <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="lg:col-span-3">
+        <InterviewProfileCard profile={profile} />
+      </div>
       <div className="space-y-4 lg:col-span-2">
         {addedCount > 1 && (
           <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="added-note">
@@ -120,7 +126,7 @@ async function TranscriptsContent({
                         : "Not reviewed yet"}
                     </span>
                   </span>
-                  {job && <span className="mt-1 block text-sm text-slate-500">For {job.title}</span>}
+                  {job && <span className="mt-1 block text-sm text-slate-600">For {job.title}</span>}
                   {t.analysis?.summary && (
                     <span className="mt-2 block text-slate-600">{t.analysis.summary}</span>
                   )}
@@ -144,7 +150,7 @@ async function TranscriptsContent({
             className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
             open={Boolean(jobId) || undefined}
           >
-            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-ink-800">
+            <summary className="cursor-pointer text-sm font-bold text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
@@ -161,7 +167,7 @@ async function TranscriptsContent({
               {insights.recurringGaps.map((g) => (
                 <li key={g.gap} className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold text-slate-900">{gapLabel(g.gap)}</span>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-600">
                     {g.count} answers
                     {insights.analyzed > 1 &&
                       `, ${g.transcripts} ${g.transcripts === 1 ? "interview" : "interviews"}`}
@@ -169,7 +175,7 @@ async function TranscriptsContent({
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-sm text-slate-500">
+            <p className="mt-4 text-sm text-slate-600">
               The story builder&apos;s follow-ups now push on these.
             </p>
           </Card>
@@ -185,14 +191,14 @@ async function TranscriptsContent({
               {insights.themes.map((t) => (
                 <li key={t.theme} className="flex items-baseline justify-between gap-3">
                   <span className="text-slate-800">{getTheme(t.theme)?.label}</span>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-600">
                     {t.asked}×{t.weak > 0 && ` · ${t.weak} didn't land`}
                   </span>
                 </li>
               ))}
             </ul>
             {jobs.length > 0 && (
-              <p className="mt-4 text-sm text-slate-500">
+              <p className="mt-4 text-sm text-slate-600">
                 Predict your likely questions again on a{" "}
                 <Link href="/jobs" className="font-semibold text-ink-800 underline">
                   target job
@@ -218,7 +224,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
+      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
       {children}
     </section>
   );

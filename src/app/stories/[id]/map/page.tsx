@@ -19,7 +19,7 @@ export default function MapRolePage({ params }: PageProps<"/stories/[id]/map">) 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <MapLoader params={params} />
         </Suspense>

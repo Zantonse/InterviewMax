@@ -106,14 +106,8 @@ export async function PrepPath() {
             Your pre-interview brief →
           </Link>
         )}
-        {journey !== undefined && (
-          <Link
-            href="/assessment"
-            className="font-semibold text-ink-800 hover:underline"
-            data-testid="journey-link"
-          >
-            {journey ? `Journey check: ${journey}` : "Take the 1-minute journey check"} →
-          </Link>
+        {journey !== undefined && !plan.horizon && (
+          <JourneyLink journey={journey} />
         )}
         {plan.horizon && (
           <details className="group w-full" data-testid="whole-plan">
@@ -123,32 +117,50 @@ export async function PrepPath() {
             <ol className="mt-2 space-y-1">
               {steps.map((s) => (
                 <li key={s.id} className="flex items-baseline gap-2">
-                  <span aria-hidden className={s.done ? "text-ink-800" : "text-slate-400"}>
+                  <span aria-hidden className={s.done ? "text-ink-800" : "text-slate-500"}>
                     {s.done ? "✓" : "○"}
                   </span>
                   <Link
                     href={s.href}
                     className={
-                      s.done ? "text-slate-500 line-through" : "text-slate-800 hover:underline"
+                      s.done ? "text-slate-600 line-through" : "text-slate-800 hover:underline"
                     }
                   >
                     {s.label}
                   </Link>
-                  <span className="text-slate-500">· {s.detail}</span>
+                  <span className="text-slate-600">· {s.detail}</span>
                 </li>
               ))}
               {plan.later.map((s) => (
-                <li key={s.id} className="flex items-baseline gap-2 text-slate-400">
+                <li key={s.id} className="flex items-baseline gap-2 text-slate-500">
                   <span aria-hidden>○</span>
                   <span>{s.label}</span>
                   <span>· coming soon</span>
                 </li>
               ))}
             </ol>
+            {journey !== undefined && (
+              <p className="mt-2">
+                <JourneyLink journey={journey} />
+              </p>
+            )}
           </details>
         )}
       </div>
     </nav>
+  );
+}
+
+// The journey check sits inside the plan (design review 2026-11-16, fix 4): one less line on home.
+function JourneyLink({ journey }: { journey: string | null }) {
+  return (
+    <Link
+      href="/assessment"
+      className="font-semibold text-ink-800 hover:underline"
+      data-testid="journey-link"
+    >
+      {journey ? `Journey check: ${journey}` : "Take the 1-minute journey check"} →
+    </Link>
   );
 }
 

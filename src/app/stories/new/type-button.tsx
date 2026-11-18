@@ -115,7 +115,7 @@ export function QuestionButton({
     >
       <span className="min-w-0">
         <span className="block font-semibold text-slate-900">{question}</span>
-        <span className="mt-1 block text-sm text-slate-500">{starting ? "Opening…" : note}</span>
+        <span className="mt-1 block text-sm text-slate-600">{starting ? "Opening…" : note}</span>
       </span>
       <span className="shrink-0 pt-0.5 text-sm font-semibold text-ink-800 group-hover:underline">
         Answer it →

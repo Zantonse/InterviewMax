@@ -89,7 +89,7 @@ export type Point = {
 export type ReadinessLabel = "not_ready" | "getting_there" | "ready";
 
 export const READINESS_LABELS: Record<ReadinessLabel, string> = {
-  not_ready: "Not ready",
+  not_ready: "Just started",
   getting_there: "Getting there",
   ready: "Ready",
 };
@@ -128,6 +128,8 @@ type JobLike = {
   company: string | null;
   level: string | null;
   likelyQuestions: { questions: LikelyQuestion[] } | null;
+  // How the process ended; null while it's open. A finished job gets no readiness badge.
+  outcome?: string | null;
 };
 
 type TranscriptLike = {
@@ -850,7 +852,7 @@ export function jobReadiness(job: JobLike, stories: StoryLike[]): JobReadiness {
     label,
     reasons: [
       `${written} of ${plural(questions.length, "likely question")} ${written === 1 ? "has" : "have"} a written story`,
-      `${solid} graded good enough or strong`,
+      `${solid} at Level 2 or above`,
       ...levelShort.map((n) => `${cap(needLabel(n))} for ${levelLabel(job.level)?.toLowerCase()} roles`),
     ],
   };
@@ -928,7 +930,7 @@ export function assessProfile(input: ProfileInput): ProfileResult {
     !practice.some((p) => p.items.some((i) => i.feedback));
   return {
     criteria,
-    jobs: jobs.map((j) => jobReadiness(j, stories)),
+    jobs: jobs.filter((j) => !j.outcome).map((j) => jobReadiness(j, stories)),
     strengths: top(points.strengths),
     weaknesses: top(points.weaknesses),
     tendencies,

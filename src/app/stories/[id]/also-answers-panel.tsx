@@ -66,7 +66,7 @@ export function AlsoAnswersPanel({
       aria-label="Other questions this story answers"
       data-testid="also-answers"
     >
-      <p className="text-sm font-bold uppercase tracking-wide text-ink-800">
+      <p className="text-sm font-bold text-ink-800">
         Other questions this story answers
       </p>
       {current ? (
@@ -91,7 +91,7 @@ export function AlsoAnswersPanel({
             </ul>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               Checked against your likely questions, past interviews and common interview questions.
             </p>
             {button("Check again", false)}

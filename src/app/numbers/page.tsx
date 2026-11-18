@@ -30,7 +30,7 @@ export default function NumbersPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
@@ -93,7 +93,7 @@ async function NumbersContent() {
       <WhereToLook openByDefault={filledCount(checklist) === 0} />
       <section className="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+          <h2 className="text-sm font-bold text-ink-800">
             {checklistRole(checklist)}
           </h2>
           <p className="text-sm text-slate-600" data-testid="numbers-filled">

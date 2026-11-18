@@ -47,7 +47,7 @@ export function ToughDrill({
 
   return (
     <div className="mt-5 border-t border-slate-200 pt-4" data-testid="tough-drill">
-      <h3 className="text-sm font-bold uppercase tracking-wide text-ink-800">Drill the follow-ups</h3>
+      <h3 className="text-sm font-bold text-ink-800">Drill the follow-ups</h3>
       {!drill ? (
         <>
           <p className="mt-1 text-sm text-slate-600">
@@ -71,7 +71,7 @@ export function ToughDrill({
               <li key={i} className="space-y-2">
                 <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-ink-50 px-4 py-3 font-medium text-slate-900">
                   {i > 0 && (
-                    <span className="block text-xs font-bold uppercase tracking-wide text-ink-700">
+                    <span className="block text-xs font-bold text-ink-700">
                       Follow-up {i}
                     </span>
                   )}

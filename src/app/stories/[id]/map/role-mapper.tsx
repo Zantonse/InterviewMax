@@ -25,6 +25,7 @@ import {
   saveRoleWork,
   applyRoleProfile,
 } from "./actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const OTHER = "";
 
@@ -83,7 +84,7 @@ export function RoleMapper({
             key={id}
             aria-current={step === id ? "step" : undefined}
             className={`rounded-full px-3 py-1 font-medium ${
-              step === id ? "bg-ink-800 text-white" : "bg-white text-slate-500 ring-1 ring-black/5"
+              step === id ? "bg-ink-800 text-white" : "bg-white text-slate-600 ring-1 ring-black/5"
             }`}
           >
             {label}
@@ -207,7 +208,7 @@ function WorkQuestions({
       ))}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-600">
           {answeredCount(answers)} of {WORK_QUESTIONS.length} answered. Your job title and{" "}
           {MIN_WORK_ANSWERS - 1} more are enough to start; plain notes are fine.
         </p>
@@ -239,6 +240,7 @@ function WorkField({
         {label}
       </label>
       <textarea
+        onKeyDown={submitOnSendKey}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -281,7 +283,7 @@ function MarkFunctions({
           <li key={f.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-slate-900">{f.label}</p>
-              <p className="text-sm text-slate-500">{f.blurb}</p>
+              <p className="text-sm text-slate-600">{f.blurb}</p>
             </div>
             <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={f.label}>
               {FUNCTION_MARKS.map((m) => {
@@ -356,7 +358,7 @@ function Profile({
       data-testid="role-profile"
     >
       <header>
-        <p className="text-sm font-bold uppercase tracking-wide text-slate-500">Role profile</p>
+        <p className="text-sm font-bold text-slate-600">Role profile</p>
         <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
           {map.answers.title?.split("\n")[0] || roleLabel(map)}
         </h2>
@@ -423,7 +425,7 @@ function Profile({
               </ul>
             </Section>
           )}
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Built only from your answers. The function&apos;s vocabulary gives you words for work
             you described; it doesn&apos;t add anything you didn&apos;t do.
           </p>
@@ -478,7 +480,7 @@ function Profile({
         >
           Change my part
         </button>
-        <Link href="/" className="font-medium text-slate-500 hover:underline">
+        <Link href="/" className="font-medium text-slate-600 hover:underline">
           Back to my prep
         </Link>
       </div>
@@ -489,7 +491,7 @@ function Profile({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h3>
+      <h3 className="text-sm font-bold text-ink-800">{title}</h3>
       <div className="mt-2 leading-relaxed text-slate-800">{children}</div>
     </section>
   );
