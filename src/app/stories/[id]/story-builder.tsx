@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { SCORE_LABELS } from "@/lib/stories/grading";
 import { CopyButton } from "@/components/copy-button";
+import { END_OF_STORY, inlineLevelQuestions, type InlineQuestion } from "@/lib/stories/inline-questions";
 import { MicButton } from "@/components/mic-button";
 import type { FieldId } from "@/lib/field/fields";
 import { suggestRoleMap } from "@/lib/roles/role-map";
@@ -196,7 +197,12 @@ export function StoryBuilder({
   const [answerText, setAnswerText] = useState("");
   // Build is the chat; Story & score is the written story beside its evaluation.
   const [view, setView] = useState<View>(
-    initialContent.draft && nextFollowUpIndex(initialContent) === undefined ? "story" : "build",
+    // Level-up questions are answered on the story itself, so a story waiting on them opens there.
+    initialContent.draft &&
+      (nextFollowUpIndex(initialContent) === undefined ||
+        inlineLevelQuestions(initialContent).length > 0)
+      ? "story"
+      : "build",
   );
 
   const questions = coreQuestions(storyType);
@@ -254,7 +260,8 @@ export function StoryBuilder({
         // A finished draft is shown with its score; a rough one stays beside the follow-ups.
         if (step.busy === "writing" && next !== "probe") setView("story");
         if (
-          (step.busy === "probing" || step.busy === "leveling") &&
+          // Level-up questions show on the story itself (inline-questions.ts), so leveling stays put.
+          step.busy === "probing" &&
           nextFollowUpIndex(result.content) !== undefined
         ) {
           setView("build");
@@ -848,6 +855,18 @@ export function StoryBuilder({
               title={title}
               content={content}
               storyType={storyType}
+              ask={
+                content.levelUp
+                  ? {
+                      questions: inlineLevelQuestions(content),
+                      target: content.levelUp.target,
+                      disabled: busy !== null,
+                      draftScope,
+                      onAnswer: submitFollowUp,
+                      onSkip: skipOne,
+                    }
+                  : undefined
+              }
               writing={busy === "writing"}
               analyzing={busy === "analyzing"}
               disabled={busy !== null}
@@ -1913,7 +1932,8 @@ function Composer({
               how to send it. */}
           {!talking && canSubmit ? (
             <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
-              Done? Tap {submitLabel} to send it.
+              Done? Tap {submitLabel} to send it
+              <span className="hidden sm:inline"> or press Ctrl/⌘ + Enter</span>.
             </span>
           ) : !talking ? (
             <span className="hidden text-xs text-slate-600 sm:inline">
@@ -2217,6 +2237,7 @@ function StoryPanel({
   title,
   content,
   storyType,
+  ask,
   writing,
   analyzing,
   disabled,
@@ -2226,6 +2247,8 @@ function StoryPanel({
   title: string;
   content: StoryContent;
   storyType: StoryType | undefined;
+  // Level-up questions to answer on the story, under the paragraph each one improves.
+  ask?: InlineAsk;
   writing: boolean;
   // "Why it works": what each paragraph gives the interviewer.
   analyzing: boolean;
@@ -2243,6 +2266,9 @@ function StoryPanel({
   const [showWhy, setShowWhy] = useState(false);
   const paragraphs = draft ? parts.map((p) => draft.parts[p.id]).filter(Boolean) : [];
   const justWritten = useJustWritten(draft);
+  const [chosen, setChosen] = useState<number | null>(null);
+  const asking = Boolean(ask && ask.questions.length > 0);
+  const marks = ask && asking ? inlineMarks(ask, chosen, setChosen) : undefined;
 
   return (
     <section
@@ -2296,7 +2322,12 @@ function StoryPanel({
         </>
       )}
 
-      {draft && showWhy ? (
+      {draft && asking ? (
+        <>
+          <ColouredScript draft={draft} storyType={storyType} marks={marks} />
+          <NumberCheck untraced={draft.untracedNumbers} />
+        </>
+      ) : draft && showWhy ? (
         <AnalysisView
           content={content}
           storyType={storyType}
@@ -2478,6 +2509,83 @@ function WeakPartCallout({
       <p className="mt-2 text-xs text-amber-900/70">
         I&apos;ll rewrite only this part from your answer and leave the rest as it is.
       </p>
+    </div>
+  );
+}
+
+// Story levels on the story itself (design comparison 2026-11-17, pattern 1, after Grammarly): the
+// level-up questions sit under the paragraph each one would improve. One is open at a time; the
+// rest are a line to tap. Answering the last one rewrites the story and grades it, as in the builder.
+type InlineAsk = {
+  questions: InlineQuestion[];
+  target: number;
+  disabled: boolean;
+  draftScope: string;
+  onAnswer: (index: number, answer: string) => void;
+  onSkip: (index: number) => void;
+};
+
+function inlineMarks(
+  ask: InlineAsk,
+  chosen: number | null,
+  choose: (index: number) => void,
+): Record<string, React.ReactNode> {
+  const open = ask.questions.some((q) => q.index === chosen) ? chosen : ask.questions[0]?.index;
+  const byPart = new Map<string, InlineQuestion[]>();
+  for (const q of ask.questions) byPart.set(q.part, [...(byPart.get(q.part) ?? []), q]);
+  return Object.fromEntries(
+    [...byPart].map(([part, qs]) => [
+      part,
+      <div
+        key={part}
+        className={`flex flex-col gap-2 ${part === END_OF_STORY ? "mt-1" : "ml-3 sm:ml-5"}`}
+        data-testid="inline-asks"
+      >
+        {qs.map((q) =>
+          q.index === open ? (
+            <InlineAskCard key={q.index} q={q} ask={ask} />
+          ) : (
+            <button
+              key={q.index}
+              type="button"
+              onClick={() => choose(q.index)}
+              disabled={ask.disabled}
+              className="self-start rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100 disabled:opacity-50"
+              data-testid="inline-ask-chip"
+            >
+              + {q.label}: one question
+            </button>
+          ),
+        )}
+      </div>,
+    ]),
+  );
+}
+
+function InlineAskCard({ q, ask }: { q: InlineQuestion; ask: InlineAsk }) {
+  return (
+    <div
+      id="inline-question"
+      className="animate-enter scroll-mt-24 rounded-2xl bg-white p-4 text-base shadow-md ring-1 ring-amber-200"
+      data-testid="inline-question"
+    >
+      <p className="text-xs font-semibold text-amber-900">
+        {q.label} · gets you to Level {ask.target}
+      </p>
+      <p className="mt-1 font-semibold text-slate-900">{q.question}</p>
+      <div className="mt-3">
+        <Composer
+          key={q.index}
+          initial=""
+          rows={3}
+          disabled={ask.disabled}
+          submitLabel="Add to story"
+          onSubmit={(answer) => ask.onAnswer(q.index, answer)}
+          onSkip={() => ask.onSkip(q.index)}
+          skipLabel="I don't know this"
+          draftKey={`${ask.draftScope}:fu-${q.index}`}
+        />
+      </div>
     </div>
   );
 }

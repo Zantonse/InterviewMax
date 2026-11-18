@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { formatGuide, partLength } from "@/lib/analysis/structure";
 import type { StoryDraft } from "@/lib/stories/content";
 import { storyParts, type StoryType } from "@/lib/stories/story-types";
@@ -119,9 +119,13 @@ export function SpokenBar({
 export function ColouredScript({
   draft,
   storyType,
+  marks,
 }: {
   draft: StoryDraft;
   storyType: StoryType | undefined;
+  // Level-up questions to show on the story: what goes under each part's paragraph (keyed by part
+  // id, or "end" for after the last one). A marked paragraph gets a dotted amber underline.
+  marks?: Record<string, ReactNode>;
 }) {
   const [focus, setFocus] = useState<string | null>(null);
   const parts = storyParts(storyType).map((p, i) => ({
@@ -166,17 +170,30 @@ export function ColouredScript({
           .map((p) => {
             const c = colourAt(p.i);
             const dim = focus !== null && focus !== p.id;
+            const mark = marks?.[p.id];
             return (
-              <p
-                key={p.id}
-                className={`rounded-r-xl border-l-4 py-1.5 pl-3 pr-2 transition-opacity duration-200 ${c.tint} ${c.edge} ${dim ? "opacity-25" : ""}`}
-                data-testid={`coloured-${p.id}`}
-              >
-                <span className="sr-only">{p.label}: </span>
-                <Numbers text={p.text} untraced={draft.untracedNumbers} />
-              </p>
+              <Fragment key={p.id}>
+                <p
+                  className={`rounded-r-xl border-l-4 py-1.5 pl-3 pr-2 transition-opacity duration-200 ${c.tint} ${c.edge} ${dim ? "opacity-25" : ""}`}
+                  data-testid={`coloured-${p.id}`}
+                >
+                  <span className="sr-only">{p.label}: </span>
+                  <span
+                    className={
+                      mark
+                        ? "underline decoration-amber-400 decoration-dotted decoration-1 underline-offset-[6px]"
+                        : undefined
+                    }
+                    data-marked={mark ? "" : undefined}
+                  >
+                    <Numbers text={p.text} untraced={draft.untracedNumbers} />
+                  </span>
+                </p>
+                {mark}
+              </Fragment>
             );
           })}
+        {marks?.end}
       </div>
     </div>
   );

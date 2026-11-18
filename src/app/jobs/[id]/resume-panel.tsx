@@ -15,6 +15,7 @@ import {
   type ResumeSet,
 } from "@/lib/resume/content";
 import { buildResume, saveResume } from "./resume-actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 // Resume bullets for this job, written from the user's finished stories: a two-line summary from
 // About me, then bullets grouped by role, best fit first, to copy into the resume they already
@@ -339,6 +340,7 @@ function EditRow({
           Bullet
         </label>
         <textarea
+          onKeyDown={submitOnSendKey}
           id={`${id}-text`}
           value={text}
           onChange={(e) => setText(e.target.value)}

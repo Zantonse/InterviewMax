@@ -177,7 +177,7 @@ export function NumbersForm({
           </li>
         ))}
       </ol>
-      <div className="sticky bottom-0 -mx-5 mt-2 flex flex-wrap items-center gap-3 bg-white/95 px-5 py-3 sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mx-5 mt-2 flex flex-wrap items-center gap-3 bg-white/95 px-5 py-3 sm:-mx-6 sm:px-6">
         {guided && !last ? (
           <>
             <button type="button" onClick={() => go(step + 1)} className={PRIMARY}>

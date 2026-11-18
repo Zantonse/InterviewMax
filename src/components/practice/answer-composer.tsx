@@ -7,6 +7,7 @@ import { MAX_PRACTICE_ANSWER_LENGTH, formatDuration } from "@/lib/practice/conte
 import type { VoiceStats } from "@/lib/practice/delivery";
 import { answerProblem } from "@/lib/text/answer";
 import { appendSpoken } from "@/lib/voice/text";
+import { concat, encodeWav } from "@/lib/voice/wav";
 
 // Where a practice answer is given: tap Talk and say it, or type it. The words appear as the user
 // talks, so they can fix a transcription slip before sending. Recorded time is added up across
@@ -18,11 +19,20 @@ export function AnswerComposer({
   placeholder = "Tap Talk and answer out loud, as you would in the interview. Or type it.",
   onSubmit,
   extra,
+  keepAudio = false,
 }: {
   disabled: boolean;
   submitLabel?: string;
   placeholder?: string;
-  onSubmit: (answer: string, seconds: number | null, voice: VoiceStats | null) => void;
+  // `audio` is the answer's recording (every Talk, in order) for playback in this tab, when the
+  // caller asked for it with `keepAudio`.
+  onSubmit: (
+    answer: string,
+    seconds: number | null,
+    voice: VoiceStats | null,
+    audio: Blob | null,
+  ) => void;
+  keepAudio?: boolean;
   // Shown beside the send button, e.g. "Skip this question".
   extra?: React.ReactNode;
 }) {
@@ -32,6 +42,7 @@ export function AnswerComposer({
   const [voice, setVoice] = useState<VoiceStats>({ talkSeconds: 0, longPauses: 0 });
   const ref = useRef<HTMLTextAreaElement>(null);
   const fieldId = useId();
+  const takes = useRef<Float32Array[]>([]);
 
   useEffect(() => {
     ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -43,7 +54,12 @@ export function AnswerComposer({
     text.trim().length > 0 &&
     answerProblem(text, MAX_PRACTICE_ANSWER_LENGTH) === null;
   const send = () => {
-    if (canSubmit) onSubmit(text, seconds > 0 ? seconds : null, seconds > 0 ? voice : null);
+    if (!canSubmit) return;
+    const audio =
+      keepAudio && takes.current.length
+        ? new Blob([encodeWav(concat(takes.current))], { type: "audio/wav" })
+        : null;
+    onSubmit(text, seconds > 0 ? seconds : null, seconds > 0 ? voice : null, audio);
   };
 
   return (
@@ -67,6 +83,7 @@ export function AnswerComposer({
             }));
           }}
           onText={(spoken) => setText((t) => appendSpoken(t, spoken))}
+          onAudio={keepAudio ? (samples) => takes.current.push(samples) : undefined}
         />
         {seconds > 0 && !talking && (
           <span className="text-xs text-slate-600 tabular-nums">

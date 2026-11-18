@@ -10,6 +10,7 @@ import { canUsePromotion } from "@/lib/promotion/access";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
+import { BottomTabs, INTERVIEW_TABS, PROMOTION_TABS } from "./bottom-tabs";
 import { BuildStoryLink } from "./build-story-link";
 import { NavIcon, type NavIconName } from "./nav-icons";
 import { CollapseButton, NavGroup, NavLink, NavShell } from "./nav-shell";
@@ -50,8 +51,8 @@ const RECENT_STORIES = 6;
 // groups you opened or closed (NavGroup) don't flicker.
 const RESTORE_NAV = `try{var d=document.documentElement.dataset;if(localStorage.getItem("imx-nav")==="collapsed")d.nav="collapsed";d.navOpen=localStorage.getItem("imx-nav-open")||"";d.navClosed=localStorage.getItem("imx-nav-closed")||""}catch(e){}`;
 
-// The app's navigation: a left sidebar on wide screens (collapsible to icons) and a top bar with a
-// menu drawer on phones. Kept under its old name so every page that renders it gets the sidebar.
+// The app's navigation: a left sidebar on wide screens (collapsible to icons); on phones a bottom
+// tab bar for the main places plus a top bar whose Menu drawer holds the rest. Kept under its old name so every page that renders it gets the sidebar.
 export function AppHeader() {
   return (
     <>
@@ -98,8 +99,16 @@ export function AppHeader() {
           <CollapseButton />
         </div>
       </NavShell>
+      <Suspense fallback={<BottomTabs tabs={INTERVIEW_TABS} />}>
+        <ModeTabs />
+      </Suspense>
     </>
   );
+}
+
+async function ModeTabs() {
+  const mode = await getAppMode();
+  return <BottomTabs tabs={mode === "promotion" ? PROMOTION_TABS : INTERVIEW_TABS} />;
 }
 
 function NavItems({ items, compact }: { items: readonly NavItem[]; compact?: boolean }) {

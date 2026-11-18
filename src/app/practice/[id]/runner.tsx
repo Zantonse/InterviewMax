@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { AnswerComposer } from "@/components/practice/answer-composer";
 import { FeedbackCard } from "@/components/practice/feedback-card";
+import { SpokenAnswer } from "@/components/practice/spoken-answer";
 import { ConfidenceBar, ConfidencePips } from "@/components/practice/confidence-bar";
 import {
   MAX_FOLLOW_UPS,
@@ -51,6 +52,8 @@ export function PracticeRunner({
   const [busy, setBusy] = useState<Busy>(null);
   const [keeping, setKeeping] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Recordings of this visit's spoken answers, by "question:turn", to play back.
+  const [recordings, setRecordings] = useState<Record<string, Blob>>({});
 
   async function run(work: () => Promise<PracticeResult>, label: Busy) {
     setBusy(label);
@@ -134,7 +137,11 @@ export function PracticeRunner({
               {t.answer && (
                 <div className="flex justify-end">
                   <p className="max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 text-slate-800">
-                    {t.answer}
+                    <SpokenAnswer
+                      text={t.answer}
+                      spoken={Boolean(t.seconds) && Boolean(t.talkSeconds)}
+                      audio={recordings[`${view}:${i}`]}
+                    />
                     {t.seconds ? (
                       <span className="mt-1 block text-right text-xs text-slate-600">
                         {formatDuration(t.seconds)}
@@ -174,9 +181,14 @@ export function PracticeRunner({
             <AnswerComposer
               key={`${view}-${item.turns.length}`}
               disabled={busy !== null}
-              onSubmit={(answer, seconds, voice) =>
-                run(() => answerPractice(sessionId, view, answer, seconds, voice), nextBusy)
-              }
+              keepAudio
+              onSubmit={(answer, seconds, voice, audio) => {
+                if (audio) {
+                  const turn = item.turns.length - 1;
+                  setRecordings((r) => ({ ...r, [`${view}:${turn}`]: audio }));
+                }
+                run(() => answerPractice(sessionId, view, answer, seconds, voice), nextBusy);
+              }}
               extra={
                 item.turns.length === 1 ? (
                   <button

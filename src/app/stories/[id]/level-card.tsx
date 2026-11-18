@@ -63,12 +63,28 @@ export function LevelCard({
         <Staircase level={levelUp.from} climbingTo={levelUp.target} />
         <p className="mt-4 text-sm text-slate-700">
           On your way to <strong>Level {info.level}</strong>. Answer{" "}
-          {open === 1 ? "1 question" : `${open} questions`}, then I rewrite it.
+          {open === 1 ? "1 question" : `${open} questions`} right on your story, under the part
+          each one improves. Then I rewrite it.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <PrimaryButton onClick={onShowQuestions} disabled={disabled}>
-            Answer the questions
+          <PrimaryButton
+            onClick={() =>
+              document
+                .getElementById("inline-question")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            disabled={disabled}
+          >
+            Show me where
           </PrimaryButton>
+          <button
+            type="button"
+            onClick={onShowQuestions}
+            disabled={disabled}
+            className="text-sm font-medium text-ink-800 hover:underline disabled:opacity-50"
+          >
+            Answer in the builder
+          </button>
           <button
             type="button"
             onClick={onDismiss}

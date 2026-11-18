@@ -54,6 +54,17 @@
   }
 }
 
+/* Phones: room under the page for the bottom tab bar (components/bottom-tabs.tsx). */
+@media (width < 64rem) {
+  body:has(#app-tabs) {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  /* Anything scrolled into view (an answer box, a question) stops above the tabs, not under them. */
+  html:has(#app-tabs) {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Pages that show the sidebar make room for it on wide screens. */
 @media (width >= 64rem) {
   body:has(#app-nav) {

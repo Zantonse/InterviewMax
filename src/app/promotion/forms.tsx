@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { LEVELS, type LevelId } from "@/lib/jobs/content";
 import { saveLadder, saveLevels, saveRedactions, writePacket, type FormState } from "./actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const BUTTON =
   "rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50";
@@ -57,6 +58,7 @@ export function LadderForm({ initial, maxLength }: { initial: string; maxLength:
   return (
     <form action={action} className="mt-3 space-y-3" data-testid="ladder-form">
       <textarea
+        onKeyDown={submitOnSendKey}
         name="ladder"
         defaultValue={initial}
         rows={6}
@@ -80,6 +82,7 @@ export function RedactionsForm({ initial }: { initial: string }) {
   return (
     <form action={action} className="mt-3 space-y-3" data-testid="redactions-form">
       <textarea
+        onKeyDown={submitOnSendKey}
         name="redactions"
         value={text}
         onChange={(e) => setText(e.target.value)}

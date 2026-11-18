@@ -25,6 +25,7 @@ import {
   saveRoleWork,
   applyRoleProfile,
 } from "./actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const OTHER = "";
 
@@ -239,6 +240,7 @@ function WorkField({
         {label}
       </label>
       <textarea
+        onKeyDown={submitOnSendKey}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
