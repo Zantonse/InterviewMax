@@ -271,7 +271,7 @@ export function SpeakerTurnsEditor({
           );
         })}
       </ol>
-      <div className="sticky bottom-3 flex flex-wrap items-center gap-3">
+      <div className="sticky bottom-3 flex flex-wrap items-center gap-3 max-lg:bottom-[calc(5rem+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={save}
