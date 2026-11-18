@@ -152,7 +152,9 @@ describe("show your thinking", () => {
   it("asks how they thought at the key moment, and has the review and writer draw it out", () => {
     expect(coreQuestionText("choice", stakeholder)).toMatch(/What were you thinking at the key moment/);
     expect(coreQuestionText("choice", stakeholder)).toMatch(/what did you watch/);
-    expect(probeSystem(stakeholder)).toMatch(/options they weighed, why they chose one/);
+    expect(probeSystem(stakeholder)).toMatch(/options they weighed, and why they chose one/);
+    // What they watched afterwards is never asked for (a tester was asked three rounds running).
+    expect(probeSystem(stakeholder)).toMatch(/Don.t ask what they watched/);
     expect(writeSystem(stakeholder)).toMatch(/show their thinking/);
     expect(writeSystem(stakeholder)).toMatch(/Use only reasoning they gave; never invent it/);
   });

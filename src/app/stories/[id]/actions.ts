@@ -33,6 +33,7 @@ import {
   TOP_LEVEL,
   levelForGrade,
   levelGaps,
+  withoutAsked,
   needsAnswers,
   usesLevels,
   type StoryLevel,
@@ -301,7 +302,8 @@ export async function levelUp(storyId: string): Promise<BuilderResult> {
     const from = levelForGrade(grade);
     if (from >= TOP_LEVEL) return { ok: true, content: story.content, title: story.title };
     const target = (from + 1) as StoryLevel;
-    const gaps = levelGaps(grade);
+    // Never ask again about something they've already answered in a level-up round.
+    const gaps = withoutAsked(levelGaps(grade), story.content.followUps);
     const started: StoryContent = {
       ...story.content,
       levelUp: { from, target, before: draft.parts, startedAt: new Date().toISOString() },
