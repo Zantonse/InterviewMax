@@ -50,6 +50,30 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
       </p>
 
       <div className="mt-6 space-y-4 print:mt-3 print:space-y-3" data-testid="brief">
+        {brief.glance.length > 0 && (
+          <Section title="Your stories at a glance" testId="brief-glance">
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {brief.glance.map((g) => (
+                <li
+                  key={g.storyId}
+                  className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 print:p-2"
+                >
+                  <Link href={g.href} className="text-lg font-bold text-slate-900 hover:underline print:text-sm">
+                    {g.title}
+                  </Link>
+                  {g.number && (
+                    <p className="text-base font-semibold text-emerald-800 print:text-xs" data-testid="glance-number">
+                      {g.number}
+                    </p>
+                  )}
+                  <p className="text-sm text-slate-600 print:text-xs">
+                    Answers: {g.answers.join(" · ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
         {brief.stage ? (
           <Section title={`For the ${brief.stage.label.toLowerCase()}`} testId="brief-stage">
             <p className="text-slate-700">{brief.stage.checks}</p>
