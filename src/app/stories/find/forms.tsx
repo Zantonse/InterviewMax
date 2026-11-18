@@ -6,6 +6,7 @@ import { QUICK_QUESTIONS, MAX_QUICK_ANSWER_LENGTH } from "@/lib/finder/content";
 import { MicButton } from "@/components/mic-button";
 import { appendSpoken } from "@/lib/voice/text";
 import { findStoryMoments, saveQuickAnswers } from "./actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 // A suggested moment. Sits inside a form whose action is startFromMoment.
 export function MomentButton({
@@ -197,6 +198,7 @@ function QuickAnswer({
       <label className="block">
         <span className="font-medium text-slate-800">{label}</span>
         <textarea
+          onKeyDown={submitOnSendKey}
           name={id}
           value={text}
           onChange={(e) => setText(e.target.value)}

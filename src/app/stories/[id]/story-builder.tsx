@@ -1913,7 +1913,8 @@ function Composer({
               how to send it. */}
           {!talking && canSubmit ? (
             <span className="text-xs font-medium text-ink-800" data-testid="send-hint">
-              Done? Tap {submitLabel} to send it.
+              Done? Tap {submitLabel} to send it
+              <span className="hidden sm:inline"> or press Ctrl/⌘ + Enter</span>.
             </span>
           ) : !talking ? (
             <span className="hidden text-xs text-slate-600 sm:inline">

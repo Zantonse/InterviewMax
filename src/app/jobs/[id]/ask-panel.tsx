@@ -14,6 +14,7 @@ import {
 } from "@/lib/ask/content";
 import { appendSpoken } from "@/lib/voice/text";
 import { saveAsk, suggestAsk } from "./ask-actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 // Questions to ask the interviewer for this job: suggestions grouped by who they suit, which the
 // user saves, edits or removes, plus their own. Saved ones show in the pre-interview brief.
@@ -203,6 +204,7 @@ function EditRow({
           Your question
         </label>
         <textarea
+          onKeyDown={submitOnSendKey}
           id={id}
           value={text}
           onChange={(e) => setText(e.target.value)}

@@ -28,6 +28,7 @@ import {
 } from "./actions";
 import { postingUpload } from "./posting-upload";
 import { AiNotice } from "@/components/ai-notice";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none";
@@ -262,6 +263,7 @@ export function AddJobForm({
               >
                 The whole posting
                 <textarea
+                  onKeyDown={submitOnSendKey}
                   id={`${id}-paste`}
                   rows={10}
                   autoFocus
@@ -376,6 +378,7 @@ export function AddJobForm({
           >
             The job posting
             <textarea
+              onKeyDown={submitOnSendKey}
               id={`${id}-description`}
               name="description"
               rows={10}
@@ -538,6 +541,7 @@ export function PredictForm({
           put the questions they say were asked on the list, and use the rest to shape it. Guesses
           stay guesses.
           <textarea
+            onKeyDown={submitOnSendKey}
             id={id}
             name="reports"
             rows={6}

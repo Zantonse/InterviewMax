@@ -16,6 +16,7 @@ import {
 import { answerProblem } from "@/lib/text/answer";
 import { appendSpoken } from "@/lib/voice/text";
 import { practiceCase } from "./case-actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const LANDED_LABELS: Record<string, string> = {
   strong: "Landed well",
@@ -136,6 +137,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
             </ol>
           </div>
           <textarea
+            onKeyDown={submitOnSendKey}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={5}

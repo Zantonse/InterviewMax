@@ -19,6 +19,7 @@ import {
   type FormState,
 } from "./actions";
 import { AiNotice } from "@/components/ai-notice";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none";
@@ -59,6 +60,7 @@ export function AddTranscriptForm({
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-text`}>
         Or paste it
         <textarea
+          onKeyDown={submitOnSendKey}
           id={`${id}-text`}
           name="text"
           rows={6}

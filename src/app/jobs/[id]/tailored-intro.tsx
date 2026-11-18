@@ -9,6 +9,7 @@ import { TAILORED_PARTS } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH, tailoredChecks } from "@/lib/stories/tailored";
 import { appendSpoken } from "@/lib/voice/text";
 import { pickTailoredClosing, writeTailoredIntro } from "./about-me-actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 // "Tell me about yourself" for this job, company first: why this company, in the user's words,
 // then a three-beat answer built around the one proof point this job most needs to hear.
@@ -79,6 +80,7 @@ export function TailoredIntroPanel({
           role? One or two reasons in your own words is plenty.
         </label>
         <textarea
+          onKeyDown={submitOnSendKey}
           id={fieldId}
           value={why}
           onChange={(e) => setWhy(e.target.value)}
