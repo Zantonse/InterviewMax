@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense, type ReactNode } from "react";
 import { NavIcon, type NavIconName } from "./nav-icons";
 
 export type BottomTab = { href: string; label: string; icon: NavIconName; exact?: boolean };
@@ -28,11 +29,10 @@ export function isTabActive(tab: BottomTab, pathname: string): boolean {
   return pathname === tab.href || pathname.startsWith(`${tab.href}/`);
 }
 
-// Phones only: the four places you go most, with Build a story in the middle.
+// Phones only: the four places you go most, with Build a story in the middle. The pathname is
+// only known per request, so which tab is lit streams in after the links (as NavLink does).
 export function BottomTabs({ tabs }: { tabs: readonly BottomTab[] }) {
-  const pathname = usePathname() ?? "";
   const [a, b, c, d] = tabs;
-  const building = pathname === "/stories/new";
   return (
     <nav
       id="app-tabs"
@@ -42,12 +42,11 @@ export function BottomTabs({ tabs }: { tabs: readonly BottomTab[] }) {
     >
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end">
         {[a, b].map((tab) => (
-          <TabLink key={tab.href} tab={tab} active={isTabActive(tab, pathname)} />
+          <TabLink key={tab.href} tab={tab} />
         ))}
         <li className="flex justify-center">
           <Link
             href="/stories/new"
-            aria-current={building ? "page" : undefined}
             className="-mt-4 flex flex-col items-center gap-0.5 pb-1.5 text-xs font-semibold text-ink-900"
             data-testid="tab-build"
           >
@@ -58,28 +57,41 @@ export function BottomTabs({ tabs }: { tabs: readonly BottomTab[] }) {
           </Link>
         </li>
         {[c, d].map((tab) => (
-          <TabLink key={tab.href} tab={tab} active={isTabActive(tab, pathname)} />
+          <TabLink key={tab.href} tab={tab} />
         ))}
       </ul>
     </nav>
   );
 }
 
-function TabLink({ tab, active }: { tab: BottomTab; active: boolean }) {
+function TabLink({ tab }: { tab: BottomTab }) {
   return (
     <li>
-      <Link
-        href={tab.href}
-        aria-current={active ? "page" : undefined}
-        className={`flex min-h-14 flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 text-xs font-medium ${
-          active ? "text-ink-900" : "text-slate-600 hover:text-ink-900"
-        }`}
-      >
-        <span className={active ? "text-accent-700" : ""}>
-          <NavIcon name={tab.icon} />
-        </span>
-        {tab.label}
-      </Link>
+      <Suspense fallback={<TabBody tab={tab} active={false} />}>
+        <ActiveTab tab={tab} />
+      </Suspense>
     </li>
+  );
+}
+
+function ActiveTab({ tab }: { tab: BottomTab }) {
+  const pathname = usePathname() ?? "";
+  return <TabBody tab={tab} active={isTabActive(tab, pathname)} />;
+}
+
+function TabBody({ tab, active }: { tab: BottomTab; active: boolean }): ReactNode {
+  return (
+    <Link
+      href={tab.href}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-14 flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 text-xs font-medium ${
+        active ? "text-ink-900" : "text-slate-600 hover:text-ink-900"
+      }`}
+    >
+      <span className={active ? "text-accent-700" : ""}>
+        <NavIcon name={tab.icon} />
+      </span>
+      {tab.label}
+    </Link>
   );
 }
