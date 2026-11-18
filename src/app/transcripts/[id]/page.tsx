@@ -10,7 +10,9 @@ import { getTheme } from "@/lib/questions/themes";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, type AskedQuestion, type Landed } from "@/lib/transcripts/content";
-import { getTranscript } from "@/lib/transcripts/data";
+import { getTranscript, listTranscriptsForPrep } from "@/lib/transcripts/data";
+import { profileMoves } from "@/lib/transcripts/profile";
+import { ProfileMovesCard } from "@/components/interview-profile";
 import { leftOutNote } from "@/lib/transcripts/split";
 import { surenessFor, type Sureness } from "@/lib/transcripts/sure";
 import { getToughQuestion, toughForAsked } from "@/lib/tough/questions";
@@ -80,11 +82,14 @@ async function TranscriptContent({
   const leftNote = leftOutNote(typeof left === "string" ? left.split(",") : []);
   const transcript = await getTranscript(id);
   if (!transcript) notFound();
-  const [job, stories, shared] = await Promise.all([
+  const [job, stories, shared, all] = await Promise.all([
     transcript.targetJobId ? getJob(transcript.targetJobId) : null,
     listStories(),
     transcript.shareQuestions ? listMySharedQuestionsSafely(transcript.id) : [],
+    transcript.analysis ? listTranscriptsForPrep() : [],
   ]);
+  // Instant feedback: how this interview compares with the ones added before it.
+  const moves = profileMoves(all, transcript.id);
   const analysis = transcript.analysis;
   // Labelled by the app because the transcript had no speaker names: the user can fix who said what.
   const turns = transcript.speaker === AUTO_SPEAKER ? turnsFromLabelled(transcript.transcript) : [];
@@ -115,6 +120,7 @@ async function TranscriptContent({
 
       <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <ProfileMovesCard moves={moves} />
           {analysis ? (
             <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <h2 className="mb-2 text-sm font-bold text-ink-800">
