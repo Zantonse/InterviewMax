@@ -363,6 +363,14 @@ describe("model replies", () => {
     expect(feedbackSystem({ kind: "screen" })).toContain("AI screen");
   });
 
+  it("asks feedback for a headline first and a few fixes per round, in every kind", () => {
+    for (const kind of [undefined, "tough", "screen"] as const) {
+      const system = feedbackSystem({ kind });
+      expect(system).toContain("Headline first");
+      expect(system).toContain("at most three things");
+    }
+  });
+
   it("writes the exchange as a transcript", () => {
     expect(
       exchangeTranscript([
