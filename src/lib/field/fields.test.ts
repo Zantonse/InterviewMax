@@ -3,10 +3,10 @@ import { caseKind, withFieldStarters } from "@/lib/cases/content";
 import { getNumbersFamily } from "@/lib/numbers/families";
 import { getRoleFamily } from "@/lib/roles/families";
 import { questionHelp } from "@/lib/stories/help";
-import { STORY_TYPES } from "@/lib/stories/story-types";
+import { STORY_TYPES, coreQuestionText, getStoryType } from "@/lib/stories/story-types";
 import { STEP_MODELS } from "@/lib/ai/config";
 import { withFieldLine } from "./prompt";
-import { FIELDS, FIELD_IDS, FIELD_STEPS, fieldJoggers, fieldPromptLine, guessField } from "./fields";
+import { FIELDS, FIELD_IDS, FIELD_STEPS, fieldJoggers, fieldPromptLine, fieldScopeHint, guessField } from "./fields";
 
 describe("fields", () => {
   it("lists every id once, and points only at lists that exist", () => {
@@ -71,5 +71,19 @@ describe("fields", () => {
     expect(list).toHaveLength(3);
     expect(list.filter((q) => q.starter)).toHaveLength(2);
     expect(withFieldStarters([], "sales_engineering")).toEqual([]);
+  });
+
+  it("asks About me's scope question in a way that fits individual contributors", () => {
+    const aboutMe = getStoryType("about_me");
+    const base = coreQuestionText("now", aboutMe);
+    expect(base).not.toMatch(/territory|budget/i);
+    expect(base).toMatch(/if you manage people/i);
+    const dg = coreQuestionText("now", aboutMe, undefined, fieldScopeHint("data_governance"));
+    expect(dg).toContain(base);
+    expect(dg).toMatch(/data domains/);
+    expect(dg).not.toMatch(/territory|budget/i);
+    expect(fieldScopeHint("generic")).toBeUndefined();
+    // Only About me's first question takes the hint.
+    expect(coreQuestionText("path", aboutMe, undefined, "x")).not.toContain("x");
   });
 });

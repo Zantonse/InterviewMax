@@ -35,12 +35,12 @@ export function ReadinessCard({
             <p className="font-bold text-slate-900">
               {ready} of {total} ready
             </p>
-            <p className="text-xs text-slate-500">Ready = a Level {READY_LEVEL}+ story</p>
+            <p className="text-xs text-slate-600">Ready = a Level {READY_LEVEL}+ story</p>
             {next && <NextButton row={next} />}
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex justify-between text-xs font-bold uppercase tracking-wide text-slate-500">
+          <div className="flex justify-between text-xs font-bold text-slate-600">
             <span>Likely questions</span>
             <span>Best story</span>
           </div>
@@ -79,7 +79,7 @@ export function ReadinessRing({
             <span className={`block font-extrabold text-slate-900 ${size === "lg" ? "text-3xl" : "text-lg"}`}>
               {days}
             </span>
-            <span className={`block text-slate-500 ${size === "lg" ? "mt-1 text-xs" : "text-[10px]"}`}>
+            <span className={`block text-slate-600 ${size === "lg" ? "mt-1 text-xs" : "text-xs"}`}>
               {days === 1 ? "day" : "days"}
             </span>
           </div>
@@ -107,7 +107,7 @@ export function ReadinessRows({ rows }: { rows: QuestionReadiness[] }) {
               {r.question}
             </Link>
           ) : (
-            <span className="min-w-0 flex-1 text-slate-500">{r.question}</span>
+            <span className="min-w-0 flex-1 text-slate-600">{r.question}</span>
           )}
           {r.kind === "story" ? (
             <LevelBars level={r.level} />
@@ -135,7 +135,7 @@ function LevelBars({ level }: { level: ReadyLevel }) {
   return (
     <span className="flex shrink-0 items-center gap-2">
       <LevelDots level={level} />
-      <span className="w-16 text-right text-xs text-slate-500">
+      <span className="w-16 text-right text-xs text-slate-600">
         {level === 0 ? "Not written" : `Level ${level}`}
       </span>
     </span>

@@ -4,7 +4,8 @@ import { DeleteStoryButton } from "@/components/delete-story-button";
 import { startStory } from "@/app/stories/new/actions";
 import { type NextStory, nextStoryToBuild } from "@/lib/guide/journey";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
-import { jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { focusJob, jobsToShapeIntroFor, todayIn, whenLabel } from "@/lib/prep/plan";
+import { finishCounts } from "@/lib/prep/finish-line";
 import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { checklistRole, numbersForStory } from "@/lib/numbers/checklist";
@@ -33,7 +34,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
   // target jobs. Optional, so a failure to load them never blocks the builder.
   const [prep, jobs, stories, checklist, targets, finder, field, execMode] = await Promise.all([
     getJobsPrep().catch(() => ({ resume: null, overview: null })),
-    intro ? listJobs().catch(() => [] as TargetJob[]) : ([] as TargetJob[]),
+    listJobs().catch(() => [] as TargetJob[]),
     intro ? ([] as StoryRecord[]) : listStories().catch(() => [] as StoryRecord[]),
     getNumbersChecklistSafely(),
     loadBuilderTargets(getStoryType(story.storyType)),
@@ -47,7 +48,18 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
     .slice(0, 3)
     .map((m) => ({ moment: m.moment, quote: m.quote, sourceLabel: SOURCE_LABELS[m.source] }));
   const resume = Boolean(prep.resume);
-  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const timeZone = (await headers()).get("x-vercel-ip-timezone");
+  const today = todayIn(timeZone);
+  // The finish line for the user's other stories; the builder adds this one once it's written.
+  const finishBase = intro
+    ? undefined
+    : finishCounts({
+        stories,
+        today,
+        timeZone,
+        interviewDate: focusJob(jobs, today)?.interviewDate,
+        exceptId: story.id,
+      });
   return (
     <StoryBuilder
       storyId={story.id}
@@ -63,6 +75,8 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       moments={moments}
       field={field.id}
       execMode={execMode}
+      priorWritten={finishBase?.written ?? 0}
+      finishBase={finishBase}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={
@@ -108,11 +122,11 @@ function TailorLinks({
   return (
     <section
       className={`rounded-3xl p-5 shadow-sm sm:p-6 ${
-        soon !== null ? "bg-amber-50 ring-1 ring-amber-200" : "bg-white ring-1 ring-black/5"
+        soon !== null ? "bg-ink-50 ring-1 ring-ink-800/20" : "bg-white ring-1 ring-black/5"
       }`}
       data-testid="tailor-links"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="text-sm font-bold text-ink-800">
         {soon !== null
           ? `Your ${company} interview is ${whenLabel(soon)}`
           : "Next: make it company-first for each job"}
@@ -150,7 +164,7 @@ function TailorLinks({
                   >
                     {job.company || job.title}
                     {content.tailored?.[job.id]?.draft && (
-                      <span className="text-xs text-slate-500">written</span>
+                      <span className="text-xs text-slate-600">written</span>
                     )}
                   </Link>
                 </li>
@@ -171,7 +185,7 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
       className="rounded-3xl bg-ink-50 p-5 ring-1 ring-ink-800/10 sm:p-6"
       data-testid="next-up"
     >
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">What&apos;s next</h2>
+      <h2 className="text-sm font-bold text-ink-800">What&apos;s next</h2>
       {next ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p className="min-w-0 text-slate-700">

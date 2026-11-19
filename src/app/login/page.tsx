@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PolicyLinks } from "@/components/policy-links";
 import { Wordmark } from "@/components/wordmark";
+import { auth0 as auth0Client } from "@/lib/auth0/client";
 import { authProvider } from "@/lib/auth0/provider";
 import { Auth0Buttons } from "./auth0-buttons";
 import { LoginForm } from "./login-form";
@@ -26,9 +27,9 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Suspense fallback={null}>
           <LinkError searchParams={searchParams} auth0={auth0} />
         </Suspense>
-        <div className="mt-6">
-          {auth0 ? <Auth0Buttons /> : <LoginForm />}
-        </div>
+        <Suspense fallback={null}>
+          <SignInChoices searchParams={searchParams} auth0={auth0} />
+        </Suspense>
       </div>
       <PolicyLinks />
     </main>
@@ -37,9 +38,83 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
 const AUTH0_ERRORS: Record<string, string> = {
   auth0: "Sign-in didn't finish. Try again, or pick another way to sign in.",
-  account:
-    "We couldn't open your InterviewMax account after that sign-in. Your email address has to be confirmed by the service you sign in with; try Google or an email code.",
+  account: "We couldn't open your InterviewMax account after that sign-in. Try again in a moment.",
 };
+
+// While the "confirm your email" notice is up, its own buttons are the next step, so the usual
+// choices stay out of the way (they'd only sign the same unconfirmed account in again).
+async function SignInChoices({
+  searchParams,
+  auth0,
+}: {
+  searchParams: PageProps<"/login">["searchParams"];
+  auth0: boolean;
+}) {
+  const { error } = await searchParams;
+  if (auth0 && error === "unverified") return null;
+  return <div className="mt-6">{auth0 ? <Auth0Buttons /> : <LoginForm />}</div>;
+}
+
+// The address isn't confirmed yet, so no account can open (claim_profile only trusts confirmed
+// addresses). Auth0 emails a confirmation link to new sign-ups; the session still holds the token
+// from before they clicked it, so "Continue" goes back through /auth/login for a fresh one rather
+// than leaving this message up until they find their own way there.
+async function UnverifiedNotice() {
+  const session = await auth0Client().getSession();
+  const email = typeof session?.user.email === "string" ? session.user.email : "";
+  const linkedin = typeof session?.user.sub === "string" && session.user.sub.startsWith("linkedin|");
+  const switchHref = "/auth/logout";
+  if (!session) {
+    return (
+      <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        Your email address isn&apos;t confirmed yet. Check your inbox for the confirmation email,
+        click the link in it, then sign in below.
+      </p>
+    );
+  }
+  return (
+    <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900" data-testid="unverified-notice">
+      {linkedin ? (
+        <p>
+          LinkedIn didn&apos;t tell us{" "}
+          {email ? <strong className="font-semibold">{email}</strong> : "your email address"} is
+          confirmed, so we can&apos;t open your account with it. Sign in with an email code or
+          Google using the same address instead.
+        </p>
+      ) : (
+        <>
+          <p className="font-semibold">Check your inbox to finish signing up.</p>
+          <p className="mt-1">
+            We sent a confirmation email to{" "}
+            {email ? <strong className="font-semibold">{email}</strong> : "your address"}. Click
+            the link in it, then come back here and tap Continue. It can take a minute to arrive;
+            check spam too.
+          </p>
+        </>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {!linkedin && (
+          <a
+            href="/auth/login?returnTo=%2F"
+            className="rounded-xl bg-accent-400 px-4 py-2 font-semibold text-ink-950 hover:bg-accent-300"
+          >
+            I&apos;ve confirmed it, continue
+          </a>
+        )}
+        <a
+          href={switchHref}
+          className={
+            linkedin
+              ? "rounded-xl bg-accent-400 px-4 py-2 font-semibold text-ink-950 hover:bg-accent-300"
+              : "rounded-xl px-4 py-2 font-medium text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+          }
+        >
+          {linkedin ? "Choose another way to sign in" : "Use a different email"}
+        </a>
+      </div>
+    </div>
+  );
+}
 
 async function LinkError({
   searchParams,
@@ -50,6 +125,7 @@ async function LinkError({
 }) {
   const { error } = await searchParams;
   if (!error) return null;
+  if (auth0 && error === "unverified") return <UnverifiedNotice />;
   if (auth0) {
     const message =
       AUTH0_ERRORS[String(error)] ??

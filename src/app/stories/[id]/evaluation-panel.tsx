@@ -20,6 +20,7 @@ import type { StoryType } from "@/lib/stories/story-types";
 import {
   LEVELS,
   TOP_LEVEL,
+  displayLevel,
   levelForGrade,
   levelScore,
   usesLevels,
@@ -32,13 +33,9 @@ const LEVEL_STYLES: Record<StoryLevel, string> = {
   3: "bg-emerald-700 text-white",
 };
 
-const TIER_STYLES: Record<Tier, string> = {
-  not_yet: "bg-amber-100 text-amber-900",
-  good_enough: "bg-emerald-100 text-emerald-900",
-  strong: "bg-emerald-700 text-white",
-};
-
-// The legend under the tier, in words that match how the tier is worked out (tierFor in grading.ts).
+// About me and tough questions keep their tiers underneath and show them as the same three levels
+// (displayLevel in levels.ts). The legend, in words that match how the tier is worked out (tierFor
+// in grading.ts).
 const TIER_MEANINGS: Record<Tier, string> = {
   not_yet:
     "A key part is missing or thin, or the result has no number from your answers. An interviewer would be left guessing.",
@@ -69,7 +66,7 @@ function ThinkingNote({ thinking, levels }: { thinking: ThinkingFeedback; levels
         >
           {label}
         </span>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-600">
           {levels ? "Needed for Level 3" : "Feedback only, not part of the score"}
         </span>
       </div>
@@ -102,13 +99,15 @@ export function EvaluationPanel({
   disabled: boolean;
   onGrade: () => void;
 }) {
-  const [open, setOpen] = useState(true);
+  // The part scores are one tap away: the level and what to fix next lead (design review, Nov 16).
+  const [open, setOpen] = useState(false);
   const bodyId = useId();
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
   const stale = Boolean(content.draft && content.grade && !grade);
-  // Behavioral stories show a level (see levels.ts) where other stories show the tier.
+  // Behavioral stories climb the real levels (see levels.ts); other stories show their tier as one.
   const level = grade && usesLevels(storyType, content) ? levelForGrade(grade) : undefined;
+  const shown = grade ? displayLevel(grade, storyType, content) : undefined;
   const score = grade
     ? level !== undefined
       ? levelScore(grade)
@@ -129,34 +128,18 @@ export function EvaluationPanel({
         className="flex w-full items-center justify-between gap-3 text-left"
       >
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
-            Evaluation
-          </span>
-          {grade && level !== undefined ? (
+          <span className="text-base font-bold text-slate-900">How it lands</span>
+          {shown !== undefined && (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[level]}`}
-              data-testid="level-pill"
+              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[shown]}`}
+              data-testid={level !== undefined ? "level-pill" : "tier"}
             >
-              Level {level} of {TOP_LEVEL}
-            </span>
-          ) : (
-            grade && (
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${TIER_STYLES[grade.tier]}`}
-                data-testid="tier"
-              >
-                {TIERS.find((t) => t.id === grade.tier)?.label}
-              </span>
-            )
-          )}
-          {score !== undefined && (
-            <span className="text-sm font-semibold text-slate-600" data-testid="score-pill">
-              {score}/100
+              Level {shown} of {TOP_LEVEL}
             </span>
           )}
         </span>
         <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-ink-800">
-          {open ? "Hide" : "Show"}
+          {open ? "Hide part scores" : "See part scores"}
           <svg
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -180,7 +163,7 @@ export function EvaluationPanel({
             Grading your story against each criterion…
           </p>
         ) : !content.draft ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Once your story is written, I&apos;ll grade it on each of these criteria and tell you
             what to fix first.
           </p>
@@ -234,7 +217,7 @@ export function EvaluationPanel({
                       <span className="flex items-center gap-1.5 font-medium text-slate-800">
                         <span
                           aria-hidden="true"
-                          className="text-[10px] text-slate-400 transition-transform group-open:rotate-90"
+                          className="text-xs text-slate-500 transition-transform group-open:rotate-90"
                         >
                           ▶
                         </span>
@@ -243,7 +226,7 @@ export function EvaluationPanel({
                       {scored && <ScoreBar score={scored.score} />}
                     </summary>
                     <div className="flex flex-col gap-1.5 px-2 pb-2.5 pl-6">
-                      <p className="text-xs text-slate-500">{c.question}</p>
+                      <p className="text-xs text-slate-600">{c.question}</p>
                       {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
                       {scored?.improve && (
                         <p className="text-sm text-ink-900">
@@ -273,7 +256,7 @@ export function EvaluationPanel({
                 {grade.bankRole.role.slice(1)}
               </span>
               {grade.bankRole.note && (
-                <span className="text-slate-500">. {grade.bankRole.note}</span>
+                <span className="text-slate-600">. {grade.bankRole.note}</span>
               )}
             </p>
           </div>
@@ -294,7 +277,7 @@ export function EvaluationPanel({
         )}
 
         {grade && (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
             <span>
               {level !== undefined
                 ? "Level 3 needs every criterion solid or better, every quick check passing, and your thinking shown."
@@ -343,33 +326,14 @@ function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
         </>
       ) : (
         <>
-          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Tier">
-            {TIERS.map((t, i) => (
-              <li key={t.id} className="flex items-center gap-1">
-                {i > 0 && <span className="text-slate-300">→</span>}
-                <span
-                  aria-current={i === current ? "step" : undefined}
-                  className={
-                    i === current
-                      ? "font-semibold text-slate-900"
-                      : i < current
-                        ? "text-ink-700"
-                        : "text-slate-400"
-                  }
-                >
-                  {t.label}
-                </span>
-              </li>
-            ))}
-          </ol>
           <details className="text-sm text-slate-600" data-testid="tier-legend">
             <summary className="cursor-pointer font-medium text-ink-800">
               What the levels mean
             </summary>
             <ul className="mt-1 flex flex-col gap-1">
-              {TIERS.map((t) => (
-                <li key={t.id}>
-                  <span className="font-semibold text-slate-800">{t.label}:</span>{" "}
+              {TIERS.map((t, i) => (
+                <li key={t.id} aria-current={i === current ? "step" : undefined}>
+                  <span className="font-semibold text-slate-800">Level {i + 1}:</span>{" "}
                   {TIER_MEANINGS[t.id]}
                 </li>
               ))}
@@ -422,14 +386,8 @@ function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
 // The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) as a ring,
 // with how it's worked out one tap away, so it isn't read as a pass mark.
 function ScoreHeadline({ score, levels }: { score: number | undefined; levels: boolean }) {
-  const tone =
-    score === undefined
-      ? "#e2e8f0"
-      : score >= 75
-        ? "#059669"
-        : score >= 50
-          ? "#fcd34d"
-          : "#f59e0b";
+  // Periwinkle at every value: the level is the grade, so the ring shouldn't read as a pass or fail.
+  const tone = score === undefined ? "#e2e8f0" : "#8392f7";
   return (
     <div className="flex items-center gap-4">
       <div
@@ -441,7 +399,7 @@ function ScoreHeadline({ score, levels }: { score: number | undefined; levels: b
       >
         <div className="grid h-[3.9rem] w-[3.9rem] place-items-center rounded-full bg-white">
           {score === undefined ? (
-            <span className="text-xs text-slate-400">–</span>
+            <span className="text-xs text-slate-500">–</span>
           ) : (
             <span className="text-2xl font-bold tabular-nums text-slate-900">{score}</span>
           )}
@@ -451,15 +409,15 @@ function ScoreHeadline({ score, levels }: { score: number | undefined; levels: b
         <h3 className="text-base font-bold text-slate-900">
           Score{" "}
           {score === undefined ? (
-            <span className="text-sm font-normal text-slate-500">Not graded yet</span>
+            <span className="text-sm font-normal text-slate-600">Not graded yet</span>
           ) : (
             <span className="sr-only">
               {score} / 100
             </span>
           )}
         </h3>
-        {score !== undefined && <p className="text-sm text-slate-500">out of 100</p>}
-        <details className="mt-1 text-xs text-slate-500">
+        {score !== undefined && <p className="text-sm text-slate-600">out of 100</p>}
+        <details className="mt-1 text-xs text-slate-600">
           <summary className="cursor-pointer list-none font-medium hover:text-ink-800 [&::-webkit-details-marker]:hidden">
             ⓘ How it&apos;s worked out
           </summary>
@@ -467,7 +425,7 @@ function ScoreHeadline({ score, levels }: { score: number | undefined; levels: b
             Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100.{" "}
             {levels
               ? "The level decides how far the story has come, and caps this number: up to 69 at Level 1, 89 at Level 2."
-              : "The level above decides when a story is Strong, and caps this number: up to 69 for Not yet, 89 for Good enough."}
+              : "The level decides how far the answer has come, and caps this number: up to 69 at Level 1, 89 at Level 2."}
           </p>
         </details>
       </div>
@@ -506,7 +464,7 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
         )}
         <span
           aria-hidden="true"
-          className="ml-auto text-[10px] text-slate-400 transition-transform group-open:rotate-90"
+          className="ml-auto text-xs text-slate-500 transition-transform group-open:rotate-90"
         >
           ▶
         </span>
@@ -516,9 +474,9 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
           <li key={k.id} className="flex gap-2 text-sm">
             <span
               aria-hidden="true"
-              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 !result
-                  ? "bg-slate-100 text-slate-400"
+                  ? "bg-slate-100 text-slate-500"
                   : result.pass
                     ? "bg-emerald-100 text-emerald-800"
                     : "bg-amber-100 text-amber-900"
@@ -531,7 +489,7 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
               {result && (
                 <>
                   <span className="sr-only">{result.pass ? " (passes)" : " (needs work)"}</span>
-                  <span className="text-slate-500"> {result.detail}</span>
+                  <span className="text-slate-600"> {result.detail}</span>
                 </>
               )}
             </span>
@@ -588,7 +546,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
     return (
       <div data-testid="content-fit">
         <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           {content
             ? "Couldn't check this story against your target jobs this time. Grade it again to retry."
             : "Grade it again to see which of your target jobs' needs this story proves and which likely questions it answers."}{" "}
@@ -609,7 +567,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
         <span className="flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="text-xs text-slate-500 transition-transform group-open:rotate-90"
+            className="text-xs text-slate-600 transition-transform group-open:rotate-90"
           >
             ▶
           </span>
@@ -632,7 +590,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
               <span className="font-semibold text-slate-800">
                 {job.title}
                 {job.company && (
-                  <span className="font-normal text-slate-500"> at {job.company}</span>
+                  <span className="font-normal text-slate-600"> at {job.company}</span>
                 )}
               </span>
               <span
@@ -651,7 +609,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
             <FitList
               title="Good answer to"
               mark="•"
-              markClass="text-slate-400"
+              markClass="text-slate-500"
               items={job.answers.map((q) => `“${q}”`)}
             />
             {job.level && (

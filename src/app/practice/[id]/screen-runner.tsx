@@ -131,7 +131,7 @@ function ScreenQuestion({
             type="button"
             onClick={onSkip}
             disabled={busy}
-            className="text-sm font-medium text-slate-400 hover:text-white"
+            className="text-sm font-medium text-slate-500 hover:text-white"
           >
             Skip this question
           </button>

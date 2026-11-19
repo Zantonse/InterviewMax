@@ -2,8 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { saveExecModeSetting, type ExecModeState } from "./actions";
+import { SaveStatus } from "./save-status";
 
-// Exec mode on or off. Saves on submit; shows as saved until it changes.
+// Exec mode on or off. Saves as soon as it changes (design review 2026-11-16, fix 9).
 export function ExecModeForm({ initial }: { initial: boolean }) {
   const [state, action, pending] = useActionState<ExecModeState, FormData>(saveExecModeSetting, null);
   const [on, setOn] = useState(initial);
@@ -16,7 +17,10 @@ export function ExecModeForm({ initial }: { initial: boolean }) {
           type="checkbox"
           name="on"
           checked={on}
-          onChange={(e) => setOn(e.target.checked)}
+          onChange={(e) => {
+            setOn(e.target.checked);
+            e.currentTarget.form?.requestSubmit();
+          }}
           className="mt-1 size-4 accent-ink-800"
           data-testid="exec-mode-toggle"
         />
@@ -28,19 +32,11 @@ export function ExecModeForm({ initial }: { initial: boolean }) {
           </span>
         </span>
       </label>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || on === saved}
-          className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
-        >
-          {pending ? "Saving…" : "Save"}
-        </button>
-        {state?.error && <span className="text-sm text-red-700">{state.error}</span>}
-        {!state?.error && state && state.saved !== undefined && on === saved && (
-          <span className="text-sm text-slate-600">Saved.</span>
-        )}
-      </div>
+      <SaveStatus
+        pending={pending}
+        error={state?.error}
+        saved={Boolean(state && state.saved !== undefined) && on === saved}
+      />
     </form>
   );
 }

@@ -48,7 +48,7 @@ export function FeedbackCard({
       className="rounded-2xl bg-white p-5 ring-1 ring-ink-800/15"
       data-testid="practice-feedback"
     >
-      <h3 className="text-xs font-bold uppercase tracking-wide text-ink-800">Feedback</h3>
+      <h3 className="text-xs font-bold text-ink-800">Feedback</h3>
       <p className="mt-2 font-semibold text-slate-900">{feedback.summary}</p>
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -100,7 +100,7 @@ export function FeedbackCard({
         <DeliveryNotes delivery={feedback.delivery} />
       ) : (
         feedback.timing.measured === false && (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-slate-600">
             Answer with Talk to get feedback on your pace and filler words.
           </p>
         )
@@ -156,7 +156,7 @@ export function FeedbackCard({
                   Follow-up {i + 1}: {LAYER_LABELS[l.hold]}
                 </p>
                 {turns[i + 1]?.question && (
-                  <p className="mt-0.5 text-xs text-slate-500">&ldquo;{turns[i + 1].question}&rdquo;</p>
+                  <p className="mt-0.5 text-xs text-slate-600">&ldquo;{turns[i + 1].question}&rdquo;</p>
                 )}
                 {l.note && <p className="mt-1 text-slate-700">{l.note}</p>}
               </li>
@@ -175,7 +175,7 @@ export function FeedbackCard({
             {feedback.newFacts.map((f, i) => (
               <li key={i} className="rounded-lg bg-white p-3 text-sm ring-1 ring-black/5">
                 <p className="text-slate-900">{f.fact}</p>
-                <p className="mt-1 text-xs text-slate-500">You said: &ldquo;{f.quote}&rdquo;</p>
+                <p className="mt-1 text-xs text-slate-600">You said: &ldquo;{f.quote}&rdquo;</p>
                 <div className="mt-2">
                   {f.kept ? (
                     <span className="text-xs font-semibold text-emerald-700">
@@ -239,7 +239,7 @@ function DeliveryNotes({ delivery }: { delivery: Delivery }) {
         </div>
       </dl>
       {pauses && <p className="mt-2 text-sm text-slate-700">{pauses}</p>}
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-slate-600">
         From your recording and its transcript. Speech-to-text often drops “um” and “uh”, so
         those can be undercounted.
       </p>

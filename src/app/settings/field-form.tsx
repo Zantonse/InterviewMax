@@ -9,9 +9,11 @@ import {
   getField,
 } from "@/lib/field/fields";
 import { saveField, type FieldState } from "./actions";
+import { SaveStatus } from "./save-status";
 
-// "Your field": a dropdown of fields, plus a name box for "Something else". A guess (from target job
-// titles) is pre-picked and labelled until they save.
+// "Your field": a dropdown of fields, plus a name box for "Something else". Picking a field saves it
+// (design review 2026-11-16, fix 9); "Something else" saves with its name. A guess (from target job
+// titles) is pre-picked and labelled until they confirm it.
 export function FieldForm({ initial }: { initial: UserField }) {
   const [state, action, pending] = useActionState<FieldState, FormData>(saveField, null);
   const [id, setId] = useState<FieldId>(initial.id);
@@ -32,7 +34,11 @@ export function FieldForm({ initial }: { initial: UserField }) {
           id={selectId}
           name="field"
           value={id}
-          onChange={(e) => setId(e.target.value as FieldId)}
+          onChange={(e) => {
+            const next = e.target.value as FieldId;
+            setId(next);
+            if (next !== "other") e.currentTarget.form?.requestSubmit();
+          }}
           className="w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 focus:ring-2 focus:ring-ink-700 focus:outline-none sm:max-w-md"
         >
           {FIELDS.map((f) => (
@@ -43,8 +49,8 @@ export function FieldForm({ initial }: { initial: UserField }) {
         </select>
         <p className="mt-1.5 text-sm text-slate-600">{getField(id)?.blurb}</p>
         {initial.guessed && !state?.saved && initial.id !== "generic" && id === initial.id && (
-          <p className="mt-1 text-sm text-slate-500" data-testid="field-guess">
-            Guessed from your target jobs. Save it to confirm.
+          <p className="mt-1 text-sm text-slate-600" data-testid="field-guess">
+            Guessed from your target jobs. Pick another field if it&apos;s wrong.
           </p>
         )}
       </div>
@@ -60,22 +66,21 @@ export function FieldForm({ initial }: { initial: UserField }) {
             onChange={(e) => setName(e.target.value)}
             maxLength={MAX_FIELD_NAME_LENGTH}
             placeholder="e.g. Revenue operations"
-            className="mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none sm:max-w-md"
+            className="mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none sm:max-w-md"
           />
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || unchanged || (id === "other" && !name.trim())}
-          className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
-        >
-          {pending ? "Saving…" : "Save your field"}
-        </button>
-        {state?.error && <span className="text-sm text-red-700">{state.error}</span>}
-        {!state?.error && state?.saved && unchanged && (
-          <span className="text-sm text-slate-600">Saved.</span>
+        {(id === "other" || (initial.guessed && !state?.saved && id === initial.id)) && (
+          <button
+            type="submit"
+            disabled={pending || unchanged || (id === "other" && !name.trim())}
+            className="btn-secondary"
+          >
+            {id === "other" ? "Save your field" : "That's right"}
+          </button>
         )}
+        <SaveStatus pending={pending} error={state?.error} saved={Boolean(state?.saved) && unchanged} />
       </div>
     </form>
   );

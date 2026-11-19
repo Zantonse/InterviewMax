@@ -97,13 +97,36 @@ const HELP: Record<string, QuestionHelp> = {
   },
 };
 
-// The user's field (Settings) swaps in its own example where it has one; where to look stays.
+// Examples for someone early in their career: the defaults assume years of work (accounts, a team,
+// a renewal), which an entry-level candidate can't match and stalls on.
+const ENTRY_EXAMPLES: Partial<Record<string, string>> = {
+  telling:
+    "Rough notes are fine, like: \"In my last semester, our group's app project was two weeks behind and one teammate had stopped showing up. I split his part between the rest of us and set up a quick check-in twice a week. We demoed on time and got an A. Lesson: say something in week one, not week five.\"",
+  situation:
+    "\"It was my internship's final project, due in 3 weeks, and the data I needed turned out to be missing half its rows.\"",
+  result:
+    "\"The team kept using my checklist after I left, and the weekly report took about an hour instead of half a day (my manager's estimate).\"",
+  present:
+    "\"I'm finishing a degree in information systems and working part-time on the help desk, where I handle about 20 tickets a day.\"",
+  path:
+    "\"A data class got me hooked, so I took an internship cleaning up reports and kept going from there.\"",
+  highlight:
+    "\"I built a tracker for my club's events; sign-ups went from about 30 to 80 a term (my estimate).\"",
+  strengths:
+    "\"Teammates come to me when a spreadsheet or script breaks. Last month I fixed three of them.\"",
+  next:
+    "\"I want a first analyst role where I learn from people who are better than me at the hard parts.\"",
+};
+
+// The user's field (Settings) swaps in its own example where it has one; entry level comes first.
+// Where to look stays.
 export function questionHelp(
   key: string | undefined,
   field?: FieldId | null,
+  entry = false,
 ): QuestionHelp | undefined {
   const base = key ? HELP[key] : undefined;
-  const example = key ? fieldExample(field, key) : undefined;
+  const example = key ? (entry && ENTRY_EXAMPLES[key]) || fieldExample(field, key) : undefined;
   if (!base || !example) return base;
   return { ...base, example };
 }

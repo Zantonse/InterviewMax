@@ -30,7 +30,7 @@ export function ConfidenceBar({
       data-testid="confidence-bar"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">How did that feel?</h2>
+        <h2 className="text-sm font-bold text-ink-800">How did that feel?</h2>
         <span className="text-sm font-semibold text-slate-900" aria-live="polite">
           {shown ? CONFIDENCE_LABELS[shown] : ""}
         </span>
@@ -64,7 +64,7 @@ export function ConfidenceBar({
           );
         })}
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-slate-500">
+      <div className="mt-1.5 flex justify-between text-xs text-slate-600">
         <span>Shaky</span>
         <span>Confident</span>
       </div>

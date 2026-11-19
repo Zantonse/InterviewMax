@@ -5,9 +5,9 @@ import { listStories } from "./data";
 import { REQUIRED_STORY_TYPE_ID, type StoryType } from "./story-types";
 import { builderTargets, type BuilderTargets } from "./targets";
 
-// Loads what the user is preparing for, for one story's builder: target jobs, the jobs read, and the
-// role they said they want next in "Tell me about yourself". Optional background, so a failure to
-// load any of it never blocks the builder.
+// Loads what the user is preparing for, for one story's builder: target jobs, the jobs read, and
+// from "Tell me about yourself" the role they want next and where they are now. Optional
+// background, so a failure to load any of it never blocks the builder.
 export async function loadBuilderTargets(
   storyType: StoryType | undefined,
 ): Promise<BuilderTargets | undefined> {
@@ -21,15 +21,18 @@ export async function loadBuilderTargets(
       intro ? Promise.resolve([]) : listStories(),
     ]);
     // listStories is newest first.
-    const aboutMe = stories.find(
-      (s) =>
-        s.storyType === REQUIRED_STORY_TYPE_ID &&
-        Boolean(s.content.answers.next?.trim()),
-    );
+    const aboutMe = (answer: string) =>
+      stories.find(
+        (s) =>
+          s.storyType === REQUIRED_STORY_TYPE_ID &&
+          Boolean(s.content.answers[answer]?.trim()),
+      )?.content.answers[answer];
     return builderTargets({
       jobs,
       focus: prep.overview?.jobs,
-      wantedRole: aboutMe?.content.answers.next,
+      wantedRole: aboutMe("next"),
+      // Whether they manage people today (situation.ts).
+      currentRole: aboutMe("now"),
       storyType,
     });
   } catch (err) {

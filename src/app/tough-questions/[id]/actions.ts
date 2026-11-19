@@ -6,6 +6,7 @@ import { getJob } from "@/lib/jobs/data";
 import type { StoryContent } from "@/lib/stories/content";
 import { getStory, updateStory, type StoryRecord } from "@/lib/stories/data";
 import { askFollowUp, giveFeedback } from "@/lib/practice/coach";
+import { answerProblem } from "@/lib/text/answer";
 import {
   MAX_PRACTICE_ANSWER_LENGTH,
   type PracticeItem,
@@ -181,7 +182,8 @@ export async function answerToughDrill(
 ): Promise<ToughResult> {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return fail("Say or type an answer first.");
-  if (text.length > MAX_PRACTICE_ANSWER_LENGTH) return fail("That answer is too long.");
+  const problem = answerProblem(text, MAX_PRACTICE_ANSWER_LENGTH);
+  if (problem) return fail(problem);
   return withToughStory(storyId, async (story, question) => {
     const drill = toughDrill(story.content);
     if (!drill || itemStep(drill) !== "answer") return fail("Start the drill again.");

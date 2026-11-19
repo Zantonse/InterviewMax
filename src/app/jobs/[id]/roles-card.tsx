@@ -16,7 +16,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
       className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
       data-testid="job-roles"
     >
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="mb-2 text-sm font-bold text-ink-800">
         Your roles at {company}
       </h2>
       <p className="mb-4 text-sm text-slate-600">
@@ -58,7 +58,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
                 <input type="hidden" name="roleId" value={r.id} />
                 <PendingButton
                   pendingText="Removing…"
-                  className="text-sm font-medium text-slate-500 hover:text-red-700"
+                  className="text-sm font-medium text-slate-600 hover:text-red-700"
                 >
                   Remove
                 </PendingButton>
@@ -75,7 +75,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
           return (
             <div key={r.id} data-testid="role-difference">
               <p className="text-sm font-semibold text-slate-700">
-                {r.title} <span className="font-normal text-slate-500">compared with the main role</span>
+                {r.title} <span className="font-normal text-slate-600">compared with the main role</span>
               </p>
               {diff.lines.length === 0 ? (
                 <p className="mt-1 text-sm text-slate-600">The posting is the same.</p>
@@ -97,7 +97,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
                 </ul>
               )}
               {(diff.same > 0 || diff.more) && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-600">
                   {diff.more ? "More lines differ; open the posting for all of them. " : ""}
                   {diff.same > 0 &&
                     `${diff.same} other ${diff.same === 1 ? "line is" : "lines are"} word for word the same.`}

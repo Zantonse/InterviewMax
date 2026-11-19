@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { buildBrief, warmUpCards } from "@/lib/brief/brief";
 import { getJob } from "@/lib/jobs/data";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
+import { stageForJob } from "@/lib/stages/data";
 import { listStories } from "@/lib/stories/data";
 import { WarmUp } from "./warm-up";
 import { trackEvent } from "@/lib/usage/track";
@@ -37,7 +38,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/warm-up">["pa
   ]);
   if (!job) notFound();
   await trackEvent("warm_up_opened");
-  const brief = buildBrief({ job, stories, numbers });
+  const brief = buildBrief({ job, stories, numbers, stage: await stageForJob(job) });
   const cards = warmUpCards(brief);
   const exit = `/jobs/${job.id}/brief`;
 

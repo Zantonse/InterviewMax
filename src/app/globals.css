@@ -12,9 +12,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* The brand: graphite ("ink") for the sidebar, dark cards and primary buttons, and periwinkle
-   ("accent") for the main call to action and highlights. Green is kept for "strong" and passing
-   checks, amber for what to fix. */
+/* The brand: graphite ("ink") for the sidebar and dark cards, periwinkle ("accent") for highlights.
+   Button rule (design review 2026-11-16, fix 5):
+   - periwinkle (btn-next): the one next step on a screen. At most one per screen.
+   - graphite (btn-primary): other actions that do something (save, start, add).
+   - outline (btn-secondary): secondary choices beside them ("Show me", "Skip", "Change").
+   Green is kept for "strong" and passing checks. Amber is only for what to fix in the user's own
+   work; notices ("not read yet", "interview soon") stay neutral. */
 @theme {
   --color-ink-50: #f4f5f8;
   --color-ink-100: #e6e8ef;
@@ -50,6 +54,17 @@
   }
 }
 
+/* Phones: room under the page for the bottom tab bar (components/bottom-tabs.tsx). */
+@media (width < 64rem) {
+  body:has(#app-tabs) {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  /* Anything scrolled into view (an answer box, a question) stops above the tabs, not under them. */
+  html:has(#app-tabs) {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Pages that show the sidebar make room for it on wide screens. */
 @media (width >= 64rem) {
   body:has(#app-nav) {
@@ -60,7 +75,7 @@
   }
 }
 
-/* Sidebar groups (Jobs, Stories, Practice) fold their sub-items away. A group is open when you're
+/* Sidebar groups (Jobs, Stories, Practice, Library) fold their sub-items away. A group is open when you're
    on one of its pages or you opened it; your choice is kept in this browser (see nav-shell.tsx). */
 [data-nav-children] {
   display: none;
@@ -68,23 +83,27 @@
 [data-nav-group]:has(a[aria-current="page"]) > [data-nav-children],
 :root[data-nav-open~="jobs"] [data-nav-group="jobs"] > [data-nav-children],
 :root[data-nav-open~="stories"] [data-nav-group="stories"] > [data-nav-children],
-:root[data-nav-open~="practice"] [data-nav-group="practice"] > [data-nav-children] {
+:root[data-nav-open~="practice"] [data-nav-group="practice"] > [data-nav-children],
+:root[data-nav-open~="library"] [data-nav-group="library"] > [data-nav-children] {
   display: block;
 }
 [data-nav-group]:has(a[aria-current="page"]) [data-nav-chevron],
 :root[data-nav-open~="jobs"] [data-nav-group="jobs"] [data-nav-chevron],
 :root[data-nav-open~="stories"] [data-nav-group="stories"] [data-nav-chevron],
-:root[data-nav-open~="practice"] [data-nav-group="practice"] [data-nav-chevron] {
+:root[data-nav-open~="practice"] [data-nav-group="practice"] [data-nav-chevron],
+:root[data-nav-open~="library"] [data-nav-group="library"] [data-nav-chevron] {
   transform: rotate(90deg);
 }
 :root[data-nav-closed~="jobs"] [data-nav-group="jobs"] > [data-nav-children],
 :root[data-nav-closed~="stories"] [data-nav-group="stories"] > [data-nav-children],
-:root[data-nav-closed~="practice"] [data-nav-group="practice"] > [data-nav-children] {
+:root[data-nav-closed~="practice"] [data-nav-group="practice"] > [data-nav-children],
+:root[data-nav-closed~="library"] [data-nav-group="library"] > [data-nav-children] {
   display: none;
 }
 :root[data-nav-closed~="jobs"] [data-nav-group="jobs"] [data-nav-chevron],
 :root[data-nav-closed~="stories"] [data-nav-group="stories"] [data-nav-chevron],
-:root[data-nav-closed~="practice"] [data-nav-group="practice"] [data-nav-chevron] {
+:root[data-nav-closed~="practice"] [data-nav-group="practice"] [data-nav-chevron],
+:root[data-nav-closed~="library"] [data-nav-group="library"] [data-nav-chevron] {
   transform: none;
 }
 /* Collapsed to icons, the groups' headers hide and their icon links show in one list. */
@@ -180,6 +199,69 @@ body {
   }
 }
 
+@utility btn-next {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-accent-400);
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: 600;
+  color: var(--color-ink-950);
+  &:hover:not(:disabled) {
+    background-color: var(--color-accent-300);
+  }
+  &:disabled {
+    background-color: var(--color-accent-100);
+    color: var(--color-ink-600);
+  }
+}
+
+@utility btn-primary {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-ink-800);
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: 600;
+  color: white;
+  &:hover:not(:disabled) {
+    background-color: var(--color-ink-900);
+  }
+  &:disabled {
+    background-color: var(--color-ink-200);
+    color: var(--color-ink-600);
+  }
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background-color: white;
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: 600;
+  color: var(--color-ink-800);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-ink-800) 30%, transparent);
+  &:hover:not(:disabled) {
+    background-color: var(--color-ink-50);
+  }
+  &:disabled {
+    color: var(--color-ink-400);
+  }
+}
+
 @layer base {
   /* Buttons give a little under a press. Hover colours ease instead of snapping. */
   button,
@@ -258,4 +340,49 @@ body {
   a[class*="rounded-full"]:active {
     scale: none;
   }
+}
+
+/* Native form controls in the brand (design review 2026-11-16, fix 9): graphite checks and radios,
+   a drawn chevron on selects so they match the text boxes, and an outline file button. */
+@layer base {
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-ink-800);
+  }
+  select:not([multiple]) {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23464e6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+  }
+  input[type="date"] {
+    min-height: 2.75rem;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+  }
+  input[type="file"] {
+    font-size: var(--text-sm);
+    color: var(--color-slate-600);
+  }
+  input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background-color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    color: var(--color-ink-800);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-ink-800) 30%, transparent);
+    cursor: pointer;
+  }
+  input[type="file"]::file-selector-button:hover {
+    background-color: var(--color-ink-50);
+  }
+}
+/* Outside the layers so it wins over a select's px-* utility: room for the chevron. */
+select:not([multiple]) {
+  padding-inline-end: 2.25rem;
 }

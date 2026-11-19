@@ -5,10 +5,12 @@ import { isAdminEmail } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth";
 import { listJobs } from "@/lib/jobs/data";
 import { folderLabel } from "@/lib/jobs/folder";
+import { isFinished } from "@/lib/jobs/outcome";
 import { canUsePromotion } from "@/lib/promotion/access";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories } from "@/lib/stories/data";
 import { storyHref } from "@/lib/tough/questions";
+import { BottomTabs, INTERVIEW_TABS, PROMOTION_TABS } from "./bottom-tabs";
 import { BuildStoryLink } from "./build-story-link";
 import { NavIcon, type NavIconName } from "./nav-icons";
 import { CollapseButton, NavGroup, NavLink, NavShell } from "./nav-shell";
@@ -23,10 +25,16 @@ const TOP: readonly NavItem[] = [
   { href: "/profile", label: "Your profile", icon: "user" },
 ];
 
+// Grouped by what you do (design review 2026-11-16, fix 6): Stories holds what you write, Practice
+// is saying it out loud, Library is what you read.
 const PRACTICE: readonly NavItem[] = [
+  { href: "/practice", label: "Start a round", icon: "mic" },
+  { href: "/practice#past-rounds", label: "Past rounds", icon: "chat" },
+];
+
+const LIBRARY: readonly NavItem[] = [
   { href: "/questions", label: "Question library", icon: "book" },
-  { href: "/tough-questions", label: "Tough questions", icon: "bolt" },
-  { href: "/transcripts", label: "Past interviews", icon: "chat" },
+  { href: "/transcripts", label: "Past interviews", icon: "doc" },
 ];
 
 // PromotionMax (beta): the same stories, aimed at the next level instead of a new job.
@@ -43,8 +51,8 @@ const RECENT_STORIES = 6;
 // groups you opened or closed (NavGroup) don't flicker.
 const RESTORE_NAV = `try{var d=document.documentElement.dataset;if(localStorage.getItem("imx-nav")==="collapsed")d.nav="collapsed";d.navOpen=localStorage.getItem("imx-nav-open")||"";d.navClosed=localStorage.getItem("imx-nav-closed")||""}catch(e){}`;
 
-// The app's navigation: a left sidebar on wide screens (collapsible to icons) and a top bar with a
-// menu drawer on phones. Kept under its old name so every page that renders it gets the sidebar.
+// The app's navigation: a left sidebar on wide screens (collapsible to icons); on phones a bottom
+// tab bar for the main places plus a top bar whose Menu drawer holds the rest. Kept under its old name so every page that renders it gets the sidebar.
 export function AppHeader() {
   return (
     <>
@@ -91,8 +99,16 @@ export function AppHeader() {
           <CollapseButton />
         </div>
       </NavShell>
+      <Suspense fallback={<BottomTabs tabs={INTERVIEW_TABS} />}>
+        <ModeTabs />
+      </Suspense>
     </>
   );
+}
+
+async function ModeTabs() {
+  const mode = await getAppMode();
+  return <BottomTabs tabs={mode === "promotion" ? PROMOTION_TABS : INTERVIEW_TABS} />;
 }
 
 function NavItems({ items, compact }: { items: readonly NavItem[]; compact?: boolean }) {
@@ -139,6 +155,10 @@ async function Sections() {
       <NavGroup id="practice" label="Practice" icon="mic">
         <NavItems items={PRACTICE} compact />
       </NavGroup>
+
+      <NavGroup id="library" label="Library" icon="book">
+        <NavItems items={LIBRARY} compact />
+      </NavGroup>
     </>
   );
 }
@@ -148,11 +168,18 @@ function StoriesGroup({ numbers = false }: { numbers?: boolean }) {
   return (
     <NavGroup id="stories" label="Stories" icon="pen">
       {numbers && (
-        <li>
-          <NavLink href="/numbers" label="Your numbers" compact>
-            <NavIcon name="chart" />
-          </NavLink>
-        </li>
+        <>
+          <li>
+            <NavLink href="/tough-questions" label="Tough questions" compact>
+              <NavIcon name="bolt" />
+            </NavLink>
+          </li>
+          <li>
+            <NavLink href="/numbers" label="Your numbers" compact>
+              <NavIcon name="chart" />
+            </NavLink>
+          </li>
+        </>
       )}
       <Suspense fallback={<StoriesSkeleton />}>
         <RecentStories />
@@ -161,12 +188,14 @@ function StoriesGroup({ numbers = false }: { numbers?: boolean }) {
   );
 }
 
-// Interview / Promotion. Everyone sees PromotionMax marked Beta; only those let into the beta can
-// switch to it (Craig, Oct 18).
+// Interview / Promotion, only for those let into the PromotionMax beta (Craig, Oct 18). Everyone
+// else saw a switch they couldn't use; it's hidden for them now (design review 2026-11-16, fix 6),
+// unless they're somehow in promotion mode and need the way back.
 async function ModeSwitch() {
   const user = await getCurrentUser();
   const allowed = canUsePromotion(user.email);
   const mode = await getAppMode();
+  if (!allowed && mode === "interview") return null;
   const segment =
     "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold";
   const on = `${segment} bg-white text-ink-900`;
@@ -203,7 +232,7 @@ async function ModeSwitch() {
         data-testid="mode-promotion"
       >
         Promotion
-        <span className="rounded-full bg-accent-400/90 px-1.5 text-[0.625rem] font-bold uppercase tracking-wider text-ink-950">
+        <span className="rounded-full bg-accent-400/90 px-1.5 text-xs font-bold text-ink-950">
           Beta
         </span>
       </button>
@@ -233,13 +262,28 @@ async function JobFolders() {
     unstable_rethrow(error);
     return null;
   }
-  return jobs.map((job) => (
-    <li key={job.id} className="nav-collapsed:hidden" data-testid="nav-job">
-      <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
-        <NavIcon name="folder" />
-      </NavLink>
-    </li>
-  ));
+  // Finished jobs (an outcome is set) fold into one link, so the folders are the jobs in play.
+  const finished = jobs.filter(isFinished).length;
+  return (
+    <>
+      {jobs
+        .filter((job) => !isFinished(job))
+        .map((job) => (
+          <li key={job.id} className="nav-collapsed:hidden" data-testid="nav-job">
+            <NavLink href={`/jobs/${job.id}`} label={folderLabel(job)} compact>
+              <NavIcon name="folder" />
+            </NavLink>
+          </li>
+        ))}
+      {finished > 0 && (
+        <li className="nav-collapsed:hidden" data-testid="nav-finished-jobs">
+          <NavLink href="/jobs?finished=1#finished-jobs" label={`Finished jobs (${finished})`} compact>
+            <NavIcon name="folder" />
+          </NavLink>
+        </li>
+      )}
+    </>
+  );
 }
 
 // Your latest stories; the full list is on the home page. Hidden when the sidebar is icons only.
