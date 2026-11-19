@@ -7,7 +7,7 @@ import { extractJson } from "./prompts";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
-  STAR_LENGTH,
+  CARL_LENGTH,
   storyParts,
   type StoryType,
 } from "./story-types";
@@ -29,8 +29,10 @@ export const TIERS: { id: Tier; label: string }[] = [
 
 export type Criterion = { id: string; label: string; question: string };
 
-// What the grader scores in a behavioral (STAR) story.
-export const STAR_CRITERIA = [
+// What the grader scores in a behavioral story, in CARL order (Context, Action, Result, Learning).
+// The Action is scored twice, for what you did yourself and for the steps and choices, because
+// "I" against "we" is the most common weak spot. Ids are kept from STAR so saved grades still read.
+export const CARL_CRITERIA = [
   {
     id: "context",
     label: "Context",
@@ -38,12 +40,12 @@ export const STAR_CRITERIA = [
   },
   {
     id: "ownership",
-    label: "Ownership",
+    label: "Action: your part",
     question: "Is what you did yourself clearly separated from what the team did?",
   },
   {
     id: "actions",
-    label: "Actions and decisions",
+    label: "Action: steps and choices",
     question: "Are the steps concrete, with a real choice between options and why you made it?",
   },
   {
@@ -53,8 +55,9 @@ export const STAR_CRITERIA = [
   },
   {
     id: "reflection",
-    label: "Reflection",
-    question: "Is there a specific lesson, or something you'd do differently?",
+    label: "Learning",
+    question:
+      "Does it end on a specific lesson you'd carry forward or something you'd do differently, tied to this story (and, if it opened with a principle, closing the loop on it)?",
   },
 ] as const satisfies readonly Criterion[];
 
@@ -97,7 +100,7 @@ export const INTRO_CRITERIA = [
 ] as const satisfies readonly Criterion[];
 
 export function gradingCriteria(storyType: StoryType | undefined): readonly Criterion[] {
-  return storyType?.format === "intro" ? INTRO_CRITERIA : STAR_CRITERIA;
+  return storyType?.format === "intro" ? INTRO_CRITERIA : CARL_CRITERIA;
 }
 
 // The quick checks, in the order they're shown.
@@ -194,9 +197,9 @@ function numberPart(storyType: StoryType | undefined) {
   return storyType?.format === "intro" ? "highlight" : "result";
 }
 
-// Spoken length that suits each format (see INTRO_LENGTH and STAR_LENGTH).
+// Spoken length that suits each format (see INTRO_LENGTH and CARL_LENGTH).
 export function lengthRange(storyType: StoryType | undefined): { min: number; max: number } {
-  return storyType?.format === "intro" ? INTRO_LENGTH : STAR_LENGTH;
+  return storyType?.format === "intro" ? INTRO_LENGTH : CARL_LENGTH;
 }
 
 // Phrases that blur a spoken answer. Matched as whole words, case-insensitively.
@@ -453,7 +456,7 @@ export function scoreOutOf100(criteria: CriterionScore[], tier?: Tier): number |
 //   not yet:     any core criterion missing, a core average under 2.5, no number, or an untraced number
 //   strong:      every criterion solid or better, an average of 3.5 or more, and every check passing
 //   good enough: everything in between
-// Reflection isn't core: published strong answers often end on the result (grader calibration,
+// The Learning isn't core for Not yet: published strong answers often end on the result (grader calibration,
 // 2026-11-08: every graded one without a lesson came back Not yet), so a missing lesson keeps a
 // story from Strong but doesn't make it Not yet on its own.
 const OPTIONAL_FOR_NOT_YET = new Set(["reflection"]);
@@ -494,11 +497,11 @@ export function disagreements(
   }
   if (storyType?.format !== "intro" && score("ownership") >= 3 && check("i_we")?.pass === false) {
     flags.push(
-      `The grader scored Ownership ${score("ownership")}, but the story says “we” more than “I”.`,
+      `The grader scored “Action: your part” ${score("ownership")}, but the story says “we” more than “I”.`,
     );
   }
   if (storyType?.format !== "intro" && score("ownership") <= 1 && check("i_we")?.pass === true) {
-    flags.push("The grader scored Ownership 1, but the story mostly says “I”.");
+    flags.push("The grader scored “Action: your part” 1, but the story mostly says “I”.");
   }
   return flags;
 }
@@ -635,7 +638,7 @@ Then give the one or two changes that would most improve the story, most importa
       ? ""
       : `
 
-A behavioral story may open with a sentence on how the user thinks about this kind of problem (a principle or mental model) before the situation. That's intended: don't count it as padding or slow setup. When the story then shows that principle in action, mention it as a strength.
+The story is told in the CARL shape: Context, Action, Result, Learning, in that order. It may open with a sentence on how the user thinks about this kind of problem (a principle or mental model) before the context. That's intended: don't count it as padding or slow setup. When the story then shows that principle in action, and the Learning closes the loop on it, mention it as a strength.
 
 Also say which job this story does in a story bank: one of ${BANK_ROLES.map((r) => `"${r}"`).join(", ")}, with one short sentence on why. This describes the story's level; it is not a score.
 

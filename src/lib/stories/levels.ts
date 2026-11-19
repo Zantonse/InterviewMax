@@ -11,7 +11,7 @@
 import type { FollowUp, StoryContent } from "./content";
 import {
   CHECKS,
-  STAR_CRITERIA,
+  CARL_CRITERIA,
   STRONG_AVERAGE,
   TIER_SCORE_CAP,
   belowLevel,
@@ -48,7 +48,7 @@ export const LEVELS: readonly LevelInfo[] = [
     hears:
       "What was at stake, what you did yourself, and a result with a number. Good enough to use in an interview.",
     lesson:
-      "Interviewers listen for proof. Make the stakes clear, say “I” for what you did, and end on a result with a number.",
+      "Interviewers listen for proof. Set up the context and stakes, say “I” for what you did, and land a result with a number.",
   },
   {
     level: 3,
@@ -56,7 +56,7 @@ export const LEVELS: readonly LevelInfo[] = [
     hears:
       "How you think: the moment you had to choose, the options you weighed, why you picked one, and what you'd carry forward. This is what makes an answer stand out.",
     lesson:
-      "Interviewers want to see how you think, not only what happened. Name the key decision, the options you weighed, why you chose, and what you learned.",
+      "Interviewers want to see how you think, not only what happened. Name the key decision, the options you weighed and why you chose, then end on what you learned.",
   },
 ];
 
@@ -66,7 +66,7 @@ export function levelInfo(level: StoryLevel): LevelInfo {
 
 // Behavioral stories climb levels; About me and tough questions keep the tiers.
 export function usesLevels(storyType: StoryType | undefined, content?: StoryContent): boolean {
-  return storyType?.format === "star" && !content?.tough;
+  return storyType?.format === "carl" && !content?.tough;
 }
 
 // The level a grade puts a behavioral story at.
@@ -152,7 +152,7 @@ export function levelGaps(grade: StoryGrade): LevelGap[] {
   const gaps: LevelGap[] = [];
   const failed = (id: CheckId) => grade.checks.find((c) => c.id === id && !c.pass);
   const checkLabel = (id: CheckId) => CHECKS.find((c) => c.id === id)?.label ?? id;
-  const criterionLabel = (id: string) => STAR_CRITERIA.find((c) => c.id === id)?.label ?? id;
+  const criterionLabel = (id: string) => CARL_CRITERIA.find((c) => c.id === id)?.label ?? id;
   const byScore = [...grade.criteria].sort((a, b) => a.score - b.score);
 
   if (level === 1) {

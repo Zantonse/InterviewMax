@@ -8,12 +8,12 @@ const { stories } = JSON.parse(readFileSync("scripts/sims/reference/stories.json
 };
 
 describe("grader calibration", () => {
-  it("loads every reference answer as a gradable STAR draft", () => {
+  it("loads every reference answer as a gradable CARL draft", () => {
     expect(stories.length).toBeGreaterThanOrEqual(10);
     for (const ref of stories) {
       const g = referenceGradable(ref);
-      expect(g.storyType?.format).toBe("star");
-      expect(Object.keys(g.draft.parts)).toEqual(["situation", "role", "actions", "result", "reflection"]);
+      expect(g.storyType?.format).toBe("carl");
+      expect(Object.keys(g.draft.parts)).toEqual(["situation", "actions", "result", "reflection"]);
       expect(quickChecks(g.draft, g.storyType).length).toBeGreaterThan(0);
     }
   });

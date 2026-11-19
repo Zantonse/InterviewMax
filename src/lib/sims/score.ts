@@ -1,7 +1,7 @@
 import { parseContent } from "@/lib/stories/content";
 import { scoreOutOf100, type Tier } from "@/lib/stories/grading";
 import { ownWordsShare } from "@/lib/stories/own-words";
-import { INTRO_PARTS, REQUIRED_STORY_TYPE_ID, STAR_PARTS } from "@/lib/stories/story-types";
+import { INTRO_PARTS, REQUIRED_STORY_TYPE_ID, CARL_PARTS } from "@/lib/stories/story-types";
 import type { Action } from "./agent";
 
 // Scores one persona's run from what it did (the steps) and what it made (the result route's
@@ -85,8 +85,11 @@ function count<T>(items: T[], key: (t: T) => string): Record<string, number> {
 }
 
 // The database hands back a draft's parts sorted by key length, not story order, so put them back
-// in the order the app shows them (STAR or intro), with any other part after.
-const PART_ORDER: string[] = [...STAR_PARTS, ...INTRO_PARTS].map((p) => p.id);
+// in the order the app shows them (CARL or intro), with any other part after. Drafts written before
+// CARL may still hold a separate "role" part, which read right after the Context.
+const PART_ORDER: string[] = [...CARL_PARTS, ...INTRO_PARTS]
+  .map((p) => p.id)
+  .flatMap((id) => (id === "situation" ? [id, "role"] : [id]));
 export function orderedDraft(parts: Record<string, string>): string {
   const rank = (k: string) => (PART_ORDER.includes(k) ? PART_ORDER.indexOf(k) : PART_ORDER.length);
   return Object.keys(parts)

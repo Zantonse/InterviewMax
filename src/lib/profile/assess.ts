@@ -14,7 +14,7 @@ import {
   themeCoverage,
 } from "@/lib/stories/bank";
 import { gradeIsCurrent, hasDraft, type StoryContent } from "@/lib/stories/content";
-import { STAR_CRITERIA } from "@/lib/stories/grading";
+import { CARL_CRITERIA } from "@/lib/stories/grading";
 import { findNumbers } from "@/lib/stories/numbers";
 import { getStoryType, type StoryTypeId } from "@/lib/stories/story-types";
 import {
@@ -158,7 +158,7 @@ export type ProfileInput = {
 const storyHref = (s: { id: string }) => `/stories/${s.id}`;
 
 function behavioral(stories: StoryLike[]): StoryLike[] {
-  return stories.filter((s) => getStoryType(s.storyType)?.format === "star" && hasDraft(s.content));
+  return stories.filter((s) => getStoryType(s.storyType)?.format === "carl" && hasDraft(s.content));
 }
 
 function graded(stories: StoryLike[]): StoryLike[] {
@@ -211,7 +211,7 @@ function craft(stories: StoryLike[], points: Points): CriterionResult {
       next: { label: "Build a story", href: "/stories/new" },
     };
   }
-  const per = STAR_CRITERIA.map((c) => {
+  const per = CARL_CRITERIA.map((c) => {
     const scores = list.flatMap((s) => {
       const sc = s.content.grade!.criteria.find((x) => x.id === c.id);
       return sc ? [{ story: s, score: sc.score, note: sc.note, improve: sc.improve }] : [];

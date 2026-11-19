@@ -15,9 +15,17 @@ const HELP: Record<string, QuestionHelp> = {
     example:
       "Rough notes are fine, like: \"Last spring at my old company, our biggest customer threatened to leave over slow support. I was the account lead. I pulled their tickets, found most were the same 3 setup problems, and got our support lead to write fixes for them. Took about a month. Tickets dropped by half and they renewed. Lesson: look at the pattern before promising more people.\"",
   },
+  // The optional opening of a behavioral story: how they think about this kind of problem.
+  principle: {
+    example:
+      "\"The way I see it, a launch date is a promise to the customer, so when something breaks, scope is what moves, not the date.\"",
+    whereToLook:
+      "Think of the rule of thumb you'd give a new teammate facing the same problem. One sentence in your own words is enough.",
+  },
+  // The Context of a CARL story: where you were, what was at stake, and your role.
   situation: {
     example:
-      "\"We were 6 weeks from launch and the vendor pulled out. If we slipped, we'd miss the trade show where most of our yearly leads come from.\"",
+      "\"We were 6 weeks from launch and the vendor pulled out. If we slipped, we'd miss the trade show where most of our yearly leads come from. I was the project lead, with 2 engineers and no extra budget.\"",
     whereToLook:
       "Think about what would have happened if it went badly: a customer lost, a deadline missed, money or time wasted. A rough sense is enough.",
   },
@@ -59,6 +67,7 @@ const HELP: Record<string, QuestionHelp> = {
     whereToLook:
       "Look in a dashboard or CRM, a performance review, an old email or announcement, or ask a former manager. A labelled estimate (\"about 20%, my estimate\") is fine.",
   },
+  // The Learning that ends a CARL story.
   reflection: {
     example:
       "\"I learned to check what the customer measures before promising a fix. Next time I'd ask that in the first call.\"",

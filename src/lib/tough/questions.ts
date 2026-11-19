@@ -1,4 +1,4 @@
-// The tough-questions coach (PRD v0.3, P0): the awkward questions people dread more than the STAR
+// The tough-questions coach (PRD v0.3, P0): the awkward questions people dread more than the behavioral
 // ones. Each has a few plain questions about the user's real situation, then one call writes a
 // short answer from them (see prompts.ts). Answers live in the story bank as their own story type,
 // "tough_<id>", so practice mode and the pre-interview brief can read them like any other story.
@@ -33,7 +33,7 @@ export const TOUGH_QUESTIONS = [
     // "How do you use AI in your work?" (Craig, Oct 31: asked in every interview now). Not a
     // dreaded question like the others, but the same shape: a few plain questions about what the
     // user really does, then one short answer, about a minute, that can be shaped for each target
-    // job on its page. The "a time you used AI" STAR story (story type ai_use) is the long version.
+    // job on its page. The "a time you used AI" behavioral story (story type ai_use) is the long version.
     id: "ai_at_work",
     label: "How do you use AI in your work?",
     blurb: "Asked in most interviews now. Your tools, one real example, and how you check its work.",

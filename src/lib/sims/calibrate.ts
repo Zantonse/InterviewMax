@@ -1,4 +1,4 @@
-import type { StoryDraft } from "@/lib/stories/content";
+import { foldLegacyRole, type StoryDraft } from "@/lib/stories/content";
 import type { Tier } from "@/lib/stories/grading";
 import { getStoryType } from "@/lib/stories/story-types";
 import type { GraderResult } from "./graders";
@@ -20,12 +20,13 @@ export type ReferenceStory = {
   parts: Record<string, string>;
 };
 
-// Behavioral STAR parts, as the app stores them.
+// Reference answers are behavioral stories (CARL parts; older references keep a separate role part,
+// folded into the Context the way the app reads saved drafts).
 export const REFERENCE_STORY_TYPE = "major_project";
 
 export function referenceGradable(ref: ReferenceStory) {
   const draft: StoryDraft = {
-    parts: ref.parts,
+    parts: foldLegacyRole(ref.parts),
     untracedNumbers: [],
     model: "reference",
     writtenAt: "2026-11-08T00:00:00Z",

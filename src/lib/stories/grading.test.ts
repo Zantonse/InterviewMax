@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { gradeIsCurrent, parseContent, type StoryDraft } from "./content";
 import {
-  STAR_CRITERIA,
+  CARL_CRITERIA,
   INTRO_CRITERIA,
   combineGrade,
   fillerPhrases,
@@ -100,7 +100,7 @@ describe("quick checks", () => {
     expect(short?.detail).toContain("aim for 120 to 225 words");
   });
 
-  it("flags an introduction that lists too many figures, but not a STAR story", () => {
+  it("flags an introduction that lists too many figures, but not a behavioral story", () => {
     const busy = draft({
       present: "I lead AI enablement for 400 SEs.",
       highlight: "I hit 140% of quota, closed $2.4M, cut ramp by 30% and trained 12 managers.",
@@ -144,34 +144,34 @@ describe("quick checks", () => {
 
 describe("tierFor", () => {
   it("is strong only when every criterion is solid and every check passes", () => {
-    expect(tierFor(scores(STAR_CRITERIA, 4), checks())).toBe("strong");
-    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ filler: false }))).toBe("good_enough");
-    const oneThree = [...scores(STAR_CRITERIA.slice(1), 4), { id: "context", score: 3, note: "" }];
+    expect(tierFor(scores(CARL_CRITERIA, 4), checks())).toBe("strong");
+    expect(tierFor(scores(CARL_CRITERIA, 4), checks({ filler: false }))).toBe("good_enough");
+    const oneThree = [...scores(CARL_CRITERIA.slice(1), 4), { id: "context", score: 3, note: "" }];
     expect(tierFor(oneThree, checks())).toBe("strong");
-    const oneTwo = [...scores(STAR_CRITERIA.slice(1), 4), { id: "context", score: 2, note: "" }];
+    const oneTwo = [...scores(CARL_CRITERIA.slice(1), 4), { id: "context", score: 2, note: "" }];
     expect(tierFor(oneTwo, checks())).toBe("good_enough");
   });
 
   it("is not yet with a missing criterion, a low average, no number or an untraced number", () => {
     const oneMissing = [
-      ...scores(STAR_CRITERIA.slice(1), 4),
+      ...scores(CARL_CRITERIA.slice(1), 4),
       { id: "context", score: 1, note: "" },
     ];
     expect(tierFor(oneMissing, checks())).toBe("not_yet");
-    expect(tierFor(scores(STAR_CRITERIA, 2), checks())).toBe("not_yet");
-    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ number: false }))).toBe("not_yet");
-    expect(tierFor(scores(STAR_CRITERIA, 4), checks({ traced: false }))).toBe("not_yet");
+    expect(tierFor(scores(CARL_CRITERIA, 2), checks())).toBe("not_yet");
+    expect(tierFor(scores(CARL_CRITERIA, 4), checks({ number: false }))).toBe("not_yet");
+    expect(tierFor(scores(CARL_CRITERIA, 4), checks({ traced: false }))).toBe("not_yet");
     expect(tierFor([], checks())).toBe("not_yet");
   });
 
   it("keeps a story with no lesson out of Strong without making it Not yet", () => {
     const noLesson = [
-      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 4),
+      ...scores(CARL_CRITERIA.filter((c) => c.id !== "reflection"), 4),
       { id: "reflection", score: 1, note: "" },
     ];
     expect(tierFor(noLesson, checks())).toBe("good_enough");
     const weakCore = [
-      ...scores(STAR_CRITERIA.filter((c) => c.id !== "reflection"), 2),
+      ...scores(CARL_CRITERIA.filter((c) => c.id !== "reflection"), 2),
       { id: "reflection", score: 4, note: "" },
     ];
     expect(tierFor(weakCore, checks())).toBe("not_yet");
@@ -181,7 +181,7 @@ describe("tierFor", () => {
 describe("combineGrade", () => {
   it("puts the quick-check fixes first, keeps two, and flags disagreements", () => {
     const grade = combineGrade({
-      criteria: scores(STAR_CRITERIA, 3),
+      criteria: scores(CARL_CRITERIA, 3),
       checks: checks({ number: false, i_we: false }),
       modelFixes: ["Say what the CTO objected to.", "Cut the second paragraph."],
       bankRole: { role: "team-level impact", note: "Led one team." },
@@ -224,7 +224,7 @@ describe("combineGrade", () => {
     });
     const graded = (jobs: ReturnType<typeof job>[]) =>
       combineGrade({
-        criteria: scores(STAR_CRITERIA, 4),
+        criteria: scores(CARL_CRITERIA, 4),
         checks: checks(),
         modelFixes: [],
         content: { jobs, unused: [], model: "m" },
@@ -243,7 +243,7 @@ describe("combineGrade", () => {
 describe("the grader's prompt and reply", () => {
   it("asks for every criterion, and a bank role only for behavioral stories", () => {
     const star = gradeSystem(stakeholder);
-    for (const c of STAR_CRITERIA) expect(star).toContain(`- ${c.id} (${c.label})`);
+    for (const c of CARL_CRITERIA) expect(star).toContain(`- ${c.id} (${c.label})`);
     expect(star).toContain("bankRole");
     expect(star).toMatch(/Never suggest a specific number/);
     const intro = gradeSystem(aboutMe);
@@ -284,14 +284,14 @@ describe("the grader's prompt and reply", () => {
     expect(() => parseGrade('{"criteria": {"context": {"score": 3}}}', stakeholder)).toThrow(
       /left out/,
     );
-    const bad = Object.fromEntries(STAR_CRITERIA.map((c) => [c.id, { score: 9 }]));
+    const bad = Object.fromEntries(CARL_CRITERIA.map((c) => [c.id, { score: 9 }]));
     expect(() => parseGrade(JSON.stringify({ criteria: bad }), stakeholder)).toThrow();
     expect(() => parseGrade("no json", stakeholder)).toThrow(/unexpected format/);
   });
 });
 
 describe("show your thinking", () => {
-  const criteria = Object.fromEntries(STAR_CRITERIA.map((c) => [c.id, { score: 3, note: "Ok." }]));
+  const criteria = Object.fromEntries(CARL_CRITERIA.map((c) => [c.id, { score: 3, note: "Ok." }]));
 
   it("asks the grader for thinking feedback on behavioral stories only, kept out of the scores", () => {
     const star = gradeSystem(stakeholder);
@@ -318,7 +318,7 @@ describe("show your thinking", () => {
 
   it("never changes the tier, and round-trips through stories.content", () => {
     const input = {
-      criteria: scores(STAR_CRITERIA, 4),
+      criteria: scores(CARL_CRITERIA, 4),
       checks: checks(),
       modelFixes: [],
       storyType: stakeholder,
@@ -343,7 +343,7 @@ describe("show your thinking", () => {
 describe("saved grades", () => {
   it("round-trips through stories.content and goes stale when the draft is rewritten", () => {
     const grade = combineGrade({
-      criteria: scores(STAR_CRITERIA, 3),
+      criteria: scores(CARL_CRITERIA, 3),
       checks: checks(),
       modelFixes: ["Add the lesson."],
       storyType: stakeholder,
@@ -377,7 +377,7 @@ describe("cutting the fluff", () => {
   it("fails the hedged check and asks the user to firm the figure up", () => {
     const d = draft({ ...goodStar.parts, result: "We renewed it, maybe 100 accounts in all." });
     const grade = combineGrade({
-      criteria: scores(STAR_CRITERIA, 4),
+      criteria: scores(CARL_CRITERIA, 4),
       checks: quickChecks(d, stakeholder),
       modelFixes: [],
       storyType: stakeholder,

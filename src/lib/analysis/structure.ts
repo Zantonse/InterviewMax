@@ -1,5 +1,5 @@
 import { countWords } from "@/lib/stories/grading";
-import { INTRO_LENGTH, STAR_LENGTH, type StoryType } from "@/lib/stories/story-types";
+import { INTRO_LENGTH, CARL_LENGTH, type StoryType } from "@/lib/stories/story-types";
 
 // The high-level half of "Why it works": why an interview answer is built in these parts, why each
 // part is there, and why it is about this long. Plain code, the same for every story of a format,
@@ -26,30 +26,25 @@ export type FormatGuide = {
   parts: Record<string, PartGuide>;
 };
 
-const STAR: FormatGuide = {
+// A behavioral story: CARL (Context, Action, Result, Learning), opened by an optional principle.
+const CARL: FormatGuide = {
   overview:
-    'Behavioral questions ("Tell me about a time…") are how interviewers check a skill by asking for proof from your past. Most score your answer against a short list: was the situation real and hard, what did you personally do, how did you think, what changed because of it, and what did you take from it. This story is built in that order so the interviewer can follow it the first time and tick each box as they listen.',
+    'Behavioral questions ("Tell me about a time…") are how interviewers check a skill by asking for proof from your past. This story uses CARL: Context, Action, Result, Learning, opened by how you think about this kind of problem. Most interviewers score against the same list: was the situation real and hard, what did you personally do, how did you think, what changed because of it, and what did you take from it. Told in that order, the interviewer can follow it the first time and tick each box as they listen.',
   // The same length the writer and grader aim for.
-  words: STAR_LENGTH,
+  words: CARL_LENGTH,
   spoken: "about 1 to 2 minutes",
   parts: {
     principle: {
       why: "Optional. Opens with how you think about this kind of problem, so the interviewer hears your judgment first and then watches the story prove it. It turns a list of events into evidence for a way of working.",
       share: { min: 0.03, max: 0.12 },
       lengthWhy:
-        "One sentence. It's a lens for the story, not a speech; anything longer delays the situation and reads as theory.",
+        "One sentence. It's a lens for the story, not a speech; anything longer delays the context and reads as theory.",
     },
     situation: {
-      why: "Gives the interviewer just enough context to care: what was going on and what was at stake. Without stakes, nothing that follows sounds hard, so your actions can't impress.",
-      share: { min: 0.1, max: 0.22 },
+      why: "Gives the interviewer just enough context to care: what was going on, what was at stake, and what was yours. Without stakes nothing that follows sounds hard, and without your role they can't tell where your part starts.",
+      share: { min: 0.12, max: 0.3 },
       lengthWhy:
         "Kept short on purpose. Interviewers want to get to what you did; a long setup is the most common reason answers run over and lose them.",
-    },
-    role: {
-      why: "Tells them what was yours. Interviewers are hiring you, not your team, so they listen for where your part starts and ends before they judge your actions.",
-      share: { min: 0.05, max: 0.15 },
-      lengthWhy:
-        "One or two sentences is enough. Its job is to frame the next part, not to be a story of its own.",
     },
     actions: {
       why: "This is what they're really scoring: what you did and how you thought at the key moment. It's where they decide whether you have the skill the question is about.",
@@ -64,7 +59,7 @@ const STAR: FormatGuide = {
         "Short and plain. One or two sentences with the number land harder than a paragraph of outcomes.",
     },
     reflection: {
-      why: 'Shows self-awareness and that you\'d bring the lesson to their team. Many rubrics have a box for "learns and grows", and this is the only part that fills it.',
+      why: 'The L in CARL. Shows self-awareness and that you\'d bring the lesson to their team. Many rubrics have a box for "learns and grows", and this is the only part that fills it. If you opened with a principle, this is where you close the loop on it.',
       share: { min: 0.05, max: 0.15 },
       lengthWhy:
         "One or two sentences to close. It's the last thing they hear, so it should be crisp, not a second story.",
@@ -109,7 +104,7 @@ const INTRO: FormatGuide = {
 };
 
 export function formatGuide(storyType: StoryType | undefined): FormatGuide {
-  return storyType?.format === "intro" ? INTRO : STAR;
+  return storyType?.format === "intro" ? INTRO : CARL;
 }
 
 export type LengthCheck = {

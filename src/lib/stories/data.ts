@@ -52,7 +52,7 @@ export async function listStories(): Promise<StoryRecord[]> {
 }
 
 function isAbandoned(story: StoryRecord): boolean {
-  return getStoryType(story.storyType)?.format === "star" && isUntouched(story.content);
+  return getStoryType(story.storyType)?.format === "carl" && isUntouched(story.content);
 }
 
 export async function getStory(id: string): Promise<StoryRecord | null> {

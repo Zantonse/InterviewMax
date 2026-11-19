@@ -204,6 +204,8 @@ export const GUIDED_START_PROMPTS = [
   "What was going on?",
   "What did you do?",
   "What happened in the end?",
+  // The L in CARL.
+  "What did you take away from it?",
 ] as const;
 
 export function guidedStart(

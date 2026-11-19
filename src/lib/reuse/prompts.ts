@@ -15,7 +15,7 @@ For each pick:
 - "fit": "strong" if the story answers it as told, in the same order; "angle" if it answers it once the candidate leads with a different part of the story (say the conflict first, or the lesson first).
 - "emphasize": one sentence, speaking to the candidate as "you", on what to lead with and stress for this question, naming the specific moment, decision or result from the story (e.g. "Open with the night you told the VP the launch date was wrong, then spend most of the time on how you rebuilt the plan."). At most 35 words. Use only what's in the story; never add a fact, number, person or event.
 
-Plain English, no jargon like "STAR". Reply with JSON only, no other text:
+Plain English, no jargon like "STAR" or "CARL". Reply with JSON only, no other text:
 {"picks": [{"n": 3, "fit": "${FITS.map((f) => f.id).join('" | "')}", "emphasize": "…"}, …]}`;
 
 export function questionsMessages(input: {
