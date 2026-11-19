@@ -33,6 +33,12 @@ const STAR: FormatGuide = {
   words: STAR_LENGTH,
   spoken: "about 1 to 2 minutes",
   parts: {
+    principle: {
+      why: "Optional. Opens with how you think about this kind of problem, so the interviewer hears your judgment first and then watches the story prove it. It turns a list of events into evidence for a way of working.",
+      share: { min: 0.03, max: 0.12 },
+      lengthWhy:
+        "One sentence. It's a lens for the story, not a speech; anything longer delays the situation and reads as theory.",
+    },
     situation: {
       why: "Gives the interviewer just enough context to care: what was going on and what was at stake. Without stakes, nothing that follows sounds hard, so your actions can't impress.",
       share: { min: 0.1, max: 0.22 },

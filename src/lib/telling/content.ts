@@ -183,6 +183,7 @@ export function draftChecks(
     .map((p) => ({
       text: parts[p.id] ?? "",
       setup: p.id === "situation" || p.id === "role",
+      // The opening principle is how they think, not scene-setting, so it isn't counted as setup.
       result: p.id === "result",
     }))
     .filter((s) => s.text.trim());
