@@ -6,6 +6,8 @@ import { AppHeader } from "@/components/app-header";
 import { PolicyLinks } from "@/components/policy-links";
 import { getCurrentUser } from "@/lib/auth";
 import { getCoachingStyleSafely } from "@/lib/coaching/data";
+import { COACH_SEES } from "@/lib/coaching/invite-code";
+import { getMyCoachingSafely } from "@/lib/coaching/relationship";
 import { getExecModeSafely } from "@/lib/exec/settings";
 import { getUserFieldSafely } from "@/lib/field/data";
 import { listJobs } from "@/lib/jobs/data";
@@ -15,6 +17,7 @@ import { CoachingStyleForm } from "./coaching-style-form";
 import { DeleteAccountForm } from "./delete-account-form";
 import { ExecModeForm } from "./exec-mode-form";
 import { FieldForm } from "./field-form";
+import { StopCoachingForm } from "./stop-coaching-form";
 
 export const metadata: Metadata = { title: "Settings · InterviewMax" };
 
@@ -29,6 +32,10 @@ export default function SettingsPage() {
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
           Settings
         </h1>
+
+        <Suspense fallback={null}>
+          <CoachingSection />
+        </Suspense>
 
         <section
           id="field"
@@ -105,6 +112,43 @@ export default function SettingsPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+// 1:1 coaching, only while it's on: who coaches, what they see, and Stop coaching.
+async function CoachingSection() {
+  const coaching = await getMyCoachingSafely();
+  if (!coaching) return null;
+  return (
+    <section
+      id="coaching"
+      className="mt-8 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-ink-200"
+      aria-labelledby="coaching-heading"
+      data-testid="coaching-section"
+    >
+      <h2 id="coaching-heading" className="text-xl font-bold text-slate-900">
+        1:1 coaching is on
+      </h2>
+      <p className="mt-2 text-slate-600">
+        Craig, the founder of InterviewMax, has coached you since{" "}
+        {new Date(coaching.startedAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+        . Your coach sees:
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        {COACH_SEES.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <p className="mt-3 text-sm text-slate-600">
+        Never shown: your uploads (resume, LinkedIn PDF and interview transcripts), or PromotionMax
+        stories unless you share one. Every look is logged.
+      </p>
+      <StopCoachingForm />
+    </section>
   );
 }
 

@@ -152,6 +152,14 @@ export default function PrivacyPage() {
           to fix a problem you report, or if the law requires it.
         </p>
         <p>
+          1:1 coaching is only by invite. If the founder sends you a coaching invite link and you
+          say yes on its consent screen, the founder can also see your target jobs and interview
+          dates, your practice rounds (the questions and how confident you felt) and your interview
+          profile (the strengths and weak spots counted from your past interviews&apos; reviews,
+          not the transcripts). Uploads stay hidden. You can stop coaching from Settings at any
+          time; the founder&apos;s page for you closes at once and nothing you made is deleted.
+        </p>
+        <p>
           If you choose to share the questions from a past interview (it&apos;s off unless you tick
           it), only the interviewers&apos; questions are shared: never your answers, with names
           removed, tagged with the company, role, level, round and month. The founder checks each

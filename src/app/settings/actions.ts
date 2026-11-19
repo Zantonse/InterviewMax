@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { deleteAuth0Users } from "@/lib/auth0/management";
 import { authProvider } from "@/lib/auth0/provider";
 import { saveCoachingStyle } from "@/lib/coaching/data";
+import { stopCoaching } from "@/lib/coaching/relationship";
 import { type CoachingStyle, parseCoachingStyle } from "@/lib/coaching/style";
 import { saveExecMode } from "@/lib/exec/settings";
 import { saveUserField } from "@/lib/field/data";
@@ -101,4 +102,17 @@ export async function deleteAccount(_prev: DeleteState, formData: FormData): Pro
     // The account is already gone; clearing the cookie is all that's left, and signOut did that.
   }
   redirect("/account-deleted");
+}
+
+export type StopCoachingState = { error?: string; stopped?: boolean } | null;
+
+// Stops 1:1 coaching. The coach's page for this person closes at once; nothing is deleted.
+export async function stopCoachingNow(): Promise<StopCoachingState> {
+  try {
+    await stopCoaching();
+  } catch (err) {
+    console.error("Coaching: stopping failed", err);
+    return { error: "That didn't work. Try again." };
+  }
+  return { stopped: true };
 }

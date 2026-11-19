@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { rememberInvite, resumeInvite } from "@/lib/coaching/invite-cookie";
 import { supabaseEnv } from "./env";
 
 // Paths a signed-out visitor may open: the public homepage, sign-in, the policies, and the page
@@ -62,10 +63,19 @@ export async function updateSession(request: NextRequest) {
   if (!signedIn && pathname === "/") return landingRewrite(request, response);
 
   if (!signedIn && !isPublicPath(pathname)) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.search = "";
-    return NextResponse.redirect(loginUrl);
+    const toLogin = () => {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = "";
+      return NextResponse.redirect(loginUrl);
+    };
+    // A coaching invite link waits through sign-in (src/lib/coaching/invite-cookie.ts).
+    return rememberInvite(request, toLogin) ?? toLogin();
+  }
+
+  if (signedIn) {
+    const resumed = resumeInvite(request);
+    if (resumed) return resumed;
   }
 
   if (signedIn && pathname === "/login") {
