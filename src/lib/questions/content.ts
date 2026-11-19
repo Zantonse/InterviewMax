@@ -20,6 +20,11 @@ export const REPORTS_HEDGE_RULE =
 // pasted from a public interview review, or a transcript of the user's own earlier interview there.
 export type QuestionSource = "common" | "posting" | "report" | "transcript";
 
+// The interview stages a likely question is asked at (the same ids as ROUNDS in bank/content.ts,
+// without "other"). A recruiter screen asks a few; the hiring manager most.
+export const QUESTION_STAGES = ["recruiter", "hiring_manager", "panel", "final"] as const;
+export type QuestionStage = (typeof QUESTION_STAGES)[number];
+
 export type LikelyQuestion = {
   question: string;
   theme: QuestionThemeId;
@@ -31,6 +36,9 @@ export type LikelyQuestion = {
   // When the job holds several roles at one company: the title of the one role this question is
   // only for. Absent when it applies to all of them.
   role?: string;
+  // The stages it's most likely asked at, most likely first. Absent on questions predicted before
+  // stages existed; those are placed by theme instead (see src/lib/stages).
+  stages?: QuestionStage[];
 };
 
 export type LikelyQuestions = {
@@ -66,10 +74,20 @@ export function parseQuestionList(raw: unknown): LikelyQuestion[] {
       source,
       specific: q.specific === true,
       ...(typeof q.role === "string" && q.role.trim() ? { role: q.role.trim().slice(0, 200) } : {}),
+      ...stagesOf(q.stages),
     });
     if (result.length >= MAX_QUESTIONS) break;
   }
   return result;
+}
+
+// Known stages only, no repeats, in the order given; nothing when none are known.
+function stagesOf(raw: unknown): { stages?: QuestionStage[] } {
+  if (!Array.isArray(raw)) return {};
+  const stages = QUESTION_STAGES.filter((s) => raw.includes(s)).sort(
+    (a, b) => raw.indexOf(a) - raw.indexOf(b),
+  );
+  return stages.length ? { stages } : {};
 }
 
 // "Tell me about a time you used AI at work" is a default likely question (PRD, interview trends

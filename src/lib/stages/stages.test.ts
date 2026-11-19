@@ -65,3 +65,35 @@ it("lists every stage in the usual order", () => {
     "other",
   ]);
 });
+
+describe("stage tags from predict", () => {
+  const t = (theme: string, stages: string[]) => ({ theme, question: `${theme}?`, stages });
+  const items = [
+    t("impact", ["hiring_manager", "recruiter"]),
+    t("conflict", ["hiring_manager"]),
+    t("about_you", ["recruiter", "hiring_manager"]),
+    t("success", ["recruiter"]),
+  ];
+
+  it("puts questions whose main stage is this one first, then those that list it second", () => {
+    expect(orderForStage(items, "recruiter").map((x) => x.theme)).toEqual([
+      "about_you",
+      "success",
+      "impact",
+      "conflict",
+    ]);
+  });
+
+  it("uses the tags, not the themes, when the list has them", () => {
+    expect(questionsForStage(items, "hiring_manager").map((x) => x.theme)).toEqual([
+      "impact",
+      "conflict",
+      "about_you",
+    ]);
+  });
+
+  it("places an untagged default question in a tagged list by its theme", () => {
+    const withAi = [...items, { theme: "ai_use", question: "AI?" }];
+    expect(questionsForStage(withAi, "recruiter").map((x) => x.theme)).toContain("ai_use");
+  });
+});

@@ -50,7 +50,7 @@ import { RESTORE_TAB } from "./tabs";
 import { TailoredIntroPanel } from "./tailored-intro";
 import { InterviewTimeline } from "./timeline";
 import { buildTimeline } from "@/lib/transcripts/timeline";
-import { STAGE_GUIDES, stageFor } from "@/lib/stages/stages";
+import { STAGE_GUIDES, orderForStage, stageFor } from "@/lib/stages/stages";
 
 export const metadata: Metadata = { title: "Target job · InterviewMax" };
 
@@ -352,11 +352,20 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             {job.likelyQuestions ? (
               <>
                 <p className="mb-4 text-sm text-slate-600">
-                  Most likely first. Each one points to the story that answers it, or the one to
-                  build.
+                  {stage && STAGE_GUIDES[stage.id].themes.length > 0
+                    ? `What the ${STAGE_GUIDES[stage.id].label.toLowerCase()} asks first, then the rest.`
+                    : "Most likely first."}{" "}
+                  Each one points to the story that answers it, or the one to build.
                 </p>
+                {stage &&
+                  STAGE_GUIDES[stage.id].themes.length > 0 &&
+                  !job.likelyQuestions.questions.some((q) => q.stages?.length) && (
+                    <p className="mb-4 text-sm text-slate-500" data-testid="predict-for-stages">
+                      Predict again to see which stage asks each question.
+                    </p>
+                  )}
                 <QuestionList
-                  questions={job.likelyQuestions.questions}
+                  questions={orderForStage(job.likelyQuestions.questions, stage?.id ?? null)}
                   stories={stories}
                   aiAnswerHref="#ai-answer"
                 />
