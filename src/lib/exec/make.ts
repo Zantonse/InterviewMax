@@ -1,5 +1,6 @@
 import "server-only";
 import { generateForStep } from "@/lib/ai";
+import { tellsProblem } from "@/lib/writing/plain";
 import { allAnswerText, type StoryContent } from "@/lib/stories/content";
 import { draftText } from "@/lib/stories/grading";
 import { untracedNumbers } from "@/lib/stories/numbers";
@@ -44,7 +45,10 @@ export async function makeExecVersion(input: {
     if (result.stopReason === "refusal") throw new Error("The model declined to shorten this story.");
     const reply = parseExecReply(result.text);
     const ownWords = ownWordsShare(execText(reply), answers);
-    const problems = execProblems(reply, { story, answers, ownWords });
+    const problems = [
+      ...execProblems(reply, { story, answers, ownWords }),
+      ...tellsProblem(execText(reply), answers),
+    ];
     if (!best || problems.length < best.problems.length) {
       best = { reply, model: result.model, problems, ownWords };
     }
