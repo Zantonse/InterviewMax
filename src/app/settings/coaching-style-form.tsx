@@ -3,8 +3,9 @@
 import { useActionState, useState } from "react";
 import { COACHING_STYLES, STYLE_OPTIONS, type CoachingStyle } from "@/lib/coaching/style";
 import { saveStyle, type StyleState } from "./actions";
+import { SaveStatus } from "./save-status";
 
-// Pick how the coach talks to you. Saves on submit; the choice shows as saved until it changes.
+// Pick how the coach talks to you. Saves as soon as you pick (design review 2026-11-16, fix 9).
 export function CoachingStyleForm({ initial }: { initial: CoachingStyle }) {
   const [state, action, pending] = useActionState<StyleState, FormData>(saveStyle, null);
   const [style, setStyle] = useState<CoachingStyle>(initial);
@@ -27,7 +28,10 @@ export function CoachingStyleForm({ initial }: { initial: CoachingStyle }) {
                 name="style"
                 value={s}
                 checked={style === s}
-                onChange={() => setStyle(s)}
+                onChange={(e) => {
+                  setStyle(s);
+                  e.currentTarget.form?.requestSubmit();
+                }}
                 className="mt-1 accent-ink-800"
               />
               <span>
@@ -40,19 +44,7 @@ export function CoachingStyleForm({ initial }: { initial: CoachingStyle }) {
           ))}
         </div>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || style === saved}
-          className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
-        >
-          {pending ? "Saving…" : "Save coaching style"}
-        </button>
-        {state?.error && <span className="text-sm text-red-700">{state.error}</span>}
-        {!state?.error && state?.saved && style === saved && (
-          <span className="text-sm text-slate-600">Saved.</span>
-        )}
-      </div>
+      <SaveStatus pending={pending} error={state?.error} saved={Boolean(state?.saved) && style === saved} />
     </form>
   );
 }

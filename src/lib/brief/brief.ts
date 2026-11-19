@@ -97,8 +97,20 @@ export type BriefStage = {
   tips: string[];
 };
 
+// Interview day glance (design comparison 2026-11-17, pattern 4): each written story once, with
+// the figure to say and the likely questions it answers, to look over in the minutes before.
+export type BriefGlance = {
+  storyId: string;
+  title: string;
+  href: string;
+  // The first figure in the story's result (else anywhere in it), with a few words around it.
+  number: string | null;
+  answers: string[];
+};
+
 export type Brief = {
   job: { id: string; title: string; company: string | null };
+  glance: BriefGlance[];
   stage: BriefStage | null;
   intro: BriefIntro | null;
   questions: BriefQuestion[];
@@ -143,6 +155,7 @@ export function buildBrief(input: {
           }
         : null,
     intro: introFor(job.id, stories),
+    glance: glanceFor(questions, stories),
     questions,
     moreQuestions: Math.max(0, all.length - questions.length),
     numbers: keyNumbers(input.numbers, usedTypes),
@@ -364,3 +377,49 @@ export const IN_PERSON_NOTES = [
   "Plan to arrive 10 to 15 minutes early, with a photo ID: some companies now check who you are.",
   "Follow-ups land faster face to face. Pause, then answer the question they asked, with one specific.",
 ] as const;
+
+// Each written behavioral story in the brief's questions once, most-used first.
+export function glanceFor(questions: BriefQuestion[], stories: StoryLike[]): BriefGlance[] {
+  const byStory = new Map<string, BriefGlance>();
+  for (const q of questions) {
+    if (!q.story?.drafted) continue;
+    const story = stories.find((s) => s.id === q.story!.id);
+    if (!story || story.storyType === REQUIRED_STORY_TYPE_ID) continue;
+    const entry = byStory.get(story.id) ?? {
+      storyId: story.id,
+      title: q.story.title,
+      href: q.story.href,
+      number: keyFigure(story.content),
+      answers: [],
+    };
+    const label = q.themeLabel || q.question;
+    if (!entry.answers.includes(label)) entry.answers.push(label);
+    byStory.set(story.id, entry);
+  }
+  return [...byStory.values()].sort((a, b) => b.answers.length - a.answers.length);
+}
+
+const FIGURE = /\$?\d+(?:[.,]\d+)*\s?(?:%|percent\b|[kKmMbB]\b|x\b)?/;
+const MAX_FIGURE_LINE = 64;
+
+// The figure an interviewer remembers: the sentence with the first figure in the result, else
+// the first figure anywhere, cut to a line around the figure.
+export function keyFigure(content: StoryContent): string | null {
+  const parts = content.draft?.parts ?? {};
+  const order = ["result", ...Object.keys(parts).filter((k) => k !== "result")];
+  for (const id of order) {
+    const text = (parts[id] ?? "").replace(/\s+/g, " ").trim();
+    const sentence = text.split(/(?<=[.!?])\s+(?=[A-Z$])/).find((x) => FIGURE.test(x));
+    if (sentence) return clipAround(sentence.replace(/[.!?]$/, ""));
+  }
+  return null;
+}
+
+function clipAround(sentence: string): string {
+  if (sentence.length <= MAX_FIGURE_LINE) return sentence;
+  const at = FIGURE.exec(sentence)?.index ?? 0;
+  const from = Math.max(0, sentence.lastIndexOf(" ", Math.max(0, at - 24)));
+  const to = sentence.indexOf(" ", Math.min(sentence.length, from + MAX_FIGURE_LINE));
+  const cut = sentence.slice(from, to < 0 ? undefined : to).trim();
+  return `${from > 0 ? "…" : ""}${cut}${to > 0 ? "…" : ""}`;
+}

@@ -6,7 +6,8 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { NavIcon, type NavIconName } from "./nav-icons";
 
 // The sidebar frame. On wide screens it's fixed to the left; on phones it's a drawer opened from
-// the top bar, and following any link inside it closes it.
+// the top bar, and following any link inside it closes it. The phone top bar scrolls away with the
+// page (the bottom tabs stay), so a builder question gets the screen.
 export function NavShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
@@ -19,7 +20,7 @@ export function NavShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-ink-950/20 bg-ink-900 px-4 py-3 lg:hidden print:hidden">
+      <div className="flex items-center justify-between border-b border-ink-950/20 bg-ink-900 px-4 py-3 lg:hidden print:hidden">
         <Link href="/" className="text-lg font-extrabold tracking-tight text-white">
           Interview<span className="text-accent-400">Max</span>
         </Link>
@@ -141,7 +142,7 @@ export function CollapseButton() {
   );
 }
 
-export type NavGroupId = "jobs" | "stories" | "practice";
+export type NavGroupId = "jobs" | "stories" | "practice" | "library";
 
 function listOf(value: string | undefined) {
   return (value ?? "").split(" ").filter(Boolean);

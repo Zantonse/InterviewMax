@@ -2,8 +2,9 @@ import type { LikelyQuestion } from "@/lib/questions/content";
 import { coverageFor } from "@/lib/questions/coverage";
 import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import { countWords } from "@/lib/stories/grading";
+import { displayLevel } from "@/lib/stories/levels";
 import { findNumbers, untracedNumbers } from "@/lib/stories/numbers";
-import { INTRO_LENGTH, STAR_LENGTH } from "@/lib/stories/story-types";
+import { INTRO_LENGTH, STAR_LENGTH, getStoryType } from "@/lib/stories/story-types";
 import { TOUGH_LENGTH, getToughQuestion, toughLength } from "@/lib/tough/questions";
 import { type Delivery, parseDelivery } from "./delivery";
 
@@ -57,10 +58,10 @@ const REASON_RANK: Record<PracticeReason, number> = {
 export const REASON_LABELS: Record<PracticeReason, string> = {
   gap: "No story yet",
   unwritten: "Story not written yet",
-  not_yet: "Story graded “Not yet”",
+  not_yet: "Level 1 story",
   ungraded: "Story not graded yet",
-  good_enough: "Story good enough",
-  strong: "Story strong",
+  good_enough: "Level 2 story",
+  strong: "Level 3 story",
 };
 
 // One exchange: the interviewer's question (the likely question first, then each follow-up) and
@@ -224,8 +225,12 @@ export function reasonFor(
   if (!coverage || coverage.kind === "build") return "gap";
   if (!coverage.drafted) return "unwritten";
   const story = stories.find((s) => s.id === coverage.storyId);
-  if (!story || !gradeIsCurrent(story.content)) return "ungraded";
-  return story.content.grade?.tier ?? "ungraded";
+  const grade = story && gradeIsCurrent(story.content) ? story.content.grade : undefined;
+  if (!story || !grade) return "ungraded";
+  // Named by the story's level, the one scale shown everywhere (a Strong story that doesn't show
+  // its thinking yet is Level 2).
+  const level = displayLevel(grade, getStoryType(story.storyType), story.content);
+  return level === 1 ? "not_yet" : level === 2 ? "good_enough" : "strong";
 }
 
 // The questions for one round: gaps and weaker stories first, then the rest in the order the job's

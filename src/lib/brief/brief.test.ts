@@ -373,3 +373,33 @@ describe("buildBrief for a stage", () => {
     expect(brief.questions).toHaveLength(4);
   });
 });
+
+describe("keyFigure (interview day glance)", () => {
+  it("takes the result's figure with the words around it", async () => {
+    const { keyFigure } = await import("./brief");
+    const content = {
+      answers: {},
+      draft: {
+        parts: {
+          situation: "We had 3 teams.",
+          result: "Drop-off at the insurance step fell from 38% to 21% in six weeks. Ops kept it.",
+        },
+        untracedNumbers: [],
+        model: "m",
+        writtenAt: "x",
+      },
+    } as unknown as Parameters<typeof keyFigure>[0];
+    const figure = keyFigure(content);
+    expect(figure).toContain("38%");
+    expect(figure).not.toContain("Ops kept it");
+  });
+
+  it("is null for a story with no figure", async () => {
+    const { keyFigure } = await import("./brief");
+    const content = {
+      answers: {},
+      draft: { parts: { result: "It went well." }, untracedNumbers: [], model: "m", writtenAt: "x" },
+    } as unknown as Parameters<typeof keyFigure>[0];
+    expect(keyFigure(content)).toBeNull();
+  });
+});

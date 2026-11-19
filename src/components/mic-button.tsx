@@ -57,6 +57,8 @@ type Session = {
   quietRun: number;
   pausedSamples: number;
   longPauses: number;
+  // Every sample, kept only when the page wants to play the answer back (onAudio).
+  all: Float32Array[] | null;
 };
 
 function canRecord() {
@@ -76,6 +78,7 @@ export function MicButton({
   disabled,
   onActiveChange,
   onRecorded,
+  onAudio,
 }: {
   // Called with each written-down piece, in the order it was said.
   onText: (text: string) => void;
@@ -85,6 +88,9 @@ export function MicButton({
   // Told how many seconds were recorded, each time the user stops (practice mode times answers),
   // with the talking time and long pauses measured from the audio level.
   onRecorded?: (seconds: number, voice: VoiceStats) => void;
+  // Practice playback (design comparison 2026-11-17, pattern 2): the whole recording, handed to the
+  // page each time the user stops so they can hear themselves. It stays in this browser tab.
+  onAudio?: (samples: Float32Array) => void;
 }) {
   const supported = useSyncExternalStore<boolean | null>(noSubscribe, canRecord, unknownOnServer);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -95,6 +101,7 @@ export function MicButton({
   const session = useRef<Session | null>(null);
   const onTextRef = useRef(onText);
   const onRecordedRef = useRef(onRecorded);
+  const onAudioRef = useRef(onAudio);
   const next = useRef(0); // sequence number for the next piece sent
   const done = useRef<Map<number, string>>(new Map()); // pieces back, waiting for earlier ones
   const flushed = useRef(0); // sequence number of the next piece to hand to onText
@@ -104,7 +111,8 @@ export function MicButton({
   useEffect(() => {
     onTextRef.current = onText;
     onRecordedRef.current = onRecorded;
-  }, [onText, onRecorded]);
+    onAudioRef.current = onAudio;
+  }, [onText, onRecorded, onAudio]);
 
   const active = phase !== "idle";
   useEffect(() => {
@@ -185,6 +193,7 @@ export function MicButton({
       talkSeconds: Math.max(0, talkSamples) / SAMPLE_RATE,
       longPauses: s.longPauses,
     });
+    if (s.all && s.all.length) onAudioRef.current?.(concat(s.all));
     cutPiece();
     release();
     setLoud(0);
@@ -251,6 +260,7 @@ export function MicButton({
         quietRun: 0,
         pausedSamples: 0,
         longPauses: 0,
+        all: onAudioRef.current ? [] : null,
       };
       session.current = s;
       next.current = 0;
@@ -262,6 +272,7 @@ export function MicButton({
         const samples = downsample(e.data, ctx.sampleRate);
         const now = level(samples);
         s.piece.push(samples);
+        s.all?.push(samples);
         s.pieceSamples += samples.length;
         s.totalSamples += samples.length;
         s.pieceLoudest = Math.max(s.pieceLoudest, now);
@@ -306,7 +317,7 @@ export function MicButton({
   // leaving the user wondering where the microphone went.
   if (!supported)
     return (
-      <span className="text-xs text-slate-500" data-testid="mic-unsupported">
+      <span className="text-xs text-slate-600" data-testid="mic-unsupported">
         <MicIcon /> To talk instead of typing, open this page in Safari or Chrome.
       </span>
     );
@@ -347,7 +358,7 @@ export function MicButton({
         </button>
       )}
       {phase === "recording" && (
-        <span className="animate-fade text-xs text-slate-500" role="status">
+        <span className="animate-fade text-xs text-slate-600" role="status">
           Listening. Your words appear as you go; edit them before you send. Speech is written
           down by an AI model and the recording isn&apos;t kept.
         </span>

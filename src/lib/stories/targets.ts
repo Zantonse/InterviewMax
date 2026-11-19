@@ -1,5 +1,7 @@
 import { levelLabel, type LevelId } from "@/lib/jobs/content";
+import { isFinished } from "@/lib/jobs/outcome";
 import { QUESTION_THEMES } from "@/lib/questions/themes";
+import { STAGE_GUIDES, isStage } from "@/lib/stages/stages";
 import type { StoryType } from "./story-types";
 
 // What the user is preparing for, so the builder's questions can aim at it: their target jobs (title,
@@ -15,35 +17,56 @@ export type TargetJobBrief = {
   focus: string[];
   // The job's likely questions that this kind of story answers, best first.
   questions: string[];
+  // The interview stage they set as next on the job (#101), if any.
+  stage?: string;
 };
 
 export type BuilderTargets = {
   jobs: TargetJobBrief[];
   // Their own answer to "What are you looking for next?", from "Tell me about yourself".
   wantedRole?: string;
+  // Their own answer to "Where are you now?", from "Tell me about yourself": tells the builder
+  // whether they manage people (see situation.ts).
+  currentRole?: string;
 };
 
 export const MAX_TARGET_JOBS = 5;
 const MAX_FOCUS_PER_JOB = 5;
 const MAX_QUESTIONS_PER_JOB = 3;
 const MAX_WANTED_ROLE_LENGTH = 800;
+const MAX_CURRENT_ROLE_LENGTH = 800;
 
 type JobLike = {
   title: string;
   company: string | null;
   level: string | null;
   likelyQuestions: { questions: { question: string; theme: string }[] } | null;
+  interviewDate?: string | null;
+  nextStage?: string | null;
+  outcome?: string | null;
 };
+
+// The jobs the builder aims at: only ones still in progress (a finished job's interviews are over;
+// Nov 16, a tester with 11 finished jobs had the builder aim at the 5 oldest and miss his one open
+// job), the nearest interview first, then the rest in the order they were added.
+export function jobsToAimAt<J extends JobLike>(jobs: J[]): J[] {
+  const open = jobs.filter((j) => !isFinished(j));
+  const dated = open
+    .filter((j) => j.interviewDate)
+    .sort((a, b) => a.interviewDate!.localeCompare(b.interviewDate!));
+  return [...dated, ...open.filter((j) => !j.interviewDate)].slice(0, MAX_TARGET_JOBS);
+}
 
 // Builds the targets for one story type from the user's jobs, the jobs read and their About me.
 export function builderTargets(input: {
   jobs: (JobLike & { id: string })[];
   focus?: Record<string, { focus: string[] } | undefined>;
   wantedRole?: string;
+  currentRole?: string;
   storyType: StoryType | undefined;
 }): BuilderTargets {
   const themes = themesFor(input.storyType);
-  const jobs = input.jobs.slice(0, MAX_TARGET_JOBS).map((job) => ({
+  const jobs = jobsToAimAt(input.jobs).map((job) => ({
     title: job.title,
     company: job.company,
     level: job.level,
@@ -52,9 +75,15 @@ export function builderTargets(input: {
       .filter((q) => themes.has(q.theme))
       .map((q) => q.question)
       .slice(0, MAX_QUESTIONS_PER_JOB),
+    ...(isStage(job.nextStage) ? { stage: job.nextStage } : {}),
   }));
   const wantedRole = input.wantedRole?.trim().slice(0, MAX_WANTED_ROLE_LENGTH);
-  return { jobs, ...(wantedRole ? { wantedRole } : {}) };
+  const currentRole = input.currentRole?.trim().slice(0, MAX_CURRENT_ROLE_LENGTH);
+  return {
+    jobs,
+    ...(wantedRole ? { wantedRole } : {}),
+    ...(currentRole ? { currentRole } : {}),
+  };
 }
 
 export function hasTargets(
@@ -129,6 +158,10 @@ export function targetsTranscript(targets: BuilderTargets): string {
     lines.push(`Target job ${i + 1}: ${jobName(job)}`);
     const level = levelLabel(job.level);
     if (level) lines.push(`Level: ${level}`);
+    if (isStage(job.stage)) {
+      const stage = STAGE_GUIDES[job.stage];
+      lines.push(`Next interview stage: ${stage.label}. It checks: ${stage.checks}`);
+    }
     if (job.focus.length) {
       lines.push(
         "What its interviewers will look for:",
@@ -184,6 +217,8 @@ export function guidedStart(
 export function openingHint(
   targets: BuilderTargets | undefined,
   storyType: StoryType | undefined,
+  // A target job manages people and they don't yet (see situation.ts).
+  toManager = false,
 ): string | undefined {
   if (!hasTargets(targets) || !storyType) return undefined;
   if (storyType.format === "intro") {
@@ -205,12 +240,16 @@ export function openingHint(
   }
   const level = topLevel(jobs);
   parts[1] += level ? `, ideally ${LEVEL_SCOPE[level].hint}.` : ".";
+  if (toManager && storyType.id !== "ai_use") {
+    parts.push("These roles manage people, so if you can, pick one where you led others, even without the title.");
+  }
   return parts.join(" ");
 }
 
 // A nudge under "What are you looking for next?" in "Tell me about yourself", naming their jobs.
 export function nextRoleHint(
   targets: BuilderTargets | undefined,
+  toManager = false,
 ): string | undefined {
   if (!targets || targets.jobs.length === 0) return undefined;
   const names = targets.jobs.slice(0, 3).map(jobName);
@@ -221,5 +260,8 @@ export function nextRoleHint(
       : names.length === 1
         ? names[0]
         : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  return `You've added ${list} as target ${targets.jobs.length === 1 ? "job" : "jobs"}. Say what draws you to ${targets.jobs.length === 1 ? "that role" : "roles like these"}, in your own words.`;
+  const hint = `You've added ${list} as target ${targets.jobs.length === 1 ? "job" : "jobs"}. Say what draws you to ${targets.jobs.length === 1 ? "that role" : "roles like these"}, in your own words.`;
+  return toManager
+    ? `${hint} ${targets.jobs.length === 1 ? "It manages" : "They manage"} people, so say why you want to lead a team now, and one time you've led others without the title.`
+    : hint;
 }

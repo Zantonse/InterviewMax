@@ -27,7 +27,7 @@ export default function JobPracticePage({ params }: PageProps<"/jobs/[id]/practi
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <Content params={params} />
         </Suspense>
@@ -96,7 +96,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
           className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
           data-testid="practice-start"
         >
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+          <h2 className="text-sm font-bold text-ink-800">
             This round: {round.length} questions
             {stage && STAGE_GUIDES[stage.id].themes.length > 0
               ? ` for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}`
@@ -113,7 +113,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
                   <span className="mr-2 text-ink-800">{i + 1}.</span>
                   {q.question}
                 </p>
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
                   <span>
                     {REASON_LABELS[q.reason]}
                     {q.storyTitle ? ` · ${q.storyTitle}` : ""}
@@ -138,7 +138,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
               <StartPracticeForm jobId={job.id} />
             )}
           </div>
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-slate-600">
             Find a quiet spot and allow the microphone when asked. What you say is written down to
             give feedback and kept with this job; you can remove a round at any time.
           </p>
@@ -150,7 +150,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
           className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
           data-testid="screen-start"
         >
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">
+          <h2 className="text-sm font-bold text-ink-800">
             Practice an AI screen
           </h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -180,7 +180,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
 
       {sessions.length > 0 && (
         <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">Your rounds</h2>
+          <h2 className="text-sm font-bold text-ink-800">Your rounds</h2>
           <ul className="mt-3 divide-y divide-slate-100" data-testid="practice-rounds">
             {sessions.map((s) => {
               const answered = s.items.filter((i) => i.feedback).length;
@@ -205,7 +205,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
                     <input type="hidden" name="jobId" value={job.id} />
                     <button
                       type="submit"
-                      className="text-sm font-medium text-slate-500 hover:text-red-700"
+                      className="text-sm font-medium text-slate-600 hover:text-red-700"
                     >
                       Remove
                     </button>

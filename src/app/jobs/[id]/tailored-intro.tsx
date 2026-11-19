@@ -9,6 +9,7 @@ import { TAILORED_PARTS } from "@/lib/stories/story-types";
 import { MAX_WHY_COMPANY_LENGTH, tailoredChecks } from "@/lib/stories/tailored";
 import { appendSpoken } from "@/lib/voice/text";
 import { pickTailoredClosing, writeTailoredIntro } from "./about-me-actions";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 // "Tell me about yourself" for this job, company first: why this company, in the user's words,
 // then a three-beat answer built around the one proof point this job most needs to hear.
@@ -79,6 +80,7 @@ export function TailoredIntroPanel({
           role? One or two reasons in your own words is plenty.
         </label>
         <textarea
+          onKeyDown={submitOnSendKey}
           id={fieldId}
           value={why}
           onChange={(e) => setWhy(e.target.value)}
@@ -115,7 +117,7 @@ export function TailoredIntroPanel({
       {draft && (
         <div className={`flex flex-col gap-3 ${pending ? "opacity-60" : ""}`}>
           {draft.angle && <p className="text-sm text-slate-600">{draft.angle}</p>}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
             <span data-testid="tailored-length">
               {words} words, about {seconds < 60 ? `${seconds} seconds` : formatMinutes(seconds)}{" "}
               spoken
@@ -210,7 +212,7 @@ function ClosingPicker({
                 />
                 <span className="font-semibold text-slate-900">{o.label}</span>
               </span>
-              <span className="text-xs text-slate-500">{o.hint}</span>
+              <span className="text-xs text-slate-600">{o.hint}</span>
               <span className="text-slate-700">{o.text}</span>
             </label>
           );

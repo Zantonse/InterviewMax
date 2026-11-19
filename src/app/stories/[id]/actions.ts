@@ -5,6 +5,7 @@ import { ModelError } from "@/lib/ai";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
+import { answerProblem } from "@/lib/text/answer";
 import {
   gradeStory,
   inferCareerPath,
@@ -32,6 +33,7 @@ import {
   TOP_LEVEL,
   levelForGrade,
   levelGaps,
+  withoutAsked,
   needsAnswers,
   usesLevels,
   type StoryLevel,
@@ -300,7 +302,8 @@ export async function levelUp(storyId: string): Promise<BuilderResult> {
     const from = levelForGrade(grade);
     if (from >= TOP_LEVEL) return { ok: true, content: story.content, title: story.title };
     const target = (from + 1) as StoryLevel;
-    const gaps = levelGaps(grade);
+    // Never ask again about something they've already answered in a level-up round.
+    const gaps = withoutAsked(levelGaps(grade), story.content.followUps);
     const started: StoryContent = {
       ...story.content,
       levelUp: { from, target, before: draft.parts, startedAt: new Date().toISOString() },
@@ -571,9 +574,8 @@ async function withStory(
 function cleanAnswer(answer: unknown): string | BuilderResult {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return fail("Type an answer first.");
-  if (text.length > MAX_ANSWER_LENGTH) {
-    return fail(`Keep it under ${MAX_ANSWER_LENGTH.toLocaleString("en-US")} characters.`);
-  }
+  const problem = answerProblem(text, MAX_ANSWER_LENGTH);
+  if (problem) return fail(problem);
   return text;
 }
 

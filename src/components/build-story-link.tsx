@@ -1,34 +1,14 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Suspense } from "react";
 import { NavIcon } from "./nav-icons";
 
-// The sidebar's "Build a story". On the home page it's an outline, so the plan's Continue is the
-// one main button there; everywhere else it's the main action.
+// The sidebar's "Build a story", always an outline: each page's own next step is its one
+// periwinkle button (button rule in globals.css, design review 2026-11-16 fix 5).
 export function BuildStoryLink() {
-  return (
-    <Suspense fallback={<BuildStoryLinkBody home={false} />}>
-      <BuildStoryLinkOnPath />
-    </Suspense>
-  );
-}
-
-function BuildStoryLinkOnPath() {
-  return <BuildStoryLinkBody home={usePathname() === "/"} />;
-}
-
-function BuildStoryLinkBody({ home }: { home: boolean }) {
   return (
     <Link
       href="/stories/new"
       title="Build a story"
-      className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-        home
-          ? "text-accent-300 ring-1 ring-accent-400/70 hover:bg-white/10"
-          : "bg-accent-400 text-ink-950 hover:bg-accent-300"
-      }`}
+      className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-accent-300 ring-1 ring-accent-400/70 transition hover:bg-white/10"
       data-testid="build-story-link"
     >
       <NavIcon name="plus" />

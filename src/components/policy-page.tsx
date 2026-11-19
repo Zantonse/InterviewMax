@@ -22,7 +22,7 @@ export function PolicyPage({
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{title}</h1>
-        {dated && <p className="mt-2 text-sm text-slate-500">Last updated {POLICY_UPDATED}</p>}
+        {dated && <p className="mt-2 text-sm text-slate-600">Last updated {POLICY_UPDATED}</p>}
         <div className="policy mt-8 space-y-8 text-slate-700">{children}</div>
         <nav className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-200 pt-6 text-sm">
           <Link href="/privacy" className="font-medium text-ink-800 hover:underline">

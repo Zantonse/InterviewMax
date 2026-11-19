@@ -189,3 +189,32 @@ export function parseDelivery(raw: unknown): Delivery | undefined {
     longPauses: n(r.longPauses),
   };
 }
+
+// Practice playback (design comparison 2026-11-17, pattern 2): the answer's words split into plain
+// text and filler words, so the filler words can be tinted where they were said. Uses the same
+// patterns as the count above.
+export type SpokenSpan = { text: string; filler: boolean };
+
+export function fillerSpans(text: string): SpokenSpan[] {
+  const hits: { start: number; end: number }[] = [];
+  for (const { pattern } of FILLERS) {
+    for (const m of text.matchAll(new RegExp(pattern.source, pattern.flags))) {
+      // Leave the comma out of the tint ("it was, like, huge" tints "like").
+      const lead = m[0].search(/[^\s,]/);
+      const start = m.index + Math.max(0, lead);
+      const end = m.index + m[0].replace(/[\s,]+$/, "").length;
+      if (end > start) hits.push({ start, end });
+    }
+  }
+  hits.sort((a, b) => a.start - b.start);
+  const spans: SpokenSpan[] = [];
+  let at = 0;
+  for (const h of hits) {
+    if (h.start < at) continue;
+    if (h.start > at) spans.push({ text: text.slice(at, h.start), filler: false });
+    spans.push({ text: text.slice(h.start, h.end), filler: true });
+    at = h.end;
+  }
+  if (at < text.length) spans.push({ text: text.slice(at), filler: false });
+  return spans;
+}

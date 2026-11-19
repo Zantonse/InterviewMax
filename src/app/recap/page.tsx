@@ -13,7 +13,7 @@ export default function RecapPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>

@@ -12,7 +12,7 @@ export function SkillsMap({ map }: { map: SkillStatus[] }) {
         </span>
         <span className="text-slate-600">story skills learned</span>
       </p>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-slate-600">
         A skill counts as learned once it shows in two of your stories, and in one of them before I
         asked about it.
       </p>
@@ -25,12 +25,12 @@ export function SkillsMap({ map }: { map: SkillStatus[] }) {
           >
             <div className="min-w-0">
               <p className="font-semibold text-slate-900">{s.skill.label}</p>
-              <p className="text-xs text-slate-500">{s.next ?? s.skill.what}</p>
+              <p className="text-xs text-slate-600">{s.next ?? s.skill.what}</p>
             </div>
             <div className="flex items-center gap-2 sm:justify-end">
               <Pips level={s.level} />
               <span
-                className={`w-24 text-xs font-semibold ${s.level >= LEARNED ? "text-emerald-700" : "text-slate-500"}`}
+                className={`w-24 text-xs font-semibold ${s.level >= LEARNED ? "text-emerald-700" : "text-slate-600"}`}
               >
                 {SKILL_LEVELS[s.level].name}
               </span>

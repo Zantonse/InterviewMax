@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState, useTransition } from "react";
+import { useActionState, useId, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
   LEVELS,
@@ -28,9 +28,10 @@ import {
 } from "./actions";
 import { postingUpload } from "./posting-upload";
 import { AiNotice } from "@/components/ai-notice";
+import { submitOnSendKey } from "@/lib/text/keys";
 
 const INPUT =
-  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
+  "mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none";
 const PRIMARY =
   "rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60";
 const SECONDARY =
@@ -221,7 +222,7 @@ export function AddJobForm({
                   {fetching ? "Reading the posting…" : "Next"}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 Works best with {SUPPORTED_SITES.join(", ")} and most company career pages.
                 LinkedIn, Indeed and Glassdoor block links: upload the posting instead.
               </p>
@@ -243,9 +244,9 @@ export function AddJobForm({
                   uploadFiles(Array.from(e.target.files ?? []));
                   e.target.value = "";
                 }}
-                className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:font-semibold file:text-ink-900"
+                className="mt-1 block w-full text-sm text-slate-600"
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 {fetching
                   ? `Reading the ${SOURCE_LABEL[fetchingFrom]}…`
                   : "On the posting, use your browser's Print, then Save as PDF; or Save page as; or take screenshots of the whole posting (pick them all at once). Works for LinkedIn, Indeed and Glassdoor."}
@@ -262,6 +263,7 @@ export function AddJobForm({
               >
                 The whole posting
                 <textarea
+                  onKeyDown={submitOnSendKey}
                   id={`${id}-paste`}
                   rows={10}
                   autoFocus
@@ -301,7 +303,7 @@ export function AddJobForm({
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-title`}>
-              Job title <span className="font-normal text-slate-500">(optional)</span>
+              Job title <span className="font-normal text-slate-600">(optional)</span>
               <input
                 id={`${id}-title`}
                 name="title"
@@ -316,7 +318,7 @@ export function AddJobForm({
               className="block text-sm font-semibold text-slate-700"
               htmlFor={`${id}-company`}
             >
-              Company <span className="font-normal text-slate-500">(optional)</span>
+              Company <span className="font-normal text-slate-600">(optional)</span>
               <input
                 id={`${id}-company`}
                 name="company"
@@ -376,6 +378,7 @@ export function AddJobForm({
           >
             The job posting
             <textarea
+              onKeyDown={submitOnSendKey}
               id={`${id}-description`}
               name="description"
               rows={10}
@@ -405,7 +408,7 @@ export function AddJobForm({
             </label>
             {!roleOf && (
               <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-date`}>
-                Interview date <span className="font-normal text-slate-500">(if you have one)</span>
+                Interview date <span className="font-normal text-slate-600">(if you have one)</span>
                 <input
                   id={`${id}-date`}
                   type="date"
@@ -417,7 +420,7 @@ export function AddJobForm({
             )}
           </div>
           {!roleOf && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               With a date, I&apos;ll plan your prep day by day. You can add or change it later.
             </p>
           )}
@@ -458,12 +461,12 @@ function WizardStep({
 }) {
   return (
     <li
-      className={`flex items-center gap-2 ${current ? "text-ink-900" : "text-slate-400"}`}
+      className={`flex items-center gap-2 ${current ? "text-ink-900" : "text-slate-500"}`}
       aria-current={current ? "step" : undefined}
     >
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-          current || done ? "bg-ink-800 text-white" : "bg-slate-200 text-slate-500"
+          current || done ? "bg-ink-800 text-white" : "bg-slate-200 text-slate-600"
         }`}
       >
         {done ? "✓" : n}
@@ -485,7 +488,7 @@ export function ResumeForm({ hasResume }: { hasResume: boolean }) {
           type="file"
           name="file"
           accept={RESUME_EXTENSIONS.join(",")}
-          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-50 file:px-3 file:py-2 file:font-semibold file:text-ink-900"
+          className="mt-1 block w-full text-sm text-slate-600"
         />
       </label>
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-text`}>
@@ -538,6 +541,7 @@ export function PredictForm({
           put the questions they say were asked on the list, and use the rest to shape it. Guesses
           stay guesses.
           <textarea
+            onKeyDown={submitOnSendKey}
             id={id}
             name="reports"
             rows={6}
@@ -559,6 +563,8 @@ export function PredictForm({
   );
 }
 
+// Level and interview date save as soon as they change, like the stage chips (design review
+// 2026-11-16, fix 9). An unconfirmed level still offers "That's right" to confirm the suggestion.
 export function LevelForm({
   jobId,
   level,
@@ -574,7 +580,14 @@ export function LevelForm({
       <input type="hidden" name="jobId" value={jobId} />
       <label className="block text-sm font-semibold text-slate-700" htmlFor={id}>
         {confirmed ? "Level" : "Level (suggested from the title)"}
-        <select id={id} name="level" defaultValue={level ?? "mid"} className={INPUT}>
+        <select
+          id={id}
+          name="level"
+          defaultValue={level ?? "mid"}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          className={INPUT}
+          data-testid="job-level"
+        >
           {LEVELS.map((l) => (
             <option key={l.id} value={l.id}>
               {l.label}
@@ -589,15 +602,39 @@ export function LevelForm({
 
 function LevelButton({ confirmed }: { confirmed: boolean }) {
   const { pending } = useFormStatus();
+  if (pending) return <SavingNote />;
+  if (confirmed) return null;
   return (
-    <button type="submit" disabled={pending} className={SECONDARY}>
-      {pending ? "Saving…" : confirmed ? "Change" : "That's right"}
+    <button type="submit" className={SECONDARY}>
+      That&apos;s right
     </button>
   );
 }
 
+function SavingNote() {
+  return (
+    <span className="pb-2.5 text-sm text-slate-600" role="status">
+      Saving…
+    </span>
+  );
+}
+
+function DateSaving() {
+  const { pending } = useFormStatus();
+  return pending ? <SavingNote /> : null;
+}
+
 export function InterviewDateForm({ jobId, date }: { jobId: string; date: string | null }) {
   const id = useId();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Typing a date fires a change for each digit of the year (0002, 0020, 0202...), so wait for a
+  // pause and a plausible year before saving. Picking from the calendar saves a moment later.
+  function saveSoon(input: HTMLInputElement) {
+    if (timer.current) clearTimeout(timer.current);
+    const value = input.value;
+    if (!value || Number(value.slice(0, 4)) < 2000 || value === date) return;
+    timer.current = setTimeout(() => input.form?.requestSubmit(), 700);
+  }
   return (
     <form action={saveInterviewDate} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="jobId" value={jobId} />
@@ -609,18 +646,19 @@ export function InterviewDateForm({ jobId, date }: { jobId: string; date: string
           name="date"
           required
           defaultValue={date ?? ""}
+          onChange={(e) => saveSoon(e.currentTarget)}
           className={INPUT}
           data-testid="interview-date"
         />
       </label>
-      <PendingButton pendingText="Saving…">{date ? "Change" : "Save"}</PendingButton>
+      <DateSaving />
       {date && (
         <button
           type="submit"
           name="intent"
           value="clear"
           formNoValidate
-          className="text-sm font-medium text-slate-500 hover:text-red-700"
+          className="pb-2.5 text-sm font-medium text-slate-600 hover:text-red-700"
         >
           Clear
         </button>
@@ -670,7 +708,7 @@ export function NextStageForm({
           type="submit"
           name="intent"
           value="clear"
-          className="mt-3 text-sm font-medium text-slate-500 hover:text-red-700"
+          className="mt-3 text-sm font-medium text-slate-600 hover:text-red-700"
         >
           Clear
         </button>
@@ -713,7 +751,7 @@ export function JobOutcomeForm({
           <input type="hidden" name="intent" value="reopen" />
           <PendingButton
             pendingText="Reopening…"
-            className="text-sm font-medium text-slate-500 hover:text-ink-800"
+            className="text-sm font-medium text-slate-600 hover:text-ink-800"
           >
             Still interviewing? Reopen
           </PendingButton>
@@ -798,7 +836,7 @@ export function JobOutcomeForm({
         </label>
       </div>
       <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-name`}>
-        What was that round? <span className="font-normal text-slate-500">(optional)</span>
+        What was that round? <span className="font-normal text-slate-600">(optional)</span>
         <input
           id={`${id}-name`}
           name="roundName"
@@ -816,7 +854,7 @@ export function JobOutcomeForm({
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="text-sm font-medium text-slate-500 hover:text-ink-800"
+            className="text-sm font-medium text-slate-600 hover:text-ink-800"
           >
             Cancel
           </button>

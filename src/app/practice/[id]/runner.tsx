@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { AnswerComposer } from "@/components/practice/answer-composer";
 import { FeedbackCard } from "@/components/practice/feedback-card";
+import { SpokenAnswer } from "@/components/practice/spoken-answer";
 import { ConfidenceBar, ConfidencePips } from "@/components/practice/confidence-bar";
 import {
   MAX_FOLLOW_UPS,
@@ -51,6 +52,8 @@ export function PracticeRunner({
   const [busy, setBusy] = useState<Busy>(null);
   const [keeping, setKeeping] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Recordings of this visit's spoken answers, by "question:turn", to play back.
+  const [recordings, setRecordings] = useState<Record<string, Blob>>({});
 
   async function run(work: () => Promise<PracticeResult>, label: Busy) {
     setBusy(label);
@@ -87,7 +90,7 @@ export function PracticeRunner({
 
       <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
         <p className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-bold uppercase tracking-wide text-ink-800">
+          <span className="font-bold text-ink-800">
             Question {view + 1} of {items.length}
           </span>
           <span className="rounded-full bg-ink-50 px-2 py-0.5 font-semibold text-ink-900">
@@ -123,7 +126,7 @@ export function PracticeRunner({
                   }`}
                 >
                   {i > 0 && (
-                    <span className="block text-xs font-bold uppercase tracking-wide text-ink-700">
+                    <span className="block text-xs font-bold text-ink-700">
                       Follow-up {i}
                     </span>
                   )}
@@ -134,9 +137,13 @@ export function PracticeRunner({
               {t.answer && (
                 <div className="flex justify-end">
                   <p className="max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 text-slate-800">
-                    {t.answer}
+                    <SpokenAnswer
+                      text={t.answer}
+                      spoken={Boolean(t.seconds) && Boolean(t.talkSeconds)}
+                      audio={recordings[`${view}:${i}`]}
+                    />
                     {t.seconds ? (
-                      <span className="mt-1 block text-right text-xs text-slate-500">
+                      <span className="mt-1 block text-right text-xs text-slate-600">
                         {formatDuration(t.seconds)}
                       </span>
                     ) : null}
@@ -174,15 +181,20 @@ export function PracticeRunner({
             <AnswerComposer
               key={`${view}-${item.turns.length}`}
               disabled={busy !== null}
-              onSubmit={(answer, seconds, voice) =>
-                run(() => answerPractice(sessionId, view, answer, seconds, voice), nextBusy)
-              }
+              keepAudio
+              onSubmit={(answer, seconds, voice, audio) => {
+                if (audio) {
+                  const turn = item.turns.length - 1;
+                  setRecordings((r) => ({ ...r, [`${view}:${turn}`]: audio }));
+                }
+                run(() => answerPractice(sessionId, view, answer, seconds, voice), nextBusy);
+              }}
               extra={
                 item.turns.length === 1 ? (
                   <button
                     type="button"
                     onClick={() => run(() => skipPractice(sessionId, view), "skipping")}
-                    className="text-sm font-medium text-slate-500 hover:text-slate-800"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-800"
                   >
                     Skip this question
                   </button>
@@ -208,7 +220,7 @@ export function PracticeRunner({
         )}
 
         {item.skipped && (
-          <p className="mt-4 text-sm text-slate-500">You skipped this question.</p>
+          <p className="mt-4 text-sm text-slate-600">You skipped this question.</p>
         )}
       </section>
 
@@ -282,7 +294,7 @@ function Progress({
                   ? "bg-accent-400 text-ink-950"
                   : done
                     ? "bg-ink-800 text-white"
-                    : "bg-slate-100 text-slate-500 ring-1 ring-slate-300"
+                    : "bg-slate-100 text-slate-600 ring-1 ring-slate-300"
               } disabled:cursor-default`}
             >
               {done && i !== view ? "✓" : i + 1}

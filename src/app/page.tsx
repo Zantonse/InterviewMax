@@ -2,16 +2,15 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { startStory } from "@/app/stories/new/actions";
 import { ReadinessRing, ReadinessRows } from "@/components/readiness";
-import { questionReadiness } from "@/lib/jobs/readiness";
+import { questionReadiness, READY_LEVEL, type QuestionReadiness } from "@/lib/jobs/readiness";
 import { AppHeader } from "@/components/app-header";
 import { CoverageGrid } from "@/components/coverage-grid";
-import { SkillsMap } from "@/components/skills-map";
-import { hasSkillData, skillsMap } from "@/lib/stories/skills";
 import { PrepPath } from "@/components/prep-path";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
+import { daysUntil, focusJob, todayIn } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
@@ -58,9 +57,11 @@ async function NewUserGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// The story bank, and beside it the focus job and its likely questions. Before the first job the
-// prep path above asks for one, and an empty story bank would only be a wall of work under it, so
-// nothing else shows until there's a job or a story.
+// Under the plan bar: the focus job as the hero (how many likely questions have a solid story,
+// and the next one to work on), then the story bank. Before the first job the prep path above asks
+// for one, and an empty story bank would only be a wall of work under it, so nothing else shows
+// until there's a job or a story. The finish line and story skills live on /profile, so home has
+// one main button (the plan's Continue) and few counters (design review 2026-11-16, fix 4).
 async function Dashboard() {
   let jobs: TargetJob[] | null;
   let stories: StoryRecord[] | null;
@@ -81,98 +82,118 @@ async function Dashboard() {
     stories = null;
   }
   if (jobs?.length === 0 && stories?.length === 0) return null;
-  const bank = (
-    <Card className="bg-ink-800 text-white" title="Story bank">
-      {stories ? (
-        <CoverageGrid stories={stories} jobs={jobs ?? []} />
-      ) : (
-        <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
-          Your stories couldn&apos;t be loaded right now. Try again in a minute.
-        </p>
-      )}
-    </Card>
-  );
-  // Story skills map: once a behavioral story has been graded.
-  const map = stories ? skillsMap(stories) : [];
-  const skills = hasSkillData(map) ? (
-    <Card title="Your story skills">
-      <SkillsMap map={map} />
-    </Card>
-  ) : null;
-  if (jobs?.length === 0)
-    return (
-      <div className="mt-4 space-y-4">
-        {bank}
-        {skills}
-      </div>
-    );
   return (
-    <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-3">
-      <div className="space-y-4 md:col-span-2">
-        {bank}
-        {skills}
-      </div>
-      <div className="space-y-4">
-        {jobs ? (
-          <FocusJob jobs={jobs} stories={stories ?? []} />
+    <div className="mt-4 space-y-4">
+      {jobs ? (
+        <FocusJob jobs={jobs} stories={stories ?? []} />
+      ) : (
+        <Card title="Your jobs">
+          <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>
+        </Card>
+      )}
+      <Card className="bg-ink-800 text-white" title="Story bank">
+        {stories ? (
+          <CoverageGrid stories={stories} jobs={jobs ?? []} />
         ) : (
-          <Card title="Your jobs">
-            <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>
-          </Card>
+          <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
+            Your stories couldn&apos;t be loaded right now. Try again in a minute.
+          </p>
         )}
-        <Suspense fallback={null}>
-          <PastInterviews />
-        </Suspense>
-      </div>
+      </Card>
+      <Suspense fallback={null}>
+        <PastInterviews />
+      </Suspense>
     </div>
   );
 }
 
-// The job the plan is working toward, with its top questions and whether a story answers each.
-// The other jobs are in the sidebar.
+// The job the plan is working toward: a ring with the days to go, how many likely questions have a
+// story at Level 2 or above, the next question to work on, and its top questions. The other jobs
+// are in the sidebar.
 async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRecord[] }) {
   const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
   const job = focusJob(jobs, today);
   if (!job) return null;
   const days = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
+  const upcoming = days !== null && days >= 0 ? days : null;
   const name = job.company || job.title;
   const questions = job.likelyQuestions?.questions ?? [];
   const readiness = questionReadiness(questions, stories);
+  const next =
+    readiness.rows.find((r) => r.kind === "build") ??
+    readiness.rows.find((r) => r.kind === "story" && r.level < READY_LEVEL);
   return (
-    <Card title={days !== null && days >= 0 ? `${name} · interview ${whenLabel(days)}` : name}>
-      <div data-testid="focus-job">
-        {job.company && <p className="-mt-3 mb-3 truncate text-sm text-slate-500">{job.title}</p>}
-        {questions.length > 0 ? (
-          <>
-            <div className="flex items-center gap-3">
-              <ReadinessRing
-                ready={readiness.ready}
-                total={readiness.total}
-                days={days !== null && days >= 0 ? days : null}
-                size="sm"
-              />
-              <p className="text-sm text-slate-600">
-                <span className="font-bold text-slate-900">
-                  {readiness.ready} of {readiness.total} questions ready
-                </span>
-                <span className="block text-xs">Ready = a Level 2+ story</span>
-              </p>
-            </div>
-            <ReadinessRows rows={readiness.rows.slice(0, 3)} />
+    <section
+      className="animate-enter rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      data-testid="focus-job"
+      aria-label={`Your ${name} interview`}
+    >
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
+        <div className="flex min-w-0 items-center gap-4 md:w-72 md:shrink-0 md:items-start">
+          {readiness.total > 0 && (
+            <ReadinessRing ready={readiness.ready} total={readiness.total} days={upcoming} />
+          )}
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-slate-900">
+              <Link href={`/jobs/${job.id}`} className="hover:text-ink-800 hover:underline">
+                {name}
+              </Link>
+            </h2>
+            {job.company && <p className="truncate text-sm text-slate-600">{job.title}</p>}
+          </div>
+        </div>
+        {readiness.total > 0 ? (
+          <div className="min-w-0 flex-1">
+            <p className="text-slate-700" data-testid="focus-ready">
+              <strong className="text-slate-900">
+                {readiness.ready} of {readiness.total} likely questions
+              </strong>{" "}
+              have a story at Level {READY_LEVEL} or above.
+            </p>
+            {next && (
+              <div className="mt-3 rounded-2xl bg-ink-50 px-4 py-3" data-testid="focus-next">
+                <p className="text-sm text-slate-600">Next to work on</p>
+                <p className="mt-0.5 font-semibold text-slate-900">{next.question}</p>
+                <NextQuestion row={next} />
+              </div>
+            )}
+            <ReadinessRows rows={readiness.rows.filter((r) => r !== next).slice(0, 3)} />
             <Link
               href={`/jobs/${job.id}`}
-              className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline"
+              className="mt-2 inline-block text-sm font-semibold text-ink-800 hover:underline"
             >
               All {questions.length} questions for this job →
             </Link>
-          </>
+          </div>
         ) : (
           <Link href={`/jobs/${job.id}`} className="text-sm font-semibold text-ink-800 hover:underline">
             Open this job →
           </Link>
         )}
       </div>
-    </Card>
+    </section>
+  );
+}
+
+// The next question's action, as an outline button: the plan's Continue above is the page's one
+// periwinkle button.
+function NextQuestion({ row }: { row: QuestionReadiness }) {
+  const className =
+    "mt-2 inline-flex min-h-9 items-center rounded-xl bg-white px-3.5 py-1.5 text-sm font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50";
+  if (row.kind === "build") {
+    return (
+      <form action={startStory}>
+        <input type="hidden" name="asked" value={row.question} />
+        <button type="submit" name="storyType" value={row.storyType} className={className}>
+          Build a story for it
+        </button>
+      </form>
+    );
+  }
+  return (
+    <Link href={`/stories/${row.storyId}`} className={className}>
+      {row.level === 0 ? "Finish its story" : "Take its story to Level 2"}
+    </Link>
   );
 }
 
@@ -220,5 +241,5 @@ function Card({
 }
 
 function EmptyLine({ children }: { children: React.ReactNode }) {
-  return <p className="text-slate-500">{children}</p>;
+  return <p className="text-slate-600">{children}</p>;
 }

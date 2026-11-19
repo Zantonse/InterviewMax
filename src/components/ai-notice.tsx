@@ -4,7 +4,7 @@ import Link from "next/link";
 // new tab so a half-filled form isn't lost.
 export function AiNotice({ purpose, className = "" }: { purpose: string; className?: string }) {
   return (
-    <p className={`text-xs font-normal text-slate-500 ${className}`} data-testid="ai-notice">
+    <p className={`text-xs font-normal text-slate-600 ${className}`} data-testid="ai-notice">
       This is sent to an AI model to {purpose}. See the{" "}
       <Link
         href="/ai-usage"

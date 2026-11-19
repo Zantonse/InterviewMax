@@ -62,7 +62,7 @@ export function Quiz({
       data-testid="assessment-quiz"
     >
       <div className="flex items-center justify-between gap-4">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-ink-700">
+        <p className="flex items-center gap-2 text-xs font-bold text-ink-700">
           {step + 1} of {QUESTIONS.length}
           <span className="flex gap-1" aria-hidden>
             {QUESTIONS.map((q, i) => (
@@ -122,7 +122,7 @@ export function Quiz({
       {retake ? (
         <Link
           href="/assessment"
-          className="mt-6 inline-block text-sm text-slate-500 hover:text-ink-800 hover:underline"
+          className="mt-6 inline-block text-sm text-slate-600 hover:text-ink-800 hover:underline"
         >
           Keep my last result
         </Link>
@@ -130,7 +130,7 @@ export function Quiz({
         <form action={skipAssessment} className="mt-6">
           <button
             type="submit"
-            className="text-sm text-slate-500 hover:text-ink-800 hover:underline"
+            className="text-sm text-slate-600 hover:text-ink-800 hover:underline"
           >
             Skip for now
           </button>
