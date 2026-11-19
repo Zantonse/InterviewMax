@@ -47,6 +47,10 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
     feature: "Exec version (Exec mode in Settings): a 30-second, answer-first version of a written story",
     sends: "The written story, the question it was built for, your answers behind it and your field",
   },
+  storyRecruiter: {
+    feature: "Recruiter version: an under-a-minute, plain-words version of a written story for a recruiter screen",
+    sends: "The written story, the question it was built for, your answers behind it and your field",
+  },
   toughAnswer: {
     feature: "Tough questions",
     sends: "Your answers about that question and, if you pick one, that job’s posting, and your field",

@@ -151,37 +151,65 @@ export function stageFor(
   return null;
 }
 
-// Puts the items whose theme the stage asks most first (in the stage's order), keeping the rest in
-// their original order after them. With no stage, or a stage with no themes, nothing moves.
-export function orderForStage<T extends { theme: string }>(
-  items: T[],
-  stage: RoundId | null,
-): T[] {
+type Staged = { theme: string; stages?: readonly string[] };
+
+// Whether a list's questions carry the stages they're asked at (predicted since Nov 14). Older
+// lists don't, apart from a default question or two, and are placed by theme.
+function isTagged(items: Staged[]): boolean {
+  return items.filter((i) => i.stages?.length).length * 2 >= items.length && items.length > 0;
+}
+
+// Whether one question belongs to this stage: by its stage tags when the list has them, else by
+// whether its theme is one the stage asks most.
+function inStage(item: Staged, stage: RoundId, tagged: boolean): boolean {
+  if (tagged && item.stages?.length) return item.stages.includes(stage);
+  return (STAGE_GUIDES[stage].themes as string[]).includes(item.theme);
+}
+
+// Puts the questions this stage asks first, keeping the rest in their original order after them.
+// Tagged lists: questions whose main stage is this one, then those that list it second, each in
+// the predicted order. Older lists: by the stage's themes, in the stage's order. With no stage, or
+// another round, nothing moves.
+export function orderForStage<T extends Staged>(items: T[], stage: RoundId | null): T[] {
   const themes = stage ? (STAGE_GUIDES[stage].themes as string[]) : [];
-  if (!themes.length) return items;
-  const rank = (t: string) => {
+  if (!stage || !themes.length) return items;
+  const tagged = isTagged(items);
+  const themeRank = (t: string) => {
     const i = themes.indexOf(t);
     return i === -1 ? themes.length : i;
+  };
+  const group = (item: T) => {
+    if (!inStage(item, stage, tagged)) return 2;
+    return tagged && item.stages?.length && item.stages[0] !== stage ? 1 : 0;
   };
   return items
     .map((item, index) => ({ item, index }))
     .sort(
-      (a, b) => rank(a.item.theme) - rank(b.item.theme) || a.index - b.index,
+      (a, b) =>
+        group(a.item) - group(b.item) ||
+        (tagged ? 0 : themeRank(a.item.theme) - themeRank(b.item.theme)) ||
+        a.index - b.index,
     )
     .map((x) => x.item);
 }
 
-// The likely questions for a practice round at this stage: only the stage's themes when there are
-// at least `min` of them, so a recruiter-screen round doesn't drill conflict stories; else all,
-// stage's themes first.
-export function questionsForStage<T extends { theme: string }>(
+// The likely questions for a practice round at this stage: only the stage's own when there are at
+// least `min` of them, so a recruiter-screen round doesn't drill conflict stories; else all,
+// stage's first.
+export function questionsForStage<T extends Staged>(
   items: T[],
   stage: RoundId | null,
   min = 3,
 ): T[] {
   const ordered = orderForStage(items, stage);
-  const themes = stage ? (STAGE_GUIDES[stage].themes as string[]) : [];
-  if (!themes.length) return ordered;
-  const inStage = ordered.filter((q) => themes.includes(q.theme));
-  return inStage.length >= min ? inStage : ordered;
+  if (!stage || !STAGE_GUIDES[stage].themes.length) return ordered;
+  const tagged = isTagged(items);
+  const mine = ordered.filter((q) => inStage(q, stage, tagged));
+  return mine.length >= min ? mine : ordered;
+}
+
+// How many of a job's likely questions this stage asks.
+export function stageCount(items: Staged[], stage: RoundId): number {
+  const tagged = isTagged(items);
+  return items.filter((q) => inStage(q, stage, tagged)).length;
 }

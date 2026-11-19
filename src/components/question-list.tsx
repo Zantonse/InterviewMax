@@ -2,7 +2,7 @@ import Link from "next/link";
 import { startStory } from "@/app/stories/new/actions";
 import { coverageFor } from "@/lib/questions/coverage";
 import { askedLabel, type BankQuestion } from "@/lib/bank/content";
-import type { LikelyQuestion } from "@/lib/questions/content";
+import type { LikelyQuestion, QuestionStage } from "@/lib/questions/content";
 import { AI_USE_QUESTION, getTheme } from "@/lib/questions/themes";
 import type { StoryRecord } from "@/lib/stories/data";
 import { getStoryType } from "@/lib/stories/story-types";
@@ -41,6 +41,9 @@ export function QuestionList({
                   {q.role && <Tag tone="accent">Only for {q.role}</Tag>}
                   {q.source === "report" && <Tag tone="accent">From an interview report</Tag>}
                   {q.source === "transcript" && <Tag tone="accent">Asked you before</Tag>}
+                  {q.stages && q.stages.length > 0 && (
+                    <Tag>{q.stages.map((s) => STAGE_SHORT[s]).join(" · ")}</Tag>
+                  )}
                 </p>
                 {q.why && <p className="mt-1 text-sm text-slate-600">{q.why}</p>}
                 <div className="mt-2 text-sm">
@@ -87,6 +90,14 @@ export function QuestionList({
     </ol>
   );
 }
+
+// Who asks it, on the question's tags.
+const STAGE_SHORT: Record<QuestionStage, string> = {
+  recruiter: "Recruiter",
+  hiring_manager: "Hiring manager",
+  panel: "Panel",
+  final: "Final round",
+};
 
 // Shared question bank: questions other people were asked at this company in the last six
 // months, each with when and for what role, and the story that would answer it.

@@ -94,6 +94,7 @@ import { TOP_LEVEL, levelInfo, storyLevel, usesLevels } from "@/lib/stories/leve
 import { TellingPanel } from "./telling-panel";
 import { AlsoAnswersPanel } from "./also-answers-panel";
 import { ExecPanel } from "./exec-panel";
+import { RecruiterPanel } from "./recruiter-panel";
 import { AiNotice } from "@/components/ai-notice";
 
 type Busy =
@@ -146,6 +147,7 @@ export function StoryBuilder({
   execMode = false,
   priorWritten = 0,
   finishBase,
+  recruiterScreen = false,
 }: {
   // Null for a new story that isn't saved yet: the first action creates it from newStory.
   storyId: string | null;
@@ -178,6 +180,8 @@ export function StoryBuilder({
   priorWritten?: number;
   // The finish line from the user's other stories; this one is added once it's written.
   finishBase?: FinishCounts;
+  // A target job's next stage is a recruiter screen: shows the Recruiter version card.
+  recruiterScreen?: boolean;
 }) {
   const storyType = getStoryType(storyTypeId);
   const [content, setContent] = useState(initialContent);
@@ -936,10 +940,13 @@ export function StoryBuilder({
             <MoreWithStory
               show={Boolean(content.draft)}
               className="max-lg:order-4"
-              opened={Boolean(content.telling || content.alsoAnswers || content.exec)}
+              opened={Boolean(
+                content.telling || content.alsoAnswers || content.exec || content.recruiter,
+              )}
               labels={[
                 "How to tell it",
                 ...(execMode ? ["Exec version"] : []),
+                ...(recruiterScreen || content.recruiter ? ["Recruiter version"] : []),
                 "Other questions it answers",
               ]}
             >
@@ -959,6 +966,15 @@ export function StoryBuilder({
             />
             {execMode && (
               <ExecPanel
+                storyId={sid}
+                content={content}
+                storyType={storyType}
+                disabled={busy !== null}
+                onContent={setContent}
+              />
+            )}
+            {(recruiterScreen || content.recruiter) && (
+              <RecruiterPanel
                 storyId={sid}
                 content={content}
                 storyType={storyType}

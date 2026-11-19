@@ -77,6 +77,7 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       execMode={execMode}
       priorWritten={finishBase?.written ?? 0}
       finishBase={finishBase}
+      recruiterScreen={!intro && jobs.some((j) => !j.outcome && j.nextStage === "recruiter")}
       targets={targets}
       afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
       nextUp={
