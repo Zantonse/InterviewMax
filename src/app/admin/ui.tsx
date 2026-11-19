@@ -24,10 +24,11 @@ export function Card({
 export function AdminTabs({
   current,
 }: {
-  current: "overview" | "analytics" | "review" | "guidelines";
+  current: "overview" | "clients" | "analytics" | "review" | "guidelines";
 }) {
   const tabs = [
     { key: "overview", label: "Users and funnel", href: "/admin" },
+    { key: "clients", label: "My clients", href: "/admin/clients" },
     { key: "analytics", label: "Analytics", href: "/admin/analytics" },
     { key: "review", label: "Review queue", href: "/admin/review" },
     { key: "guidelines", label: "Coaching guidelines", href: "/admin/guidelines" },

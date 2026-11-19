@@ -141,8 +141,9 @@ async function AdminContent() {
           {views.map((v, i) => (
             <li key={i}>
               {formatWhen(v.at)} · {v.adminEmail} ·{" "}
-              {v.subjectUserId && (v.view === "user" || v.view.startsWith("story:"))
-                ? `${v.view === "user" ? "user" : "a story of"} ${userLabel(users, v.subjectUserId)}`
+              {v.subjectUserId &&
+              (v.view === "user" || v.view === "client" || v.view.startsWith("story:"))
+                ? `${v.view.startsWith("story:") ? "a story of" : v.view} ${userLabel(users, v.subjectUserId)}`
                 : v.view}
             </li>
           ))}

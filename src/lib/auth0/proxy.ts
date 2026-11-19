@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { rememberInvite, resumeInvite } from "@/lib/coaching/invite-cookie";
 import { isPublicPath, landingRewrite } from "@/lib/supabase/proxy";
 import { auth0 } from "./client";
 import { needsRefresh } from "./tokens";
@@ -17,8 +18,12 @@ export async function auth0Session(request: NextRequest) {
     if (pathname === "/") return landingRewrite(request, authRes);
     // A server action can't follow a redirect from here; it calls getCurrentUser, which redirects.
     if (isPublicPath(pathname) || request.headers.has("next-action")) return authRes;
-    return redirect(request, "/login");
+    // A coaching invite link waits through sign-in (src/lib/coaching/invite-cookie.ts).
+    return rememberInvite(request, () => redirect(request, "/login")) ?? redirect(request, "/login");
   }
+
+  const resumed = resumeInvite(request);
+  if (resumed) return resumed;
 
   // ?error= keeps a signed-in person on /login to read why their account couldn't open.
   if (pathname === "/login" && !request.nextUrl.searchParams.has("error")) {
