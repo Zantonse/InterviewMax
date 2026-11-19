@@ -18,10 +18,10 @@ export type HelpAmount = "full" | "some" | "light";
 
 type StoryLike = { id: string; storyType: string | null; content: StoryContent };
 
-// A behavioral (STAR) story with a written draft: About me and tough questions don't count.
+// A behavioral (CARL) story with a written draft: About me and tough questions don't count.
 export function isWrittenBehavioral(story: Omit<StoryLike, "id">): boolean {
   if (isToughType(story.storyType) || story.content.tough) return false;
-  return getStoryType(story.storyType)?.format === "star" && hasDraft(story.content);
+  return getStoryType(story.storyType)?.format === "carl" && hasDraft(story.content);
 }
 
 // How many behavioral stories the user has written, the open one left out.

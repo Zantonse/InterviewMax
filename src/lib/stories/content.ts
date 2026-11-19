@@ -470,7 +470,7 @@ export function parseContent(raw: unknown): StoryContent {
 
   if (isRecord(raw.draft) && isRecord(raw.draft.parts)) {
     content.draft = {
-      parts: stringEntries(raw.draft.parts),
+      parts: foldLegacyRole(stringEntries(raw.draft.parts)),
       untracedNumbers: Array.isArray(raw.draft.untracedNumbers)
         ? raw.draft.untracedNumbers.filter((n): n is string => typeof n === "string")
         : [],
@@ -541,4 +541,15 @@ function parseToughJobAnswers(raw: unknown): Record<string, ToughJobAnswer> | un
     };
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+// Behavioral stories moved from STAR to CARL (Craig, 2026-11-19): the old "Your role" part is now
+// part of the Context, stored under "situation". A draft written before that has both; they're read
+// as one Context so nothing the user wrote drops out of view. Only behavioral drafts have a "role"
+// part, so other formats are untouched.
+export function foldLegacyRole(parts: Record<string, string>): Record<string, string> {
+  if (!("role" in parts)) return parts;
+  const { role, ...rest } = parts;
+  const joined = [rest.situation?.trim(), role?.trim()].filter(Boolean).join(" ");
+  return { ...rest, situation: joined };
 }

@@ -4,7 +4,7 @@ import type { StoryTypeId } from "./story-types";
 // Simulated users with a specific question ("spotting a problem nobody asked you to look for")
 // couldn't find a story type for it and gave up (2026-11-08), so any question can start a story:
 // it's matched here in code (no model call, so it's instant), and anything that matches nothing
-// becomes a major project story, the plain STAR shape that fits most questions.
+// becomes a major project story, the plain CARL shape that fits most questions.
 //
 // Checked in order; the first rule with a match wins, so the narrower rules come first.
 const RULES: { type: StoryTypeId; re: RegExp }[] = [

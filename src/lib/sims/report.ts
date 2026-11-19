@@ -81,7 +81,7 @@ export function transcriptForAnalyst(run: PersonaRun, maxChars = 30000): string 
   return text.length > maxChars ? `${text.slice(0, maxChars)}\n…(clipped)` : text;
 }
 
-export const ANALYST_SYSTEM = `You analyse simulated-user runs of InterviewMax, an interview prep web app whose main product is a story builder: it asks a user questions about a work example, writes a behavioral interview story (STAR) from their answers, then grades it. AI personas with made-up work histories just used the app. Each was played by a different AI model with a set personality.
+export const ANALYST_SYSTEM = `You analyse simulated-user runs of InterviewMax, an interview prep web app whose main product is a story builder: it asks a user questions about a work example, writes a behavioral interview story (CARL: context, action, result, learning, optionally opened by the user's principle) from their answers, then grades it. AI personas with made-up work histories just used the app. Each was played by a different AI model with a set personality.
 
 Your reader is the app's founder. Write plain, specific English for a busy person. Every claim must point to evidence from the transcripts (persona and step number). Remember the limits: AI personas don't feel dread or fatigue like real people, and AI judging AI is biased, so flag findings that need a real tester to confirm.
 

@@ -28,15 +28,15 @@ export const SKILLS: readonly Skill[] = [
     label: "The stakes",
     what: "Where you were, your role, and what was at risk.",
     part: "situation",
-    partLabel: "Situation",
+    partLabel: "Context",
     hint: "Could a stranger tell what was at risk, and for whom?",
   },
   {
     id: "ownership",
     label: "What you did yourself",
     what: "“I” for your part, kept apart from what the team did.",
-    part: "role",
-    partLabel: "Your role",
+    part: "actions",
+    partLabel: "Action",
     hint: "Which sentences say what you did, not what “we” did?",
   },
   {
@@ -44,7 +44,7 @@ export const SKILLS: readonly Skill[] = [
     label: "Concrete actions",
     what: "Real steps, with a choice between options.",
     part: "actions",
-    partLabel: "What you did",
+    partLabel: "Action",
     hint: "Could someone picture each step, and where you chose one way over another?",
   },
   {
@@ -60,7 +60,7 @@ export const SKILLS: readonly Skill[] = [
     label: "Your thinking",
     what: "What you noticed, the options you weighed, and why you chose.",
     part: "actions",
-    partLabel: "What you did",
+    partLabel: "Action",
     hint: "Can the listener hear why you picked your path over another one?",
   },
   {
@@ -68,7 +68,7 @@ export const SKILLS: readonly Skill[] = [
     label: "The lesson",
     what: "Something specific you'd carry forward or do differently.",
     part: "reflection",
-    partLabel: "What you learned",
+    partLabel: "Learning",
     hint: "Does it end on something you'd do differently next time?",
   },
 ];
@@ -173,7 +173,7 @@ export function skillEvidence(stories: StoryLike[]): Record<SkillId, SkillEviden
   >;
   for (const story of stories) {
     const type = getStoryType(story.storyType);
-    if (type?.format !== "star" || story.content.tough) continue;
+    if (type?.format !== "carl" || story.content.tough) continue;
     if (!gradeIsCurrent(story.content) || !story.content.grade) continue;
     const scores = storySkillScores(story.content.grade);
     const aided = aidedSkills(story.content.followUps);

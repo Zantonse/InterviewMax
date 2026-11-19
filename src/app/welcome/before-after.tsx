@@ -58,16 +58,20 @@ export function BeforeAfter() {
           <figcaption className="text-xs font-semibold text-accent-300">After</figcaption>
           <blockquote className="mt-2 space-y-2 text-[15px] leading-relaxed">
             <p>
-              <span className="font-semibold">Situation.</span> 40 enterprise accounts were
+              <span className="font-semibold">Context.</span> 40 enterprise accounts were
               taking 9 weeks to go live, and two were threatening to churn.
             </p>
             <p>
-              <span className="font-semibold">What I did.</span> I mapped every handoff, cut the
+              <span className="font-semibold">Action.</span> I mapped every handoff, cut the
               setup steps from 14 to 6 and ran weekly check-ins with each account.
             </p>
             <p>
               <span className="font-semibold">Result.</span> Go-live dropped to 3 weeks and both
               accounts renewed.
+            </p>
+            <p>
+              <span className="font-semibold">Learning.</span> Slow starts hide in handoffs, so now
+              I map them before I ask for more people.
             </p>
           </blockquote>
         </figure>

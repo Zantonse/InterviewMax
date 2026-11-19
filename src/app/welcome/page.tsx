@@ -60,7 +60,7 @@ const FEATURES: { icon: NavIconName; title: string; body: string }[] = [
   {
     icon: "book",
     title: "Story builder",
-    body: "Guided questions turn a memory into a clear story with a situation, your actions and a result you can measure.",
+    body: "Guided questions turn a memory into a clear story with the context, your actions, a result you can measure and what you learned.",
   },
   {
     icon: "chat",
@@ -202,8 +202,8 @@ export default function WelcomePage() {
                   The same story, before and after
                 </h3>
                 <p className="mt-3 text-lg text-slate-600">
-                  Situation, what you did, and a result someone can remember. Short enough to say
-                  in under two minutes.
+                  Context, what you did, a result someone can remember, and what you learned.
+                  Short enough to say in under two minutes.
                 </p>
               </div>
               <BeforeAfter />

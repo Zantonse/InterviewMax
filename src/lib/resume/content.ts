@@ -83,7 +83,7 @@ export function isFinishedStory(story: {
   storyType: string | null;
   content: StoryContent;
 }): boolean {
-  return getStoryType(story.storyType)?.format === "star" && Boolean(story.content.draft);
+  return getStoryType(story.storyType)?.format === "carl" && Boolean(story.content.draft);
 }
 
 export function fitRank(fit: FitId): number {

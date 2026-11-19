@@ -13,8 +13,8 @@ import {
   INTRO_PARTS,
   INTRO_QUESTIONS,
   MAX_ANSWER_LENGTH,
-  STAR_LENGTH,
-  STAR_PARTS,
+  CARL_LENGTH,
+  CARL_PARTS,
   TAILORED_PARTS,
   TYPE_FOCUS,
   answerableQuestions,
@@ -29,13 +29,13 @@ import {
 //   call two (storyWrite): write the story from the user's own answers, inventing nothing
 
 const CHECKLIST = `- Principle: how they think about this kind of problem, the mental model or principle they bring to it, in a line ("I always start from the customer's deadline, not ours"). The story opens with it and then shows it in action. If the telling doesn't state one, ask once, lightly, e.g. "Before the story: how do you usually think about problems like this?" Never suggest a principle for them.
-- Situation: where they were, their role, and what was at stake are clear.
-- Ownership: their own actions are separated from the team's ("I", not only "we").
-- Actions: concrete steps, not generalities.
+- Context: where they were, their role (what they owned and had to work with), and what was at stake are clear.
+- Ownership (part of the Action): their own actions are separated from the team's ("I", not only "we").
+- Action: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
 - Decision and thinking: at the key moment, what they noticed, the options they weighed, and why they chose one. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?"). Don't ask what they watched or measured afterwards to know the choice was right: many decisions have no such step. Use it if they offer it.
 - Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one. Strong answers give the before and the after ("from 62% to 91%"), so if they gave only one, ask for the other. If the result is there but nothing says how far the work reached (adopted by other teams, reused, made into a process or policy), ask once whether it spread: reach is what shows senior scope.
-- Reflection: a specific lesson or something they'd do differently.`;
+- Learning: a specific lesson they'd carry forward or something they'd do differently. The story is told as CARL (Context, Action, Result, Learning), so it ends on the Learning; if the telling has none, ask what they took away from it. When they gave a principle, the Learning can say whether this story confirmed, sharpened or changed it.`;
 
 const GAPS = [
   "principle",
@@ -72,7 +72,7 @@ Tap options: a blank box is where people stall, so give a question 3 or 4 tap op
 
 // A behavioral story arrives as one telling in the user's own words, so the first round asks only
 // about what it left out. Interviewers judge judgment, so the thinking question is never dropped.
-const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what made it hard, what they were thinking at the key moment, the result with a number, what they learned, and how they think about this kind of problem in general (the principle the story opens with). If what they were thinking at the key moment is missing, one of your questions must ask about it. If the telling doesn't state a principle, one of your questions must ask for it, lightly. Put the lightest question first.`;
+const TOLD_FIRST_ROUND = `This is the only round of follow-ups before the story is final, so make each question count. They told the story in their own words; a rough draft has been written from it and your answers go straight into the rewrite. Ask 2 to 5 questions, only about what the telling doesn't already cover, and never about something it answers. Check for these, most important first: what was at stake, what they did themselves (not the team), what made it hard, what they were thinking at the key moment, the result with a number, what they learned, and how they think about this kind of problem in general (the principle the story opens with). If what they were thinking at the key moment is missing, one of your questions must ask about it. If the telling doesn't say what they learned, one of your questions must ask for it: the story ends on its Learning. If the telling doesn't state a principle, one of your questions must ask for it, lightly. Put the lightest question first.`;
 
 function roundInstructions(round: number, storyType?: StoryType): string {
   if (round <= 1 && storyType?.format !== "intro") return TOLD_FIRST_ROUND;
@@ -110,11 +110,11 @@ export const VOICE_RULES = `Sound like a person, not a report:
 // in code (own-words.ts), and a draft that's mostly the model's phrasing is sent back.
 const EDIT_RULES = `Work as their editor, not a ghostwriter. Their telling and follow-up answers are the raw material: keep their sentences and phrases wherever they work, and shape the story by cutting, reordering and joining them. Write new words only for the bridges between points and to fix what wouldn't make sense said aloud. Fix typos and grammar, but don't polish their wording into something they wouldn't say. A good test: they should be able to point at almost every line and say "I said that".`;
 
-export const WRITE_SYSTEM = `You are an interview coach writing a behavioral interview story for an experienced professional, from their own answers.
+export const WRITE_SYSTEM = `You are an interview coach writing a behavioral interview story for an experienced professional, from their own answers. The story follows CARL (Context, Action, Result, Learning), opened by the principle they bring to this kind of problem when they gave one: principle, then context, action, result, and the learning that closes the loop.
 
 The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers, and never work out a new figure from theirs: no before or after worked out from a change ("rose 15%" stays "rose 15%"), no totals, no differences. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
 
-Write in the first person, in plain spoken English the user could say aloud, as if answering the interviewer. Use "I" for what they did themselves and "we" only for the team. Aim for about 220 to 280 words in total, about two minutes spoken. Never go over ${STAR_LENGTH.max} words: that is a hard limit.
+Write in the first person, in plain spoken English the user could say aloud, as if answering the interviewer. Use "I" for what they did themselves and "we" only for the team. Aim for about 220 to 280 words in total, about two minutes spoken. Never go over ${CARL_LENGTH.max} words: that is a hard limit.
 
 ${TIGHT_RULES}
 
@@ -126,18 +126,17 @@ Make it strong, not just accurate: put their most impressive numbers where they 
 
 Write these parts:
 - principle: 1 sentence, at most 2, said before the story starts: the mental model, principle or way they think about this kind of problem, in their own words (e.g. "The way I see it, a launch date is a promise to the customer, so scope is what moves."). The story then shows it in action, so the actions should visibly follow from it. Write it only from a principle they stated in their answers; if they gave none, leave it as an empty string "". Never make one up from the story.
-- situation: 2 to 3 sentences on the context and what was at stake.
-- role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and (only if they said it) what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
-- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"); if they gave only a change, keep it as a change. If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
-- reflection: 1 to 2 sentences on what they learned or would do differently. When there's a principle, don't restate it; it can close the loop in a few words (whether the story confirmed or changed how they think).
+- situation: the Context, 2 to 4 sentences: where they were, what was at stake, and their role (what they owned and what they had to work with).
+- actions: the Action, 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and (only if they said it) what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- result: the Result, 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"); if they gave only a change, keep it as a change. If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
+- reflection: the Learning, 1 to 2 sentences on what they learned and carry forward, or would do differently. It's the last thing the interviewer hears, so make it specific to this story, not a platitude ("communication is key"). When there's a principle, don't restate it; close the loop in a few words: whether the story confirmed, sharpened or changed how they think. Write it only from what they said; if they gave no lesson, leave it as an empty string "" rather than inventing one.
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
 
 Also give the story a short title (at most 8 words) for their story bank, e.g. "Saving the Acme renewal".
 
 Reply with JSON only, no other text:
-{"title": "…", "parts": {${STAR_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
+{"title": "…", "parts": {${CARL_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
 // "Tell me about yourself" is a career introduction, not a story about one experience.
 const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope with a size are clear. Scope fits the role: a team or budget for someone who manages people; for an individual contributor, what they own and its reach (systems, data, accounts or reps they support, products, users, teams that rely on it, territory or quota). An individual contributor without a team or budget is not missing anything.

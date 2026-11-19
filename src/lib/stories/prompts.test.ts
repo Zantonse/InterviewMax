@@ -67,7 +67,7 @@ describe("story types", () => {
     // A behavioral story opens with one "tell it your way" question.
     expect(coreQuestions(stakeholder).map((q) => q.id)).toEqual(["start"]);
     expect(coreQuestionText("start", stakeholder)).toMatch(/^Tell me about a stakeholder/);
-    for (const type of STORY_TYPES.filter((t) => t.format === "star")) {
+    for (const type of STORY_TYPES.filter((t) => t.format === "carl")) {
       expect(type.joggers.length).toBeGreaterThanOrEqual(3);
     }
   });

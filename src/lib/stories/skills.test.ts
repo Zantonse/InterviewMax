@@ -122,6 +122,6 @@ describe("spot it yourself", () => {
     expect(spotOutcome("result", targets, 0)).toBe("found");
     expect(spotOutcome("stakes", targets, 0)).toBe("hint");
     expect(spotOutcome("stakes", targets, 1)).toBe("revealed");
-    expect(spotHint(targets)).toContain("What you did");
+    expect(spotHint(targets)).toContain("Action");
   });
 });

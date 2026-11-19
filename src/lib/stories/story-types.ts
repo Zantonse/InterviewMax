@@ -1,6 +1,7 @@
 // The story types that seed the bank (PRD, step 4), and the scripted questions the builder asks.
 // No model call is involved here. "Tell me about yourself" is a career introduction, so it has its
-// own questions and parts; the behavioral types share the STAR-style ones.
+// own questions and parts; the behavioral types share the CARL ones (Context, Action, Result,
+// Learning), opened by an optional principle.
 
 export const STORY_TYPES = [
   {
@@ -14,7 +15,7 @@ export const STORY_TYPES = [
   },
   {
     id: "major_project",
-    format: "star",
+    format: "carl",
     label: "A major project or customer",
     blurb: "The work you'd most want an interviewer to hear about.",
     themes: ["impact", "ownership", "execution"],
@@ -29,7 +30,7 @@ export const STORY_TYPES = [
   },
   {
     id: "difficult_stakeholder",
-    format: "star",
+    format: "carl",
     label: "A difficult stakeholder",
     blurb: "Someone who pushed back, and how you moved them.",
     themes: ["influence", "conflict", "communication"],
@@ -44,7 +45,7 @@ export const STORY_TYPES = [
   },
   {
     id: "went_wrong",
-    format: "star",
+    format: "carl",
     label: "Something that went wrong",
     blurb: "A miss or a failure, and what you did about it.",
     themes: ["failure", "resilience", "learning"],
@@ -59,7 +60,7 @@ export const STORY_TYPES = [
   },
   {
     id: "prioritization",
-    format: "star",
+    format: "carl",
     label: "How you prioritize",
     blurb: "Too much to do, and how you chose what came first.",
     themes: ["prioritization", "judgment", "time management"],
@@ -74,7 +75,7 @@ export const STORY_TYPES = [
   },
   {
     id: "cross_team",
-    format: "star",
+    format: "carl",
     label: "Cross-team work",
     blurb: "Getting something done with people outside your team.",
     themes: ["collaboration", "influence", "cross-functional"],
@@ -89,7 +90,7 @@ export const STORY_TYPES = [
   },
   {
     id: "defining_success",
-    format: "star",
+    format: "carl",
     label: "How you define success in your role",
     blurb: "What good looks like in your job, shown through one example.",
     themes: ["impact", "metrics", "role fit"],
@@ -107,7 +108,7 @@ export const STORY_TYPES = [
     // question, and interviewers listen for verification habits (what you checked and changed)
     // and distrust inflated AI claims.
     id: "ai_use",
-    format: "star",
+    format: "carl",
     label: "A time you used AI at work",
     blurb: "What you had it do, what you checked and changed, and what you decided yourself.",
     themes: ["AI at work", "judgment", "verification"],
@@ -146,24 +147,28 @@ export type StoryPart = { id: string; label: string };
 // `part` is where the answer lands in the story panel.
 export type CoreQuestion = { id: string; part: string; text: string };
 
-// The parts of a behavioral story, in the order it is told.
-// A behavioral story may open with how the user thinks about this kind of problem (Craig, Nov 6:
-// "start with the mental model, principles, or way I think about the problem before the story").
-// It's written only from their own words, and left empty when they gave none.
-export const STAR_PARTS = [
+// The parts of a behavioral story, in the order it is told: CARL (Craig, Nov 19: Context, Action,
+// Result, Learning, instead of STAR), opened by how the user thinks about this kind of problem
+// (Craig, Nov 6: "start with the mental model, principles, or way I think about the problem before
+// the story"). The principle is written only from their own words, and left empty when they gave
+// none; the Learning closes the loop on it.
+// Storage ids are kept from the STAR parts so saved drafts, grades and notes still line up:
+// "situation" holds the Context (which now also covers the user's role; older drafts' separate
+// "role" part is folded into it when they're read, see content.ts) and "reflection" holds the
+// Learning.
+export const CARL_PARTS = [
   { id: "principle", label: "How I think about it" },
-  { id: "situation", label: "Situation" },
-  { id: "role", label: "Your role" },
-  { id: "actions", label: "What you did" },
+  { id: "situation", label: "Context" },
+  { id: "actions", label: "Action" },
   { id: "result", label: "Result" },
-  { id: "reflection", label: "What you learned" },
+  { id: "reflection", label: "Learning" },
 ] as const satisfies readonly StoryPart[];
 
 // A behavioral story starts with one open question: tell it your way, as messy notes or out loud
 // (tester data, Oct 16: eight scripted questions before seeing a word, and every behavioral story
 // was dropped). The follow-ups then ask only about what the telling left out. The id stays "start"
 // so earlier first answers still count.
-export const STAR_QUESTIONS = [
+export const CARL_QUESTIONS = [
   { id: "start", part: "situation", text: "" }, // replaced by the story type's opening question
 ] as const satisfies readonly CoreQuestion[];
 
@@ -179,12 +184,12 @@ export const LEGACY_STAR_QUESTIONS = [
   },
   {
     id: "resources",
-    part: "role",
+    part: "situation",
     text: "What did you have to work with (people, budget, time, tools), and what was missing?",
   },
   {
     id: "ownership",
-    part: "role",
+    part: "actions",
     text: "What was your part specifically? What did you own yourself, as opposed to the wider team?",
   },
   {
@@ -267,11 +272,11 @@ export const TAILORED_PARTS = [
 ] as const satisfies readonly StoryPart[];
 
 export function storyParts(storyType: StoryType | undefined): readonly StoryPart[] {
-  return storyType?.format === "intro" ? INTRO_PARTS : STAR_PARTS;
+  return storyType?.format === "intro" ? INTRO_PARTS : CARL_PARTS;
 }
 
 export function coreQuestions(storyType: StoryType | undefined): readonly CoreQuestion[] {
-  return storyType?.format === "intro" ? INTRO_QUESTIONS : STAR_QUESTIONS;
+  return storyType?.format === "intro" ? INTRO_QUESTIONS : CARL_QUESTIONS;
 }
 
 // Every question this story may hold an answer to, in order: the core questions plus, for a
@@ -279,7 +284,7 @@ export function coreQuestions(storyType: StoryType | undefined): readonly CoreQu
 export function answerableQuestions(storyType: StoryType | undefined): readonly CoreQuestion[] {
   return storyType?.format === "intro"
     ? INTRO_QUESTIONS
-    : [...STAR_QUESTIONS, ...LEGACY_STAR_QUESTIONS.filter((q) => q.id !== "start")];
+    : [...CARL_QUESTIONS, ...LEGACY_STAR_QUESTIONS.filter((q) => q.id !== "start")];
 }
 
 // Longest interview question a story can be started from.
@@ -323,7 +328,7 @@ export function coreQuestionText(
 export const INTRO_LENGTH = { min: 120, max: 225 };
 // 150: published strong examples run 137 to 196 words, and every one failed a 180 minimum (grader
 // calibration, 2026-11-08; Craig agreed to lower it).
-export const STAR_LENGTH = { min: 150, max: 300 };
+export const CARL_LENGTH = { min: 150, max: 300 };
 
 // An introduction leads with the one figure that matters most and saves the rest for follow-up
 // questions (tester feedback: a list of metrics buries the point; Oct 16: keep it high level, not

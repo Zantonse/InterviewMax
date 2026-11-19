@@ -5,10 +5,10 @@ import type { StoryContent } from "./content";
 // in place). Plain code: each follow-up already says which gap it asks about, and each gap belongs
 // to one part of the story, so no extra model call is needed to place it.
 
-// Follow-up gap (GAPS in prompts.ts) -> the STAR part it adds to.
+// Follow-up gap (GAPS in prompts.ts) -> the CARL part it adds to.
 const GAP_PART: Record<string, string> = {
   situation: "situation",
-  ownership: "role",
+  ownership: "actions",
   actions: "actions",
   obstacle: "actions",
   decision: "actions",

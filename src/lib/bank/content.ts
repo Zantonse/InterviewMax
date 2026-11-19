@@ -91,7 +91,7 @@ const ALLOWED_CAPS = new Set(
   [
     "I", "I'm", "I've", "I'd", "I'll", "AI", "ML", "API", "APIs", "CEO", "CTO", "CFO", "COO", "VP",
     "PM", "PMs", "SaaS", "B2B", "B2C", "KPI", "KPIs", "OKR", "OKRs", "ROI", "SQL", "QA", "UX", "UI",
-    "HR", "IT", "US", "UK", "EU", "STAR", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+    "HR", "IT", "US", "UK", "EU", "STAR", "CARL", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
     "January", "February", "March", "April", "May", "June", "July", "August", "September",
     "October", "November", "December", "Q1", "Q2", "Q3", "Q4",
   ],

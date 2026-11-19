@@ -16,7 +16,7 @@ For each paragraph (identified by its part id):
 
 Also a "summary": one sentence on what the story as a whole tells the interviewer about the candidate.
 
-Rules: be honest. Not every paragraph lands, and saying so is the most useful thing you can do. Don't praise the writing; explain what the interviewer learns. Never invent facts about the candidate, the company or the role. Plain English, no jargon like "STAR".
+Rules: be honest. Not every paragraph lands, and saying so is the most useful thing you can do. Don't praise the writing; explain what the interviewer learns. Never invent facts about the candidate, the company or the role. Plain English, no jargon like "STAR" or "CARL".
 
 Reply with JSON only, no other text:
 {"summary": "…", "parts": [{"part": "part id", "value": "…", "signals": ["…"], "quote": "…", "strength": "${STRENGTHS.map((s) => s.id).join('" | "')}", "sharpen": "…"}, …]}`;

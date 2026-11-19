@@ -41,7 +41,7 @@ export function buildRecap(
   sessions: { items: PracticeItem[] }[],
 ): Recap | null {
   const written = stories.filter((s) => hasDraft(s.content));
-  const behavioral = written.filter((s) => getStoryType(s.storyType)?.format === "star");
+  const behavioral = written.filter((s) => getStoryType(s.storyType)?.format === "carl");
   if (behavioral.length === 0) return null;
 
   const counts = themeCounts(stories).filter((c) => c.id !== "about_you");

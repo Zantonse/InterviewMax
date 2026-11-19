@@ -8,8 +8,9 @@ import { storyParts, type StoryType } from "@/lib/stories/story-types";
 // The written story as a picture: each part in its own colour, so what's there, what's missing
 // and where the time goes show at a glance instead of in sentences. Plain code, no model call.
 
-// One colour per part, in story order (STAR: situation, role, actions, result, reflection; About
-// me: present, path, highlight, strengths, next). Amber is kept for "what to fix", so it isn't one.
+// One colour per part, in story order (About me: present, path, highlight, strengths, next; a
+// behavioral story's CARL parts pick theirs by id, below). Amber is kept for "what to fix", so it
+// isn't one.
 const PART_COLOURS = [
   { tint: "bg-sky-50", bar: "bg-sky-200", dot: "bg-sky-400", edge: "border-sky-300" },
   { tint: "bg-violet-50", bar: "bg-violet-200", dot: "bg-violet-400", edge: "border-violet-300" },
@@ -40,10 +41,14 @@ function colourAt(i: number) {
   return PART_COLOURS[i % PART_COLOURS.length];
 }
 
+// A behavioral story's CARL parts keep the colours they had as STAR parts (the lesson stays a calm
+// stone), so a story looks the same before and after the switch.
+const CARL_COLOUR: Record<string, number> = { situation: 0, actions: 2, result: 3, reflection: 4 };
+
 // The colour index of each part: the principle is -1, the rest count from 0 after it.
 function colourIndex(parts: readonly { id: string }[]): number[] {
   let n = 0;
-  return parts.map((p) => (p.id === "principle" ? -1 : n++));
+  return parts.map((p) => (p.id === "principle" ? -1 : (CARL_COLOUR[p.id] ?? n++)));
 }
 
 function spokenSeconds(words: number): number {

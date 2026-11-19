@@ -7,7 +7,7 @@ import { hasDraft, type StoryContent } from "@/lib/stories/content";
 import {
   INTRO_PARTS,
   REQUIRED_STORY_TYPE_ID,
-  STAR_PARTS,
+  CARL_PARTS,
   TAILORED_PARTS,
   getStoryType,
 } from "@/lib/stories/story-types";
@@ -355,7 +355,7 @@ export function warmUpCards(brief: Brief): WarmUpCard[] {
 export function storyParagraphs(content: StoryContent, storyType: string | null): string[] {
   const draft = content.draft;
   if (!draft) return [];
-  const parts = getStoryType(storyType)?.format === "intro" ? INTRO_PARTS : STAR_PARTS;
+  const parts = getStoryType(storyType)?.format === "intro" ? INTRO_PARTS : CARL_PARTS;
   return parts.map((p) => draft.parts[p.id]?.trim()).filter((p): p is string => Boolean(p));
 }
 

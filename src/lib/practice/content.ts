@@ -4,7 +4,7 @@ import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import { countWords } from "@/lib/stories/grading";
 import { displayLevel } from "@/lib/stories/levels";
 import { findNumbers, untracedNumbers } from "@/lib/stories/numbers";
-import { INTRO_LENGTH, STAR_LENGTH, getStoryType } from "@/lib/stories/story-types";
+import { INTRO_LENGTH, CARL_LENGTH, getStoryType } from "@/lib/stories/story-types";
 import { TOUGH_LENGTH, getToughQuestion, toughLength } from "@/lib/tough/questions";
 import { type Delivery, parseDelivery } from "./delivery";
 
@@ -381,7 +381,7 @@ export function targetWords(theme: string): { min: number; max: number } {
     const question = getToughQuestion(theme.slice("tough:".length));
     return question ? toughLength(question) : TOUGH_LENGTH;
   }
-  return theme === "about_you" ? INTRO_LENGTH : STAR_LENGTH;
+  return theme === "about_you" ? INTRO_LENGTH : CARL_LENGTH;
 }
 
 export function wordsToSeconds(words: number): number {

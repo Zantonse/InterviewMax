@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { TELL_SYSTEM } from "@/lib/telling/prompts";
 import { draftText, gradeSystem } from "./grading";
 import { PROBE_SYSTEM, parseWrite, probeSystem, WRITE_SYSTEM } from "./prompts";
-import { getStoryType, STAR_PARTS } from "./story-types";
+import { getStoryType, CARL_PARTS } from "./story-types";
 
 const story = getStoryType("cross_team");
 
 describe("principle-first opening", () => {
   it("is the first part of a behavioral story", () => {
-    expect(STAR_PARTS[0]).toEqual({ id: "principle", label: "How I think about it" });
+    expect(CARL_PARTS[0]).toEqual({ id: "principle", label: "How I think about it" });
   });
 
   it("is asked for once in the first round, and never suggested", () => {

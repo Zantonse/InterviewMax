@@ -115,8 +115,9 @@ type Editing = null | { kind: "core"; id: string } | { kind: "followUp"; index: 
 const GAP_TO_PART: Record<string, string> = {
   situation: "situation",
   context: "situation",
-  ownership: "role",
-  role: "role",
+  // CARL: what you did yourself is part of the Action; the old "Your role" part is in the Context.
+  ownership: "actions",
+  role: "situation",
   actions: "actions",
   obstacle: "actions",
   decision: "actions",
@@ -415,7 +416,7 @@ export function StoryBuilder({
   const seed = content.seed && storyType?.format !== "intro" ? content.seed : undefined;
   const seedNow = currentCore === "start" ? seed : undefined;
   // Behavioral stories open with an example story and help that fades as the user writes more.
-  const behavioral = storyType?.format === "star" && !content.tough;
+  const behavioral = storyType?.format === "carl" && !content.tough;
   const help = helpAmount(priorWritten);
   const showExample =
     behavioral && !content.draft && !content.answers.start?.trim() && !content.imported;

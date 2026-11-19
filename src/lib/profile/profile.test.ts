@@ -82,7 +82,7 @@ describe("assessProfile", () => {
     expect(result.weaknesses[0]).toMatchObject({ criterion: "coverage", next: { storyType: expect.any(String) } });
   });
 
-  it("averages grades per STAR criterion and cites the weakest story", () => {
+  it("averages grades per CARL criterion and cites the weakest story", () => {
     const result = assessProfile({
       ...none,
       stories: [

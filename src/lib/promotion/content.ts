@@ -168,7 +168,7 @@ function evidenceStatus(story: StoryLike, bar: BankRole | undefined): EvidenceSt
 
 export function gapMap(stories: StoryLike[], plan: PromotionPlan): DimensionEvidence[] {
   const bar = plan.targetLevel ? barRole(plan.targetLevel) : undefined;
-  const behavioral = stories.filter((s) => getStoryType(s.storyType)?.format === "star");
+  const behavioral = stories.filter((s) => getStoryType(s.storyType)?.format === "carl");
   return dimensionsFor(plan).map((dimension) => {
     const types = new Set<string>(dimension.themes.flatMap((t) => getTheme(t)?.storyTypes ?? []));
     const matched = behavioral
