@@ -5,6 +5,7 @@ import { ModelError } from "@/lib/ai";
 import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { numbersForStory } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
+import { answerProblem } from "@/lib/text/answer";
 import {
   gradeStory,
   inferCareerPath,
@@ -26,11 +27,13 @@ import {
   writesRoughDraft,
   type StoryContent,
 } from "@/lib/stories/content";
-import { getStory, updateStory } from "@/lib/stories/data";
+import { getStory, listStories, updateStory } from "@/lib/stories/data";
+import { skillsMap, weakSkillsInstructions, weakestSkills } from "@/lib/stories/skills";
 import {
   TOP_LEVEL,
   levelForGrade,
   levelGaps,
+  withoutAsked,
   needsAnswers,
   usesLevels,
   type StoryLevel,
@@ -255,12 +258,24 @@ export async function askFollowUps(storyId: string): Promise<BuilderResult> {
     const past = storyType
       ? notesForStoryType(summarizeTranscripts(await listTranscriptsForPrep()), storyType.id)
       : undefined;
-    const [resume, numbers, targets] = await Promise.all([
+    const [resume, numbers, targets, learning] = await Promise.all([
       resumeText(),
       storyNumbers(story.storyType),
       loadBuilderTargets(storyType),
+      // A behavioral story's first questions also look at the skills the person is still learning.
+      round === 1 && usesLevels(storyType, story.content) ? learningNote(storyId) : undefined,
     ]);
-    const asked = await probeStory(story.content, storyType, round, past, resume, numbers, targets);
+    const asked = await probeStory(
+      story.content,
+      storyType,
+      round,
+      past,
+      resume,
+      numbers,
+      targets,
+      undefined,
+      learning,
+    );
     const content = {
       ...story.content,
       followUps: [...(story.content.followUps ?? []), ...asked],
@@ -287,7 +302,8 @@ export async function levelUp(storyId: string): Promise<BuilderResult> {
     const from = levelForGrade(grade);
     if (from >= TOP_LEVEL) return { ok: true, content: story.content, title: story.title };
     const target = (from + 1) as StoryLevel;
-    const gaps = levelGaps(grade);
+    // Never ask again about something they've already answered in a level-up round.
+    const gaps = withoutAsked(levelGaps(grade), story.content.followUps);
     const started: StoryContent = {
       ...story.content,
       levelUp: { from, target, before: draft.parts, startedAt: new Date().toISOString() },
@@ -314,6 +330,19 @@ export async function levelUp(storyId: string): Promise<BuilderResult> {
     await updateStory(storyId, { content });
     return { ok: true, content, title: story.title };
   });
+}
+
+// Story skills map: what the person is still learning across their other stories, for the first
+// questions on a new one. Never blocks the questions.
+async function learningNote(storyId: string): Promise<string | undefined> {
+  try {
+    const others = (await listStories()).filter((s) => s.id !== storyId);
+    return weakSkillsInstructions(weakestSkills(skillsMap(others))) || undefined;
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Couldn't load the skills map for the follow-ups", err);
+    return undefined;
+  }
 }
 
 // Story levels: closes the level-up card.
@@ -545,9 +574,8 @@ async function withStory(
 function cleanAnswer(answer: unknown): string | BuilderResult {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return fail("Type an answer first.");
-  if (text.length > MAX_ANSWER_LENGTH) {
-    return fail(`Keep it under ${MAX_ANSWER_LENGTH.toLocaleString("en-US")} characters.`);
-  }
+  const problem = answerProblem(text, MAX_ANSWER_LENGTH);
+  if (problem) return fail(problem);
   return text;
 }
 

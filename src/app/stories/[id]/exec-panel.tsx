@@ -61,7 +61,7 @@ export function ExecPanel({
       aria-label="Exec version"
       data-testid="exec-version"
     >
-      <p className="text-sm font-bold uppercase tracking-wide text-ink-800">Exec version</p>
+      <p className="text-sm font-bold text-ink-800">Exec version</p>
       {current ? (
         <Made
           exec={exec}
@@ -142,7 +142,7 @@ function Made({
       </p>
 
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
           <span data-testid="exec-length">
             About {execSeconds(text)} seconds spoken · {Math.round(exec.ownWords * 100)}% in your
             words
@@ -156,7 +156,7 @@ function Made({
           {LINES.map((line, i) =>
             exec[line.key] ? (
               <li key={line.key} className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-bold text-slate-600">
                   {i + 1}. {line.label}
                 </span>
                 <p

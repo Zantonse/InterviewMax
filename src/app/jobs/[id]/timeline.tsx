@@ -30,7 +30,7 @@ export function InterviewTimeline({
       className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
       data-testid="job-timeline"
     >
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-ink-800">
+      <h2 className="mb-2 text-sm font-bold text-ink-800">
         Interview timeline
       </h2>
       {steps.length === 0 ? (
@@ -60,7 +60,7 @@ export function InterviewTimeline({
                 >
                   {i + 1}
                 </span>
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p className="text-xs font-bold text-slate-600">
                   {s.roundLabel}
                   {s.guessed && <span className="font-normal normal-case"> (guessed)</span>}
                 </p>
@@ -86,7 +86,7 @@ export function InterviewTimeline({
                         <span className="min-w-0 flex-1 text-slate-700">
                           &ldquo;{q.question}&rdquo;
                           {getTheme(q.theme) && (
-                            <span className="text-slate-500"> · {getTheme(q.theme)!.label}</span>
+                            <span className="text-slate-600"> · {getTheme(q.theme)!.label}</span>
                           )}
                         </span>
                       </li>
@@ -94,7 +94,7 @@ export function InterviewTimeline({
                   </ul>
                 )}
                 {!s.reviewed && (
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-600">
                     Not reviewed yet. Open it to see what they asked.
                   </p>
                 )}
@@ -118,7 +118,7 @@ export function InterviewTimeline({
                 <p className="font-semibold text-slate-900">Finished: {finished}</p>
               ) : (
                 <>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-bold text-slate-600">
                     Next{next.label ? `: likely the ${next.label.toLowerCase()}` : ""}
                   </p>
                   {next.prepare.length > 0 ? (
@@ -130,7 +130,7 @@ export function InterviewTimeline({
                         {next.prepare.map((p) => (
                           <li key={p.question}>
                             &ldquo;{p.question}&rdquo;
-                            {p.theme && <span className="text-slate-500"> · {p.theme}</span>}
+                            {p.theme && <span className="text-slate-600"> · {p.theme}</span>}
                           </li>
                         ))}
                       </ul>

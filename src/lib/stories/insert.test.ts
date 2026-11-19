@@ -13,4 +13,14 @@ describe("applyInsert", () => {
     expect(applyInsert("I led it. and then", { text: "I led it. ", n: 2, remove: true })).toBe("and then");
     expect(applyInsert("other", { text: "I led it. ", n: 2, remove: true })).toBe("other");
   });
+
+  it("swaps one pick for another in a one-pick row", () => {
+    expect(
+      applyInsert("At stake: Money.\nWe shipped", {
+        text: "At stake: A deadline. ",
+        replace: "At stake: Money. ",
+        n: 3,
+      }),
+    ).toBe("We shipped\nAt stake: A deadline. ");
+  });
 });

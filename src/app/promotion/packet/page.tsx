@@ -19,7 +19,7 @@ export default function PacketPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
         <Link href="/promotion" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your promotion
         </Link>
@@ -81,7 +81,7 @@ async function Packet() {
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600">
               Written{" "}
               {new Date(packet.generatedAt).toLocaleDateString("en-US", {
                 month: "short",
@@ -130,7 +130,7 @@ async function Packet() {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">{title}</h2>
+      <h2 className="text-sm font-bold text-slate-600">{title}</h2>
       <div className="mt-3 space-y-4">{children}</div>
     </section>
   );
@@ -149,7 +149,7 @@ function Item({
     <div>
       {heading && <p className="font-semibold text-slate-900">{heading}</p>}
       <p className="text-slate-800">{item.text}</p>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-slate-600">
         From{" "}
         {item.storyIds.map((id, i) => (
           <span key={id}>

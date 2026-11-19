@@ -5,6 +5,7 @@ import type { PastInterviewNotes } from "@/lib/transcripts/content";
 import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
+import { type Situation, audienceFor, situationRules } from "./situation";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
@@ -31,7 +32,7 @@ const CHECKLIST = `- Principle: how they think about this kind of problem, the m
 - Ownership: their own actions are separated from the team's ("I", not only "we").
 - Actions: concrete steps, not generalities.
 - Obstacle: what made it hard, the moment it could have gone wrong or the thing in the way. A story with no tension reads as "I did my job and it went fine", so if the telling has none, ask what the hardest part was.
-- Decision and thinking: at the key moment, what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?").
+- Decision and thinking: at the key moment, what they noticed, the options they weighed, and why they chose one. Interviewers are judging judgment, so if the reasoning is missing, ask one light question about that moment ("What made you go with X over Y?"). Don't ask what they watched or measured afterwards to know the choice was right: many decisions have no such step. Use it if they offer it.
 - Result: an outcome in real terms with at least one concrete number, or an estimate labelled as one. Strong answers give the before and the after ("from 62% to 91%"), so if they gave only one, ask for the other. If the result is there but nothing says how far the work reached (adopted by other teams, reused, made into a process or policy), ask once whether it spread: reach is what shows senior scope.
 - Reflection: a specific lesson or something they'd do differently.`;
 
@@ -57,7 +58,7 @@ Order: start light. The first question must be one they can answer from memory i
 Never ask for a list or a summary of their career ("your 2 or 3 key moves", "walk me through your career", "all the results you're proud of"). If you need one, infer it from what they've told you and their background, and ask them to confirm or correct it in one line ("It sounds like the big move was SE to product at TikTok. Is that right?").
 
 Rules:
-- Push for numbers. Every claim that could be measured should be: a result needs the context that makes it impressive (percent of quota or target, rank out of how many, before and after); something they built or led needs reach (how many people, teams or customers use it); an improvement needs size (hours or days saved, percent faster, revenue or deals it touched); scope needs size (team, accounts, territory). When an answer has a bare number like "sold 4.3M", ask for the comparison that gives it weight.
+- Push for numbers. Every claim that could be measured should be: a result needs the context that makes it impressive (percent of quota or target, rank out of how many, before and after); something they built or led needs reach (how many people, teams or customers use it); an improvement needs size (hours or days saved, percent faster, revenue or deals it touched); scope needs size, in the form their role has it: for someone who manages people, team size or budget; for an individual contributor, what they own and its reach (systems, data, accounts, products, users or teams that rely on it). Never ask an individual contributor for a team, territory or budget they haven't mentioned. When an answer has a bare number like "sold 4.3M", ask for the comparison that gives it weight.
 - Ask for numbers as a ballpark, never an exact figure: "roughly how much…", "about how many…". For before-and-after, a rough change is enough ("about half", "from days to hours"). People stall on figures they don't remember (tester feedback), so say a rough estimate is fine, and where they could check it if they want (a CRM or dashboard, a performance review, their manager, an old email or award announcement). Never suggest or guess a number yourself.
 - Push for specifics. When an answer is generic ("people come to me for AI", "I improved engagements"), ask for one concrete example: what exactly, for whom, and what changed.
 - Push for the why. Ask what drove a decision or a career move when it isn't clear.
@@ -110,7 +111,7 @@ const EDIT_RULES = `Work as their editor, not a ghostwriter. Their telling and f
 
 export const WRITE_SYSTEM = `You are an interview coach writing a behavioral interview story for an experienced professional, from their own answers.
 
-The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
+The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers, and never work out a new figure from theirs: no before or after worked out from a change ("rose 15%" stays "rose 15%"), no totals, no differences. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
 
 Write in the first person, in plain spoken English the user could say aloud, as if answering the interviewer. Use "I" for what they did themselves and "we" only for the team. Aim for about 220 to 280 words in total, about two minutes spoken. Never go over ${STAR_LENGTH.max} words: that is a hard limit.
 
@@ -126,8 +127,8 @@ Write these parts:
 - principle: 1 sentence, at most 2, said before the story starts: the mental model, principle or way they think about this kind of problem, in their own words (e.g. "The way I see it, a launch date is a promise to the customer, so scope is what moves."). The story then shows it in action, so the actions should visibly follow from it. Write it only from a principle they stated in their answers; if they gave none, leave it as an empty string "". Never make one up from the story.
 - situation: 2 to 3 sentences on the context and what was at stake.
 - role: 1 to 2 sentences on what they owned and what they had to work with.
-- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
-- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"). If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
+- actions: 3 to 5 sentences on the steps they took, the longest part of the story. Name the evidence they gathered (data they pulled, people they talked to) and the tools, methods or people involved, all only if they said, including what made it hard if they said (the obstacle is what makes the actions matter). At the key decision, show their thinking in a sentence or two: what they noticed, the options they weighed, why they chose, and (only if they said it) what they watched for, e.g. "I saw two paths: delay the launch or cut scope. I cut scope because the customer cared about the date, and I watched churn to know if I'd called it wrong." Use only reasoning they gave; never invent it. One or two thinking moments at most, so it reads as judgment, not a monologue.
+- result: 1 to 2 sentences on the outcome, with their number. If they gave a before and an after, say both ("from X to Y"); if they gave only a change, keep it as a change. If they said the work spread beyond the immediate result (other teams adopted it, it was reused, it became a process or policy), add that in one sentence: it shows the reach of the work.
 - reflection: 1 to 2 sentences on what they learned or would do differently. When there's a principle, don't restate it; it can close the loop in a few words (whether the story confirmed or changed how they think).
 
 The parts are said one after another as a single answer, so write them to flow together with natural spoken transitions, without repeating anything between parts.
@@ -138,7 +139,7 @@ Reply with JSON only, no other text:
 {"title": "…", "parts": {${STAR_PARTS.map((p) => `"${p.id}": "…"`).join(", ")}}}`;
 
 // "Tell me about yourself" is a career introduction, not a story about one experience.
-const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope with a size (team, number of accounts or reps they support, territory or quota) are clear.
+const INTRO_CHECKLIST = `- Present: their current role, company or industry, and scope with a size are clear. Scope fits the role: a team or budget for someone who manages people; for an individual contributor, what they own and its reach (systems, data, accounts or reps they support, products, users, teams that rely on it, territory or quota). An individual contributor without a team or budget is not missing anything.
 - Path: the career moves that matter are there, with why they made each one, not a list of every job.
 - Highlight: at least one result with a concrete number AND the context that makes it impressive: against quota or target, a rank out of how many, or a before and after.
 - Strengths: something specific they are known for, backed by an example with a number (how many people use what they built, time or money it saved, deals it helped win).
@@ -171,7 +172,7 @@ const INTRO_FOCUS_RULES = `It is an opening, not the whole case. Keep it high le
 
 export const INTRO_WRITE_SYSTEM = `You are an interview coach writing an experienced professional's answer to "Tell me about yourself", from their own answers.
 
-The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
+The hard rule: use only facts and figures the user gave. Never add, round, inflate, convert or combine numbers, and never work out a new figure from theirs: no before or after worked out from a change ("rose 15%" stays "rose 15%"), no totals, no differences. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. If a detail is missing, leave it out; don't fill it in. Don't name customers, people or companies they didn't name.
 
 If they uploaded a prepared answer, rework it into the parts below, keeping their wording where it already works and adding what their follow-up answers gave.
 
@@ -252,14 +253,18 @@ export function probeSystem(
   round = 1,
   targets?: BuilderTargets,
   levelUp?: { target: StoryLevel; gaps: LevelGap[] },
+  // What this person is still learning across their stories (see weakSkillsInstructions).
+  learning?: string,
+  // Entry level, manager or IC (see situation.ts).
+  situation?: Situation,
 ): string {
-  const base = storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM;
-  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
+  const base = forAudience(storyType?.format === "intro" ? INTRO_PROBE_SYSTEM : PROBE_SYSTEM, situation);
+  const tailor = `${hasTargets(targets) ? `\n\n${targetRules(storyType)}` : ""}${withSituation(situation)}`;
   const focus = storyType ? TYPE_FOCUS[storyType.id] : undefined;
   const round_ = levelUp
     ? levelUpInstructions(levelUp.target, levelUp.gaps, round)
     : roundInstructions(round, storyType);
-  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}\n\n${round_}`;
+  return `${base}${tailor}${focus ? `\n\n${focus}` : ""}${learning ? `\n\n${learning}` : ""}\n\n${round_}`;
 }
 
 // "Tell me about yourself": one question aimed at the one part the grader scored weakest (see
@@ -275,9 +280,20 @@ export function weakPartProbeSystem(
   part: WeakPart,
   round: number,
   targets?: BuilderTargets,
+  situation?: Situation,
 ): string {
-  const tailor = hasTargets(targets) ? `\n\n${targetRules(storyType)}` : "";
-  return `${INTRO_PROBE_SYSTEM}${tailor}\n\n${weakPartInstructions(part, round)}`;
+  const tailor = `${hasTargets(targets) ? `\n\n${targetRules(storyType)}` : ""}${withSituation(situation)}`;
+  return `${forAudience(INTRO_PROBE_SYSTEM, situation)}${tailor}\n\n${weakPartInstructions(part, round)}`;
+}
+
+// The coach's first line names who it's helping: entry-level candidates aren't "experienced".
+function forAudience(system: string, situation: Situation | undefined): string {
+  return system.replace("an experienced professional", audienceFor(situation));
+}
+
+function withSituation(situation: Situation | undefined): string {
+  const rules = situationRules(situation);
+  return rules ? `\n\n${rules}` : "";
 }
 
 export function writeSystem(storyType: StoryType | undefined): string {
@@ -529,7 +545,7 @@ Only describe the company's situation as the posting or the user describes it. I
 
 ${INTRO_FOCUS_RULES}
 
-The hard rule: use only facts and figures the user gave in their answers. Never add, round, inflate, convert or combine numbers. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. Facts about the company come only from the posting or from what the user said; never add your own. Don't name customers, people or companies they didn't name.
+The hard rule: use only facts and figures the user gave in their answers. Never add, round, inflate, convert or combine numbers, and never work out a new figure from theirs: no before or after worked out from a change ("rose 15%" stays "rose 15%"), no totals, no differences. Copy every figure exactly as they wrote it, and keep words like "about" or "estimated" that they attached to it. Facts about the company come only from the posting or from what the user said; never add your own. Don't name customers, people or companies they didn't name.
 
 ${TIGHT_RULES}
 

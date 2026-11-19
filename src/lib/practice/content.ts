@@ -2,8 +2,9 @@ import type { LikelyQuestion } from "@/lib/questions/content";
 import { coverageFor } from "@/lib/questions/coverage";
 import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
 import { countWords } from "@/lib/stories/grading";
+import { displayLevel } from "@/lib/stories/levels";
 import { findNumbers, untracedNumbers } from "@/lib/stories/numbers";
-import { INTRO_LENGTH, STAR_LENGTH } from "@/lib/stories/story-types";
+import { INTRO_LENGTH, STAR_LENGTH, getStoryType } from "@/lib/stories/story-types";
 import { TOUGH_LENGTH, getToughQuestion, toughLength } from "@/lib/tough/questions";
 import { type Delivery, parseDelivery } from "./delivery";
 
@@ -57,10 +58,10 @@ const REASON_RANK: Record<PracticeReason, number> = {
 export const REASON_LABELS: Record<PracticeReason, string> = {
   gap: "No story yet",
   unwritten: "Story not written yet",
-  not_yet: "Story graded “Not yet”",
+  not_yet: "Level 1 story",
   ungraded: "Story not graded yet",
-  good_enough: "Story good enough",
-  strong: "Story strong",
+  good_enough: "Level 2 story",
+  strong: "Level 3 story",
 };
 
 // One exchange: the interviewer's question (the likely question first, then each follow-up) and
@@ -176,7 +177,38 @@ export type PracticeItem = {
   screen?: boolean;
   feedback?: PracticeFeedback;
   skipped?: boolean;
+  // How the answer felt to the user, tapped on a five-step bar after the feedback (1 shaky to 5
+  // confident). Their own read, not the coach's: the next round brings shaky questions back first.
+  confidence?: Confidence;
 };
+
+export type Confidence = 1 | 2 | 3 | 4 | 5;
+
+export const CONFIDENCE_LABELS: Record<Confidence, string> = {
+  1: "Shaky",
+  2: "Unsure",
+  3: "OK",
+  4: "Solid",
+  5: "Confident",
+};
+
+export function parseConfidence(raw: unknown): Confidence | undefined {
+  return raw === 1 || raw === 2 || raw === 3 || raw === 4 || raw === 5 ? raw : undefined;
+}
+
+// The user's latest rating for each question across a job's earlier rounds (newest round first,
+// as listPracticeSessions returns them), keyed by question text.
+export function latestConfidence(
+  sessions: { items: PracticeItem[] }[],
+): Map<string, Confidence> {
+  const latest = new Map<string, Confidence>();
+  for (const session of sessions) {
+    for (const item of session.items) {
+      if (item.confidence && !latest.has(item.question)) latest.set(item.question, item.confidence);
+    }
+  }
+  return latest;
+}
 
 type StoryLike = {
   id: string;
@@ -193,16 +225,23 @@ export function reasonFor(
   if (!coverage || coverage.kind === "build") return "gap";
   if (!coverage.drafted) return "unwritten";
   const story = stories.find((s) => s.id === coverage.storyId);
-  if (!story || !gradeIsCurrent(story.content)) return "ungraded";
-  return story.content.grade?.tier ?? "ungraded";
+  const grade = story && gradeIsCurrent(story.content) ? story.content.grade : undefined;
+  if (!story || !grade) return "ungraded";
+  // Named by the story's level, the one scale shown everywhere (a Strong story that doesn't show
+  // its thinking yet is Level 2).
+  const level = displayLevel(grade, getStoryType(story.storyType), story.content);
+  return level === 1 ? "not_yet" : level === 2 ? "good_enough" : "strong";
 }
 
 // The questions for one round: gaps and weaker stories first, then the rest in the order the job's
-// likely questions rank them. Each comes with the story it should be answered with.
+// likely questions rank them. Each comes with the story it should be answered with. A question the
+// user last rated shaky or unsure comes back right after the gaps; one they rated confident goes
+// to the back.
 export function pickQuestions(
   questions: LikelyQuestion[],
   stories: StoryLike[],
   size = ROUND_SIZE,
+  felt: Map<string, Confidence> = new Map(),
 ): PracticeItem[] {
   return questions
     .map((q, index) => {
@@ -217,7 +256,14 @@ export function pickQuestions(
           : {}),
         turns: [{ question: q.question }],
       };
-      return { item, index, rank: REASON_RANK[reason] };
+      const confidence = felt.get(q.question);
+      const rank =
+        reason !== "gap" && confidence !== undefined && confidence <= 2
+          ? 0.5
+          : confidence === 5
+            ? REASON_RANK[reason] + 10
+            : REASON_RANK[reason];
+      return { item, index, rank };
     })
     .sort((a, b) => a.rank - b.rank || a.index - b.index)
     .slice(0, size)
@@ -465,6 +511,8 @@ export function parseItems(raw: unknown): PracticeItem[] {
       ...(r.screen === true ? { screen: true } : {}),
       ...(r.skipped === true ? { skipped: true } : {}),
     };
+    const confidence = parseConfidence(r.confidence);
+    if (confidence) item.confidence = confidence;
     const feedback = parseStoredFeedback(r.feedback);
     if (feedback) item.feedback = feedback;
     return [item];

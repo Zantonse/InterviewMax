@@ -44,7 +44,7 @@ export function WarmUp({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col" data-testid="warm-up">
       <div className="flex items-center justify-between gap-3 text-sm text-ink-200">
-        <span className="font-semibold uppercase tracking-wide">Warm-up for {company}</span>
+        <span className="font-semibold">Warm-up for {company}</span>
         <Link
           href={exitHref}
           className="rounded-lg px-2 py-1 font-medium hover:bg-white/10 hover:text-white"
@@ -127,7 +127,21 @@ export function WarmUp({
 function Card({ card }: { card: WarmUpCard }) {
   const [open, setOpen] = useState(false);
   const shell = "rounded-3xl bg-white p-6 shadow-sm sm:p-8";
-  const label = "text-xs font-bold uppercase tracking-wide text-ink-700";
+  const label = "text-xs font-bold text-ink-700";
+
+  if (card.kind === "stage") {
+    return (
+      <div className={shell} data-testid="warm-up-card" data-kind="stage">
+        <p className={label}>{card.stage.label}</p>
+        <p className="mt-3 text-xl font-bold tracking-tight text-slate-900">{card.stage.checks}</p>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-lg leading-relaxed text-slate-800">
+          {card.stage.tips.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
 
   if (card.kind === "intro") {
     return (
@@ -154,7 +168,7 @@ function Card({ card }: { card: WarmUpCard }) {
         <dl className="mt-4 space-y-4">
           {card.numbers.map((n) => (
             <div key={n.id}>
-              <dt className="text-slate-500">{n.label}</dt>
+              <dt className="text-slate-600">{n.label}</dt>
               <dd className="text-2xl font-bold text-slate-900">{n.value}</dd>
             </div>
           ))}

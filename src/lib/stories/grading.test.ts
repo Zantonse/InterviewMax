@@ -446,3 +446,10 @@ describe("scoreOutOf100", () => {
     expect(scoreOutOf100([c(2), c(2)], "good_enough")).toBe(50);
   });
 });
+
+describe("the thinking bar", () => {
+  it("counts the choice, an option and the reason as shown, without what they watched", () => {
+    const system = gradeSystem(stakeholder);
+    expect(system).toMatch(/never hold a story at "partly" because it's missing/);
+  });
+});

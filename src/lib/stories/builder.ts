@@ -48,6 +48,7 @@ import {
 import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
 import { dropRepeats } from "./repeats";
+import { storySituation } from "./situation";
 import type { BuilderTargets } from "./targets";
 import type { ChatMessage } from "@/lib/ai/types";
 import type { StoryNumber } from "@/lib/numbers/checklist";
@@ -68,10 +69,11 @@ export async function probeStory(
   numbers: StoryNumber[] = [],
   targets?: BuilderTargets,
   levelUp?: { target: StoryLevel; gaps: LevelGap[] },
+  learning?: string,
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    probeSystem(storyType, round, targets, levelUp),
+    probeSystem(storyType, round, targets, levelUp, learning, storySituation(content, storyType, targets)),
     probeMessages(content, storyType, past, resume, numbers, targets),
   );
   const asked = parseProbe(text, round);
@@ -93,7 +95,7 @@ export async function probeWeakPart(
 ): Promise<FollowUp[]> {
   const { text } = await call(
     "storyProbe",
-    weakPartProbeSystem(storyType, part, round, targets),
+    weakPartProbeSystem(storyType, part, round, targets, storySituation(content, storyType, targets)),
     probeMessages(content, storyType, undefined, undefined, numbers, targets),
   );
   return parseProbe(text, round)

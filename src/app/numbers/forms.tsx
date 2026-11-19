@@ -7,7 +7,7 @@ import { CANT_FIND_STEPS, ESTIMATE_EXAMPLES } from "@/lib/numbers/sources";
 import { chooseRole, saveNumbers, type FormState } from "./actions";
 
 const INPUT =
-  "w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink-700 focus:outline-none";
+  "w-full rounded-xl border-0 bg-white px-3 py-2.5 text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-500 focus:ring-2 focus:ring-ink-700 focus:outline-none";
 const PRIMARY =
   "rounded-xl bg-ink-800 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-900 disabled:opacity-60";
 const SECONDARY =
@@ -65,7 +65,7 @@ export function RoleForm({
             placeholder="e.g. Revenue operations manager"
             className={`mt-1 ${INPUT}`}
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-600">
             I&apos;ll draft the numbers interviewers expect for this role. You can change it later.
           </p>
         </div>
@@ -114,7 +114,7 @@ export function NumbersForm({
             <button
               type="button"
               onClick={() => setGuided(false)}
-              className="font-medium text-slate-500 hover:text-ink-800"
+              className="font-medium text-slate-600 hover:text-ink-800"
             >
               Show all at once
             </button>
@@ -141,7 +141,7 @@ export function NumbersForm({
               {item.label}
             </label>
             <p className="mt-0.5 text-sm text-slate-600">{item.why}</p>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-slate-600">
               <span className="font-medium text-slate-700">Where to find it:</span> {item.where}
             </p>
             <button
@@ -177,7 +177,7 @@ export function NumbersForm({
           </li>
         ))}
       </ol>
-      <div className="sticky bottom-0 -mx-5 mt-2 flex flex-wrap items-center gap-3 bg-white/95 px-5 py-3 sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mx-5 mt-2 flex flex-wrap items-center gap-3 bg-white/95 px-5 py-3 sm:-mx-6 sm:px-6">
         {guided && !last ? (
           <>
             <button type="button" onClick={() => go(step + 1)} className={PRIMARY}>
@@ -191,7 +191,7 @@ export function NumbersForm({
             <button
               type="submit"
               disabled={pending}
-              className="text-sm font-medium text-slate-500 hover:text-ink-800 disabled:opacity-60"
+              className="text-sm font-medium text-slate-600 hover:text-ink-800 disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save and finish later"}
             </button>

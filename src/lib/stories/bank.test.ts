@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { levelMix, needLabel, targetLevel, themeCoverage } from "./bank";
+import { levelMix, needLabel, targetLevel, themeCounts, themeCoverage } from "./bank";
 import { emptyContent, type StoryContent } from "./content";
 import type { StoryGrade } from "./grading";
 
@@ -123,5 +123,24 @@ describe("targetLevel", () => {
   it("picks the highest level among the jobs", () => {
     expect(targetLevel([{ level: "mid" }, { level: "senior" }])).toBe("senior");
     expect(targetLevel([{ level: null }])).toBeUndefined();
+  });
+});
+
+describe("themeCounts", () => {
+  it("counts written and started stories per theme, most first, empty themes last", () => {
+    const counts = themeCounts([
+      story("a", "major_project", drafted()),
+      story("b", "major_project", drafted()),
+      story("c", "went_wrong", drafted()),
+      story("d", "difficult_stakeholder"),
+    ]);
+    const by = Object.fromEntries(counts.map((c) => [c.id, [c.written, c.started]]));
+    // major_project answers impact, ownership and success; went_wrong answers ownership too.
+    expect(by.ownership).toEqual([3, 0]);
+    expect(by.impact).toEqual([2, 0]);
+    expect(by.conflict).toEqual([0, 1]);
+    expect(counts[0].id).toBe("ownership");
+    const firstEmpty = counts.findIndex((c) => c.written === 0 && c.started === 0);
+    expect(counts.slice(firstEmpty).every((c) => c.status === "empty")).toBe(true);
   });
 });

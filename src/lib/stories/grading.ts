@@ -143,7 +143,9 @@ export const BANK_ROLES = [
 ] as const;
 
 // "Show your thinking" (PRD, Oct 15): whether a behavioral story shows how the user thought at the
-// key decision (what they noticed, the options they weighed, why they chose, what they watched for).
+// key decision (what they noticed, the options they weighed, why they chose). What they watched
+// afterwards is a bonus, not part of the bar: a tester was asked for it three rounds running when
+// his decision had no such step (Nov 16).
 // Feedback only, shown under Actions and data for the eval harness. It never changes a score or the
 // tier until the eval harness shows how it would move grades.
 export const THINKING_LEVELS = [
@@ -456,6 +458,9 @@ export function scoreOutOf100(criteria: CriterionScore[], tier?: Tier): number |
 // story from Strong but doesn't make it Not yet on its own.
 const OPTIONAL_FOR_NOT_YET = new Set(["reflection"]);
 
+// Strong needs every part at Solid or better and this average across the parts.
+export const STRONG_AVERAGE = 3.5;
+
 export function tierFor(criteria: CriterionScore[], checks: CheckResult[]): Tier {
   const scores = criteria.map((c) => c.score);
   if (scores.length === 0) return "not_yet";
@@ -466,7 +471,7 @@ export function tierFor(criteria: CriterionScore[], checks: CheckResult[]): Tier
 
   if (!passed("number") || !passed("traced")) return "not_yet";
   if (core.length === 0 || Math.min(...core) <= 1 || coreAvg < 2.5) return "not_yet";
-  if (Math.min(...scores) >= 3 && avg >= 3.5 && checks.every((c) => c.pass)) return "strong";
+  if (Math.min(...scores) >= 3 && avg >= STRONG_AVERAGE && checks.every((c) => c.pass)) return "strong";
   return "good_enough";
 }
 
@@ -646,8 +651,9 @@ Reply with JSON only, no other text:
 }
 
 // The grader's instructions for "show your thinking". Kept out of the scores on purpose.
-const THINKING_RULES = `Also say whether the story shows the user's thinking at the key decision: what they noticed, the options they weighed, why they chose one, and what they watched to know if they'd called it right. Interviewers are judging judgment, and the reasoning is what a resume can't show. One or two short thinking moments are enough; a long monologue is not better. Judge only what is written.
-- level: "shown" when the reasoning at the key decision is clear, "partly" when some of it is there (say, the choice but not why, or no sense of what they watched for), "missing" when the story only lists what they did.
+const THINKING_RULES = `Also say whether the story shows the user's thinking at the key decision: what they noticed or which options they weighed, and why they chose the one they did. Interviewers are judging judgment, and the reasoning is what a resume can't show. One or two short thinking moments are enough; a long monologue is not better. Judge only what is written.
+- level: "shown" when the story names the choice, at least one other option or what they noticed, and why they chose. "partly" when some of that is there (say, the choice but not why, or a reason but nothing it was weighed against). "missing" when the story only lists what they did.
+- What they watched afterwards to know they'd called it right is a bonus when it's there. Many real decisions have no such step: never hold a story at "partly" because it's missing, and never ask for it in improve.
 - note: one sentence (at most 30 words) quoting where the thinking shows, or naming the moment where it's missing.
 - improve: unless it's shown, one sentence addressed to the user on what to add at that moment, e.g. "At the point you chose to cut scope, say what else you considered and why." Never invent their reasoning.
 This is feedback only: don't let it change any score.`;
