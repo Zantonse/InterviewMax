@@ -9,6 +9,7 @@ import {
   RESUME_EXTENSIONS,
 } from "@/lib/jobs/content";
 import { MAX_ROUND, MAX_ROUND_NAME_LENGTH, OUTCOMES } from "@/lib/jobs/outcome";
+import { STAGES_REACHED } from "@/lib/jobs/stage-reached";
 import { POSTING_FILE_ACCEPT, looksLikePostingText, postingFileKind } from "@/lib/jobs/posting-file";
 import { SUPPORTED_SITES } from "@/lib/jobs/posting-sources";
 import { MAX_REPORTS_LENGTH } from "@/lib/questions/content";
@@ -724,6 +725,8 @@ export function JobOutcomeForm({
   outcome,
   roundReached,
   roundName,
+  stageReached = null,
+  stageGuess = null,
   finishedOn,
   roles = [],
   offeredRole = "",
@@ -732,6 +735,9 @@ export function JobOutcomeForm({
   outcome: string | null;
   roundReached: number | null;
   roundName: string;
+  // The stage the interviews ended at, and the app's guess for it when none is set yet.
+  stageReached?: string | null;
+  stageGuess?: string | null;
   finishedOn: string | null;
   // The job's role titles, main first, when it holds more than one.
   roles?: string[];
@@ -740,6 +746,8 @@ export function JobOutcomeForm({
   const id = useId();
   const finished = Boolean(outcome);
   const [editing, setEditing] = useState(false);
+  const [picked, setPicked] = useState(outcome);
+  const stageDefault = stageReached ?? stageGuess ?? "";
   if (finished && !editing) {
     return (
       <div className="flex flex-wrap items-center gap-3">
@@ -781,6 +789,7 @@ export function JobOutcomeForm({
                 value={o.id}
                 required
                 defaultChecked={outcome === o.id}
+                onChange={() => setPicked(o.id)}
                 className="accent-ink-800"
               />
               {o.label}
@@ -788,6 +797,35 @@ export function JobOutcomeForm({
           ))}
         </div>
       </fieldset>
+      {picked !== "offer" && (
+        <fieldset data-testid="job-outcome-stage">
+          <legend className="text-sm font-semibold text-slate-700">
+            Where did it end?{" "}
+            <span className="font-normal text-slate-600">
+              {!stageReached && stageGuess
+                ? "(my guess is picked; change it if it's wrong)"
+                : "(the last stage you had)"}
+            </span>
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {STAGES_REACHED.map((st) => (
+              <label
+                key={st.id}
+                className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-800 ring-1 ring-slate-300 has-[:checked]:bg-ink-50 has-[:checked]:ring-2 has-[:checked]:ring-ink-700"
+              >
+                <input
+                  type="radio"
+                  name="stageReached"
+                  value={st.id}
+                  defaultChecked={stageDefault === st.id}
+                  className="accent-ink-800"
+                />
+                {st.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {roles.length > 1 && (
         <label className="block text-sm font-semibold text-slate-700" htmlFor={`${id}-role`}>
           For which role?

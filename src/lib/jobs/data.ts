@@ -6,6 +6,7 @@ import { parseCurriculum, type Curriculum } from "@/lib/curriculum/content";
 import { parseResumeSet, type ResumeSet } from "@/lib/resume/content";
 import { parseLikelyQuestions, type LikelyQuestions } from "@/lib/questions/content";
 import { isOutcome, type OutcomeId } from "./outcome";
+import { isStageReached, type StageReachedId } from "./stage-reached";
 import { isRound, type RoundId } from "@/lib/bank/content";
 import { parseOtherRoles, withRoleQuestion, type JobRole } from "./roles";
 import { MAX_QUESTIONS } from "@/lib/questions/content";
@@ -43,6 +44,9 @@ export type TargetJob = {
   outcome: OutcomeId | null;
   roundReached: number | null;
   roundName: string;
+  // The stage the interviews ended at (recruiter screen, hiring manager…), set by the user once the
+  // job is finished. Null until then; the job map then offers a guess.
+  stageReached: StageReachedId | null;
   finishedOn: string | null;
   // Other roles at the same company in this one job; the job's own title, level and posting are
   // the main role (see roles.ts).
@@ -71,6 +75,7 @@ type Row = {
   outcome: string | null;
   round_reached: number | null;
   round_name: string | null;
+  stage_reached: string | null;
   finished_on: string | null;
   other_roles: unknown;
   offered_role: string | null;
@@ -78,7 +83,7 @@ type Row = {
 };
 
 const COLUMNS =
-  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, next_stage, outcome, round_reached, round_name, finished_on, other_roles, offered_role, created_at";
+  "id, title, company, level, level_confirmed, job_description, likely_questions, interview_reports, questions_to_ask, resume_bullets, curriculum, interview_date, next_stage, outcome, round_reached, round_name, stage_reached, finished_on, other_roles, offered_role, created_at";
 
 function toJob(row: Row): TargetJob {
   const otherRoles = parseOtherRoles(row.other_roles);
@@ -113,6 +118,7 @@ function toJob(row: Row): TargetJob {
     outcome: isOutcome(row.outcome) ? row.outcome : null,
     roundReached: row.round_reached,
     roundName: row.round_name ?? "",
+    stageReached: isStageReached(row.stage_reached) ? row.stage_reached : null,
     finishedOn: row.finished_on,
     otherRoles,
     offeredRole: row.offered_role ?? "",
@@ -228,6 +234,7 @@ export async function setJobOutcome(
     outcome: OutcomeId;
     roundReached: number | null;
     roundName: string;
+    stageReached: StageReachedId | null;
     finishedOn: string | null;
     offeredRole?: string;
   } | null,
@@ -243,14 +250,37 @@ export async function setJobOutcome(
             outcome: value.outcome,
             round_reached: value.roundReached,
             round_name: value.roundName || null,
+            stage_reached: value.outcome === "offer" ? null : value.stageReached,
             finished_on: value.finishedOn,
             offered_role: value.offeredRole || null,
           }
-        : { outcome: null, round_reached: null, round_name: null, finished_on: null, offered_role: null },
+        : {
+            outcome: null,
+            round_reached: null,
+            round_name: null,
+            stage_reached: null,
+            finished_on: null,
+            offered_role: null,
+          },
     )
     .eq("id", id)
     .select("id");
   if (error) throw new Error(`Couldn't save the outcome: ${error.message}`);
+  if (!data?.length) throw new Error("Job not found.");
+}
+
+// Sets the stage a finished job ended at, from the job map's one-tap card.
+export async function setStageReached(id: string, stage: StageReachedId): Promise<void> {
+  if (!UUID_RE.test(id)) throw new Error("Job not found.");
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("target_jobs")
+    .update({ stage_reached: stage })
+    .eq("id", id)
+    .not("outcome", "is", null)
+    .select("id");
+  if (error) throw new Error(`Couldn't save the stage: ${error.message}`);
   if (!data?.length) throw new Error("Job not found.");
 }
 

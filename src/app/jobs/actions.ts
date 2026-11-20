@@ -26,6 +26,7 @@ import {
   setJobLevel,
   setNextStage,
   setJobOutcome,
+  setStageReached,
 } from "@/lib/jobs/data";
 import {
   MAX_ROUND_NAME_LENGTH,
@@ -34,6 +35,7 @@ import {
   parseRound,
 } from "@/lib/jobs/outcome";
 import { MAX_OTHER_ROLES, swapMainRole } from "@/lib/jobs/roles";
+import { isStageReached } from "@/lib/jobs/stage-reached";
 import { fetchPosting } from "@/lib/jobs/fetch-posting";
 import type { FetchedPosting } from "@/lib/jobs/posting-sources";
 import { readJobs } from "@/lib/jobs/read";
@@ -283,15 +285,25 @@ export async function saveJobOutcome(formData: FormData): Promise<void> {
   const outcome = formData.get("outcome");
   if (!isOutcome(outcome)) return;
   const finished = formData.get("finishedOn");
+  const stageReached = formData.get("stageReached");
   const wasOpen = formData.get("wasOpen") === "1";
   await setJobOutcome(jobId, {
     outcome,
     roundReached: parseRound(formData.get("round")),
     roundName: clean(formData.get("roundName")).slice(0, MAX_ROUND_NAME_LENGTH),
+    stageReached: isStageReached(stageReached) ? stageReached : null,
     finishedOn: isDate(finished) ? finished : null,
     offeredRole: clean(formData.get("offeredRole")).slice(0, MAX_TITLE_LENGTH),
   });
   if (wasOpen) await trackEvent("job_finished");
+  refresh();
+}
+
+// One tap on the "Where did these end?" card: the stage a finished job ended at.
+export async function saveStageReached(formData: FormData): Promise<void> {
+  const stage = formData.get("stageReached");
+  if (!isStageReached(stage)) return;
+  await setStageReached(String(formData.get("jobId") ?? ""), stage);
   refresh();
 }
 

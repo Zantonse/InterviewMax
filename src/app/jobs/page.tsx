@@ -7,9 +7,13 @@ import { StoryPlan } from "@/components/story-plan";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
 import { isFinished, outcomeSummary } from "@/lib/jobs/outcome";
+import { guessStageReached } from "@/lib/jobs/stage-guess";
+import { jobsMissingStage } from "@/lib/jobs/stage-reached";
 import { listStories } from "@/lib/stories/data";
+import { listTranscriptsForPrep } from "@/lib/transcripts/data";
 import { removeResume } from "./actions";
 import { AddJobForm, PendingButton, RereadButton, ResumeForm } from "./forms";
+import { WhereDidTheseEnd } from "./stage-card";
 
 export const metadata: Metadata = { title: "Target jobs · InterviewMax" };
 
@@ -61,16 +65,25 @@ export default function JobsPage({
 }
 
 async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?: string }> }) {
-  const [jobs, { resume, overview }, stories, params] = await Promise.all([
+  const [jobs, { resume, overview }, stories, transcripts, params] = await Promise.all([
     listJobs(),
     getJobsPrep(),
     listStories(),
+    listTranscriptsForPrep(),
     searchParams,
   ]);
   // Finished jobs (an outcome is set) leave the main list for a folded section below it, so the
   // list shows only the jobs still in play. The sidebar's "Finished jobs" link opens it.
   const active = jobs.filter((j) => !isFinished(j));
   const finished = jobs.filter(isFinished);
+  // Finished jobs with no stage yet, each with the app's guess, for the one-tap card.
+  const missingStage = jobsMissingStage(jobs).map((j) => ({
+    id: j.id,
+    title: j.title,
+    company: j.company,
+    outcome: j.outcome,
+    guess: guessStageReached(j, transcripts),
+  }));
 
   if (jobs.length === 0) {
     return (
@@ -103,6 +116,8 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
             <RereadButton />
           </Card>
         )}
+
+        <WhereDidTheseEnd jobs={missingStage} />
 
         {active.length > 0 ? (
           <ul className="space-y-3" data-testid="job-list">
