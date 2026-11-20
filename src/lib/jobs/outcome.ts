@@ -2,6 +2,8 @@
 // with no outcome is still in progress. Finished jobs stay on the list but don't count toward
 // MAX_JOBS and aren't picked for the prep plan.
 
+import { stageReachedLabel } from "./stage-reached";
+
 export const OUTCOMES = [
   { id: "offer", label: "Got an offer", short: "Offer" },
   { id: "rejected", label: "Didn't get it", short: "Not selected" },
@@ -37,11 +39,13 @@ export function parseRound(value: unknown): number | null {
   return Number.isInteger(n) && n >= 1 && n <= MAX_ROUND ? n : null;
 }
 
-// "Offer · reached round 4 (Onsite loop)" for the job list and the job page.
+// "Offer · reached round 4 (Onsite loop)" for the job list and the job page; with the stage it
+// ended at, "Not selected · ended at Hiring manager · round 2".
 export function outcomeSummary(o: {
   outcome: string | null;
   roundReached: number | null;
   roundName: string;
+  stageReached?: string | null;
   // Which role it was for, when the job held several ("Offer · Solutions Engineer, Strategic").
   offeredRole?: string;
 }): string {
@@ -49,6 +53,11 @@ export function outcomeSummary(o: {
   const short =
     (OUTCOMES.find((x) => x.id === o.outcome)?.short ?? "Finished") + (role ? ` · ${role}` : "");
   const name = o.roundName.trim();
+  const stage = o.outcome !== "offer" ? stageReachedLabel(o.stageReached) : undefined;
+  if (stage) {
+    const round = o.roundReached ? ` · round ${o.roundReached}${name ? ` (${name})` : ""}` : "";
+    return `${short} · ended at ${stage}${round}`;
+  }
   if (o.roundReached) return `${short} · reached round ${o.roundReached}${name ? ` (${name})` : ""}`;
   return name ? `${short} · reached ${name}` : short;
 }

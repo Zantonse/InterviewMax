@@ -37,6 +37,7 @@ import {
   PredictForm,
 } from "../forms";
 import { outcomeSummary } from "@/lib/jobs/outcome";
+import { guessStageReached } from "@/lib/jobs/stage-guess";
 import { roleTitles } from "@/lib/jobs/roles";
 import { RolesCard } from "./roles-card";
 import { AI_ANSWER_ID, getToughQuestion, missingPrompts, toughStoryType } from "@/lib/tough/questions";
@@ -525,17 +526,19 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             </p>
           ) : (
             <p className="mb-4 text-sm text-slate-600">
-              When the interviews here are over, mark how it went and the round you reached.
+              When the interviews here are over, mark how it went and where it ended.
               Finished jobs stay here but don&apos;t count toward your job limit.
             </p>
           )}
           <JobOutcomeForm
             // A saved change remounts the form, so it closes back to the summary.
-            key={`${job.outcome}-${job.roundReached}-${job.roundName}-${job.finishedOn}-${job.offeredRole}`}
+            key={`${job.outcome}-${job.roundReached}-${job.roundName}-${job.stageReached}-${job.finishedOn}-${job.offeredRole}`}
             jobId={job.id}
             outcome={job.outcome}
             roundReached={job.roundReached}
             roundName={job.roundName}
+            stageReached={job.stageReached}
+            stageGuess={guessStageReached(job, transcripts)?.stage ?? null}
             finishedOn={job.finishedOn}
             roles={job.otherRoles.length > 0 ? roleTitles(job) : []}
             offeredRole={job.offeredRole}
