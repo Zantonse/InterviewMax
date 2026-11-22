@@ -1,5 +1,6 @@
 // Mic mode (PRD P0): speech is written down by a speech-to-text model and then handled exactly
-// like typed text. No prompt: the transcription model only writes down what was said.
+// like typed text. The only prompt is a fixed spelling hint for AI product names (writing/ai-names.ts);
+// the transcription model only writes down what was said.
 
 // Bracketed sound notes some speech-to-text models add, such as "(laughs)" or "[background
 // noise]". Nobody says brackets out loud, so none of these is the user's words.

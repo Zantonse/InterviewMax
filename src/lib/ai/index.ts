@@ -5,6 +5,7 @@ import { getUserFieldSafely } from "@/lib/field/data";
 import { isFieldStep, withFieldLine } from "@/lib/field/prompt";
 import { redact, type Redaction } from "@/lib/promotion/content";
 import { getRedactionsSafely } from "@/lib/promotion/data";
+import { withAiNames } from "@/lib/writing/ai-names";
 import { isPlainStep, plainPunctuation, withPlainWording } from "@/lib/writing/plain";
 import { STEP_MODELS, type Step, type StepModel } from "./config";
 import { getProvider } from "./registry";
@@ -19,7 +20,7 @@ export { STEP_MODELS, type Step } from "./config";
 // steps in FIELD_STEPS one line naming the user's field (Settings, "Your field"). Names the
 // user asked to redact (PromotionMax) are swapped for their placeholders in everything sent.
 // Writing steps (PLAIN_STEPS) get the plain-wording rules, and dashes in their reply are swapped
-// for commas in code.
+// for commas in code. Every step gets one line on spelling AI product names (Claude, ChatGPT…).
 export async function generateForStep(
   step: Step,
   input: { system?: string; messages: ChatMessage[]; maxTokens?: number },
@@ -30,10 +31,8 @@ export async function generateForStep(
     getRedactionsSafely(),
     isFieldStep(step) ? getUserFieldSafely() : null,
   ]);
-  const system = withCoachingTone(
-    step,
-    withFieldLine(step, withPlainWording(step, input.system), field),
-    style,
+  const system = withAiNames(
+    withCoachingTone(step, withFieldLine(step, withPlainWording(step, input.system), field), style),
   );
   const result = await getProvider(cfg.provider).generate({
     model: cfg.model,
@@ -60,7 +59,11 @@ function redactMessage(message: ChatMessage, redactions: Redaction[]): ChatMessa
 }
 
 // Writes down speech for an app step (mic mode), using the speech-to-text model named in config.ts.
-export async function transcribeForStep(step: Step, audio: Uint8Array): Promise<string> {
+export async function transcribeForStep(
+  step: Step,
+  audio: Uint8Array,
+  options: { prompt?: string } = {},
+): Promise<string> {
   const cfg: StepModel = STEP_MODELS[step];
   const provider = getProvider(cfg.provider);
   if (!provider.transcribe) {
@@ -69,5 +72,5 @@ export async function transcribeForStep(step: Step, audio: Uint8Array): Promise<
       cfg.provider,
     );
   }
-  return provider.transcribe({ model: cfg.model, audio, format: "wav" });
+  return provider.transcribe({ model: cfg.model, audio, format: "wav", prompt: options.prompt });
 }

@@ -160,6 +160,15 @@ describe("OpenAI-compatible provider", () => {
     const body = create.mock.calls[0][0];
     expect(body.model).toBe("openai/whisper-large-v3");
     expect(body.file.name).toBe("speech.wav");
+    expect(body.prompt).toBeUndefined();
+
+    await provider.transcribe!({
+      model: "m",
+      audio: new Uint8Array([1]),
+      format: "wav",
+      prompt: "I use Claude and ChatGPT.",
+    });
+    expect(create.mock.calls[1][0].prompt).toBe("I use Claude and ChatGPT.");
 
     create.mockRejectedValueOnce(new Error("boom"));
     await expect(
