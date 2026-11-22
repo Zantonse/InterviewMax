@@ -85,6 +85,7 @@ export function createOpenAICompatibleProvider(
         const result = await client.audio.transcriptions.create({
           model: req.model,
           file: await toFile(req.audio, `speech.${req.format}`, { type: `audio/${req.format}` }),
+          ...(req.prompt ? { prompt: req.prompt } : {}),
         });
         return result.text ?? "";
       } catch (err) {

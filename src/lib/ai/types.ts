@@ -37,6 +37,8 @@ export type TranscribeRequest = {
   model: string;
   audio: Uint8Array;
   format: "wav";
+  // Spelling hint for the speech-to-text model (Whisper's prompt). Never the user's data.
+  prompt?: string;
 };
 
 export interface ModelProvider {

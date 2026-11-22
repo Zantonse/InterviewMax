@@ -12,6 +12,7 @@ import {
 import { getJob } from "@/lib/jobs/data";
 import { predictAfterTranscript } from "@/lib/questions/predict";
 import { normalize } from "@/lib/stories/upload";
+import { fixAiNames } from "@/lib/writing/ai-names";
 import { analyzeTranscript, labelSpeakers } from "@/lib/transcripts/analyze";
 import {
   MAX_FILE_TEXT_LENGTH,
@@ -79,6 +80,8 @@ export async function addTranscript(_prev: FormState, formData: FormData): Promi
     if (text.length < MIN_TRANSCRIPT_LENGTH) {
       return { error: "That's too short to be a transcript. Add the whole conversation." };
     }
+    // Meeting tools mishear AI product names the way Whisper does ("cloud code" for Claude Code).
+    text = fixAiNames(text);
     const split = splitInterviews(text);
     leftOut = split.leftOut;
     const parts = split.interviews;

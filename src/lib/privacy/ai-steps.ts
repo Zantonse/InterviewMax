@@ -135,7 +135,8 @@ export const AI_STEP_USES: Record<Step, { feature: string; sends: string }> = {
   },
   transcribe: {
     feature: "Mic mode (speech to text)",
-    sends: "The recording of what you say while the mic is on",
+    sends:
+      "The recording of what you say while the mic is on, with a fixed hint for spelling AI tool names (Claude, ChatGPT…)",
   },
 };
 
