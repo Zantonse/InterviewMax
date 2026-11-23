@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { JourneyCard } from "@/components/quest/journey-card";
@@ -8,7 +9,9 @@ import { loadQuestData, practiceHrefFor, type QuestData } from "@/lib/quest/data
 import { getJobsPrep } from "@/lib/jobs/data";
 import { nextStoryToBuild } from "@/lib/guide/journey";
 import { coreSixJourney, firstStoryJourney, weakestSkillJourney, type Cta } from "@/lib/quest/journeys";
+import { bossState, jobJourney } from "@/lib/quest/boss";
 import { questState } from "@/lib/quest/state";
+import { focusJob, todayIn } from "@/lib/prep/plan";
 
 export const metadata: Metadata = { title: "Story Quest · InterviewMax" };
 
@@ -50,10 +53,19 @@ async function QuestContent() {
         label: upNext.storyId ? `Continue: ${upNext.label}` : `Start: ${upNext.label}`,
       }
     : undefined;
-  return <QuestView data={data} next={next} />;
+  const job = focusJob(data.jobs, todayIn((await headers()).get("x-vercel-ip-timezone")));
+  return <QuestView data={data} next={next} job={job ?? undefined} />;
 }
 
-function QuestView({ data, next }: { data: QuestData; next?: Cta }) {
+function QuestView({
+  data,
+  next,
+  job,
+}: {
+  data: QuestData;
+  next?: Cta;
+  job?: QuestData["jobs"][number];
+}) {
   const { aloud, xp, tree, map } = questState(data);
   const first = firstStoryJourney(data.stories, aloud);
   const journey = firstStoryJourney(
@@ -63,9 +75,11 @@ function QuestView({ data, next }: { data: QuestData; next?: Cta }) {
   );
   const six = coreSixJourney(data.stories, aloud, next);
   const weak = weakestSkillJourney(map);
-  // The journey the page leads with: your first story until it's said out loud, then the core six.
-  const main = journey.done && !six.done ? six : journey;
-  const others = [journey, six, weak].filter((j) => j !== main);
+  const boss = job ? jobJourney(job, bossState(job, data.stories, data.sessions)) : undefined;
+  // The journey the page leads with: your first story until it's said out loud, then the core six,
+  // then the focus job's boss round.
+  const main = !journey.done ? journey : !six.done ? six : boss && !boss.done ? boss : journey;
+  const others = [journey, six, weak, ...(boss ? [boss] : [])].filter((j) => j !== main);
   return (
     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
       <RankCard xp={xp} />

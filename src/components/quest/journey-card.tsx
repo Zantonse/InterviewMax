@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { startBossRound } from "@/app/practice/actions";
 import type { Journey } from "@/lib/quest/journeys";
 
 // One journey: its steps with what each is worth, and the one next step. `main` marks the journey
@@ -57,6 +58,18 @@ export function JourneyCard({ journey, main = false }: { journey: Journey; main?
           </li>
         ))}
       </ol>
+      {journey.boss && (
+        <form action={startBossRound} className="mt-4">
+          <input type="hidden" name="jobId" value={journey.boss.jobId} />
+          <button
+            type="submit"
+            className={main ? "btn-next" : "btn-primary"}
+            data-testid={`journey-${journey.id}-start`}
+          >
+            Start the boss round
+          </button>
+        </form>
+      )}
       {journey.next && (
         <Link
           href={journey.next.href}

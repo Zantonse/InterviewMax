@@ -1,5 +1,6 @@
 import { LEARNED, skillsMap } from "@/lib/stories/skills";
 import type { QuestSession, QuestStory } from "./xp";
+import { bossJobsDone } from "./boss";
 import { skillTree } from "./tree";
 import { questLevel, storiesSaidOutLoud, xpSummary } from "./xp";
 
@@ -11,13 +12,15 @@ export function questState(data: {
 }) {
   const aloud = storiesSaidOutLoud(data.sessions);
   const map = skillsMap([...data.stories]);
+  const bossRounds = bossJobsDone(data.sessions).size;
   const xp = xpSummary({
     stories: data.stories,
     sessions: data.sessions,
     transcripts: data.transcripts,
     skillsLearned: map.filter((s) => s.level >= LEARNED).length,
+    bossRounds,
   });
   const storiesAtFour = data.stories.filter((s) => questLevel(s, aloud) === 4).length;
-  const tree = skillTree({ map, sessions: data.sessions, storiesAtFour });
+  const tree = skillTree({ map, sessions: data.sessions, storiesAtFour, bossRounds });
   return { aloud, map, xp, tree };
 }

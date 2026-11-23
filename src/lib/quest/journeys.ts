@@ -33,6 +33,8 @@ export type Journey = {
   // The story the journey is working on, when there is one.
   storyId?: string;
   storyTitle?: string;
+  // The boss round can start: the card shows its start button instead of a link.
+  boss?: { jobId: string };
 };
 
 function withStates<T extends { id: string; label: string; xp: number }>(
