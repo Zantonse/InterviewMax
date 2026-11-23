@@ -1,6 +1,7 @@
 import { LEARNED, skillsMap } from "@/lib/stories/skills";
 import type { QuestSession, QuestStory } from "./xp";
-import { storiesSaidOutLoud, xpSummary } from "./xp";
+import { skillTree } from "./tree";
+import { questLevel, storiesSaidOutLoud, xpSummary } from "./xp";
 
 // Everything Story Quest shows, worked out once from the user's data. Plain logic.
 export function questState(data: {
@@ -16,5 +17,7 @@ export function questState(data: {
     transcripts: data.transcripts,
     skillsLearned: map.filter((s) => s.level >= LEARNED).length,
   });
-  return { aloud, map, xp };
+  const storiesAtFour = data.stories.filter((s) => questLevel(s, aloud) === 4).length;
+  const tree = skillTree({ map, sessions: data.sessions, storiesAtFour });
+  return { aloud, map, xp, tree };
 }

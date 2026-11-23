@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { JourneyCard } from "@/components/quest/journey-card";
 import { RankCard } from "@/components/quest/rank-card";
+import { SkillTree } from "@/components/quest/skill-tree";
 import { loadQuestData, practiceHrefFor, type QuestData } from "@/lib/quest/data";
 import { firstStoryJourney } from "@/lib/quest/journeys";
 import { questState } from "@/lib/quest/state";
@@ -38,7 +39,7 @@ async function QuestContent() {
 }
 
 function QuestView({ data }: { data: QuestData }) {
-  const { aloud, xp } = questState(data);
+  const { aloud, xp, tree } = questState(data);
   const first = firstStoryJourney(data.stories, aloud);
   const journey = firstStoryJourney(
     data.stories,
@@ -49,6 +50,9 @@ function QuestView({ data }: { data: QuestData }) {
     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
       <RankCard xp={xp} />
       <JourneyCard journey={journey} main />
+      <div className="lg:col-span-2">
+        <SkillTree branches={tree} />
+      </div>
     </div>
   );
 }
