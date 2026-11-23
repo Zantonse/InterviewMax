@@ -1,7 +1,19 @@
 // Story Quest journeys: short paths through the builder, each with one clear next step. Plain
 // logic, safe to import in client components.
 
-import { LEVEL_XP, QUEST_LEVEL_NAMES, isQuestStory, questLevel, type QuestLevel, type QuestStory } from "./xp";
+import { CORE_STORY_GOAL } from "@/lib/prep/finish-line";
+import { hasDraft } from "@/lib/stories/content";
+import { LEARNED, SKILL_LEVELS, weakestSkills, type SkillStatus } from "@/lib/stories/skills";
+import {
+  LEVEL_XP,
+  QUEST_LEVEL_NAMES,
+  SKILL_LEARNED_XP,
+  isQuestStory,
+  questLevel,
+  xpForLevel,
+  type QuestLevel,
+  type QuestStory,
+} from "./xp";
 
 export type StepState = "done" | "now" | "locked";
 
@@ -91,5 +103,110 @@ export function firstStoryJourney(
     done,
     next,
     ...(focus ? { storyId: focus.story.id, storyTitle: focus.story.title } : {}),
+  };
+}
+
+// "The core six": the finish line (finish-line.ts) as a journey. Six written behavioral stories,
+// best first, each showing its level and the XP it has earned. `next` is the story the user's jobs
+// need next, when the caller knows it.
+export function coreSixJourney(
+  stories: readonly QuestStory[],
+  aloud: ReadonlySet<string>,
+  next: Cta = { href: "/stories/new", label: "Start your next story" },
+): Journey {
+  const written = stories
+    .filter((s) => isQuestStory(s) && hasDraft(s.content))
+    .map((story) => ({ story, level: questLevel(story, aloud) }))
+    .sort((a, b) => b.level - a.level || (b.story.updatedAt ?? "").localeCompare(a.story.updatedAt ?? ""));
+  const steps: JourneyStep[] = Array.from({ length: CORE_STORY_GOAL }, (_, i) => {
+    const w = written[i];
+    if (w) {
+      return {
+        id: `slot${i + 1}`,
+        label: `${w.story.title || "Untitled story"} · Level ${w.level}`,
+        xp: xpForLevel(w.level),
+        state: "done" as const,
+      };
+    }
+    return {
+      id: `slot${i + 1}`,
+      label: `Story ${i + 1}`,
+      xp: xpForLevel(4),
+      state: i === written.length ? ("now" as const) : ("locked" as const),
+    };
+  });
+  const count = Math.min(written.length, CORE_STORY_GOAL);
+  const done = count >= CORE_STORY_GOAL;
+  // Once six are written, the next step is the lowest of them that can still climb.
+  const lowest = done
+    ? [...written.slice(0, CORE_STORY_GOAL)].reverse().find((w) => w.level < 4)
+    : undefined;
+  return {
+    id: "six",
+    title: "The core six",
+    blurb: done
+      ? lowest
+        ? "All six written. Now take each one to Level 4."
+        : "All six are ready to say out loud."
+      : `${count} of ${CORE_STORY_GOAL} written. Six stories answer most of what interviewers ask; one a day is enough.`,
+    steps,
+    done: done && !lowest,
+    ...(done
+      ? lowest
+        ? {
+            next:
+              lowest.level === 3
+                ? { href: "/practice", label: `Practice “${lowest.story.title || "Untitled story"}” out loud` }
+                : { href: `/stories/${lowest.story.id}`, label: `Take “${lowest.story.title || "Untitled story"}” to Level ${lowest.level + 1}` },
+          }
+        : {}
+      : { next }),
+  };
+}
+
+// "Fix your weakest skill": the skills map's weakest skill not yet Learned, shown in one story and
+// then again in another before the app asks about it. Opens once a story has been graded.
+export function weakestSkillJourney(map: SkillStatus[]): Journey {
+  const graded = map.some((s) => s.level > 0);
+  // The weakest skill still short of Learned: the one the builder's questions look at first
+  // (weakestSkills), else any not yet tried.
+  const [skill] = weakestSkills(map, 1);
+  const status =
+    (skill && map.find((s) => s.skill.id === skill.id)) ||
+    map.filter((s) => s.level < LEARNED).sort((a, b) => a.level - b.level)[0];
+  const level = status?.level ?? LEARNED;
+  const steps = withStates(
+    [
+      { id: "try", label: `Try it in a story · ${SKILL_LEVELS[1].name}`, xp: 0 },
+      { id: "once", label: `Get it to Solid once · ${SKILL_LEVELS[2].name}`, xp: 0 },
+      { id: "learned", label: `Show it again before I ask · ${SKILL_LEVELS[3].name}`, xp: SKILL_LEARNED_XP },
+    ],
+    graded ? Math.min(3, level) : -1,
+  );
+  if (!graded) {
+    return {
+      id: "weak",
+      title: "Fix your weakest skill",
+      blurb: "Opens once one of your stories has been graded, so I can see which skill to work on.",
+      steps: steps.map((st) => ({ ...st, state: "locked" })),
+      done: false,
+    };
+  }
+  if (!status) {
+    return {
+      id: "weak",
+      title: "Fix your weakest skill",
+      blurb: "Every skill is learned. Keep going on the core six.",
+      steps,
+      done: true,
+    };
+  }
+  return {
+    id: "weak",
+    title: `Fix your weakest skill: ${status.skill.label.toLowerCase()}`,
+    blurb: `${status.skill.what} ${status.next ?? ""}`.trim(),
+    steps,
+    done: false,
+    next: { href: "/stories/new", label: "Start a story to practice it" },
   };
 }

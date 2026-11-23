@@ -5,7 +5,9 @@ import { JourneyCard } from "@/components/quest/journey-card";
 import { RankCard } from "@/components/quest/rank-card";
 import { SkillTree } from "@/components/quest/skill-tree";
 import { loadQuestData, practiceHrefFor, type QuestData } from "@/lib/quest/data";
-import { firstStoryJourney } from "@/lib/quest/journeys";
+import { getJobsPrep } from "@/lib/jobs/data";
+import { nextStoryToBuild } from "@/lib/guide/journey";
+import { coreSixJourney, firstStoryJourney, weakestSkillJourney, type Cta } from "@/lib/quest/journeys";
 import { questState } from "@/lib/quest/state";
 
 export const metadata: Metadata = { title: "Story Quest · InterviewMax" };
@@ -34,24 +36,50 @@ export default function QuestPage() {
 }
 
 async function QuestContent() {
-  const data = await loadQuestData();
-  return <QuestView data={data} />;
+  const [data, prep] = await Promise.all([
+    loadQuestData(),
+    getJobsPrep().catch(() => ({ overview: null })),
+  ]);
+  // The next story the user's jobs need, as on the finish line.
+  const upNext = prep.overview
+    ? nextStoryToBuild(prep.overview.storyOrder, data.stories, null)
+    : undefined;
+  const next: Cta | undefined = upNext
+    ? {
+        href: upNext.storyId ? `/stories/${upNext.storyId}` : `/stories/new/${upNext.storyType}`,
+        label: upNext.storyId ? `Continue: ${upNext.label}` : `Start: ${upNext.label}`,
+      }
+    : undefined;
+  return <QuestView data={data} next={next} />;
 }
 
-function QuestView({ data }: { data: QuestData }) {
-  const { aloud, xp, tree } = questState(data);
+function QuestView({ data, next }: { data: QuestData; next?: Cta }) {
+  const { aloud, xp, tree, map } = questState(data);
   const first = firstStoryJourney(data.stories, aloud);
   const journey = firstStoryJourney(
     data.stories,
     aloud,
     practiceHrefFor(first.storyId, data.jobs, data.stories),
   );
+  const six = coreSixJourney(data.stories, aloud, next);
+  const weak = weakestSkillJourney(map);
+  // The journey the page leads with: your first story until it's said out loud, then the core six.
+  const main = journey.done && !six.done ? six : journey;
+  const others = [journey, six, weak].filter((j) => j !== main);
   return (
     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
       <RankCard xp={xp} />
-      <JourneyCard journey={journey} main />
+      <JourneyCard journey={main} main />
       <div className="lg:col-span-2">
         <SkillTree branches={tree} />
+      </div>
+      <div className="lg:col-span-2">
+        <h2 className="mt-2 text-lg font-bold text-slate-900">More journeys</h2>
+        <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {others.map((j) => (
+            <JourneyCard key={j.id} journey={j} />
+          ))}
+        </div>
       </div>
     </div>
   );
