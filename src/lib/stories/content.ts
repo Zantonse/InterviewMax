@@ -50,6 +50,37 @@ export function cleanOptions(raw: unknown): string[] {
   return options.length >= 2 ? options.slice(0, MAX_OPTIONS) : [];
 }
 
+// Questions that want a real moment, what they did, a reason or a number get no tap options: a
+// starter can't answer them, and a tapped one reads as an answer it isn't. Craig, Nov 22: "Think of
+// the last time a rep pulled you in… what did you do?" came with options; he tapped three and the
+// writer turned the labels into his "known for" line.
+const NO_OPTIONS_RE =
+  /\b(last time|a time when|one time|for example|an example|example of|walk me through|what did you do|what you did|what happened|what changed|why|what made you|how did (that|this|it) (shift|happen|come)|how (much|many))\b/i;
+
+export function wantsOwnAnswer(question: string): boolean {
+  return NO_OPTIONS_RE.test(question);
+}
+
+// True when an answer is only tapped starters, with almost nothing added in the user's own words.
+export function onlyStarters(answer: string, options: readonly string[] | undefined): boolean {
+  if (!options?.length) return false;
+  let rest = answer.toLowerCase();
+  let tapped = false;
+  for (const o of options) {
+    const key = o.toLowerCase();
+    if (rest.includes(key)) {
+      tapped = true;
+      rest = rest.split(key).join(" ");
+    }
+  }
+  if (!tapped) return false;
+  const words = rest.split(/[^a-z0-9'’]+/i).filter(Boolean);
+  return words.length < 4;
+}
+
+export const FINISH_STARTER_NOTE =
+  "Those are just starters. Add a sentence on what actually happened, in your words, so your story has something real to use. Or tap again to send it as is.";
+
 // The review asks one round of follow-ups before the story is final (tester feedback, Oct 16: a
 // second round is where people stopped answering). "Ask me more to make it stronger" is there for
 // more, on request.
