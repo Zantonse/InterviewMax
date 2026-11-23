@@ -19,6 +19,8 @@ import {
   nextFollowUpIndex,
   pendingFollowUps,
   writesRoughDraft,
+  FINISH_STARTER_NOTE,
+  onlyStarters,
   type StoryContent,
 } from "@/lib/stories/content";
 import {
@@ -729,6 +731,11 @@ export function StoryBuilder({
                   onTextChange={setAnswerText}
                   disabled={busy !== null}
                   submitLabel="Next"
+                  check={(text) =>
+                    onlyStarters(text, content.followUps?.[currentFollowUp]?.options)
+                      ? FINISH_STARTER_NOTE
+                      : null
+                  }
                   onSubmit={(text) => submitFollowUp(currentFollowUp, text)}
                   onSkip={(typed) => skipRest(typed)}
                   skipLabel={content.draft ? "Skip the rest" : "Skip the rest and write it"}
@@ -1843,6 +1850,7 @@ function Composer({
   onSkip,
   skipLabel,
   draftKey,
+  check,
 }: {
   initial: string;
   // Text to add to the box (a memory jogger the user tapped); a new `n` adds it again.
@@ -1860,6 +1868,9 @@ function Composer({
   skipLabel?: string;
   // Keeps what's typed (not yet sent) in this tab under this key, and brings it back.
   draftKey?: string;
+  // A nudge shown once before sending, e.g. when the answer is only tapped starters; sending the
+  // same text again goes through.
+  check?: (answer: string) => string | null;
 }) {
   const [text, setText] = useState(initial);
   const [talking, setTalking] = useState(false);
@@ -1902,7 +1913,15 @@ function Composer({
     if (draftKey) writeKept(draftKey, text === initial ? "" : text);
   }, [draftKey, text, initial]);
 
+  const [nudged, setNudged] = useState<string | null>(null);
+  const nudge = nudged !== null && nudged === text ? check?.(text) : null;
+
   function send(answer: string) {
+    if (check?.(answer) && nudged !== answer) {
+      setNudged(answer);
+      ref.current?.focus({ preventScroll: true });
+      return;
+    }
     if (draftKey) writeKept(draftKey, "");
     onSubmit(answer);
   }
@@ -1940,6 +1959,15 @@ function Composer({
         className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none focus:border-ink-600 focus:bg-white focus:ring-2 focus:ring-ink-600/20"
       />
       <AnswerLimit text={text} max={MAX_ANSWER_LENGTH} />
+      {nudge && (
+        <p
+          role="status"
+          className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+          data-testid="finish-starter"
+        >
+          {nudge}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="mr-auto flex flex-wrap items-center gap-3">
           <MicButton

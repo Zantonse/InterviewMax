@@ -15,7 +15,9 @@ import {
   draftText as gradedText,
   gradeMessages,
   gradeSystem,
+  fillerPhrases,
   introFigures,
+  introFigureText,
   parseGrade,
   lengthRange,
   quickChecks,
@@ -48,6 +50,7 @@ import {
 } from "./prompts";
 import { INTRO_LENGTH, INTRO_MAX_FIGURES, storyParts, type StoryType } from "./story-types";
 import { tailoredChecks, tailoredText } from "./tailored";
+import { introShapeProblems } from "./intro-shape";
 import { dropRepeats } from "./repeats";
 import { storySituation } from "./situation";
 import type { BuilderTargets } from "./targets";
@@ -161,7 +164,14 @@ export async function writeStory(
     script: (story) => draftText(story.parts, storyType),
     answers,
     maxWords: lengthRange(storyType).max,
-    ...(storyType?.format === "intro" ? { maxFigures: INTRO_MAX_FIGURES } : {}),
+    ...(storyType?.format === "intro"
+      ? {
+          maxFigures: INTRO_MAX_FIGURES,
+          figureScript: (story: WrittenStory) => introFigureText(story.parts),
+          shape: (story: WrittenStory) =>
+            introShapeProblems(story.parts, { path: pathAnswers(content) }),
+        }
+      : {}),
     minOwnWords: OWN_WORDS_MIN,
   });
 
@@ -285,6 +295,10 @@ async function writeChecked<T>(input: {
   maxFigures?: number;
   // Less of the script than this in the user's own words is sent back to rework from their answers.
   minOwnWords?: number;
+  // The text whose figures count toward maxFigures, when not the whole script.
+  figureScript?: (value: T) => string;
+  // Problems with the shape of the answer, each an ask for the retry (see intro-shape.ts).
+  shape?: (value: T) => string[];
 }) {
   let result = await input.write();
   let value = input.parse(result.text);
@@ -297,13 +311,23 @@ async function writeChecked<T>(input: {
     const count = countWords(script);
     const over = count > input.maxWords;
     const max = input.maxFigures;
-    const figures = max === undefined ? [] : introFigures(script);
+    const figures =
+      max === undefined ? [] : introFigures(input.figureScript?.(value) ?? script);
     const tooMany = max !== undefined && figures.length > max;
     const min = input.minOwnWords;
     const ownWords = min === undefined ? undefined : ownWordsShare(script, input.answers);
     const borrowed = min !== undefined && ownWords !== undefined && ownWords < min;
     const tells = aiTells(script, input.answers);
-    const clean = untraced.length === 0 && !over && !tooMany && !borrowed && tells.length === 0;
+    const filler = fillerPhrases(script);
+    const shape = input.shape?.(value) ?? [];
+    const clean =
+      untraced.length === 0 &&
+      !over &&
+      !tooMany &&
+      !borrowed &&
+      tells.length === 0 &&
+      filler.length === 0 &&
+      shape.length === 0;
     if (clean || attempt >= 2) {
       return { result, value, untraced, ownWords };
     }
@@ -314,9 +338,21 @@ async function writeChecked<T>(input: {
       ...(tooMany ? { figures: { found: figures, max } } : {}),
       ...(borrowed ? { ownWords: { share: ownWords, min } } : {}),
       ...(tells.length > 0 ? { tells } : {}),
+      ...(filler.length > 0 ? { filler } : {}),
+      ...(shape.length > 0 ? { shape } : {}),
     });
     value = input.parse(result.text);
   }
+}
+
+type WrittenStory = { title: string; parts: Record<string, string> };
+
+// What the user said about their career path: the scripted answer and any follow-ups on it.
+function pathAnswers(content: StoryContent): string {
+  return [
+    content.answers.path ?? "",
+    ...(content.followUps ?? []).filter((f) => f.gap === "path").map((f) => f.answer ?? ""),
+  ].join("\n");
 }
 
 // The checklist values the writer was given; they are the user's own words.
