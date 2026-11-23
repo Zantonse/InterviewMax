@@ -18,6 +18,7 @@ import {
 } from "@/lib/stories/levels";
 import { storyParts, type StoryType } from "@/lib/stories/story-types";
 import { wordDiff } from "@/lib/stories/word-diff";
+import { xpForClimb } from "@/lib/quest/xp";
 import type { FieldId } from "@/lib/field/fields";
 import { ExampleLadder } from "@/components/example-ladder";
 import {
@@ -414,6 +415,16 @@ function LevelUpResult({
             ? "The rewrite used your answers. Level 2 is a story you can take into an interview, so a second story will help you more than another pass on this one."
             : "The rewrite used your answers, but a few things still hold it back."}
       </p>
+      {climbed && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" data-testid="level-up-xp">
+          <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 font-mono text-xs font-semibold text-white tabular-nums">
+            +{xpForClimb(levelUp.from, reached)} XP
+          </span>
+          <Link href="/quest" className="font-medium text-emerald-900 hover:underline">
+            See it in Story Quest →
+          </Link>
+        </p>
+      )}
       <BeforeAfter
         before={levelUp.before}
         after={content.draft?.parts ?? {}}

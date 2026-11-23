@@ -22,6 +22,7 @@ type NavItem = { href: string; label: string; icon: NavIconName; exact?: boolean
 
 const TOP: readonly NavItem[] = [
   { href: "/", label: "Your prep", icon: "home", exact: true },
+  { href: "/quest", label: "Story Quest", icon: "trophy" },
   { href: "/profile", label: "Your profile", icon: "user" },
 ];
 

@@ -12,6 +12,9 @@ import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { daysUntil, focusJob, todayIn } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
+import { RankCard } from "@/components/quest/rank-card";
+import { listPracticeSessionsSafely } from "@/lib/practice/data";
+import { questState } from "@/lib/quest/state";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
@@ -84,6 +87,11 @@ async function Dashboard() {
   if (jobs?.length === 0 && stories?.length === 0) return null;
   return (
     <div className="mt-4 space-y-4">
+      {stories && (
+        <Suspense fallback={null}>
+          <QuestCard stories={stories} />
+        </Suspense>
+      )}
       {jobs ? (
         <FocusJob jobs={jobs} stories={stories ?? []} />
       ) : (
@@ -195,6 +203,20 @@ function NextQuestion({ row }: { row: QuestionReadiness }) {
       {row.level === 0 ? "Finish its story" : "Take its story to Level 2"}
     </Link>
   );
+}
+
+// Story Quest's rank and XP in one line, linking to the section. Phones reach /quest from here (the
+// bottom tab bar is full); the sidebar links to it too.
+async function QuestCard({ stories }: { stories: StoryRecord[] }) {
+  const [sessions, transcripts] = await Promise.all([
+    listPracticeSessionsSafely(),
+    listTranscripts().catch((err) => {
+      unstable_rethrow(err);
+      return [] as Transcript[];
+    }),
+  ]);
+  const { xp } = questState({ stories, sessions, transcripts });
+  return <RankCard xp={xp} compact />;
 }
 
 // Only shown once past interviews point at something to fix; the sidebar links to the page itself.
