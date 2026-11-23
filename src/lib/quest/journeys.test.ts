@@ -48,8 +48,8 @@ describe("the core six", () => {
   it("fills six slots with written stories, best first", () => {
     const j = coreSixJourney([story("a", 1), story("b", 3), story("c", 0)], new Set(["b"]));
     expect(j.steps.map((s) => s.state)).toEqual(["done", "done", "now", "locked", "locked", "locked"]);
-    expect(j.steps[0]).toMatchObject({ label: "Story b · Level 4", xp: 500 });
-    expect(j.steps[1]).toMatchObject({ label: "Story a · Level 1", xp: 50 });
+    expect(j.steps[0]).toMatchObject({ label: "Story b", tag: "Level 4", xp: 500 });
+    expect(j.steps[1]).toMatchObject({ label: "Story a", tag: "Level 1", xp: 50 });
     expect(j.next).toEqual({ href: "/stories/new", label: "Start your next story" });
     expect(j.blurb).toMatch(/^2 of 6 written/);
   });

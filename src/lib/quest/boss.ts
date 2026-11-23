@@ -67,7 +67,8 @@ export function jobJourney(job: BossJob, state: BossState): Journey {
     const ready = r.kind === "story" && r.level >= READY_LEVEL;
     return {
       id: `q${i + 1}`,
-      label: `${r.question} · ${r.kind === "build" ? "no story yet" : r.level === 0 ? "not written yet" : `Level ${r.level}`}`,
+      label: r.question,
+      tag: r.kind === "build" ? "No story" : r.level === 0 ? "Not written" : `Level ${r.level}`,
       xp: 0,
       state: ready ? "done" : "now",
     };

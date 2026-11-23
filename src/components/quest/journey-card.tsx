@@ -48,6 +48,11 @@ export function JourneyCard({ journey, main = false }: { journey: Journey; main?
                 {step.state === "done" ? " (done)" : step.state === "now" ? " (next)" : ""}
               </span>
             </span>
+            {step.tag && (
+              <span className="shrink-0 rounded-full bg-ink-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+                {step.tag}
+              </span>
+            )}
             {step.xp > 0 && (
               <span
                 className={`font-mono text-xs tabular-nums ${step.state === "done" ? "text-emerald-700" : "text-slate-500"}`}

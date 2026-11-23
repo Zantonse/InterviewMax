@@ -17,7 +17,14 @@ import {
 
 export type StepState = "done" | "now" | "locked";
 
-export type JourneyStep = { id: string; label: string; xp: number; state: StepState };
+export type JourneyStep = {
+  id: string;
+  label: string;
+  xp: number;
+  state: StepState;
+  // Where the step's story stands, e.g. "Level 2", shown beside the label.
+  tag?: string;
+};
 
 export type Cta = { href: string; label: string };
 
@@ -125,7 +132,8 @@ export function coreSixJourney(
     if (w) {
       return {
         id: `slot${i + 1}`,
-        label: `${w.story.title || "Untitled story"} · Level ${w.level}`,
+        label: w.story.title || "Untitled story",
+        tag: `Level ${w.level}`,
         xp: xpForLevel(w.level),
         state: "done" as const,
       };

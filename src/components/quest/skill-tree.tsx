@@ -8,7 +8,8 @@ import { LEARNED, SKILL_LEVELS } from "@/lib/stories/skills";
 // step ringed. Tapping a step says what earns it. Wider than a phone, so it scrolls sideways in its
 // own box.
 export function SkillTree({ branches }: { branches: Branch[] }) {
-  const first = branches.find((b) => b.level < 5) ?? branches[0];
+  // Opens on the weakest branch's next step.
+  const first = [...branches].sort((a, b) => a.level - b.level)[0];
   const [picked, setPicked] = useState<{ id: string; step: number }>({
     id: first.id,
     step: Math.min(5, first.level + 1),
