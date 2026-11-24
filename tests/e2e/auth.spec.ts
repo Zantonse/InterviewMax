@@ -4,7 +4,7 @@ test("signed-out visitors see the public homepage, which links to sign in", asyn
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("heading", { name: "Behavioral interview stories that land." }),
+    page.getByRole("heading", { level: 1, name: /disagreed with your manager/ }),
   ).toBeVisible();
   await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login$/);
