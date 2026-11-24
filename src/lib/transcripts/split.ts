@@ -119,9 +119,9 @@ export function partTitle(title: string, part: InterviewPart, count: number): st
 
 const LEFT_OUT_LABELS: Record<LeftOut, string> = { job: "a job description", notes: "feedback notes" };
 
-// "I left out a job description and feedback notes", or "" when nothing was.
+// "The file also had a job description and feedback notes. They were left out…", or "" when nothing was.
 export function leftOutNote(leftOut: readonly string[]): string {
   const parts = (["job", "notes"] as const).filter((k) => leftOut.includes(k)).map((k) => LEFT_OUT_LABELS[k]);
   if (parts.length === 0) return "";
-  return `The file also had ${parts.join(" and ")}. I left ${parts.length === 1 ? "it" : "them"} out, so the review only reads the conversation.`;
+  return `The file also had ${parts.join(" and ")}. ${parts.length === 1 ? "It was" : "They were"} left out, so the review only reads the conversation.`;
 }

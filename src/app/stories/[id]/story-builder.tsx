@@ -674,7 +674,7 @@ export function StoryBuilder({
                 intro={
                   openFollowUp.source !== "practice" &&
                   roundQuestions.every(({ f }) => !f.answer?.trim() && !f.skipped)
-                    ? roundIntro(content, storyType, round ?? 1)
+                    ? roundIntro(content, round ?? 1)
                     : undefined
                 }
                 eyebrow={
@@ -1064,21 +1064,13 @@ function progressLabel(
   }
 }
 
-// The coach's line over the first question of a round of follow-ups.
-function roundIntro(content: StoryContent, storyType: StoryType | undefined, round: number) {
+// The coach's line over the first question of a level-up round: what the next level asks for.
+// Other rounds start straight at the question; the line under the title says where the story is.
+function roundIntro(content: StoryContent, round: number): string | undefined {
   const levelUp = content.levelUp;
-  if (levelUp && round === levelUp.round) {
-    const next = levelInfo(levelUp.target);
-    return `This round gets it to Level ${levelUp.target}: ${next.name.toLowerCase()}. ${next.lesson} A few questions about just that.`;
-  }
-  if (round > 1) return "A few more, so the numbers and examples carry it.";
-  if (content.draft && usesLevels(storyType, content)) {
-    return "A rough draft is written from your words. That's Level 1: it happened. A few quick questions get it to Level 2, so it proves something. Easiest first.";
-  }
-  if (content.draft && storyType?.format !== "intro") {
-    return "A rough draft is written from your words. A few quick questions make it stronger. Easiest first.";
-  }
-  return "A few quick follow-ups, easiest first.";
+  if (!levelUp || round !== levelUp.round) return undefined;
+  const lesson = levelInfo(levelUp.target).lesson;
+  return `To reach Level ${levelUp.target}: ${lesson.charAt(0).toLowerCase()}${lesson.slice(1)}`;
 }
 
 // "Graded Nov 21", from the ISO date, so the server and the browser print the same thing.

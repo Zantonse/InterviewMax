@@ -72,8 +72,8 @@ export function AiAnswerPanel({
             </div>
           )}
           <p className="text-sm text-slate-600">
-            I&apos;ll lead with the use that fits this role&apos;s work best and close on how
-            you&apos;d bring it to {company}, from your own answers and the posting.
+            It leads with the use that fits this role&apos;s work best and closes on how you&apos;d
+            bring it to {company}, from your own answers and the posting.
           </p>
         </>
       ) : (
@@ -91,8 +91,8 @@ export function AiAnswerPanel({
           </p>
           {forJob.untracedNumbers.length > 0 && (
             <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-              Check these numbers: {forJob.untracedNumbers.join(", ")}. They aren&apos;t in what you
-              told me, so change or remove them before you use this.
+              Check these numbers: {forJob.untracedNumbers.join(", ")}. They aren&apos;t in your
+              answers, so change or remove them before you use this.
             </p>
           )}
           {stale && (
@@ -155,8 +155,8 @@ export function AiAnswerPanel({
         </p>
       )}
       <p className="text-sm">
-        <Link href={`/tough-questions/${storyId}`} className="font-medium text-ink-800 hover:underline">
-          Change your answers or practice it out loud with follow-ups →
+        <Link href={`/tough-questions/${storyId}`} className="link">
+          Change your answers or practice it out loud with follow-ups
         </Link>
       </p>
     </div>

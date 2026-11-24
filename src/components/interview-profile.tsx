@@ -24,7 +24,7 @@ export function InterviewProfileCard({ profile }: { profile: InterviewProfile })
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="interview-profile-title" className="text-lg font-semibold text-slate-900">
-          Your interview profile
+          Interview profile
         </h2>
         <p className="text-sm text-slate-600">
           From {profile.interviews} reviewed {profile.interviews === 1 ? "interview" : "interviews"}. Grows with
@@ -217,19 +217,19 @@ function Quote({ citation }: { citation: Citation }) {
 }
 
 function StepLink({ step }: { step: NextStep }) {
-  const className = "mt-0.5 inline-block text-sm font-semibold text-ink-800 hover:underline";
+  const className = "mt-0.5 inline-block text-left text-sm link";
   if (step.storyType) {
     return (
       <form action={startStory}>
         <button type="submit" name="storyType" value={step.storyType} className={className}>
-          {step.label} →
+          {step.label}
         </button>
       </form>
     );
   }
   return (
     <Link href={step.href ?? "/"} className={className}>
-      {step.label} →
+      {step.label}
     </Link>
   );
 }
@@ -256,8 +256,8 @@ export function ProfileMovesCard({ moves }: { moves: ProfileMove[] }) {
           </li>
         ))}
       </ul>
-      <Link href="/transcripts#interview-profile" className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline">
-        See your whole interview profile →
+      <Link href="/transcripts#interview-profile" className="mt-3 inline-block text-sm link">
+        Full interview profile
       </Link>
     </section>
   );

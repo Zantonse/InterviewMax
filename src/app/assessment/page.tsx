@@ -21,10 +21,10 @@ export default function AssessmentPage({ searchParams }: PageProps<"/assessment"
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          Your journey check
+          Journey check
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Five quick taps, and I&apos;ll grade where you are and show you what to do first.
+          Five quick taps grade where you are and show what to do first.
         </p>
         <Suspense fallback={<div className="mt-6 h-96 max-w-2xl animate-pulse rounded-3xl bg-white/80" />}>
           <Assessment searchParams={searchParams} />

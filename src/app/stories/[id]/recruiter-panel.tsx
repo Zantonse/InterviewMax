@@ -1,6 +1,5 @@
 "use client";
 
-import { WhatYouGet } from "@/components/what-you-get";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { CopyButton } from "@/components/copy-button";
@@ -68,19 +67,7 @@ export function RecruiterPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          {version ? (
-            <p className="text-slate-700">
-              You&apos;ve changed the story since I made this. I&apos;ll make one from the new
-              version.
-            </p>
-          ) : (
-            <>
-              <p className="text-slate-700">Recruiters check fit, not depth.</p>
-              <WhatYouGet
-                items={["Under a minute", "Result first", "Plain words", "What to save for later"]}
-              />
-            </>
-          )}
+          {version && <p className="text-slate-700">Made from an earlier version of the story.</p>}
           <div>
             <button
               type="button"

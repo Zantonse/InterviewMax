@@ -140,9 +140,9 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
         {saved > 0 && (
           <Link
             href={`/jobs/${jobId}/brief`}
-            className="text-sm font-medium text-ink-800 hover:underline"
+            className="text-sm link"
           >
-            {saved} saved, in your brief →
+            {saved} saved in the brief
           </Link>
         )}
       </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { WhatYouGet } from "@/components/what-you-get";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { CopyButton } from "@/components/copy-button";
@@ -70,19 +69,7 @@ export function ExecPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          {exec ? (
-            <p className="text-slate-700">
-              You&apos;ve changed the story since I made this. I&apos;ll make one from the new
-              version.
-            </p>
-          ) : (
-            <>
-              <p className="text-slate-700">Executives want the answer first.</p>
-              <WhatYouGet
-                items={["30 seconds", "Result and its number", "Why it mattered", "The key decision"]}
-              />
-            </>
-          )}
+          {exec && <p className="text-slate-700">Made from an earlier version of the story.</p>}
           <div>
             <button
               type="button"

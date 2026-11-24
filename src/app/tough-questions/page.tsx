@@ -29,7 +29,7 @@ export default function ToughQuestionsPage() {
           id="tough-questions"
           steps={[
             "Pick a question you're worried about.",
-            "Tell me what really happened, in plain words. Only what you say goes in the answer.",
+            "Say what really happened, in plain words. Only what you say goes in the answer.",
             "Get a short answer to edit and say out loud, 20 to 40 seconds (about a minute for AI). It's saved with your stories.",
           ]}
         />

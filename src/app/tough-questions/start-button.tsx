@@ -39,8 +39,8 @@ export function StartToughButton({
         )}
       </span>
       <span className="mt-1 text-sm text-slate-600">{blurb}</span>
-      <span className="mt-3 text-sm font-semibold text-ink-800">
-        {opening ? "Opening…" : status === "new" ? "Prepare this one →" : "Open it →"}
+      <span className="mt-3 text-sm font-medium text-accent-700">
+        {opening ? "Opening…" : status === "new" ? "Prepare this one" : "Open it"}
       </span>
     </button>
   );

@@ -71,10 +71,10 @@ export function ExampleLadder({
         <button
           type="button"
           onClick={() => setLevel((level + 1) as StoryLevel)}
-          className="self-start text-sm font-semibold text-ink-800 hover:underline"
+          className="self-start text-sm link"
           data-testid="example-next"
         >
-          See it at Level {level + 1} →
+          See it at Level {level + 1}
         </button>
       )}
     </div>

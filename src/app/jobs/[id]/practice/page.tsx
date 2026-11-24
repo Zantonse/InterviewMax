@@ -86,9 +86,9 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
           </p>
           <Link
             href={`/jobs/${job.id}#questions`}
-            className="mt-3 inline-block font-semibold text-ink-800 hover:underline"
+            className="mt-3 inline-block link"
           >
-            See the likely questions →
+            See the likely questions
           </Link>
         </section>
       ) : (
@@ -180,7 +180,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
 
       {sessions.length > 0 && (
         <section className="mt-4 panel">
-          <h2 className="text-sm font-semibold text-ink-800">Your rounds</h2>
+          <h2 className="text-sm font-semibold text-ink-800">Rounds</h2>
           <ul className="mt-3 divide-y divide-slate-100" data-testid="practice-rounds">
             {sessions.map((s) => {
               const answered = s.items.filter((i) => i.feedback).length;

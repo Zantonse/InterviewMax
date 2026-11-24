@@ -38,8 +38,8 @@ export function MomentButton({
       <span className="mt-2 line-clamp-2 text-sm text-slate-600">
         From {sourceLabel}: &ldquo;{quote}&rdquo;
       </span>
-      <span className="mt-3 text-sm font-semibold text-ink-800">
-        {starting ? "Starting…" : "Build this story →"}
+      <span className="mt-3 text-sm font-medium text-accent-700">
+        {starting ? "Starting…" : "Build this story"}
       </span>
     </button>
   );

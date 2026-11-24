@@ -51,7 +51,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
 
       <div className="mt-6 space-y-4 print:mt-3 print:space-y-3" data-testid="brief">
         {brief.glance.length > 0 && (
-          <Section title="Your stories at a glance" testId="brief-glance">
+          <Section title="Stories at a glance" testId="brief-glance">
             <ul className="grid gap-3 sm:grid-cols-2">
               {brief.glance.map((g) => (
                 <li
@@ -352,9 +352,9 @@ function QuestionRow({ q, n }: { q: BriefQuestion; n: number }) {
               type="submit"
               name="storyType"
               value={q.buildType}
-              className="font-medium text-ink-800 hover:underline print:hidden"
+              className="link print:hidden"
             >
-              Build &ldquo;{getStoryType(q.buildType)?.label}&rdquo; →
+              Build &ldquo;{getStoryType(q.buildType)?.label}&rdquo;
             </button>
           </form>
         ) : null}

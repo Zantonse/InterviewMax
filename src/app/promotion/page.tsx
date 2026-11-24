@@ -21,7 +21,7 @@ import { clearLadder } from "./actions";
 import { BetaBadge } from "./beta-badge";
 import { LadderForm, LevelsForm, RedactionsForm } from "./forms";
 
-export const metadata: Metadata = { title: "Your promotion · PromotionMax" };
+export const metadata: Metadata = { title: "Promotion · PromotionMax" };
 
 // Reading a pasted ladder is a model call.
 export const maxDuration = 120;
@@ -61,7 +61,7 @@ async function PromotionHome() {
     <>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          Your promotion
+          Promotion
         </h1>
         <BetaBadge />
       </div>
@@ -131,7 +131,7 @@ async function PromotionHome() {
         )}
       </Section>
 
-      <Section title="3 · Your promotion packet">
+      <Section title="3 · Promotion packet">
         <p className="text-sm text-slate-600">
           A self-review draft, a short summary for your manager and talking points, written only
           from your stories. Every figure is checked against the story it came from.
@@ -141,11 +141,11 @@ async function PromotionHome() {
           className="mt-3 inline-block rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900"
           data-testid="packet-link"
         >
-          {plan.packet ? "Open your packet →" : "Build your packet →"}
+          {plan.packet ? "Open your packet" : "Build your packet"}
         </Link>
       </Section>
 
-      <Section title="Your career ladder (optional)">
+      <Section title="Career ladder (optional)">
         <p className="text-sm text-slate-600">
           Paste the expectations for your level and the next. Its dimensions replace the generic
           ones above, each with the ladder&apos;s own words for what{" "}

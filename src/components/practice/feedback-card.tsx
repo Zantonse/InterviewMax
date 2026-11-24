@@ -198,9 +198,9 @@ export function FeedbackCard({
           {kept && storyHref && (
             <Link
               href={storyHref}
-              className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline"
+              className="mt-3 inline-block text-sm link"
             >
-              Rewrite the story to use it →
+              Rewrite the story to use it
             </Link>
           )}
         </div>

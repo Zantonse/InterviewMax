@@ -25,12 +25,9 @@ export default function JobsPage({
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-            Your target jobs
+            Target jobs
           </h1>
           <Link
             href="/jobs/new"
@@ -41,14 +38,14 @@ export default function JobsPage({
           </Link>
         </div>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Paste in the jobs you&apos;re going for. I&apos;ll read them with your resume, find what
-          they share and where each differs, and tell you which stories to build first.
+          Paste a posting or a link. You&apos;ll see the questions it&apos;s likely to bring and which
+          stories to build first.
         </p>
         <PageGuide
           id="jobs"
           steps={[
             "Add each job you're going for: a link, a file or the pasted posting.",
-            "Optionally add your resume, so I can see what your history already shows.",
+            "Optionally add your resume, to see what your history already shows.",
             "Open a job for its likely questions, then build the stories under “Build these stories first”.",
           ]}
         />
@@ -97,8 +94,8 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
         {stale && (
           <Card title="Not read yet">
             <p className="mb-4 text-slate-700">
-              Your jobs or resume changed since I last read them, so what&apos;s below may be out of
-              date.
+              Your jobs or resume changed since they were last read, so what&apos;s below may be out
+              of date.
             </p>
             <RereadButton />
           </Card>
@@ -113,8 +110,8 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
         ) : (
           <Card title="No jobs in progress">
             <p className="text-slate-700">
-              Every job here has finished. Add the next one you&apos;re going for and I&apos;ll
-              read it with the rest.
+              Every job here has finished. Add the next one you&apos;re going for, and it&apos;s read
+              with the rest.
             </p>
             <Link
               href="/jobs/new"
@@ -163,7 +160,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
       <div className="space-y-4">
         <ResumeCard resume={resume} />
         {overview?.resumeFit && (
-          <Card title="Your resume against these jobs">
+          <Card title="Resume against these jobs">
             {overview.resumeFit.strengths.length > 0 && (
               <>
                 <h3 className="font-semibold text-slate-900">Already shows</h3>
@@ -235,7 +232,7 @@ function JobRow({ job, read }: { job: TargetJob; read: JobRead | undefined }) {
 
 function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>>["resume"] }) {
   return (
-    <Card title="Your resume">
+    <Card title="Resume">
       {resume ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-slate-700" data-testid="resume-name">
@@ -252,7 +249,7 @@ function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>
         </div>
       ) : (
         <p className="mb-4 text-slate-600">
-          Optional, but it lets me match your history to each job. It stays private to you.
+          Optional. It matches your history to each job, and it stays private to you.
         </p>
       )}
       <ResumeForm hasResume={Boolean(resume)} />

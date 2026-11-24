@@ -20,7 +20,7 @@ export default function ToughAnswerPage({ params }: PageProps<"/tough-questions/
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
         <Link href="/tough-questions" className="text-sm font-medium text-ink-800 hover:underline">
-          ← All tough questions
+          ← Tough questions
         </Link>
         <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <ToughLoader params={params} />

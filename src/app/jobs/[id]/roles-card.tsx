@@ -17,7 +17,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
       data-testid="job-roles"
     >
       <h2 className="mb-2 text-sm font-semibold text-ink-800">
-        Your roles at {company}
+        Roles at {company}
       </h2>
       <p className="mb-4 text-sm text-slate-600">
         One interview process, one prep. Your questions and stories aim at the main role, so

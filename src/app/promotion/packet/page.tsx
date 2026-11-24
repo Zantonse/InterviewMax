@@ -21,7 +21,7 @@ export default function PacketPage() {
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
         <Link href="/promotion" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your promotion
+          ← Promotion
         </Link>
         <Suspense fallback={<div className="mt-4 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <Packet />

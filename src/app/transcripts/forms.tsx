@@ -52,8 +52,8 @@ export function AddTranscriptForm({
         <span className="mt-1 block text-xs font-normal text-slate-600">
           PDF, Word, text, or the .vtt captions file Zoom, Teams and Meet export. Several
           interviews in one file? Head each one &ldquo;Interview 1&rdquo;, &ldquo;Interview 2&rdquo;
-          and I&apos;ll review them separately. A job description or feedback notes in the file
-          are left out.
+          and each is reviewed on its own. A job description or feedback notes in the file are
+          left out.
         </span>
         <AiNotice purpose="find what the interviewers asked and probed" className="mt-1" />
       </label>
@@ -65,7 +65,7 @@ export function AddTranscriptForm({
           name="text"
           rows={6}
           maxLength={MAX_FILE_TEXT_LENGTH}
-          placeholder="Both sides of the conversation. No speaker names? That's fine, I'll mark who said what."
+          placeholder="Both sides of the conversation. No speaker names? That's fine, who said what is worked out."
           className={INPUT}
         />
       </label>

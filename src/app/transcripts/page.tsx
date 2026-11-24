@@ -24,22 +24,19 @@ export default function TranscriptsPage({ searchParams }: PageProps<"/transcript
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
-          Your past interviews
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Past interviews
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Upload transcripts of interviews you&apos;ve had. I&apos;ll find what each interviewer
-          asked and probed for and how your answers landed, quoting the transcript for every point,
-          and use it to sharpen your likely questions and your stories.
+          Upload transcripts of interviews you&apos;ve had. Each review shows what the interviewer
+          asked and probed for and how your answers landed, with a quote for every point, and
+          sharpens your likely questions and stories.
         </p>
         <PageGuide
           id="transcripts"
           steps={[
             "Upload or paste a transcript, and pick the target job it was for if there is one.",
-            "I review it: each question asked, what they probed for, and how your answer landed.",
+            "It's reviewed: each question asked, what they probed for, and how your answer landed.",
             "Build the stories under “Stories to work on”, then predict that job's questions again.",
           ]}
         />
@@ -99,7 +96,7 @@ async function TranscriptsContent({
       <div className="space-y-4 lg:col-span-2">
         {addedCount > 1 && (
           <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="added-note">
-            That file had {addedCount} interviews, so I saved and reviewed each one on its own.
+            That file had {addedCount} interviews, so each one was saved and reviewed on its own.
             {leftNote && ` ${leftNote}`}
           </p>
         )}
@@ -162,7 +159,7 @@ async function TranscriptsContent({
 
       <div className="space-y-4">
         {insights.recurringGaps.length > 0 && (
-          <Card title="Your answers keep missing">
+          <Card title="What answers keep missing">
             <ul className="space-y-2" data-testid="recurring-gaps">
               {insights.recurringGaps.map((g) => (
                 <li key={g.gap} className="flex items-baseline justify-between gap-3">

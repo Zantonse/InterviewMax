@@ -63,7 +63,7 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/jobs" className="text-sm font-medium text-ink-800 hover:underline">
-          ← All target jobs
+          ← Jobs
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <JobContent params={params} />
@@ -149,7 +149,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </p>
       )}
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
-      <StepDots label={`Your prep for ${job.title}`} steps={steps} />
+      <StepDots label={`Prep for ${job.title}`} steps={steps} />
       <JobTabs
         tabs={[
           { id: "overview", label: "Overview" },
@@ -163,7 +163,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             label: "Interviews",
             note: String(interviews.length),
           },
-          { id: "pitch", label: "Your pitch", note: `${pitchDone} of 4` },
+          { id: "pitch", label: "Pitch", note: `${pitchDone} of 4` },
         ]}
       />
 
@@ -195,9 +195,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             </Link>
             <Link
               href={`/jobs/${job.id}/warm-up`}
-              className="text-sm font-semibold text-ink-800 hover:underline"
+              className="text-sm link"
             >
-              One-minute warm-up →
+              One-minute warm-up
             </Link>
           </div>
           {read && read.focus.length > 0 && (
@@ -220,11 +220,11 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           {!read && (
             <section className="panel">
               <p className="text-slate-700">
-                I haven&apos;t read this job yet.{" "}
-                <Link href="/jobs" className="font-semibold text-ink-800 underline">
-                  Read your jobs
-                </Link>{" "}
-                from the jobs page.
+                This posting hasn&apos;t been read yet. Read it from{" "}
+                <Link href="/jobs" className="link">
+                  Jobs
+                </Link>
+                .
               </p>
             </section>
           )}
@@ -299,9 +299,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </p>
               <Link
                 href={`/jobs/${job.id}/curriculum`}
-                className="text-sm font-semibold text-ink-800 hover:underline"
+                className="text-sm link"
               >
-                Open the curriculum →
+                Open the curriculum
               </Link>
             </section>
           )}
@@ -318,9 +318,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </p>
               <Link
                 href="/jobs"
-                className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline"
+                className="mt-3 inline-block text-sm link"
               >
-                Add your resume →
+                Add your resume
               </Link>
             </section>
           )}
@@ -372,8 +372,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </>
             ) : (
               <p className="mb-4 text-slate-600">
-                I&apos;ll predict the behavioral questions this job is most likely to ask, from the
-                posting and any interview reports or team notes you paste, and match each to your stories.
+                The behavioral questions this job is most likely to ask, predicted from the posting and
+                any interview reports or team notes you paste, each matched to your stories.
               </p>
             )}
             {askedRecently.length > 0 && (
@@ -397,7 +397,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             data-testid="job-stories"
           >
             <h2 className="mb-2 text-sm font-semibold text-ink-800">
-              Your stories for this job
+              Stories for this job
             </h2>
             {folder.stories.length > 0 ? (
               <>
@@ -436,7 +436,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               <p className="text-slate-600">
                 {job.likelyQuestions
                   ? "None of your stories answers this job's likely questions yet. Each question above links to the story to build."
-                  : "Once I've predicted this job's questions, the stories that answer them show up here."}
+                  : "Once this job's questions are predicted, the stories that answer them show up here."}
               </p>
             )}
           </section>
@@ -489,9 +489,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 {lastRound && (
                   <Link
                     href={`/jobs/${job.id}/practice`}
-                    className="text-sm font-medium text-ink-800 hover:underline"
+                    className="text-sm link"
                   >
-                    Your rounds ({rounds.length}) →
+                    Rounds ({rounds.length})
                   </Link>
                 )}
               </div>
@@ -581,9 +581,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           )}
           <Link
             href={`/transcripts?job=${job.id}`}
-            className="text-sm font-semibold text-ink-800 hover:underline"
+            className="text-sm link"
           >
-            Add an interview for this job →
+            Add an interview for this job
           </Link>
         </section>
       </div>
@@ -665,7 +665,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 pendingText="Opening…"
                 className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
               >
-                Answer the questions →
+                Answer the questions
               </PendingButton>
             </form>
           )}

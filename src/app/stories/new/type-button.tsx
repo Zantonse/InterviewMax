@@ -117,8 +117,8 @@ export function QuestionButton({
         <span className="block font-words text-lg leading-snug text-slate-900">{question}</span>
         <span className="mt-1 block text-sm text-slate-600">{starting ? "Opening…" : note}</span>
       </span>
-      <span className="shrink-0 pt-0.5 text-sm font-semibold text-ink-800 group-hover:underline">
-        Answer it →
+      <span className="shrink-0 pt-0.5 text-sm font-medium text-accent-700 group-hover:underline">
+        Answer it
       </span>
     </button>
   );

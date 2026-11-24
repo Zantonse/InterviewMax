@@ -100,9 +100,9 @@ export function LibraryView({
                 {item.coverage.kind === "story" ? (
                   <Link
                     href={`/stories/${item.coverage.storyId}`}
-                    className="font-medium text-ink-800 hover:underline"
+                    className="link"
                   >
-                    {item.coverage.drafted ? "Answer with" : "In progress"}: {item.coverage.title} →
+                    {item.coverage.drafted ? "Answer with" : "In progress"}: {item.coverage.title}
                   </Link>
                 ) : (
                   <form action={startStory} className="flex flex-wrap items-center gap-2">
@@ -112,9 +112,9 @@ export function LibraryView({
                       type="submit"
                       name="storyType"
                       value={item.coverage.storyType}
-                      className="font-medium text-ink-800 hover:underline"
+                      className="link"
                     >
-                      Build &ldquo;{item.coverage.label}&rdquo; →
+                      Build &ldquo;{item.coverage.label}&rdquo;
                     </button>
                   </form>
                 )}

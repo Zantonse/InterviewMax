@@ -54,12 +54,12 @@ async function Finder() {
       <section className="mt-8 max-w-2xl panel">
         <h2 className="text-lg font-semibold text-slate-900">Three quick questions</h2>
         <p className="mt-1 text-slate-600">
-          I don&apos;t have your resume yet, so tell me a little about your recent work. A sentence
-          or two each is plenty. Or{" "}
-          <Link href="/jobs" className="font-semibold text-ink-800 underline">
+          There&apos;s no resume yet, so say a little about your recent work. A sentence or two
+          each is plenty. Or{" "}
+          <Link href="/jobs" className="link">
             add your resume
           </Link>{" "}
-          and I&apos;ll read it instead.
+          and it&apos;s read instead.
         </p>
         <QuickQuestions initial={finder?.answers ?? {}} />
       </section>

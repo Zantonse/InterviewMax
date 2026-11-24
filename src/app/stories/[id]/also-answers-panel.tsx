@@ -1,6 +1,5 @@
 "use client";
 
-import { WhatYouGet } from "@/components/what-you-get";
 import { useState, useTransition } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { getTheme } from "@/lib/questions/themes";
@@ -50,7 +49,7 @@ export function AlsoAnswersPanel({
       className={
         primary
           ? "btn-primary"
-          : "text-sm font-medium text-ink-800 hover:underline disabled:opacity-50"
+          : "text-sm link disabled:opacity-50"
       }
       data-testid="also-answers-find"
     >
@@ -98,22 +97,8 @@ export function AlsoAnswersPanel({
         </>
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          {also ? (
-            <p className="text-slate-700">
-              You&apos;ve changed the story since I checked. I&apos;ll check the new version.
-            </p>
-          ) : (
-            <>
-              <p className="text-slate-700">One good story answers several questions.</p>
-              <WhatYouGet
-                items={[
-                  "Your likely questions",
-                  "Past interviews",
-                  "Common questions",
-                  "What to lead with",
-                ]}
-              />
-            </>
+          {also && (
+            <p className="text-slate-700">Checked against an earlier version of the story.</p>
           )}
           <div>{button("Find other questions it answers", true)}</div>
           <AiNotice purpose="find the other questions your story answers" />

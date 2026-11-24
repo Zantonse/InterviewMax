@@ -38,7 +38,7 @@ export function JourneyResult({
         <p className="mt-1 text-lg font-semibold text-accent-300">{grade.level}</p>
         {grade.gaps.length > 0 ? (
           <>
-            <p className="mt-5 text-sm font-semibold text-ink-100">Your biggest gaps</p>
+            <p className="mt-5 text-sm font-semibold text-ink-100">Biggest gaps</p>
             <ol className="mt-2 space-y-2">
               {grade.gaps.map((gap, i) => (
                 <li key={gap.id} className="flex gap-3">
@@ -103,13 +103,13 @@ function NextStep({ id, questionsJobId }: { id: string; questionsJobId?: string 
         <>
           <Heading>Build your &ldquo;Tell me about yourself&rdquo;</Heading>
           <Lead>
-            A few short questions about your path, then I&apos;ll write a 90-second answer from what
-            you say. It&apos;s free.
+            A few short questions about your path, then a 90-second answer written from what you
+            say. It&apos;s free.
           </Lead>
           <form action={startStory} className="mt-6 flex flex-wrap items-center gap-4">
             <input type="hidden" name="storyType" value={REQUIRED_STORY_TYPE_ID} />
             <StartButton />
-            <Link href="/jobs/new" className="text-sm font-semibold text-ink-800 hover:underline">
+            <Link href="/jobs/new" className="text-sm link">
               Or add a job first
             </Link>
           </form>
@@ -119,7 +119,7 @@ function NextStep({ id, questionsJobId }: { id: string; questionsJobId?: string 
       return (
         <>
           <Heading>Gather the numbers your stories need</Heading>
-          <Lead>Pick your role and I&apos;ll list the figures interviewers look for.</Lead>
+          <Lead>Pick your role to see the figures interviewers look for.</Lead>
           <Go href="/numbers">Gather my numbers</Go>
         </>
       );

@@ -73,6 +73,8 @@ export function NavLink(props: {
   label: string;
   exact?: boolean;
   compact?: boolean;
+  // Story titles wrap to a second line instead of being cut off mid-word.
+  wrap?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -94,6 +96,7 @@ function NavLinkBody({
   href,
   label,
   compact,
+  wrap,
   children,
   active,
 }: Parameters<typeof NavLink>[0] & { active: boolean }) {
@@ -111,7 +114,11 @@ function NavLinkBody({
       }`}
     >
       {children}
-      <span className={`truncate ${children ? "nav-collapsed:sr-only" : ""}`}>{label}</span>
+      <span
+        className={`${wrap ? "line-clamp-2 leading-snug" : "truncate"} ${children ? "nav-collapsed:sr-only" : ""}`}
+      >
+        {label}
+      </span>
     </Link>
   );
 }

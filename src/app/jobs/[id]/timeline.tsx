@@ -36,14 +36,14 @@ export function InterviewTimeline({
       {steps.length === 0 ? (
         <>
           <p className="mb-4 text-slate-600">
-            Add the transcripts of your rounds here and I&apos;ll lay them out in order: who you
-            met, what they asked, how each answer landed and what to prepare for the next round.
+            Add the transcripts of your rounds to see them in order: who you met, what they asked,
+            how each answer landed and what to prepare for the next round.
           </p>
           <Link
             href={`/transcripts?job=${jobId}`}
-            className="text-sm font-semibold text-ink-800 hover:underline"
+            className="text-sm link"
           >
-            Add an interview for this job →
+            Add an interview for this job
           </Link>
         </>
       ) : (

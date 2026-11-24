@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
@@ -21,7 +20,7 @@ import { type StoryRecord, listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 import { NumbersForm, RoleForm } from "./forms";
 
-export const metadata: Metadata = { title: "Your numbers · InterviewMax" };
+export const metadata: Metadata = { title: "Numbers · InterviewMax" };
 
 // Picking a role with no hand-written list drafts one, which is a model call.
 export const maxDuration = 60;
@@ -31,21 +30,18 @@ export default function NumbersPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
-          Your numbers
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Numbers
         </h1>
         <p className="mt-2 text-slate-600">
-          Strong stories have numbers in them. Here are the ones interviewers expect for your role,
-          and where to find each. Fill in what you can; your stories will use them, and I&apos;ll
-          never make one up.
+          Strong stories have numbers in them. These are the ones interviewers expect for your role,
+          and where to find each. Fill in what you can; your stories use them, and none is ever made
+          up.
         </p>
         <PageGuide
           id="numbers"
           steps={[
-            "Confirm your role, and I'll list the numbers interviewers expect from it.",
+            "Confirm your role to see the numbers interviewers expect from it.",
             "Fill them in one at a time. Skip any you don't know; rough is fine if you say “about”.",
             "Your stories use them, and the builder shows which ones each story needs.",
           ]}
@@ -179,7 +175,7 @@ function WhereToLook({ openByDefault }: { openByDefault: boolean }) {
       </div>
       <p className="mt-4 text-sm text-slate-600">
         Can&apos;t find one? A labelled estimate like &ldquo;about 30&rdquo; is fine, and a blank
-        is fine too. I&apos;ll never fill one in for you.
+        is fine too. Nothing is ever filled in for you.
       </p>
     </details>
   );

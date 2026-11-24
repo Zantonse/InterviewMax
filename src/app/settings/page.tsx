@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
@@ -23,10 +22,7 @@ export default function SettingsPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Settings
         </h1>
 
@@ -36,7 +32,7 @@ export default function SettingsPage() {
           aria-labelledby="field-heading"
         >
           <h2 id="field-heading" className="text-xl font-semibold text-slate-900">
-            Your field
+            Field of work
           </h2>
           <p className="mt-2 text-slate-600">
             The kind of work you do. The story builder&apos;s examples and memory joggers come from
@@ -82,7 +78,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-xl font-semibold text-slate-900">Your data</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Data</h2>
           <p className="mt-2 text-slate-600">
             What you add stays private to you. Parts of it go to AI models to build and grade your
             stories, only through providers that don&apos;t train on it. Nothing is sold or used

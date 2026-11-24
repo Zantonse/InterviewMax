@@ -49,7 +49,7 @@ const LANDED_STYLES: Record<Landed, { label: string; className: string; meaning:
   unclear: {
     label: "Not judged",
     className: "bg-slate-100 text-slate-600",
-    meaning: "I couldn't quote your answer from the transcript, so I didn't rate it.",
+    meaning: "Your answer couldn't be quoted from the transcript, so it wasn't rated.",
   },
 };
 
@@ -59,7 +59,7 @@ export default function TranscriptPage({ params, searchParams }: PageProps<"/tra
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/transcripts" className="text-sm font-medium text-ink-800 hover:underline">
-          ← All past interviews
+          ← Past interviews
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <TranscriptContent params={params} searchParams={searchParams} />
@@ -140,7 +140,7 @@ async function TranscriptContent({
           ) : (
             <section className="rounded-3xl bg-amber-50 p-6">
               <p className="mb-4 text-slate-700">
-                I haven&apos;t reviewed this interview yet, or the last try didn&apos;t finish.
+                This interview hasn&apos;t been reviewed yet, or the last try didn&apos;t finish.
               </p>
               <ReviewAgainButton transcriptId={transcript.id} reviewed={false} />
             </section>
@@ -155,7 +155,7 @@ async function TranscriptContent({
                   Who said what
                 </span>
                 <span className="mt-1 block text-sm text-slate-600">
-                  Your transcript had no speaker names, so I marked each turn as the interviewer or
+                  The transcript had no speaker names, so each turn is marked as the interviewer or
                   you. Open this to check, and tap a label to fix it.
                 </span>
               </summary>
@@ -191,7 +191,7 @@ async function TranscriptContent({
             <section className="panel">
               <p className="mb-4 text-sm text-slate-600">
                 {analysis.dropped > 0
-                  ? `I left out ${analysis.dropped} ${analysis.dropped === 1 ? "point" : "points"} I couldn't quote from the transcript.`
+                  ? `${analysis.dropped} ${analysis.dropped === 1 ? "point was" : "points were"} left out because ${analysis.dropped === 1 ? "it" : "they"} couldn't be quoted from the transcript.`
                   : "Every point here is quoted from the transcript."}
               </p>
               <ReviewAgainButton transcriptId={transcript.id} reviewed />
@@ -268,15 +268,15 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
       )}
       {tough && (
         <p className="mt-2 text-sm">
-          <Link href="/tough-questions" className="font-medium text-ink-800 hover:underline" data-testid="asked-tough">
-            Prepare &ldquo;{getToughQuestion(tough)?.label}&rdquo; in Tough questions →
+          <Link href="/tough-questions" className="link" data-testid="asked-tough">
+            Prepare &ldquo;{getToughQuestion(tough)?.label}&rdquo; in Tough questions
           </Link>
         </p>
       )}
       {coverage?.kind === "story" ? (
         <p className="mt-2 text-sm">
-          <Link href={`/stories/${coverage.storyId}`} className="font-medium text-ink-800 hover:underline">
-            {coverage.drafted ? "Next time, answer with" : "In progress"}: {coverage.title} →
+          <Link href={`/stories/${coverage.storyId}`} className="link">
+            {coverage.drafted ? "Next time, answer with" : "In progress"}: {coverage.title}
           </Link>
         </p>
       ) : coverage?.kind === "build" ? (
@@ -287,10 +287,10 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
             type="submit"
             name="storyType"
             value={coverage.storyType}
-            className="font-medium text-ink-800 hover:underline"
+            className="link"
             data-testid="asked-build-story"
           >
-            Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+            Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo;
           </button>
         </form>
       ) : null}

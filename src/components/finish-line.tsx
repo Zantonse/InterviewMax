@@ -23,7 +23,7 @@ export function FinishLineBar({
   return (
     <section
       className="panel"
-      aria-label="Your core stories"
+      aria-label="Core stories"
       data-testid="finish-line"
       data-written={line.written}
     >

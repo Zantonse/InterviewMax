@@ -95,9 +95,9 @@ async function Content() {
             {job.likelyQuestions && (
               <Link
                 href={`/jobs/${job.id}/practice`}
-                className="self-center text-sm font-semibold text-ink-800 hover:underline"
+                className="self-center text-sm link"
               >
-                See the questions first →
+                See the questions first
               </Link>
             )}
           </div>

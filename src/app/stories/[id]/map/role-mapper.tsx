@@ -194,7 +194,7 @@ function WorkQuestions({
               {f.label}
             </option>
           ))}
-          <option value={OTHER}>Something else (I&apos;ll map it from your answers)</option>
+          <option value={OTHER}>Something else (mapped from your answers)</option>
         </select>
       </div>
 
@@ -364,7 +364,7 @@ function Profile({
         </h2>
       </header>
 
-      <Section title="Your specialty">
+      <Section title="Specialty">
         {owned.length > 0 && (
           <p>
             <span className="font-semibold">Owned:</span> {owned.map((f) => f.label).join(", ")}
@@ -393,12 +393,12 @@ function Profile({
       {profile ? (
         <>
           {profile.scope && (
-            <Section title="Your scope">
+            <Section title="Scope">
               <p>{profile.scope}</p>
             </Section>
           )}
           {profile.strengths.length > 0 && (
-            <Section title="Your strengths">
+            <Section title="Strengths">
               <ul className="list-disc space-y-1 pl-5">
                 {profile.strengths.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -451,8 +451,8 @@ function Profile({
       ) : (
         <div className="flex flex-col items-start gap-3 rounded-2xl bg-slate-50 p-4">
           <p className="text-slate-700">
-            Next I&apos;ll write a one-page profile from your answers: your scope, strengths, and
-            the stories worth building first.
+            Next, a one-page profile written from your answers: your scope, strengths, and the
+            stories worth building first.
           </p>
           <button
             type="button"

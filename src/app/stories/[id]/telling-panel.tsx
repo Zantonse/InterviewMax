@@ -1,6 +1,5 @@
 "use client";
 
-import { WhatYouGet } from "@/components/what-you-get";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { AiNotice } from "@/components/ai-notice";
@@ -66,23 +65,7 @@ export function TellingPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          {telling ? (
-            <p className="text-slate-700">
-              You&apos;ve rewritten the story since I coached it. I&apos;ll coach the new version.
-            </p>
-          ) : (
-            <>
-              <p className="text-slate-700">Tell it out loud, not read it.</p>
-              <WhatYouGet
-                items={[
-                  "Opening line",
-                  "The turning point",
-                  "One vivid detail",
-                  "30-sec and 2-min versions",
-                ]}
-              />
-            </>
-          )}
+          {telling && <p className="text-slate-700">Coached from an earlier version of the story.</p>}
           <div>
             <button
               type="button"

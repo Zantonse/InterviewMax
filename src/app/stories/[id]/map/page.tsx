@@ -41,7 +41,7 @@ async function MapLoader({ params }: { params: PageProps<"/stories/[id]/map">["p
         href={`/stories/${story.id}`}
         className="text-sm font-medium text-ink-800 hover:underline"
       >
-        ← Back to Tell me about yourself
+        ← Tell me about yourself
       </Link>
       <RoleMapper
         storyId={story.id}

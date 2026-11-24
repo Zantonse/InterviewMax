@@ -50,9 +50,9 @@ export function QuestionList({
                   {coverage?.kind === "story" ? (
                     <Link
                       href={`/stories/${coverage.storyId}`}
-                      className="font-medium text-ink-800 hover:underline"
+                      className="link"
                     >
-                      {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
+                      {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
                     </Link>
                   ) : null}
                   {coverage?.kind === "story" && coverage.emphasize && (
@@ -66,19 +66,19 @@ export function QuestionList({
                         type="submit"
                         name="storyType"
                         value={coverage.storyType}
-                        className="font-medium text-ink-800 hover:underline"
+                        className="link"
                       >
-                        Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+                        Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo;
                       </button>
                     </form>
                   ) : null}
                   {aiAnswerHref && q.theme === AI_USE_QUESTION.theme && (
                     <Link
                       href={aiAnswerHref}
-                      className="mt-1 block font-medium text-ink-800 hover:underline"
+                      className="mt-1 block link"
                       data-testid="ai-answer-link"
                     >
-                      Asked as &ldquo;How do you use AI?&rdquo;: your short answer →
+                      Asked as &ldquo;How do you use AI?&rdquo;: your short answer
                     </Link>
                   )}
                 </div>
@@ -130,9 +130,9 @@ export function AskedRecently({
               {coverage?.kind === "story" ? (
                 <Link
                   href={`/stories/${coverage.storyId}`}
-                  className="mt-2 inline-block text-sm font-medium text-ink-800 hover:underline"
+                  className="mt-2 inline-block text-sm link"
                 >
-                  {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
+                  {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
                 </Link>
               ) : null}
               {coverage?.kind === "story" && coverage.emphasize && (
@@ -145,9 +145,9 @@ export function AskedRecently({
                     type="submit"
                     name="storyType"
                     value={coverage.storyType}
-                    className="font-medium text-ink-800 hover:underline"
+                    className="link"
                   >
-                    Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+                    Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo;
                   </button>
                 </form>
               ) : null}

@@ -164,7 +164,7 @@ function Card({ card }: { card: WarmUpCard }) {
   if (card.kind === "numbers") {
     return (
       <div className={shell} data-testid="warm-up-card" data-kind="numbers">
-        <p className={label}>Your numbers</p>
+        <p className={label}>Numbers</p>
         <dl className="mt-4 space-y-4">
           {card.numbers.map((n) => (
             <div key={n.id}>

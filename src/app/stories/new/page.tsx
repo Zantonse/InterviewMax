@@ -18,16 +18,13 @@ export default function NewStoryPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Which story do you want to build?
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Pick one and tell me what happened, your way: rough notes or a minute of talking.
-          I&apos;ll write a rough draft straight away, then ask a few questions to make it stronger.
-          Nothing is saved until you answer.
+          Pick one and say what happened, your way: rough notes or a minute of talking. A rough
+          draft is written straight away, then a few questions make it stronger. Nothing is saved
+          until you answer.
         </p>
 
         <Suspense fallback={<PickerSkeleton />}>
@@ -65,11 +62,11 @@ function AddJobNudge() {
       <span>
         <span className="block font-semibold text-slate-900">Add the job you&apos;re going for first</span>
         <span className="block text-sm text-slate-600">
-          Paste the posting. Then I can tell you the questions it&apos;s likely to ask and
-          pitch your story at the level it expects.
+          Paste the posting to see the questions it&apos;s likely to ask, and pitch your story at
+          the level it expects.
         </span>
       </span>
-      <span className="shrink-0 font-semibold text-ink-800">Add a job →</span>
+      <span className="shrink-0 font-medium text-accent-700">Add a job</span>
     </Link>
   );
 }
@@ -110,7 +107,7 @@ async function Picker() {
       <section className="mt-8 max-w-2xl" data-testid="own-question-section">
         <h2 className="text-lg font-semibold text-slate-900">Have a question in mind?</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Type it the way you&apos;d be asked, and I&apos;ll set up the story that answers it.
+          Type it the way you&apos;d be asked, and build the story that answers it.
         </p>
         <form action={startStory}>
           <OwnQuestion />
@@ -127,10 +124,10 @@ async function Picker() {
             Not sure which story to tell?
           </span>
           <span className="block text-sm text-slate-600">
-            I&apos;ll point out moments from your resume that could answer each kind of question.
+            Moments from your resume that could answer each kind of question.
           </span>
         </span>
-        <span className="shrink-0 font-semibold text-ink-800">Find my stories →</span>
+        <span className="shrink-0 font-medium text-accent-700">Find stories</span>
       </Link>
       <h2 className="mt-10 text-lg font-semibold text-slate-900">
         {questions.length > 0 ? "Or pick a kind of story" : "Pick a kind of story"}
