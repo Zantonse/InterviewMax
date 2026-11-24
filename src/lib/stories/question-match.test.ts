@@ -28,3 +28,20 @@ describe("storyTypeForQuestion", () => {
     }
   });
 });
+
+describe("looksLikeQuestion", () => {
+  it("spots an interview question typed as the opening answer", async () => {
+    const { looksLikeQuestion } = await import("./question-match");
+    expect(looksLikeQuestion("Tell me about a time you had to fix a serious data quality problem under audit or regulatory pressure.")).toBe(true);
+    expect(looksLikeQuestion("Describe a situation where you influenced another team without authority?")).toBe(true);
+    expect(looksLikeQuestion("What was the hardest stakeholder conflict you've handled?")).toBe(true);
+  });
+
+  it("leaves real story openings alone", async () => {
+    const { looksLikeQuestion } = await import("./question-match");
+    expect(looksLikeQuestion("Audit finding: member address mismatches across three systems, 212,000 records.")).toBe(false);
+    expect(looksLikeQuestion("I redesigned the onboarding flow for linking a bank account.")).toBe(false);
+    expect(looksLikeQuestion("How did we lose Brightwater? I promised a connector we couldn't build in time.")).toBe(false);
+    expect(looksLikeQuestion("ok")).toBe(false);
+  });
+});

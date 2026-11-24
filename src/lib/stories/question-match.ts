@@ -46,3 +46,20 @@ export function storyTypeForQuestion(question: string): StoryTypeId {
   const text = question.replace(/\s+/g, " ").trim();
   return RULES.find((r) => r.re.test(text))?.type ?? FALLBACK_TYPE;
 }
+
+// True when the opening answer is really an interview question ("Tell me about a time you fixed a
+// data quality problem under audit pressure.") rather than the start of the story. Simulated users
+// (run 34) typed their question into the first answer box and the draft came back empty; the
+// builder now keeps it as the story's question and asks for the story again.
+const QUESTION_START_RE =
+  /^(tell me about|tell us about|describe a (time|situation)|give (me|us) an example|walk me through|can you (tell|describe|share|walk)|share a time|talk about a time|what('s| is| was) (a|an|the) (time|example|situation)|how (did|do|would|have) you|have you ever|when have you)\b/i;
+
+export function looksLikeQuestion(text: string): boolean {
+  const t = text.trim().replace(/^["“']|["”']$/g, "").trim();
+  if (t.length < 15 || t.length > 300) return false;
+  // One sentence only: a story has more to it than a question does.
+  const sentences = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length > 2) return false;
+  if (/\b(I|we|my|our)\b/.test(t.replace(QUESTION_START_RE, ""))) return false;
+  return QUESTION_START_RE.test(t) || (t.endsWith("?") && sentences.length === 1);
+}

@@ -76,6 +76,7 @@ import { AnswerLimit } from "@/components/answer-limit";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { WhyLead, whyNotes } from "./analysis-view";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
+import { looksLikeQuestion } from "@/lib/stories/question-match";
 import { quickLine, quickPicked, quickStartRows } from "@/lib/stories/quick-start";
 import {
   type Situation,
@@ -211,6 +212,7 @@ export function StoryBuilder({
   const running = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
+  const [tookQuestion, setTookQuestion] = useState(false);
   const [, startTransition] = useTransition();
   // Text a memory jogger adds to (or, tapped again, takes out of) the answer box; `n` makes each
   // tap count.
@@ -338,6 +340,9 @@ export function StoryBuilder({
 
   function submitCore(id: string, answer: string) {
     setEditing(null);
+    // An interview question typed as the opening answer becomes the story's question (saveAnswer);
+    // say so, and the box clears for the story itself.
+    setTookQuestion(id === "start" && storyType?.format !== "intro" && looksLikeQuestion(answer));
     run([{ busy: "saving", action: () => saveAnswer(sid(), id, answer) }]);
   }
 
@@ -577,7 +582,9 @@ export function StoryBuilder({
                 intro={
                   storyType?.format === "intro" && coreAnswered === 0 && !content.linkedin
                     ? `${questions.length} short questions. Answer in plain notes, typed or spoken; the answer is written from your words.`
-                    : undefined
+                    : tookQuestion && currentCore === "start" && content.asked
+                      ? "Got it, that's the question you'll be asked. Now tell the story you'd answer it with: what happened, your part, and how it ended."
+                      : undefined
                 }
                 eyebrow={
                   questions.length === 1
@@ -644,7 +651,7 @@ export function StoryBuilder({
                   </button>
                 )}
                 <Composer
-                  key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
+                  key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}-${content.asked?.length ?? 0}`}
                   size="lg"
                   initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
                   draftKey={inferredNow ? undefined : `${draftScope}:core-${currentCore}`}
