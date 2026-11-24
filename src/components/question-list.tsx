@@ -95,6 +95,8 @@ export function QuestionList({
 const STAGE_SHORT: Record<QuestionStage, string> = {
   recruiter: "Recruiter",
   hiring_manager: "Hiring manager",
+  technical: "Technical",
+  case: "Case",
   panel: "Panel",
   final: "Final round",
 };
