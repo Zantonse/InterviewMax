@@ -974,15 +974,15 @@ export function StoryBuilder({
 }
 
 const VIEWS = [
-  // "Questions", not "Build": simulated users (run 32, 2026-11-24) kept tapping "Build" as if it
-  // sent their answer, and their answers never went in.
-  { id: "build", label: "Questions" },
+  // "Your answers", not "Build" or "Questions": simulated users kept tapping "Build" as if it sent
+  // their answer (run 32), then "Questions" as if it let them pick a different question (run 34).
+  { id: "build", label: "Your answers" },
   { id: "story", label: "Story and score" },
 ] as const;
 
 type View = (typeof VIEWS)[number]["id"];
 
-// Tapping the Questions tab while already on it does nothing a person can see, so show them the
+// Tapping the Your answers tab while already on it does nothing a person can see, so show them the
 // way to send what they've typed: scroll to the open question's send button and focus it.
 function pointToSend() {
   const button = document.querySelector<HTMLButtonElement>(
@@ -2344,9 +2344,9 @@ function StoryView({
               disabled={disabled}
               aria-busy={busy === "probing"}
               className="btn-secondary"
-              title="Questions that make it stronger. They open on the Questions tab."
+              title="Questions that make it stronger. They open on the Your answers tab."
             >
-              {/* The questions appear on the Questions tab; until then this is the only sign on this
+              {/* The questions appear on the Your answers tab; until then this is the only sign on this
                   tab that anything is happening (round 27 personas read it as dead). */}
               {busy === "probing" ? "Finding more questions…" : "Ask me more"}
             </button>
