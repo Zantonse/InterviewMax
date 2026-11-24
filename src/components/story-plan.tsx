@@ -16,7 +16,7 @@ export function StoryPlan({
   limit?: number;
 }) {
   return (
-    <ol className="space-y-2" data-testid="story-plan" data-stagger>
+    <ol className="divide-y divide-ink-100" data-testid="story-plan" data-stagger>
       {order.slice(0, limit).map((p, i) => {
         const type = getStoryType(p.storyType);
         if (!type) return null;
@@ -27,34 +27,27 @@ export function StoryPlan({
         return (
           <li
             key={type.id}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5"
+            className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-baseline gap-x-3 py-3"
           >
+            <span className="font-mono text-sm text-slate-500">{i + 1}</span>
             <span className="min-w-0">
-              <span className="block font-semibold text-slate-900">
-                <span className="mr-2 text-ink-800">{i + 1}.</span>
-                {type.label}
-              </span>
+              <span className="block font-medium text-slate-900">{type.label}</span>
               {p.why && <span className="block text-sm text-slate-600">{p.why}</span>}
             </span>
             {story ? (
               <Link
                 href={`/stories/${story.id}`}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                className={
                   drafted
-                    ? "bg-ink-800 text-white"
-                    : "bg-ink-50 text-ink-900 ring-1 ring-ink-800/20"
-                }`}
+                    ? "text-sm text-slate-600 underline decoration-ink-200 underline-offset-2 hover:decoration-current"
+                    : "link text-sm"
+                }
               >
-                {drafted ? "Draft written" : "In progress"}
+                {drafted ? "Draft written" : "Continue"}
               </Link>
             ) : (
-              <form action={startStory} className="shrink-0">
-                <button
-                  type="submit"
-                  name="storyType"
-                  value={type.id}
-                  className="rounded-full px-3 py-1 text-xs font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50"
-                >
+              <form action={startStory}>
+                <button type="submit" name="storyType" value={type.id} className="link text-sm">
                   Start
                 </button>
               </form>

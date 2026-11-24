@@ -2,7 +2,14 @@ import type { ChatMessage } from "@/lib/ai/types";
 import { type StoryNumber, numbersTranscript } from "@/lib/numbers/checklist";
 import { roleMapTranscript } from "@/lib/roles/role-map";
 import type { PastInterviewNotes } from "@/lib/transcripts/content";
-import { cleanOptions, type FollowUp, type StoryContent, type WeakPart } from "./content";
+import {
+  cleanOptions,
+  onlyStarters,
+  wantsOwnAnswer,
+  type FollowUp,
+  type StoryContent,
+  type WeakPart,
+} from "./content";
 import { type BuilderTargets, hasTargets, targetRules, targetsTranscript } from "./targets";
 import { levelUpInstructions, type LevelGap, type StoryLevel } from "./levels";
 import { tellsAsk } from "@/lib/writing/plain";
@@ -154,7 +161,11 @@ ${INTRO_CHECKLIST}
 
 ${PROBE_RULES}
 
-The answer stays high level and uses one or two figures at most, so ask for a number only where the headline result has none, and spend the other questions on the why behind their moves, what they enjoy, and what they want next.
+The answer stays high level and uses one or two figures at most, so ask for a number only where the headline result has none, and spend the other questions on the why behind their moves, what they enjoy, and what they want next. When the result already has a count (people, users, teams), ask what it changed for them (time saved, deals it helped, what they can do now) instead of a more exact count.
+
+When their path has more than one move and only the first has a reason, ask what took them into the kind of work they do now: the why behind the direction is the thread of the whole answer.
+
+If their answers don't say how they think about their work or what drives them, ask once, lightly, e.g. "In a line, how would you describe the way you approach your work?" It can open the answer. Give it no options and never suggest one for them.
 
 What they want next closes the answer, and a generic one ("a big, well-known company", "smart, ambitious people", "a place to grow") makes the whole answer sound generic. When their answer about what's next doesn't name the kind of role or problem they want to work on and why now, one of your questions must ask about it, tied to their target jobs when they have any (e.g. "What about designing for advertisers at that scale pulls you?").
 
@@ -196,13 +207,17 @@ Make it strong, not just accurate:
 - Prefer concrete verbs over filler and clichés, while keeping their voice.
 
 Write these parts:
-- present: 1 short sentence, the headline: their role and scope today.
-- path: at most 2 sentences, built on the one move that mattered most and why they made it, in their words. Skip moves that don't support the story; don't retell the resume.
+- present: the headline, 1 short sentence: their role and scope today. For an individual contributor, scope is what they own and who relies on it, in their words ("supporting three reps and about 15 accounts per rep"), never "as an IC" or what they don't do. If they said how they think about their work or what drives them, open with it in one short line in their words before the headline (2 sentences then); if they didn't, don't make one up.
+- path: at most 2 sentences, built on the one move that mattered most and why they made it, in their words. If they named the direction their career kept moving in ("started moving more customer facing"), keep that phrase: it's the thread. Name at most two other stops, in passing; skip the rest and don't retell the resume.
 - highlight: 1 to 2 sentences on the one result that matters most, with their number and its context.
-- strengths: 1 to 2 sentences on what they're known for, with a short concrete example as a clause, not a scene; no new figure unless it is the one that matters most.
+- strengths: 1 to 2 sentences on what they're known for, with a short concrete example as a clause, not a scene; no new figure unless it is the one that matters most. Pick one or two things, not a list. An example must be something they described; a tap-on starter alone is not an example, so leave the example out rather than repeat it.
 - next: 1 to 2 sentences on what they want next and why, concrete enough that it can be personalized to each company (what kind of company, at what moment, needs what they bring). It closes the answer and hands back to the interviewer.
 
-The parts are said one after another as a single answer, so write them to flow together: each part's first sentence picks up from the end of the one before with a natural spoken bridge (e.g. from what they do now to how they got there: "I got here because…"; from the result to what they're known for: "That's pretty typical of what people come to me for…"). Don't repeat anything between parts.
+The parts are said one after another as a single answer, so write them to flow together: each part's first sentence picks up from the end of the one before with a natural spoken bridge (e.g. from what they do now to how they got there: "I got here because…"; from the result to what they're known for: "That's also what people come to me for…"). Don't repeat anything between parts.
+
+Scope in the present part (how many reps, accounts or people rely on them) sizes the role and doesn't count toward the figure limit; keep it when they gave it.
+
+When they gave one figure two ways ("300 or 80%"), say it as one figure with its context ("300 SEs, 80% of the team"), using only their figures.
 
 Also give it a short title (at most 8 words) for their story bank, e.g. "From support lead to solutions architect".
 
@@ -332,7 +347,11 @@ export function answersTranscript(content: StoryContent, storyType: StoryType | 
       continue;
     }
     if (!answer) continue;
-    lines.push(`Q (follow-up): ${f.question}`, `A: ${answer}`, "");
+    // Tapped starters with nothing added say what kind of thing, not what happened.
+    const note = onlyStarters(answer, f.options)
+      ? "\n(These are tap-on starters I picked without adding detail: treat them as hints of the kind of thing, not as something I did. Don't build a sentence on them alone.)"
+      : "";
+    lines.push(`Q (follow-up): ${f.question}`, `A: ${answer}${note}`, "");
   }
   return lines.join("\n").trim();
 }
@@ -440,6 +459,10 @@ export type WriteRetry = {
   ownWords?: { share: number; min: number };
   // Set when the draft has phrasing that sounds AI-written (see writing/plain.ts).
   tells?: string[];
+  // Set when the draft has filler the grader would flag (see fillerPhrases in grading.ts).
+  filler?: string[];
+  // "Tell me about yourself": what's wrong with the introduction's shape (see intro-shape.ts).
+  shape?: string[];
 };
 
 function percent(share: number): string {
@@ -464,6 +487,12 @@ export function retryMessages(retry: WriteRetry): ChatMessage[] {
     );
   }
   if (retry.tells?.length) asks.push(tellsAsk(retry.tells));
+  if (retry.filler?.length) {
+    asks.push(
+      `Cut these filler words: ${retry.filler.map((f) => `"${f}"`).join(", ")}. Say the point directly, keeping the rest of my wording.`,
+    );
+  }
+  if (retry.shape?.length) asks.push(...retry.shape);
   if (retry.figures) {
     asks.push(
       `It uses ${retry.figures.found.length} figures (${retry.figures.found.join(", ")}). Keep at most ${retry.figures.max}: the one that matters most for this audience, with its context. Leave the others for follow-up questions.`,
@@ -483,9 +512,11 @@ export function parseProbe(text: string, round = 1): FollowUp[] {
   const followUps = list
     .filter(isRecord)
     .map((f) => {
-      const options = cleanOptions(f.options);
+      const question = typeof f.question === "string" ? f.question.trim() : "";
+      // The prompt already says so; this holds when the model forgets.
+      const options = wantsOwnAnswer(question) ? [] : cleanOptions(f.options);
       return {
-        question: typeof f.question === "string" ? f.question.trim() : "",
+        question,
         gap: typeof f.gap === "string" ? f.gap.trim().toLowerCase() : "",
         round,
         ...(options.length ? { options } : {}),

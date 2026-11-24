@@ -66,7 +66,7 @@ export function RoleForm({
             className={`mt-1 ${INPUT}`}
           />
           <p className="mt-1 text-xs text-slate-600">
-            I&apos;ll draft the numbers interviewers expect for this role. You can change it later.
+            This drafts the numbers interviewers expect for this role. You can change it later.
           </p>
         </div>
       )}
@@ -240,7 +240,7 @@ function CantFindHelp({ onSkip, skipLabel }: { onSkip: () => void; skipLabel: st
             <span className="font-medium text-slate-900">&ldquo;{e}&rdquo;</span>
           </span>
         ))}
-        . Or skip it and I&apos;ll leave it out.
+        . Or skip it and it stays out.
       </p>
       <button
         type="button"

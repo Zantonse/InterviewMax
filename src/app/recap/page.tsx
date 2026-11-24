@@ -7,20 +7,17 @@ import { buildRecap } from "@/lib/recap/recap";
 import { listStories } from "@/lib/stories/data";
 import { RecapCard } from "./recap-card";
 
-export const metadata: Metadata = { title: "Your prep recap · InterviewMax" };
+export const metadata: Metadata = { title: "Prep recap · InterviewMax" };
 
 export default function RecapPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-          Your prep so far
+      <main className="page page-read">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Prep so far
         </h1>
-        <Suspense fallback={<div className="mx-auto mt-8 h-[32rem] max-w-sm animate-pulse rounded-[2rem] bg-white/80" />}>
+        <Suspense fallback={<div className="mt-6 h-[30rem] max-w-md animate-pulse rounded-[10px] bg-ink-50" />}>
           <Content />
         </Suspense>
       </main>
@@ -33,10 +30,10 @@ async function Content() {
   const recap = buildRecap(stories, sessions);
   if (!recap) {
     return (
-      <p className="mt-6 rounded-2xl bg-white p-6 text-slate-600 shadow-sm ring-1 ring-black/5">
+      <p className="mt-6 panel text-slate-600">
         Your recap appears once you&apos;ve written your first behavioral story.{" "}
-        <Link href="/" className="font-semibold text-ink-800 hover:underline">
-          Build one →
+        <Link href="/" className="link">
+          Build one
         </Link>
       </p>
     );
@@ -46,7 +43,7 @@ async function Content() {
       <p className="text-slate-600">Save it as an image to share. Only you decide where it goes.</p>
       <RecapCard recap={recap} />
       {recap.nextGap && (
-        <p className="text-center text-sm text-slate-600" data-testid="recap-next">
+        <p className="text-sm text-slate-600" data-testid="recap-next">
           Next up: a story for <span className="font-semibold text-slate-900">{recap.nextGap}</span>.
         </p>
       )}

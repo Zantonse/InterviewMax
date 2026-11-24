@@ -49,9 +49,11 @@ export function fallbackSummary(result: ProfileResult): string {
   }
   const parts: string[] = [];
   const strength = result.strengths[0];
-  if (strength) parts.push(`Your clearest strength: ${strength.text}`);
+  // The strength reads as its own sentence ("Your stories are strongest on context…"), so it gets no
+  // label in front: "Your clearest strength: Your stories…" said the same thing twice.
+  if (strength) parts.push(strength.text);
   const weakness = result.weaknesses[0];
-  if (weakness) parts.push(`The biggest step forward: ${weakness.text}`);
+  if (weakness) parts.push(`To work on: ${weakness.text}`);
   const nearest = [...result.jobs].sort((a, b) => rank(b.label) - rank(a.label))[0];
   if (nearest) parts.push(`For ${nearest.title} you're ${READINESS_LABELS[nearest.label].toLowerCase()}.`);
   if (parts.length === 0) {

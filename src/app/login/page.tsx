@@ -18,7 +18,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Wordmark />
       </Link>
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Sign in to InterviewMax
         </h1>
         <p className="mt-1 text-slate-600">
@@ -96,7 +96,7 @@ async function UnverifiedNotice() {
         {!linkedin && (
           <a
             href="/auth/login?returnTo=%2F"
-            className="rounded-xl bg-accent-400 px-4 py-2 font-semibold text-ink-950 hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-4 py-2 font-semibold text-white hover:bg-ink-950"
           >
             I&apos;ve confirmed it, continue
           </a>
@@ -105,7 +105,7 @@ async function UnverifiedNotice() {
           href={switchHref}
           className={
             linkedin
-              ? "rounded-xl bg-accent-400 px-4 py-2 font-semibold text-ink-950 hover:bg-accent-300"
+              ? "rounded-xl bg-ink-900 px-4 py-2 font-semibold text-white hover:bg-ink-950"
               : "rounded-xl px-4 py-2 font-medium text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
           }
         >

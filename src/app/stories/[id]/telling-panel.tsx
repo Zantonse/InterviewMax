@@ -1,6 +1,5 @@
 "use client";
 
-import { WhatYouGet } from "@/components/what-you-get";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { AiNotice } from "@/components/ai-notice";
@@ -50,13 +49,10 @@ export function TellingPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
-        coaching ? "opacity-60" : ""
-      }`}
+      className={`transition ${coaching ? "opacity-60" : ""}`}
       aria-label="How to tell it"
       data-testid="how-to-tell-it"
     >
-      <p className="text-sm font-bold text-ink-800">How to tell it</p>
       {current ? (
         <Coached
           telling={telling}
@@ -69,29 +65,13 @@ export function TellingPanel({
         />
       ) : (
         <div className="mt-2 flex flex-col gap-3">
-          {telling ? (
-            <p className="text-slate-700">
-              You&apos;ve rewritten the story since I coached it. I&apos;ll coach the new version.
-            </p>
-          ) : (
-            <>
-              <p className="text-slate-700">Tell it out loud, not read it.</p>
-              <WhatYouGet
-                items={[
-                  "Opening line",
-                  "The turning point",
-                  "One vivid detail",
-                  "30-sec and 2-min versions",
-                ]}
-              />
-            </>
-          )}
+          {telling && <p className="text-slate-700">Coached from an earlier version of the story.</p>}
           <div>
             <button
               type="button"
               onClick={onCoach}
               disabled={disabled}
-              className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+              className="btn-primary"
               data-testid="coach-telling"
             >
               {coaching ? "Coaching…" : telling ? "Coach the new version" : "Coach me to tell it"}
@@ -138,7 +118,7 @@ function Coached({
       <Checks draft={telling.draftChecks} told={toldChecks} />
 
       <div>
-        <h3 className="font-bold text-slate-900">1. Pick your opening line</h3>
+        <h3 className="font-semibold text-slate-900">1. Pick your opening line</h3>
         <p className="mt-1 text-sm text-slate-600">
           Lead with the result or the stakes, so they know why to listen.
         </p>
@@ -153,17 +133,17 @@ function Coached({
                 aria-checked={picked}
                 disabled={disabled}
                 onClick={() => !picked && onPickHook(i)}
-                className={`rounded-2xl px-4 py-3 text-left transition disabled:opacity-60 ${
+                className={`rounded-[10px] px-4 py-3 text-left transition disabled:opacity-60 ${
                   picked
-                    ? "bg-ink-50 text-slate-900 ring-2 ring-ink-600"
-                    : "text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                    ? "bg-accent-50 text-slate-900 ring-1 ring-accent-700"
+                    : "text-slate-800 ring-1 ring-ink-200 hover:bg-ink-50"
                 }`}
                 data-testid={`hook-${i}`}
               >
-                <span className="mr-2 text-xs font-bold text-ink-700">
+                <span className={`mr-2 text-xs font-semibold ${picked ? "text-accent-700" : "text-slate-500"}`}>
                   {picked ? "✓ Your opener" : `Option ${i + 1}`}
                 </span>
-                <span className="block font-medium">{h}</span>
+                <span className="mt-0.5 block font-words text-[1.0625rem] leading-snug">{h}</span>
               </button>
             );
           })}
@@ -172,11 +152,11 @@ function Coached({
 
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-bold text-slate-900">2. Say it out loud</h3>
+          <h3 className="font-semibold text-slate-900">2. Say it out loud</h3>
           <div
             role="tablist"
             aria-label="Length"
-            className="flex rounded-full bg-slate-200/70 p-1 text-sm font-semibold"
+            className="flex rounded-lg bg-ink-50 p-0.5 text-sm font-medium"
           >
             {VERSIONS.map((v) => (
               <button
@@ -185,9 +165,9 @@ function Coached({
                 role="tab"
                 aria-selected={version === v.id}
                 onClick={() => setVersion(v.id)}
-                className={`rounded-full px-3 py-1 transition ${
+                className={`rounded-md px-3 py-1 transition ${
                   version === v.id
-                    ? "bg-white text-ink-800 shadow-sm"
+                    ? "bg-white text-slate-900 ring-1 ring-ink-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
                 data-testid={`version-${v.id}`}
@@ -204,7 +184,7 @@ function Coached({
           </span>
           <CopyButton
             text={text}
-            className="rounded-full px-3 py-1 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
+            className="btn-secondary"
           />
         </div>
         <p className="mt-2 text-xs text-slate-600">
@@ -230,7 +210,7 @@ function Coached({
           ))}
         </ol>
         {telling.untracedNumbers.length > 0 && (
-          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
             These figures aren&apos;t in your answers:{" "}
             <strong>{telling.untracedNumbers.join(", ")}</strong>. Don&apos;t say them unless
             they&apos;re real; coach it again to drop them.
@@ -245,7 +225,7 @@ function Coached({
           type="button"
           onClick={onCoach}
           disabled={disabled}
-          className="rounded-xl px-4 py-2 font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50 disabled:opacity-50"
+          className="btn-secondary"
         >
           {coaching ? "Coaching…" : "Coach it again"}
         </button>
@@ -272,14 +252,14 @@ function Line({
 }) {
   return (
     <li className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
+      <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
         {pause && <PauseMark />}
         {label}
       </span>
       <p className="text-lg leading-relaxed text-slate-800">
         {withEmphasis(text, emphasize).map((piece, i) =>
           piece.emphasis ? (
-            <strong key={i} className="font-bold text-slate-950">
+            <strong key={i} className="font-semibold text-slate-950">
               {piece.text}
             </strong>
           ) : (
@@ -288,7 +268,7 @@ function Line({
         )}
       </p>
       {note && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="turn-thinking">
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="turn-thinking">
           {note}
         </p>
       )}
@@ -300,7 +280,7 @@ function PauseMark() {
   return (
     <span
       aria-label="pause"
-      className="inline-flex items-center rounded-md bg-ink-100 px-1.5 py-0.5 text-xs font-bold text-ink-800"
+      className="inline-flex items-center rounded-md bg-ink-100 px-1.5 py-0.5 text-xs font-semibold text-ink-800"
       data-testid="pause-mark"
     >
       ‖
@@ -311,8 +291,8 @@ function PauseMark() {
 // The checks on the written story beside the same checks on the told version.
 function Checks({ draft, told }: { draft: TellingCheck[]; told: TellingCheck[] }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-4" data-testid="telling-checks">
-      <h3 className="text-sm font-bold text-slate-900">Written to be read vs. told out loud</h3>
+    <div className="rounded-md bg-ink-50 p-4" data-testid="telling-checks">
+      <h3 className="text-sm font-semibold text-slate-900">Written to be read vs. told out loud</h3>
       <ul className="mt-2 flex flex-col gap-2 text-sm">
         {told.map((t) => {
           const before = draft.find((d) => d.id === t.id);
@@ -324,11 +304,7 @@ function Checks({ draft, told }: { draft: TellingCheck[]; told: TellingCheck[] }
                   {t.passed ? "✓" : "!"}
                 </span>
                 {CHECK_LABELS[t.id]}
-                {fixed && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900">
-                    Fixed
-                  </span>
-                )}
+                {fixed && <span className="text-xs font-semibold text-emerald-700">Fixed</span>}
               </span>
               <span className="pl-5 text-slate-600">
                 {fixed ? `Written version: ${before.note}` : t.note}
@@ -355,16 +331,16 @@ function Detail({
   const [answering, setAnswering] = useState(false);
   if ("quote" in detail) {
     return (
-      <div className="rounded-2xl bg-ink-50 p-4" data-testid="vivid-detail">
-        <h3 className="text-sm font-bold text-slate-900">The detail that makes it stick</h3>
+      <div className="rounded-md bg-ink-50 p-4" data-testid="vivid-detail">
+        <h3 className="text-sm font-semibold text-slate-900">The detail that makes it stick</h3>
         <p className="mt-1 text-slate-800">&ldquo;{detail.quote}&rdquo;</p>
         <p className="mt-1 text-sm text-slate-600">From your answers. Slow down when you get here.</p>
       </div>
     );
   }
   return (
-    <div className="rounded-2xl bg-amber-50 p-4" data-testid="vivid-detail">
-      <h3 className="text-sm font-bold text-amber-950">One vivid detail would make this stick</h3>
+    <div className="rounded-md bg-amber-50 p-4" data-testid="vivid-detail">
+      <h3 className="text-sm font-semibold text-amber-950">One vivid detail would make this stick</h3>
       <p className="mt-1 text-amber-950">{detail.ask}</p>
       <p className="mb-3 mt-1 text-sm text-amber-900">
         I won&apos;t make one up. Tell me and I&apos;ll work it in.
@@ -381,7 +357,7 @@ function Detail({
           type="button"
           onClick={() => setAnswering(true)}
           disabled={disabled}
-          className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+          className="btn-primary"
           data-testid="add-detail"
         >
           Add a detail

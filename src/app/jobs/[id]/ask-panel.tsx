@@ -85,11 +85,11 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
                     <li
                       key={q.id}
                       className={`rounded-2xl px-4 py-3 ring-1 ${
-                        q.saved ? "bg-ink-50 ring-ink-800/15" : "bg-slate-50 ring-black/5"
+                        q.saved ? "bg-ink-50 ring-ink-800/15" : "bg-ink-50 ring-ink-100"
                       }`}
                       data-testid="ask-question"
                     >
-                      <p className="font-medium text-slate-900">{q.question}</p>
+                      <p className="font-words text-lg leading-snug text-slate-900">{q.question}</p>
                       {q.why && <p className="mt-0.5 text-sm text-slate-600">{q.why}</p>}
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                         <button
@@ -140,9 +140,9 @@ export function AskPanel({ jobId, initial }: { jobId: string; initial: Questions
         {saved > 0 && (
           <Link
             href={`/jobs/${jobId}/brief`}
-            className="text-sm font-medium text-ink-800 hover:underline"
+            className="text-sm link"
           >
-            {saved} saved, in your brief →
+            {saved} saved in the brief
           </Link>
         )}
       </div>

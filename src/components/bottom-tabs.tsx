@@ -50,7 +50,7 @@ export function BottomTabs({ tabs }: { tabs: readonly BottomTab[] }) {
             className="-mt-4 flex flex-col items-center gap-0.5 pb-1.5 text-xs font-semibold text-ink-900"
             data-testid="tab-build"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-400 text-ink-950 shadow-md ring-4 ring-white">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-900 text-white shadow-md ring-4 ring-white">
               <NavIcon name="plus" />
             </span>
             Build

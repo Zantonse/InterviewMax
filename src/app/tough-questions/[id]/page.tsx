@@ -18,9 +18,9 @@ export default function ToughAnswerPage({ params }: PageProps<"/tough-questions/
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
+      <main className="page">
         <Link href="/tough-questions" className="text-sm font-medium text-ink-800 hover:underline">
-          ← All tough questions
+          ← Tough questions
         </Link>
         <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <ToughLoader params={params} />
@@ -56,7 +56,7 @@ async function ToughLoader({ params }: { params: PageProps<"/tough-questions/[id
         initialContent={story.content}
         jobs={jobs.map((j) => ({ id: j.id, label: j.company ? `${j.title}, ${j.company}` : j.title }))}
       />
-      <details className="mt-8 max-w-xl rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      <details className="mt-8 max-w-xl panel">
         <summary className="cursor-pointer text-sm font-semibold text-slate-700">
           Start this one over
         </summary>

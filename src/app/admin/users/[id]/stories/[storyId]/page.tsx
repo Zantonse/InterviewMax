@@ -25,7 +25,7 @@ export default function AdminStoryPage({ params }: PageProps<"/admin/users/[id]/
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <StoryContent params={params} />
         </Suspense>
@@ -70,7 +70,7 @@ async function StoryContent({
       <Link href={`/admin/users/${id}`} className="text-sm font-medium text-ink-800 hover:underline">
         ← Back to this user
       </Link>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{story.title}</h1>
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{story.title}</h1>
       <p className="mt-2 text-slate-600">
         {storyType?.label ?? story.storyType ?? "Story"} · started {formatWhen(story.createdAt)} ·
         last changed {formatWhen(story.updatedAt)}

@@ -7,6 +7,7 @@ import { extractJson } from "./prompts";
 import {
   INTRO_LENGTH,
   INTRO_MAX_FIGURES,
+  INTRO_PARTS,
   CARL_LENGTH,
   storyParts,
   type StoryType,
@@ -316,7 +317,7 @@ export function quickChecks(draft: StoryDraft, storyType: StoryType | undefined)
     range: lengthRange(storyType),
     where: storyType?.format === "intro" ? "your proof point" : "the result",
     ...(storyType?.format === "intro"
-      ? { maxFigures: INTRO_MAX_FIGURES }
+      ? { maxFigures: INTRO_MAX_FIGURES, figureText: introFigureText(draft.parts) }
       : { stakeText: draft.parts.situation ?? "" }),
   });
   return draft.ownWords === undefined ? checks : [...checks, ownWordsCheck(draft.ownWords)];
@@ -348,6 +349,15 @@ export function introFigures(text: string): string[] {
   return [...found];
 }
 
+// The figures that count toward an introduction's cap: scope in the headline ("three reps and
+// about 15 accounts per rep") sizes the role, it isn't a result competing for attention.
+export function introFigureText(parts: Record<string, string>): string {
+  return INTRO_PARTS.filter((p) => p.id !== "present")
+    .map((p) => parts[p.id] ?? "")
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 // The same checks on any spoken script, e.g. "Tell me about yourself" for one target job.
 export function checkScript(input: {
   text: string;
@@ -358,6 +368,8 @@ export function checkScript(input: {
   where: string;
   // An introduction leads with its most important figure and saves the rest for follow-ups.
   maxFigures?: number;
+  // The text whose figures count toward maxFigures, when not the whole text.
+  figureText?: string;
   // Where the stakes were set up. A result like "we won the deal" after a "$2.4M deal" opening
   // carries that number, so it passes (a principal persona's story was held at Not yet for this,
   // 2026-11-08), with a nudge to say the figure again where it lands.
@@ -377,7 +389,8 @@ export function checkScript(input: {
   const seconds = Math.round(((words / 150) * 60) / 5) * 5;
   const filler = fillerPhrases(text);
   const hedged = hedgedFigures(text);
-  const figures = input.maxFigures === undefined ? [] : introFigures(text);
+  const figures =
+    input.maxFigures === undefined ? [] : introFigures(input.figureText ?? text);
 
   const results: CheckResult[] = [
     {

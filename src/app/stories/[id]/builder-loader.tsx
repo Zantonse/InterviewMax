@@ -79,11 +79,12 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
       finishBase={finishBase}
       recruiterScreen={!intro && jobs.some((j) => !j.outcome && j.nextStage === "recruiter")}
       targets={targets}
-      afterStory={intro && <TailorLinks jobs={jobs} content={story.content} today={today} />}
+      uses={intro && <TailorRows jobs={jobs} content={story.content} today={today} />}
       nextUp={
         !intro && (
           <NextUp
             hasPlan={Boolean(prep.overview)}
+            hasJobs={jobs.some((j) => !j.outcome)}
             next={
               prep.overview
                 ? nextStoryToBuild(prep.overview.storyOrder, stories, story.storyType)
@@ -104,8 +105,10 @@ export async function BuilderLoader({ story }: { story: BuilderStory }) {
 }
 
 // "Tell me about yourself" is built per target job, company first; each job's version lives on its
-// job page.
-function TailorLinks({
+// job page. One row each under "Use this story": the jobs still waiting for theirs come first,
+// nearest interview first, because the general version can only end on a general "why this next
+// role".
+function TailorRows({
   jobs,
   content,
   today,
@@ -114,125 +117,153 @@ function TailorLinks({
   content: StoryContent;
   today: string;
 }) {
-  // The job that most needs its own version gets the main button, nearest interview first: the
-  // general "why this next role" stays generic until it's rebuilt around one company.
-  const first = jobsToShapeIntroFor(jobs, (id) => Boolean(content.tailored?.[id]?.draft), today)[0];
-  const next = first?.job;
-  const soon = first && first.days !== null ? first.days : null;
-  const company = next ? next.company || next.title : "";
+  const written = (id: string) => Boolean(content.tailored?.[id]?.draft);
+  const waiting = jobsToShapeIntroFor(jobs, written, today).slice(0, 4);
+  const done = jobs.filter((j) => !j.outcome && written(j.id)).slice(0, 4);
+  if (waiting.length === 0 && done.length === 0) {
+    return (
+      <UseRow
+        title="Make it company-first"
+        what="Add a target job, then say in a line why you want it. The answer is rebuilt around what that company most needs to hear."
+        href="/jobs/new"
+        action="Add a job"
+      />
+    );
+  }
   return (
-    <section
-      className={`rounded-3xl p-5 shadow-sm sm:p-6 ${
-        soon !== null ? "bg-ink-50 ring-1 ring-ink-800/20" : "bg-white ring-1 ring-black/5"
-      }`}
-      data-testid="tailor-links"
-    >
-      <h2 className="text-sm font-bold text-ink-800">
-        {soon !== null
-          ? `Your ${company} interview is ${whenLabel(soon)}`
-          : "Next: make it company-first for each job"}
-      </h2>
-      <p className="mt-2 text-sm text-slate-600">
-        {soon !== null
-          ? `Make this answer for ${company} before you go. Your general version can only end on a general \u201cwhy this next role\u201d. Tell me in a line why you want ${company}, and I'll rebuild it around what they most need to hear.`
-          : "This is your general answer, so \u201cwhy this next role\u201d can only be general. For each job, tell me in a line why you want that company, and I'll rebuild it around what they most need to hear."}
-      </p>
-      {jobs.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-600">
-          <Link href="/jobs" className="font-semibold text-ink-800 underline">
-            Add a target job
-          </Link>{" "}
-          to get started.
-        </p>
-      ) : (
-        <>
-          {next && (
-            <Link
-              href={`/jobs/${next.id}#about-me`}
-              className="mt-3 inline-flex rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900"
-              data-testid="tailor-next"
-            >
-              Write it for {next.company || next.title} →
-            </Link>
-          )}
-          {jobs.length > 1 || !next ? (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {jobs.map((job) => (
-                <li key={job.id}>
-                  <Link
-                    href={`/jobs/${job.id}#about-me`}
-                    className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
-                  >
-                    {job.company || job.title}
-                    {content.tailored?.[job.id]?.draft && (
-                      <span className="text-xs text-slate-600">written</span>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </>
-      )}
-    </section>
+    <>
+      {waiting.map(({ job, days }, i) => {
+        const company = job.company || job.title;
+        return (
+          <UseRow
+            key={job.id}
+            title={`Tailor it for ${company}`}
+            what={`${days !== null ? `Interview ${whenLabel(days)}. ` : ""}Say in a line why you want ${company}, and the answer is rebuilt around what they most need to hear.`}
+            href={`/jobs/${job.id}#about-me`}
+            action="Tailor"
+            testId={i === 0 ? "tailor-next" : undefined}
+          />
+        );
+      })}
+      {done.map((job) => (
+        <UseRow
+          key={job.id}
+          title={`For ${job.company || job.title}`}
+          what="Written for this job. It lives on the job page."
+          href={`/jobs/${job.id}#about-me`}
+          action="Open"
+        />
+      ))}
+    </>
+  );
+}
+
+// A row of "Use this story" (see UseThisStory in story-builder.tsx), drawn here on the server.
+function UseRow({
+  title,
+  what,
+  href,
+  action,
+  testId,
+}: {
+  title: string;
+  what: string;
+  href: string;
+  action: string;
+  testId?: string;
+}) {
+  return (
+    <li className="border-b border-ink-100 last:border-b-0" data-testid="tailor-links">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-1 py-4 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-baseline">
+        <p className="font-medium text-slate-900">{title}</p>
+        <p className="text-sm text-slate-600">{what}</p>
+        <Link
+          href={href}
+          className="link justify-self-start text-sm sm:justify-self-end"
+          data-testid={testId}
+        >
+          {action}
+        </Link>
+      </div>
+    </li>
   );
 }
 
 // Once a story is written: the next one the user's jobs need, so they never have to work out where
-// to go. Without a jobs plan, the step that makes one.
-function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefined }) {
+// to go. Without a jobs plan, the step that makes one: reading their jobs if they have some (the
+// design review found everyone with jobs but no plan told to add a job, 2026-11-23), or adding one.
+function NextUp({
+  hasPlan,
+  hasJobs,
+  next,
+}: {
+  hasPlan: boolean;
+  hasJobs: boolean;
+  next: NextStory | undefined;
+}) {
   return (
-    <section
-      className="rounded-3xl bg-ink-50 p-5 ring-1 ring-ink-800/10 sm:p-6"
-      data-testid="next-up"
-    >
-      <h2 className="text-sm font-bold text-ink-800">What&apos;s next</h2>
+    <section className="border-t border-ink-100 pt-8" data-testid="next-up">
+      <h2 className="text-lg font-semibold text-slate-900">Next</h2>
       {next ? (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <p className="min-w-0 text-slate-700">
-            <span className="block font-semibold text-slate-900">{next.label}</span>
-            {next.why && <span className="block text-sm text-slate-600">{next.why}</span>}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+          <p className="min-w-0">
+            <span className="block font-medium text-slate-900">{next.label}</span>
+            {next.why && <span className="mt-0.5 block text-sm text-slate-600">{next.why}</span>}
           </p>
           {next.storyId ? (
-            <Link href={`/stories/${next.storyId}`} className={NEXT_BUTTON}>
+            <Link href={`/stories/${next.storyId}`} className="btn-secondary shrink-0">
               Continue it
             </Link>
           ) : (
             <form action={startStory}>
-              <button type="submit" name="storyType" value={next.storyType} className={NEXT_BUTTON}>
+              <button
+                type="submit"
+                name="storyType"
+                value={next.storyType}
+                className="btn-secondary shrink-0"
+              >
                 Build it next
               </button>
             </form>
           )}
         </div>
       ) : hasPlan ? (
-        <p className="mt-2 text-slate-700">
+        <p className="mt-2 text-[0.9375rem] text-slate-700">
           That&apos;s every story your jobs need written. Go over your{" "}
-          <Link href="/jobs" className="font-semibold text-ink-800 underline">
+          <Link href="/jobs" className="link">
             likely questions
           </Link>{" "}
           and practise each answer out loud.
         </p>
+      ) : hasJobs ? (
+        <p className="mt-2 text-[0.9375rem] text-slate-700">
+          <Link href="/jobs" className="link">
+            Read your jobs
+          </Link>{" "}
+          to see which story each one needs next.
+        </p>
       ) : (
-        <p className="mt-2 text-slate-700">
-          <Link href="/jobs/new" className="font-semibold text-ink-800 underline">
+        <p className="mt-2 text-[0.9375rem] text-slate-700">
+          <Link href="/jobs/new" className="link">
             Add a target job
           </Link>{" "}
-          and I&apos;ll tell you which story to build next.
+          to see which story to build next.
         </p>
       )}
     </section>
   );
 }
 
-const NEXT_BUTTON =
-  "inline-block shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300";
-
 export function BuilderSkeleton() {
   return (
-    <div className="mt-14 grid animate-pulse grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <div className="h-96 rounded-3xl bg-white/80 ring-1 ring-black/5" />
-      <div className="h-64 rounded-3xl bg-white/80 ring-1 ring-black/5" />
+    <div className="mt-1 animate-pulse" aria-hidden="true">
+      <div className="h-4 w-48 rounded bg-ink-50" />
+      <div className="mt-7 h-10 w-2/3 max-w-xl rounded bg-ink-50" />
+      <div className="mt-4 h-4 w-80 rounded bg-ink-50" />
+      <div className="mt-12 grid grid-cols-1 gap-14 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="h-72 rounded-[10px] bg-ink-50" />
+        <div className="h-56 rounded-[10px] bg-ink-50" />
+      </div>
     </div>
   );
 }

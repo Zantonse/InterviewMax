@@ -121,6 +121,21 @@ export function planHeading(days: number, company: string | null): string {
   return `${whenLabel(days).replace(/^in /, "")} to ${interview}`.replace(/^./, (c) => c.toUpperCase());
 }
 
+// Home's headline (design review 2026-11-23, fix 6): "Northwind Health interview in 6 days".
+export function interviewHeadline(name: string, days: number): string {
+  return `${name} interview ${whenLabel(days)}`;
+}
+
+// "Monday, November 23" (long) or "Saturday, Nov 29" (short) for a YYYY-MM-DD date.
+export function dateLabel(date: string, style: "long" | "short" = "long"): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: style,
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 // The job with the nearest interview still ahead; with no dates, the first job with likely
 // questions, then the first job. Null with no jobs.
 export function focusJob<J extends PlanJob>(all: J[], today: string): J | null {

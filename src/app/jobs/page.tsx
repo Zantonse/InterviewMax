@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { StoryPlan } from "@/components/story-plan";
+import { roundLabel } from "@/lib/bank/content";
 import { levelLabel, overviewBasis } from "@/lib/jobs/content";
 import { getJobsPrep, listJobs, type TargetJob } from "@/lib/jobs/data";
 import { isFinished, outcomeSummary } from "@/lib/jobs/outcome";
-import { listStories } from "@/lib/stories/data";
+import { questionReadiness } from "@/lib/jobs/readiness";
+import { dateLabel } from "@/lib/prep/plan";
+import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { removeResume } from "./actions";
 import { AddJobForm, PendingButton, RereadButton, ResumeForm } from "./forms";
 
@@ -24,35 +26,18 @@ export default function JobsPage({
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Your target jobs
-          </h1>
-          <Link
-            href="/jobs/new"
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300"
-            data-testid="add-job-link"
-          >
-            + Add a target job
+      <main className="page">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Target jobs</h1>
+          <Link href="/jobs/new" className="btn-secondary" data-testid="add-job-link">
+            Add a target job
           </Link>
         </div>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Paste in the jobs you&apos;re going for. I&apos;ll read them with your resume, find what
-          they share and where each differs, and tell you which stories to build first.
+          Paste a posting or a link to see the questions it&apos;s likely to bring and which stories
+          to build first.
         </p>
-        <PageGuide
-          id="jobs"
-          steps={[
-            "Add each job you're going for: a link, a file or the pasted posting.",
-            "Optionally add your resume, so I can see what your history already shows.",
-            "Open a job for its likely questions, then build the stories under “Build these stories first”.",
-          ]}
-        />
-        <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
+        <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-[10px] bg-ink-50" />}>
           <JobsContent searchParams={searchParams} />
         </Suspense>
       </main>
@@ -91,151 +76,223 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
         resume,
       );
 
+  // The jobs as a table (design review 2026-11-23, fix 9): one row each with its level, the
+  // interview and how many of its likely questions have a story. What the jobs need comes after,
+  // with the resume beside it.
   return (
-    <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div className="space-y-4 lg:col-span-2">
-        {stale && (
-          <Card title="Not read yet">
-            <p className="mb-4 text-slate-700">
-              Your jobs or resume changed since I last read them, so what&apos;s below may be out of
-              date.
-            </p>
-            <RereadButton />
-          </Card>
-        )}
+    <>
+      {stale && (
+        <div
+          className="mt-8 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-[10px] bg-ink-50 px-5 py-4"
+          data-testid="jobs-stale"
+        >
+          <p className="text-slate-700">
+            <span className="font-semibold text-slate-900">Not read yet.</span> Your jobs or resume
+            changed since they were last read, so what&apos;s below may be out of date.
+          </p>
+          <RereadButton />
+        </div>
+      )}
 
-        {active.length > 0 ? (
-          <ul className="space-y-3" data-testid="job-list">
-            {active.map((job) => (
-              <JobRow key={job.id} job={job} read={overview?.jobs[job.id]} />
-            ))}
-          </ul>
-        ) : (
-          <Card title="No jobs in progress">
-            <p className="text-slate-700">
-              Every job here has finished. Add the next one you&apos;re going for and I&apos;ll
-              read it with the rest.
-            </p>
-            <Link
-              href="/jobs/new"
-              className="mt-4 inline-block font-semibold text-ink-800 hover:underline"
+      {active.length > 0 ? (
+        <JobTable jobs={active} overview={overview} stories={stories} testId="job-list" />
+      ) : (
+        <p className="mt-8 border-t border-ink-200 pt-5 text-slate-700">
+          Every job here has finished. Add the next one you&apos;re going for, and it&apos;s read
+          with the rest.{" "}
+          <Link href="/jobs/new" className="link">
+            Add a target job
+          </Link>
+        </p>
+      )}
+
+      {finished.length > 0 && (
+        <details
+          id="finished-jobs"
+          open={params.finished === "1"}
+          className="group mt-8"
+          data-testid="finished-jobs"
+        >
+          <summary className="cursor-pointer list-none text-sm [&::-webkit-details-marker]:hidden">
+            <span
+              aria-hidden="true"
+              className="mr-2 inline-block text-slate-500 transition group-open:rotate-90"
             >
-              + Add a target job
-            </Link>
-          </Card>
-        )}
+              ›
+            </span>
+            <span className="font-semibold text-slate-900">Finished jobs ({finished.length})</span>
+            <span className="ml-3 text-slate-600">
+              Kept for their interviews and stories. They don&apos;t count toward your job limit.
+            </span>
+          </summary>
+          <JobTable
+            jobs={finished}
+            overview={overview}
+            stories={stories}
+            finished
+            testId="finished-job-list"
+          />
+        </details>
+      )}
 
-        {finished.length > 0 && (
-          <details
-            id="finished-jobs"
-            open={params.finished === "1"}
-            className="group rounded-3xl bg-slate-50 p-5 ring-1 ring-black/5"
-            data-testid="finished-jobs"
-          >
-            <summary className="cursor-pointer list-none font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
-              <span className="mr-2 inline-block transition group-open:rotate-90">›</span>
-              Finished jobs ({finished.length})
-              <span className="mt-1 block text-sm font-normal text-slate-600">
-                Kept for their interviews and stories. They don&apos;t count toward your job limit.
-              </span>
-            </summary>
-            <ul className="mt-4 space-y-3" data-testid="finished-job-list">
-              {finished.map((job) => (
-                <JobRow key={job.id} job={job} read={overview?.jobs[job.id]} />
-              ))}
-            </ul>
-          </details>
-        )}
-
-        {overview && overview.shared.length > 0 && (
-          <Card title={jobs.length > 1 ? "What your jobs share" : "What interviewers will probe"}>
-            <Bullets items={overview.shared} />
-          </Card>
-        )}
-
-        {overview && (
-          <Card title="Build these stories first">
-            <StoryPlan order={overview.storyOrder} stories={stories} />
-          </Card>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <ResumeCard resume={resume} />
-        {overview?.resumeFit && (
-          <Card title="Your resume against these jobs">
-            {overview.resumeFit.strengths.length > 0 && (
-              <>
-                <h3 className="font-semibold text-slate-900">Already shows</h3>
-                <Bullets items={overview.resumeFit.strengths} />
-              </>
+      {overview ? (
+        <div className="mt-6 grid grid-cols-1 gap-x-12 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card title="Build these stories first">
+              <StoryPlan order={overview.storyOrder} stories={stories} />
+            </Card>
+            {overview.shared.length > 0 && (
+              <Card
+                title={jobs.length > 1 ? "What your jobs share" : "What interviewers will probe"}
+              >
+                <Bullets items={overview.shared} />
+              </Card>
             )}
-            {overview.resumeFit.gaps.length > 0 && (
-              <>
-                <h3 className="mt-4 font-semibold text-slate-900">Doesn&apos;t show yet</h3>
-                <Bullets items={overview.resumeFit.gaps} />
-                <p className="mt-2 text-sm text-slate-600">
-                  Your stories are the place to cover these.
-                </p>
-              </>
+          </div>
+
+          <div>
+            <ResumeCard resume={resume} />
+            {overview.resumeFit && (
+              <Card title="Resume against these jobs">
+                {overview.resumeFit.strengths.length > 0 && (
+                  <>
+                    <h3 className="font-semibold text-slate-900">Already shows</h3>
+                    <Bullets items={overview.resumeFit.strengths} />
+                  </>
+                )}
+                {overview.resumeFit.gaps.length > 0 && (
+                  <>
+                    <h3 className="mt-4 font-semibold text-slate-900">Doesn&apos;t show yet</h3>
+                    <Bullets items={overview.resumeFit.gaps} />
+                    <p className="mt-2 text-sm text-slate-600">
+                      Your stories are the place to cover these.
+                    </p>
+                  </>
+                )}
+              </Card>
             )}
-          </Card>
-        )}
-      </div>
-    </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 max-w-2xl">
+          <ResumeCard resume={resume} />
+        </div>
+      )}
+    </>
   );
 }
 
 type JobRead = NonNullable<Awaited<ReturnType<typeof getJobsPrep>>["overview"]>["jobs"][string];
 
-function JobRow({ job, read }: { job: TargetJob; read: JobRead | undefined }) {
+type Overview = Awaited<ReturnType<typeof getJobsPrep>>["overview"];
+
+const COLUMNS = "md:grid-cols-[minmax(0,1fr)_10rem_11rem_7.5rem]";
+
+// Finished jobs get the same table with their outcome in place of the interview, and no count.
+function JobTable({
+  jobs,
+  overview,
+  stories,
+  finished = false,
+  testId,
+}: {
+  jobs: TargetJob[];
+  overview: Overview;
+  stories: StoryRecord[];
+  finished?: boolean;
+  testId: string;
+}) {
   return (
-    <li>
-      <Link
-        href={`/jobs/${job.id}`}
-        className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
+    <div className={`${finished ? "mt-4" : "mt-8"} border-t border-ink-200`}>
+      <div
+        className={`hidden gap-x-6 border-b border-ink-100 py-2 text-xs text-slate-600 md:grid ${COLUMNS}`}
+        aria-hidden="true"
       >
-        <span className="flex flex-wrap items-baseline justify-between gap-2">
-          <span className="text-lg font-bold text-slate-900">
-            {job.title}
-            {job.company && (
-              <span className="font-normal text-slate-600"> at {job.company}</span>
-            )}
-          </span>
-          <span className="rounded-full bg-ink-50 px-2.5 py-1 text-xs font-semibold text-ink-900">
-            {levelLabel(job.level) ?? "Level not set"}
-            {!job.levelConfirmed && " · confirm"}
-          </span>
-        </span>
+        <span>Job</span>
+        <span>Level</span>
+        <span>{finished ? "Outcome" : "Interview"}</span>
+        <span className="text-right">{finished ? "" : "Questions ready"}</span>
+      </div>
+      <ul className="divide-y divide-ink-100" data-testid={testId}>
+        {jobs.map((job) => (
+          <JobRow key={job.id} job={job} read={overview?.jobs[job.id]} stories={stories} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// The title is the link; it covers the whole row, so the row opens the job wherever it's clicked.
+function JobRow({
+  job,
+  read,
+  stories,
+}: {
+  job: TargetJob;
+  read: JobRead | undefined;
+  stories: StoryRecord[];
+}) {
+  const readiness = questionReadiness(job.likelyQuestions?.questions, stories);
+  const round = roundLabel(job.nextStage);
+  return (
+    <li className={`group/job relative grid gap-x-6 gap-y-1 py-4 md:items-baseline ${COLUMNS}`}>
+      <div className="min-w-0">
+        <Link
+          href={`/jobs/${job.id}`}
+          className="font-semibold text-slate-900 group-hover/job:underline after:absolute after:inset-0"
+        >
+          {job.title}
+        </Link>
+        {job.company && <span className="text-slate-600"> at {job.company}</span>}
         {job.otherRoles.length > 0 && (
-          <span className="mt-1 block text-sm text-slate-600">
+          <p className="mt-0.5 text-sm text-slate-600">
             Also up for: {job.otherRoles.map((r) => r.title).join(" · ")}
-          </span>
+          </p>
         )}
-        {job.outcome && (
-          <span
-            className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-              job.outcome === "offer"
-                ? "bg-emerald-100 text-emerald-900"
-                : "bg-slate-100 text-slate-700"
-            }`}
-            data-testid="job-outcome-badge"
-          >
-            Finished · {outcomeSummary(job)}
-          </span>
-        )}
-        {read?.summary && <span className="mt-2 block text-slate-600">{read.summary}</span>}
-        {read?.differs && (
-          <span className="mt-1 block text-sm text-slate-600">{read.differs}</span>
-        )}
-      </Link>
+        {read?.summary && <p className="mt-1 text-sm text-slate-600">{read.summary}</p>}
+        {read?.differs && <p className="mt-1 text-sm text-slate-600">{read.differs}</p>}
+      </div>
+      {/* One wrapped line on a phone; three columns from md up. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 md:contents">
+        <p className="text-sm text-slate-700">
+          {levelLabel(job.level) ?? "Level not set"}
+          {!job.levelConfirmed && <span className="block text-amber-800">Not confirmed</span>}
+        </p>
+        <p className="text-sm text-slate-700">
+          {job.outcome ? (
+            <span
+              className={job.outcome === "offer" ? "text-emerald-800" : undefined}
+              data-testid="job-outcome-badge"
+            >
+              {outcomeSummary(job)}
+            </span>
+          ) : job.interviewDate ? (
+            <>
+              {dateLabel(job.interviewDate, "short")}
+              {round && <span className="block text-slate-600">{round}</span>}
+            </>
+          ) : (
+            <span className="text-slate-500">No date yet</span>
+          )}
+        </p>
+        <p className="text-sm text-slate-700 tabular-nums md:text-right">
+          {job.outcome ? null : readiness.total > 0 ? (
+            <>
+              <span className="md:hidden">Questions ready: </span>
+              {readiness.ready} of {readiness.total}
+            </>
+          ) : (
+            <span className="text-slate-500">Not predicted</span>
+          )}
+        </p>
+      </div>
     </li>
   );
 }
 
 function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>>["resume"] }) {
   return (
-    <Card title="Your resume">
+    <Card title="Resume">
       {resume ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-slate-700" data-testid="resume-name">
@@ -252,7 +309,7 @@ function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>
         </div>
       ) : (
         <p className="mb-4 text-slate-600">
-          Optional, but it lets me match your history to each job. It stays private to you.
+          Optional. It matches your history to each job, and it stays private to you.
         </p>
       )}
       <ResumeForm hasResume={Boolean(resume)} />
@@ -262,7 +319,7 @@ function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>
 
 function Card({
   title,
-  className = "bg-white",
+  className = "",
   children,
 }: {
   title: string;
@@ -270,8 +327,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
+    <section className={`panel ${className}`}>
+      <h2 className="mb-4 text-sm font-semibold text-ink-800">{title}</h2>
       {children}
     </section>
   );

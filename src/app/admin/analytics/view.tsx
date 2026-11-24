@@ -260,7 +260,7 @@ function Filters({
     `/admin/analytics?range=${r}${admins ? "&admins=1" : ""}`;
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <nav aria-label="Date range" className="flex flex-wrap gap-1 rounded-full bg-white p-1 ring-1 ring-black/5">
+      <nav aria-label="Date range" className="flex flex-wrap gap-1 rounded-full bg-white p-1 ring-1 ring-ink-100">
         {RANGES.map((r) => (
           <Link
             key={r.key}
@@ -301,7 +301,7 @@ function TimeTo({ label, result }: { label: string; result: TimeToValue }) {
   return (
     <div>
       <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-0.5 text-lg font-bold text-slate-900">
+      <p className="mt-0.5 text-lg font-semibold text-slate-900">
         {result.medianMs === null ? "–" : formatDuration(result.medianMs)}
       </p>
       <p className="text-xs text-slate-500">

@@ -61,9 +61,9 @@ export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page">
         <Link href="/jobs" className="text-sm font-medium text-ink-800 hover:underline">
-          ← All target jobs
+          ← Jobs
         </Link>
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <JobContent params={params} />
@@ -136,9 +136,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: RESTORE_TAB }} />
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
         {job.title}
-        {job.company && <span className="font-bold text-slate-600"> at {job.company}</span>}
+        {job.company && <span className="font-semibold text-slate-600"> at {job.company}</span>}
       </h1>
       {job.otherRoles.length > 0 && (
         <p className="mt-1 text-sm text-slate-600" data-testid="job-other-roles">
@@ -149,7 +149,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </p>
       )}
       {read?.summary && <p className="mt-2 max-w-2xl text-slate-600">{read.summary}</p>}
-      <StepDots label={`Your prep for ${job.title}`} steps={steps} />
+      <StepDots label={`Prep for ${job.title}`} steps={steps} />
       <JobTabs
         tabs={[
           { id: "overview", label: "Overview" },
@@ -163,7 +163,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             label: "Interviews",
             note: String(interviews.length),
           },
-          { id: "pitch", label: "Your pitch", note: `${pitchDone} of 4` },
+          { id: "pitch", label: "Pitch", note: `${pitchDone} of 4` },
         ]}
       />
 
@@ -178,9 +178,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             ready={readiness.ready}
             total={readiness.total}
             days={daysLeft !== null && daysLeft >= 0 ? daysLeft : null}
+            stories={stories}
           />
           <div
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-ink-100 py-3"
             data-testid="job-brief"
           >
             <p className="min-w-0 flex-1 text-sm text-slate-600">
@@ -189,23 +190,23 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             </p>
             <Link
               href={`/jobs/${job.id}/brief`}
-              className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ink-900"
+              className="btn-secondary"
             >
               Open the brief
             </Link>
             <Link
               href={`/jobs/${job.id}/warm-up`}
-              className="text-sm font-semibold text-ink-800 hover:underline"
+              className="text-sm link"
             >
-              One-minute warm-up →
+              One-minute warm-up
             </Link>
           </div>
           {read && read.focus.length > 0 && (
             <section
               id="focus"
-              className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              className="scroll-mt-20 panel"
             >
-              <h2 className="mb-4 text-sm font-bold text-ink-800">
+              <h2 className="mb-4 text-sm font-semibold text-ink-800">
                 What their interviewers will look for
               </h2>
               <ul className="list-disc space-y-1 pl-5 text-slate-700" data-testid="job-focus">
@@ -218,21 +219,21 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           )}
           {job.otherRoles.length > 0 && <RolesCard job={job} />}
           {!read && (
-            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+            <section className="panel">
               <p className="text-slate-700">
-                I haven&apos;t read this job yet.{" "}
-                <Link href="/jobs" className="font-semibold text-ink-800 underline">
-                  Read your jobs
-                </Link>{" "}
-                from the jobs page.
+                This posting hasn&apos;t been read yet. Read it from{" "}
+                <Link href="/jobs" className="link">
+                  Jobs
+                </Link>
+                .
               </p>
             </section>
           )}
           <details
             id="posting"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
           >
-            <summary className="cursor-pointer text-sm font-bold text-ink-800">
+            <summary className="cursor-pointer text-sm font-semibold text-ink-800">
               The posting
             </summary>
             <p className="mt-4 whitespace-pre-line text-slate-700">{job.description}</p>
@@ -241,18 +242,18 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         <div className="space-y-4">
           <section
             id="interview-date"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
               Interview date
             </h2>
             <InterviewDateForm jobId={job.id} date={job.interviewDate} />
           </section>
           <section
             id="next-stage"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
               Next stage
             </h2>
             <NextStageForm
@@ -263,9 +264,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           </section>
           <section
             id="level"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
               Role level
             </h2>
             <LevelForm jobId={job.id} level={job.level} confirmed={job.levelConfirmed} />
@@ -288,8 +289,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             )}
           </section>
           {canUseCurriculum(user.email) && (
-            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <section className="panel">
+              <h2 className="mb-2 text-sm font-semibold text-ink-800">
                 Curriculum <span className="font-medium normal-case text-slate-600">Beta</span>
               </h2>
               <p className="mb-3 text-sm text-slate-600">
@@ -299,9 +300,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </p>
               <Link
                 href={`/jobs/${job.id}/curriculum`}
-                className="text-sm font-semibold text-ink-800 hover:underline"
+                className="text-sm link"
               >
-                Open the curriculum →
+                Open the curriculum
               </Link>
             </section>
           )}
@@ -310,7 +311,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               className="rounded-3xl bg-ink-50 p-6 ring-1 ring-ink-800/10"
               data-testid="offer-resume"
             >
-              <h2 className="mb-2 text-sm font-bold text-ink-800">
+              <h2 className="mb-2 text-sm font-semibold text-ink-800">
                 Optional: add your resume
               </h2>
               <p className="text-sm text-slate-700">
@@ -318,9 +319,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </p>
               <Link
                 href="/jobs"
-                className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline"
+                className="mt-3 inline-block text-sm link"
               >
-                Add your resume →
+                Add your resume
               </Link>
             </section>
           )}
@@ -344,9 +345,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         <div className="space-y-4 lg:col-span-2">
           <section
             id="questions"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
               Likely questions
             </h2>
             {job.likelyQuestions ? (
@@ -372,8 +373,8 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               </>
             ) : (
               <p className="mb-4 text-slate-600">
-                I&apos;ll predict the behavioral questions this job is most likely to ask, from the
-                posting and any interview reports or team notes you paste, and match each to your stories.
+                The behavioral questions this job is most likely to ask, predicted from the posting and
+                any interview reports or team notes you paste, each matched to your stories.
               </p>
             )}
             {askedRecently.length > 0 && (
@@ -393,11 +394,11 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           </section>
           <section
             id="stories"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
             data-testid="job-stories"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
-              Your stories for this job
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
+              Stories for this job
             </h2>
             {folder.stories.length > 0 ? (
               <>
@@ -410,7 +411,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                   {folder.stories.map((s) => (
                     <li
                       key={s.storyId}
-                      className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5"
+                      className="rounded-2xl bg-ink-50 px-4 py-3"
                     >
                       <Link
                         href={`/stories/${s.storyId}`}
@@ -436,16 +437,16 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               <p className="text-slate-600">
                 {job.likelyQuestions
                   ? "None of your stories answers this job's likely questions yet. Each question above links to the story to build."
-                  : "Once I've predicted this job's questions, the stories that answer them show up here."}
+                  : "Once this job's questions are predicted, the stories that answer them show up here."}
               </p>
             )}
           </section>
           <section
             id="cases"
-            className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="scroll-mt-20 panel"
             data-testid="job-cases"
           >
-            <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <h2 className="mb-2 text-sm font-semibold text-ink-800">
               Case and technical questions
             </h2>
             <p className="mb-4 text-sm text-slate-600">
@@ -461,10 +462,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           {job.likelyQuestions && (
             <section
               id="practice"
-              className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              className="scroll-mt-20 panel"
               data-testid="job-practice"
             >
-              <h2 className="mb-2 text-sm font-bold text-ink-800">
+              <h2 className="mb-2 text-sm font-semibold text-ink-800">
                 Practice out loud
               </h2>
               <p className="mb-4 text-sm text-slate-600">
@@ -489,9 +490,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
                 {lastRound && (
                   <Link
                     href={`/jobs/${job.id}/practice`}
-                    className="text-sm font-medium text-ink-800 hover:underline"
+                    className="text-sm link"
                   >
-                    Your rounds ({rounds.length}) →
+                    Rounds ({rounds.length})
                   </Link>
                 )}
               </div>
@@ -507,15 +508,18 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
       >
         <section
           id="outcome"
-          className={`scroll-mt-20 rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${
-            job.outcome === "offer" ? "bg-emerald-50" : "bg-white"
-          }`}
+          className="scroll-mt-20 panel"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             Interview process
           </h2>
           {job.outcome ? (
-            <p className="mb-4 font-semibold text-slate-900" data-testid="job-outcome">
+            <p
+              className={`mb-4 font-semibold ${
+                job.outcome === "offer" ? "text-emerald-800" : "text-slate-900"
+              }`}
+              data-testid="job-outcome"
+            >
               Finished: {outcomeSummary(job)}
               {job.finishedOn && (
                 <span className="block text-sm font-normal text-slate-600">
@@ -548,10 +552,10 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         />
         <section
           id="past-interviews"
-          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="scroll-mt-20 panel"
           data-testid="job-interviews"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             Past interviews for this job
           </h2>
           {interviews.length > 0 ? (
@@ -578,9 +582,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
           )}
           <Link
             href={`/transcripts?job=${job.id}`}
-            className="text-sm font-semibold text-ink-800 hover:underline"
+            className="text-sm link"
           >
-            Add an interview for this job →
+            Add an interview for this job
           </Link>
         </section>
       </div>
@@ -592,9 +596,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
       >
         <section
           id="about-me"
-          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="scroll-mt-20 panel"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             Tell me about yourself, for {job.company || "this job"}
           </h2>
           <p className="mb-4 text-sm text-slate-600">
@@ -622,9 +626,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </section>
         <section
           id="ai-answer"
-          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="scroll-mt-20 panel"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             How you use AI, for {job.company || "this job"}
           </h2>
           <p className="mb-4 text-sm text-slate-600">
@@ -660,18 +664,18 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
               <input type="hidden" name="jobId" value={job.id} />
               <PendingButton
                 pendingText="Opening…"
-                className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+                className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
               >
-                Answer the questions →
+                Answer the questions
               </PendingButton>
             </form>
           )}
         </section>
         <section
           id="resume"
-          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="scroll-mt-20 panel"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             Resume bullets for this job
           </h2>
           <p className="mb-4 text-sm text-slate-600">
@@ -688,9 +692,9 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
         </section>
         <section
           id="ask"
-          className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="scroll-mt-20 panel"
         >
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             Questions to ask them
           </h2>
           <p className="mb-4 text-sm text-slate-600">

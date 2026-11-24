@@ -2,18 +2,19 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
-import { startStory } from "@/app/stories/new/actions";
-import { ReadinessRing, ReadinessRows } from "@/components/readiness";
-import { questionReadiness, READY_LEVEL, type QuestionReadiness } from "@/lib/jobs/readiness";
 import { AppHeader } from "@/components/app-header";
-import { CoverageGrid } from "@/components/coverage-grid";
 import { PrepPath } from "@/components/prep-path";
+import { nextFirst, QuestionTable } from "@/components/question-table";
+import { SectionHead } from "@/components/section-head";
+import { StoryBank } from "@/components/story-bank";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
+import { roundLabel } from "@/lib/bank/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { daysUntil, focusJob, todayIn } from "@/lib/prep/plan";
+import { questionReadiness, READY_LEVEL } from "@/lib/jobs/readiness";
+import { dateLabel, daysUntil, focusJob, interviewHeadline, todayIn } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
-import { RankCard } from "@/components/quest/rank-card";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
+import { rankFor } from "@/lib/quest/xp";
 import { questState } from "@/lib/quest/state";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
@@ -23,28 +24,17 @@ import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 // model calls.
 export const maxDuration = 120;
 
+// How many likely questions home lists; the job page has the rest.
+const QUESTIONS_SHOWN = 6;
+
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        {/* "Build a story" is in the sidebar (the phone menu on small screens); the plan's Continue is
-            the one main button here. */}
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-          Your interview prep
-        </h1>
-
-        <Suspense fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}>
+      <main className="page">
+        <Suspense fallback={<HomeSkeleton />}>
           <NewUserGate>
-            <Suspense
-              fallback={<div className="mt-5 h-16 animate-pulse rounded-2xl bg-white/80" />}
-            >
-              <PrepPath />
-            </Suspense>
-            <Suspense fallback={null}>
-              <Dashboard />
-            </Suspense>
+            <Home />
           </NewUserGate>
         </Suspense>
       </main>
@@ -60,154 +50,160 @@ async function NewUserGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Under the plan bar: the focus job as the hero (how many likely questions have a solid story,
-// and the next one to work on), then the story bank. Before the first job the prep path above asks
-// for one, and an empty story bank would only be a wall of work under it, so nothing else shows
-// until there's a job or a story. The finish line and story skills live on /profile, so home has
-// one main button (the plan's Continue) and few counters (design review 2026-11-16, fix 4).
-async function Dashboard() {
-  let jobs: TargetJob[] | null;
-  let stories: StoryRecord[] | null;
-  try {
-    jobs = await listJobs();
-  } catch (err) {
-    unstable_rethrow(err);
-    console.error("Home: loading target jobs failed", err);
-    jobs = null;
-  }
-  try {
-    stories = await listStories();
-  } catch (err) {
-    // A signed-out redirect must still go through.
-    unstable_rethrow(err);
-    // Don't take the whole home page down if the database can't be read.
-    console.error("Home: loading stories failed", err);
-    stories = null;
-  }
-  if (jobs?.length === 0 && stories?.length === 0) return null;
+// Home as today's plan (design review 2026-11-23, fix 6): the date and the interview it's all for,
+// today's one step, the likely questions with the story that answers each, then the story bank as
+// cue cards and past interviews in a line. Before the first job, the step asks for one, and an empty
+// bank would only be a wall of work under it, so nothing else shows until there's a job or a story.
+async function Home() {
+  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
+  const [jobs, stories] = await Promise.all([loadJobs(), loadStories()]);
+  const job = jobs ? focusJob(jobs, today) : null;
+  const empty = jobs?.length === 0 && stories?.length === 0;
   return (
-    <div className="mt-4 space-y-4">
-      {stories && (
-        <Suspense fallback={null}>
-          <QuestCard stories={stories} />
-        </Suspense>
+    <>
+      <Header today={today} job={job} />
+      <Suspense fallback={<div className="mt-8 h-32 animate-pulse rounded-[10px] bg-ink-50" />}>
+        <PrepPath />
+      </Suspense>
+      {jobs === null && (
+        <p className="mt-8 text-slate-600" role="alert">
+          Your target jobs couldn&apos;t be loaded right now.
+        </p>
       )}
-      {jobs ? (
-        <FocusJob jobs={jobs} stories={stories ?? []} />
-      ) : (
-        <Card title="Your jobs">
-          <EmptyLine>Your target jobs couldn&apos;t be loaded right now.</EmptyLine>
-        </Card>
-      )}
-      <Card className="bg-ink-800 text-white" title="Story bank">
-        {stories ? (
-          <CoverageGrid stories={stories} jobs={jobs ?? []} />
+      {job && <LikelyQuestions job={job} stories={stories ?? []} />}
+      {!empty &&
+        (stories ? (
+          <StoryBank stories={stories} jobs={jobs ?? []} />
         ) : (
-          <p className="max-w-md text-ink-50" role="alert" data-testid="story-bank-error">
+          <p className="mt-12 text-slate-600" role="alert" data-testid="story-bank-error">
             Your stories couldn&apos;t be loaded right now. Try again in a minute.
           </p>
-        )}
-      </Card>
-      <Suspense fallback={null}>
-        <PastInterviews />
-      </Suspense>
-    </div>
+        ))}
+      {stories && !empty && (
+        <Suspense fallback={null}>
+          <QuestLine stories={stories} />
+        </Suspense>
+      )}
+      {!empty && (
+        <Suspense fallback={null}>
+          <PastInterviews />
+        </Suspense>
+      )}
+    </>
   );
 }
 
-// The job the plan is working toward: a ring with the days to go, how many likely questions have a
-// story at Level 2 or above, the next question to work on, and its top questions. The other jobs
-// are in the sidebar.
-async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRecord[] }) {
-  const today = todayIn((await headers()).get("x-vercel-ip-timezone"));
-  const job = focusJob(jobs, today);
-  if (!job) return null;
-  const days = job.interviewDate ? daysUntil(job.interviewDate, today) : null;
+async function loadJobs(): Promise<TargetJob[] | null> {
+  try {
+    return await listJobs();
+  } catch (err) {
+    // A signed-out redirect must still go through.
+    unstable_rethrow(err);
+    console.error("Home: loading target jobs failed", err);
+    return null;
+  }
+}
+
+async function loadStories(): Promise<StoryRecord[] | null> {
+  try {
+    return await listStories();
+  } catch (err) {
+    unstable_rethrow(err);
+    // Don't take the whole home page down if the database can't be read.
+    console.error("Home: loading stories failed", err);
+    return null;
+  }
+}
+
+// "Monday, November 23", then "Northwind Health interview in 6 days" with the day, the round and the
+// role under it.
+function Header({ today, job }: { today: string; job: TargetJob | null }) {
+  const days = job?.interviewDate ? daysUntil(job.interviewDate, today) : null;
   const upcoming = days !== null && days >= 0 ? days : null;
-  const name = job.company || job.title;
-  const questions = job.likelyQuestions?.questions ?? [];
-  const readiness = questionReadiness(questions, stories);
-  const next =
-    readiness.rows.find((r) => r.kind === "build") ??
-    readiness.rows.find((r) => r.kind === "story" && r.level < READY_LEVEL);
+  const name = job ? job.company || job.title : null;
+  const round = roundLabel(job?.nextStage);
   return (
-    <section
-      className="animate-enter rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
-      data-testid="focus-job"
-      aria-label={`Your ${name} interview`}
-    >
-      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
-        <div className="flex min-w-0 items-center gap-4 md:w-72 md:shrink-0 md:items-start">
-          {readiness.total > 0 && (
-            <ReadinessRing ready={readiness.ready} total={readiness.total} days={upcoming} />
-          )}
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-slate-900">
-              <Link href={`/jobs/${job.id}`} className="hover:text-ink-800 hover:underline">
-                {name}
-              </Link>
-            </h2>
-            {job.company && <p className="truncate text-sm text-slate-600">{job.title}</p>}
-          </div>
-        </div>
-        {readiness.total > 0 ? (
-          <div className="min-w-0 flex-1">
-            <p className="text-slate-700" data-testid="focus-ready">
-              <strong className="text-slate-900">
-                {readiness.ready} of {readiness.total} likely questions
-              </strong>{" "}
-              have a story at Level {READY_LEVEL} or above.
-            </p>
-            {next && (
-              <div className="mt-3 rounded-2xl bg-ink-50 px-4 py-3" data-testid="focus-next">
-                <p className="text-sm text-slate-600">Next to work on</p>
-                <p className="mt-0.5 font-semibold text-slate-900">{next.question}</p>
-                <NextQuestion row={next} />
-              </div>
-            )}
-            <ReadinessRows rows={readiness.rows.filter((r) => r !== next).slice(0, 3)} />
+    <header>
+      <p className="text-sm text-slate-600" data-testid="today">
+        {dateLabel(today)}
+      </p>
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
+        {name
+          ? upcoming !== null
+            ? interviewHeadline(name, upcoming)
+            : `${name} interview prep`
+          : "Prep"}
+      </h1>
+      {job && (
+        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-slate-600" data-testid="focus-meta">
+          {upcoming !== null && job.interviewDate ? (
+            <span>{dateLabel(job.interviewDate, "short")}</span>
+          ) : (
             <Link
-              href={`/jobs/${job.id}`}
-              className="mt-2 inline-block text-sm font-semibold text-ink-800 hover:underline"
+              href={`/jobs/${job.id}#interview-date`}
+              className="link"
+              data-testid="set-interview-date"
             >
-              All {questions.length} questions for this job →
+              Add the interview date
             </Link>
-          </div>
-        ) : (
-          <Link href={`/jobs/${job.id}`} className="text-sm font-semibold text-ink-800 hover:underline">
-            Open this job →
+          )}
+          {round && <span>{/round|screen|loop/i.test(round) ? round : `${round} round`}</span>}
+          {job.company && (
+            <Link href={`/jobs/${job.id}`} className="hover:text-slate-900 hover:underline">
+              {job.title}
+            </Link>
+          )}
+        </p>
+      )}
+    </header>
+  );
+}
+
+// The focus job's likely questions as a table (see components/question-table.tsx), the next one to
+// work on first; the job page has the rest.
+function LikelyQuestions({ job, stories }: { job: TargetJob; stories: StoryRecord[] }) {
+  const readiness = questionReadiness(job.likelyQuestions?.questions, stories);
+  if (readiness.total === 0) {
+    return (
+      <section className="mt-12" aria-labelledby="likely-heading" data-testid="focus-job">
+        <SectionHead id="likely-heading" title="Likely questions" />
+        <p className="mt-4 text-slate-600">
+          Not predicted yet.{" "}
+          <Link href={`/jobs/${job.id}#questions`} className="link">
+            Predict the questions for {job.company || job.title}
           </Link>
-        )}
-      </div>
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section className="mt-12" aria-labelledby="likely-heading" data-testid="focus-job">
+      <SectionHead
+        id="likely-heading"
+        title="Likely questions"
+        note={
+          <span data-testid="focus-ready">
+            {readiness.ready} of {readiness.total} have a story at Level {READY_LEVEL} or above
+          </span>
+        }
+        action={
+          <Link href={`/jobs/${job.id}#questions`} className="link">
+            All {readiness.total}
+          </Link>
+        }
+      />
+      <QuestionTable
+        rows={nextFirst(readiness.rows).slice(0, QUESTIONS_SHOWN)}
+        stories={stories}
+        testId="focus-questions"
+      />
     </section>
   );
 }
 
-// The next question's action, as an outline button: the plan's Continue above is the page's one
-// periwinkle button.
-function NextQuestion({ row }: { row: QuestionReadiness }) {
-  const className =
-    "mt-2 inline-flex min-h-9 items-center rounded-xl bg-white px-3.5 py-1.5 text-sm font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50";
-  if (row.kind === "build") {
-    return (
-      <form action={startStory}>
-        <input type="hidden" name="asked" value={row.question} />
-        <button type="submit" name="storyType" value={row.storyType} className={className}>
-          Build a story for it
-        </button>
-      </form>
-    );
-  }
-  return (
-    <Link href={`/stories/${row.storyId}`} className={className}>
-      {row.level === 0 ? "Finish its story" : "Take its story to Level 2"}
-    </Link>
-  );
-}
-
-// Story Quest's rank and XP in one line, linking to the section. Phones reach /quest from here (the
-// bottom tab bar is full); the sidebar links to it too.
-async function QuestCard({ stories }: { stories: StoryRecord[] }) {
+// Story Quest in one line near the end: rank and XP, linking to the section. On phones this is the
+// way in (the bottom tab bar is full); the sidebar links to it too.
+async function QuestLine({ stories }: { stories: StoryRecord[] }) {
   const [sessions, transcripts] = await Promise.all([
     listPracticeSessionsSafely(),
     listTranscripts().catch((err) => {
@@ -216,10 +212,26 @@ async function QuestCard({ stories }: { stories: StoryRecord[] }) {
     }),
   ]);
   const { xp } = questState({ stories, sessions, transcripts });
-  return <RankCard xp={xp} compact />;
+  const rank = rankFor(xp.total);
+  return (
+    <p className="mt-12 border-t border-ink-200 pt-5 text-slate-600" data-testid="quest-home-card">
+      <span className="mr-3 font-semibold text-slate-900">Story Quest</span>
+      {rank.name}, <span className="tabular-nums">{xp.total.toLocaleString("en-US")} XP</span>
+      {rank.nextAt !== null && (
+        <>
+          {" "}
+          · {(rank.nextAt - xp.total).toLocaleString("en-US")} to {rank.nextName}
+        </>
+      )}
+      .{" "}
+      <Link href="/quest" className="link">
+        Open
+      </Link>
+    </p>
+  );
 }
 
-// Only shown once past interviews point at something to fix; the sidebar links to the page itself.
+// One line at the end, once past interviews point at something to fix.
 async function PastInterviews() {
   let transcripts: Transcript[];
   try {
@@ -232,36 +244,30 @@ async function PastInterviews() {
   const { recurringGaps } = summarizeTranscripts(transcripts);
   if (recurringGaps.length === 0) return null;
   return (
-    <Card title="Past interviews">
-      <Link href="/transcripts" className="block text-slate-700 hover:text-ink-800">
-        Your answers keep missing{" "}
-        {recurringGaps
-          .slice(0, 3)
-          .map((g) => gapLabel(g.gap).toLowerCase())
-          .join(", ")}
-        . →
+    <p
+      className="mt-12 border-t border-ink-200 pt-5 text-slate-600"
+      data-testid="home-past-interviews"
+    >
+      <span className="mr-3 font-semibold text-slate-900">Past interviews</span>
+      Your answers keep missing{" "}
+      {recurringGaps
+        .slice(0, 3)
+        .map((g) => gapLabel(g.gap).toLowerCase())
+        .join(", ")}
+      .{" "}
+      <Link href="/transcripts" className="link">
+        See why
       </Link>
-    </Card>
+    </p>
   );
 }
 
-function Card({
-  title,
-  className = "bg-white text-slate-900",
-  children,
-}: {
-  title: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
+function HomeSkeleton() {
   return (
-    <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="truncate text-lg font-bold">{title}</h2>
-      <div className="mt-4">{children}</div>
-    </section>
+    <div aria-hidden="true">
+      <div className="h-4 w-40 animate-pulse rounded bg-ink-50" />
+      <div className="mt-3 h-8 w-96 max-w-full animate-pulse rounded bg-ink-50" />
+      <div className="mt-8 h-32 animate-pulse rounded-[10px] bg-ink-50" />
+    </div>
   );
-}
-
-function EmptyLine({ children }: { children: React.ReactNode }) {
-  return <p className="text-slate-600">{children}</p>;
 }

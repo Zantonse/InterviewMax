@@ -189,7 +189,7 @@ export function weakestSkillJourney(map: SkillStatus[]): Journey {
     [
       { id: "try", label: `Try it in a story · ${SKILL_LEVELS[1].name}`, xp: 0 },
       { id: "once", label: `Get it to Solid once · ${SKILL_LEVELS[2].name}`, xp: 0 },
-      { id: "learned", label: `Show it again before I ask · ${SKILL_LEVELS[3].name}`, xp: SKILL_LEARNED_XP },
+      { id: "learned", label: `Show it again, unprompted · ${SKILL_LEVELS[3].name}`, xp: SKILL_LEARNED_XP },
     ],
     graded ? Math.min(3, level) : -1,
   );
@@ -197,7 +197,7 @@ export function weakestSkillJourney(map: SkillStatus[]): Journey {
     return {
       id: "weak",
       title: "Fix your weakest skill",
-      blurb: "Opens once one of your stories has been graded, so I can see which skill to work on.",
+      blurb: "Opens once one of your stories has been graded and shows which skill to work on.",
       steps: steps.map((st) => ({ ...st, state: "locked" })),
       done: false,
     };

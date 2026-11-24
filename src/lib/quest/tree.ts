@@ -20,7 +20,7 @@ export type Branch = {
 const SKILL_STEPS = [
   "Shows up in a graded story.",
   "Solid in one story.",
-  "Solid in two stories, one of them before I asked about it.",
+  "Solid in two stories, one of them before a follow-up asked for it.",
   "Strong in two stories, one of them on your own.",
   "Strong in three stories, two of them on your own.",
 ];

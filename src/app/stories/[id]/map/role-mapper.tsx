@@ -64,7 +64,7 @@ export function RoleMapper({
 
   return (
     <div className="mt-4">
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
         Map my role
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">
@@ -194,7 +194,7 @@ function WorkQuestions({
               {f.label}
             </option>
           ))}
-          <option value={OTHER}>Something else (I&apos;ll map it from your answers)</option>
+          <option value={OTHER}>Something else (mapped from your answers)</option>
         </select>
       </div>
 
@@ -272,7 +272,7 @@ function MarkFunctions({
   return (
     <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">{roleLabel(map)}: the whole function</h2>
+        <h2 className="text-xl font-semibold text-slate-900">{roleLabel(map)}: the whole function</h2>
         <p className="mt-1 text-slate-600">
           These are the usual parts of this kind of work. Mark each one. Most people own a few
           parts, help with some, and never touch the rest.
@@ -358,13 +358,13 @@ function Profile({
       data-testid="role-profile"
     >
       <header>
-        <p className="text-sm font-bold text-slate-600">Role profile</p>
-        <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
+        <p className="text-sm font-semibold text-slate-600">Role profile</p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
           {map.answers.title?.split("\n")[0] || roleLabel(map)}
         </h2>
       </header>
 
-      <Section title="Your specialty">
+      <Section title="Specialty">
         {owned.length > 0 && (
           <p>
             <span className="font-semibold">Owned:</span> {owned.map((f) => f.label).join(", ")}
@@ -393,12 +393,12 @@ function Profile({
       {profile ? (
         <>
           {profile.scope && (
-            <Section title="Your scope">
+            <Section title="Scope">
               <p>{profile.scope}</p>
             </Section>
           )}
           {profile.strengths.length > 0 && (
-            <Section title="Your strengths">
+            <Section title="Strengths">
               <ul className="list-disc space-y-1 pl-5">
                 {profile.strengths.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -451,8 +451,8 @@ function Profile({
       ) : (
         <div className="flex flex-col items-start gap-3 rounded-2xl bg-slate-50 p-4">
           <p className="text-slate-700">
-            Next I&apos;ll write a one-page profile from your answers: your scope, strengths, and
-            the stories worth building first.
+            Next, a one-page profile written from your answers: your scope, strengths, and the
+            stories worth building first.
           </p>
           <button
             type="button"
@@ -491,7 +491,7 @@ function Profile({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-sm font-bold text-ink-800">{title}</h3>
+      <h3 className="text-sm font-semibold text-ink-800">{title}</h3>
       <div className="mt-2 leading-relaxed text-slate-800">{children}</div>
     </section>
   );

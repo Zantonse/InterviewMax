@@ -17,14 +17,14 @@ export function InterviewProfileCard({ profile }: { profile: InterviewProfile })
   if (profile.interviews === 0) return null;
   return (
     <section
-      className="animate-enter rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="animate-enter panel"
       id="interview-profile"
       aria-labelledby="interview-profile-title"
       data-testid="interview-profile"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="interview-profile-title" className="text-lg font-bold text-slate-900">
-          Your interview profile
+        <h2 id="interview-profile-title" className="text-lg font-semibold text-slate-900">
+          Interview profile
         </h2>
         <p className="text-sm text-slate-600">
           From {profile.interviews} reviewed {profile.interviews === 1 ? "interview" : "interviews"}. Grows with
@@ -67,11 +67,11 @@ export function InterviewProfileCard({ profile }: { profile: InterviewProfile })
 
       {profile.workOn.length > 0 && (
         <div className="mt-6 rounded-2xl bg-ink-50 p-4" data-testid="interview-work-on">
-          <h3 className="text-sm font-bold text-ink-900">Work on next</h3>
+          <h3 className="text-sm font-semibold text-ink-900">Work on next</h3>
           <ol className="mt-2 space-y-3">
             {profile.workOn.map((w, i) => (
               <li key={w.id} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink-800 text-xs font-bold text-white">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink-800 text-xs font-semibold text-white">
                   {i + 1}
                 </span>
                 <span className="min-w-0">
@@ -91,7 +91,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div className="rounded-2xl bg-slate-50 p-3">
       <dt className="text-xs font-semibold text-slate-600">{label}</dt>
-      <dd className="mt-1 text-2xl font-extrabold tabular-nums text-slate-900">{value}</dd>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{value}</dd>
       {hint && <dd className="mt-0.5 text-xs text-slate-500">{hint}</dd>}
     </div>
   );
@@ -177,7 +177,7 @@ function PointColumn({
 }) {
   return (
     <div>
-      <h3 className="text-sm font-bold text-ink-800">{title}</h3>
+      <h3 className="text-sm font-semibold text-ink-800">{title}</h3>
       {points.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">{empty}</p>
       ) : (
@@ -217,19 +217,19 @@ function Quote({ citation }: { citation: Citation }) {
 }
 
 function StepLink({ step }: { step: NextStep }) {
-  const className = "mt-0.5 inline-block text-sm font-semibold text-ink-800 hover:underline";
+  const className = "mt-0.5 inline-block text-left text-sm link";
   if (step.storyType) {
     return (
       <form action={startStory}>
         <button type="submit" name="storyType" value={step.storyType} className={className}>
-          {step.label} →
+          {step.label}
         </button>
       </form>
     );
   }
   return (
     <Link href={step.href ?? "/"} className={className}>
-      {step.label} →
+      {step.label}
     </Link>
   );
 }
@@ -239,10 +239,10 @@ export function ProfileMovesCard({ moves }: { moves: ProfileMove[] }) {
   if (moves.length === 0) return null;
   return (
     <section
-      className="animate-enter rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="animate-enter panel"
       data-testid="profile-moves"
     >
-      <h2 className="text-sm font-bold text-ink-800">How this interview moved your profile</h2>
+      <h2 className="text-sm font-semibold text-ink-800">How this interview moved your profile</h2>
       <ul className="mt-3 space-y-1.5 text-sm">
         {moves.map((m) => (
           <li key={m.text} className="flex items-start gap-2">
@@ -256,8 +256,8 @@ export function ProfileMovesCard({ moves }: { moves: ProfileMove[] }) {
           </li>
         ))}
       </ul>
-      <Link href="/transcripts#interview-profile" className="mt-3 inline-block text-sm font-semibold text-ink-800 hover:underline">
-        See your whole interview profile →
+      <Link href="/transcripts#interview-profile" className="mt-3 inline-block text-sm link">
+        Full interview profile
       </Link>
     </section>
   );

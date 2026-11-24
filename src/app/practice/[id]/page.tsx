@@ -21,7 +21,7 @@ export default function PracticePage({ params }: PageProps<"/practice/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <PracticeContent params={params} />
         </Suspense>
@@ -49,7 +49,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
         >
           ← Practice for {job.title}
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           AI screen practice
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -70,7 +70,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
       >
         ← Practice for {job.title}
       </Link>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
         {boss ? "Boss round" : "Practice out loud"}
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">

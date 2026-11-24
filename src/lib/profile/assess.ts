@@ -311,7 +311,7 @@ function evidence(
   );
   const details = [
     ...(list.length ? [`${landed.length} of ${plural(list.length, "written story", "written stories")} end on a traced number`] : []),
-    total ? `${filled} of ${total} numbers filled in on Your numbers` : "Your numbers isn't set up yet",
+    total ? `${filled} of ${total} numbers filled in on the Numbers page` : "The Numbers page isn't set up yet",
   ];
   if (landed.length > 0 && share >= 0.75) {
     points.strength({
@@ -338,7 +338,7 @@ function evidence(
     points.weakness({
       criterion: "evidence",
       text: `Only ${filled} of ${total} of your role's key numbers are filled in.`,
-      citation: { label: "Your numbers", href: "/numbers" },
+      citation: { label: "Numbers", href: "/numbers" },
       next: { label: "Fill in your numbers", href: "/numbers" },
       weight: 1 + (1 - checklistShare),
     });
@@ -815,7 +815,7 @@ function readiness(assessment: Assessment | null | undefined, jobs: JobLike[]): 
     score: grade.score,
     headline: `Journey grade ${grade.score} of 100: ${grade.level}.`,
     details: grade.gaps.map((g) => g.title),
-    citations: [{ label: "Your journey check", href: "/assessment" }],
+    citations: [{ label: "Journey check", href: "/assessment" }],
     next: { label: "Retake the journey check", href: "/assessment" },
   };
 }

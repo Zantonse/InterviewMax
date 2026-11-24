@@ -62,10 +62,10 @@ export async function fetchPosting(link: string): Promise<FetchedPosting> {
   if (!found || found.description.length < MIN_DESCRIPTION_LENGTH) {
     throw new Error(
       board
-        ? `I couldn't read the posting. ${instead}`
+        ? `The posting couldn't be read. ${instead}`
         : source.kind === "page"
-        ? `I couldn't find the posting on that page; some sites only show it after loading in a browser. ${PASTE_INSTEAD} (Links from ${SUPPORTED_SITES.join(", ")} work best.)`
-        : `I couldn't find that posting. It may have closed. ${PASTE_INSTEAD}`,
+        ? `The posting wasn't on that page; some sites only show it after loading in a browser. ${PASTE_INSTEAD} (Links from ${SUPPORTED_SITES.join(", ")} work best.)`
+        : `That posting wasn't found. It may have closed. ${PASTE_INSTEAD}`,
     );
   }
   return {
@@ -94,7 +94,7 @@ async function getJson(url: string): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    throw new FetchError("That site sent back something I couldn't read.");
+    throw new FetchError("That site sent back something that couldn't be read.");
   }
 }
 
@@ -145,7 +145,7 @@ async function assertPublic(url: string): Promise<void> {
   try {
     addresses = isIP(host) ? [host] : (await lookup(host, { all: true })).map((a) => a.address);
   } catch {
-    throw new FetchError("I couldn't find that site.");
+    throw new FetchError("That site wasn't found.");
   }
   if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
     throw new FetchError("That link can't be read.");

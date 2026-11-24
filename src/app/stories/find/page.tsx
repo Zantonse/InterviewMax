@@ -25,11 +25,11 @@ export default function FindStoryPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page">
         <Link href="/stories/new" className="text-sm font-medium text-ink-800 hover:underline">
           ← All story types
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Stories you already have
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -51,15 +51,15 @@ async function Finder() {
 
   if (sources.length === 0) {
     return (
-      <section className="mt-8 max-w-2xl rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:p-8">
-        <h2 className="text-lg font-bold text-slate-900">Three quick questions</h2>
+      <section className="mt-8 max-w-2xl panel">
+        <h2 className="text-lg font-semibold text-slate-900">Three quick questions</h2>
         <p className="mt-1 text-slate-600">
-          I don&apos;t have your resume yet, so tell me a little about your recent work. A sentence
-          or two each is plenty. Or{" "}
-          <Link href="/jobs" className="font-semibold text-ink-800 underline">
+          There&apos;s no resume yet, so say a little about your recent work. A sentence or two
+          each is plenty. Or{" "}
+          <Link href="/jobs" className="link">
             add your resume
           </Link>{" "}
-          and I&apos;ll read it instead.
+          and it&apos;s read instead.
         </p>
         <QuickQuestions initial={finder?.answers ?? {}} />
       </section>
@@ -84,7 +84,7 @@ async function Finder() {
       <form action={startFromMoment} className="mt-4 space-y-6" data-testid="moment-groups">
         {groups.map((group) => (
           <section key={group.themeId} data-testid={`moments-${group.themeId}`}>
-            <h2 className="flex items-center gap-2 font-bold text-slate-900">
+            <h2 className="flex items-center gap-2 font-semibold text-slate-900">
               {group.label}
               {group.status === "empty" && (
                 <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
@@ -127,7 +127,7 @@ function Skeleton() {
   return (
     <div className="mt-8 grid animate-pulse grid-cols-1 gap-3 md:grid-cols-2">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-28 rounded-3xl bg-white/80 ring-1 ring-black/5" />
+        <div key={i} className="h-28 rounded-3xl bg-white/80 ring-1 ring-ink-100" />
       ))}
     </div>
   );

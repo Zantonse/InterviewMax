@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/app-header";
 import { JourneyCard } from "@/components/quest/journey-card";
 import { RankCard } from "@/components/quest/rank-card";
 import { SkillTree } from "@/components/quest/skill-tree";
+import { SectionHead } from "@/components/section-head";
 import { loadQuestData, practiceHrefFor, type QuestData } from "@/lib/quest/data";
 import { getJobsPrep } from "@/lib/jobs/data";
 import { nextStoryToBuild } from "@/lib/guide/journey";
@@ -22,15 +23,13 @@ export default function QuestPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-          Story Quest
-        </h1>
-        <p className="mt-1 max-w-2xl text-slate-600">
+      <main className="page">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Story Quest</h1>
+        <p className="mt-2 max-w-2xl text-slate-600">
           Earn XP by making your stories better. Each journey takes you through the story builder one
           step at a time.
         </p>
-        <Suspense fallback={<div className="mt-5 h-40 animate-pulse rounded-3xl bg-white/80" />}>
+        <Suspense fallback={<div className="mt-8 h-40 animate-pulse rounded-[10px] bg-ink-50" />}>
           <QuestContent />
         </Suspense>
       </main>
@@ -80,21 +79,24 @@ function QuestView({
   // then the focus job's boss round.
   const main = !journey.done ? journey : !six.done ? six : boss && !boss.done ? boss : journey;
   const others = [journey, six, weak, ...(boss ? [boss] : [])].filter((j) => j !== main);
+  const spoken = (j: { id: string }) => j.id === "boss";
   return (
-    <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-      <RankCard xp={xp} />
-      <JourneyCard journey={main} main />
-      <div className="lg:col-span-2">
+    <>
+      <div className="mt-10 grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+        <RankCard xp={xp} />
+        <JourneyCard journey={main} main spoken={spoken(main)} />
+      </div>
+      <div className="mt-14">
         <SkillTree branches={tree} />
       </div>
-      <div className="lg:col-span-2">
-        <h2 className="mt-2 text-lg font-bold text-slate-900">More journeys</h2>
-        <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-14" aria-labelledby="journeys-heading">
+        <SectionHead id="journeys-heading" title="More journeys" />
+        <div className="mt-6 grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
           {others.map((j) => (
-            <JourneyCard key={j.id} journey={j} />
+            <JourneyCard key={j.id} journey={j} spoken={spoken(j)} />
           ))}
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

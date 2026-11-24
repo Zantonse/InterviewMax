@@ -172,7 +172,7 @@ export function DailyBars({
                   style={{ backgroundColor: SERIES_COLORS[si] }}
                   aria-hidden
                 />
-                <span className="font-bold tabular-nums text-slate-900">{s.values[hover] ?? 0}</span>
+                <span className="font-semibold tabular-nums text-slate-900">{s.values[hover] ?? 0}</span>
                 <span className="text-slate-600">{s.name}</span>
               </p>
             ))}

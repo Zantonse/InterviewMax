@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { InterviewProfileCard } from "@/components/interview-profile";
 import { StoryPlan } from "@/components/story-plan";
 import { listJobs } from "@/lib/jobs/data";
@@ -23,26 +22,14 @@ export default function TranscriptsPage({ searchParams }: PageProps<"/transcript
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-          Your past interviews
+      <main className="page">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Past interviews
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Upload transcripts of interviews you&apos;ve had. I&apos;ll find what each interviewer
-          asked and probed for and how your answers landed, quoting the transcript for every point,
-          and use it to sharpen your likely questions and your stories.
+          Add a transcript to see what each interviewer probed for and how your answers landed, with
+          a quote for every point.
         </p>
-        <PageGuide
-          id="transcripts"
-          steps={[
-            "Upload or paste a transcript, and pick the target job it was for if there is one.",
-            "I review it: each question asked, what they probed for, and how your answer landed.",
-            "Build the stories under “Stories to work on”, then predict that job's questions again.",
-          ]}
-        />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <TranscriptsContent searchParams={searchParams} />
         </Suspense>
@@ -99,7 +86,7 @@ async function TranscriptsContent({
       <div className="space-y-4 lg:col-span-2">
         {addedCount > 1 && (
           <p className="rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-900" data-testid="added-note">
-            That file had {addedCount} interviews, so I saved and reviewed each one on its own.
+            That file had {addedCount} interviews, so each one was saved and reviewed on its own.
             {leftNote && ` ${leftNote}`}
           </p>
         )}
@@ -111,10 +98,10 @@ async function TranscriptsContent({
               <li key={t.id}>
                 <Link
                   href={`/transcripts/${t.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
+                  className="block rounded-3xl bg-white p-5 ring-1 ring-ink-100 transition hover:ring-ink-700/40"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-lg font-bold text-slate-900">
+                    <span className="text-lg font-semibold text-slate-900">
                       {t.title}
                       {t.company && !t.title.includes(t.company) && (
                         <span className="font-normal text-slate-600"> at {t.company}</span>
@@ -147,10 +134,10 @@ async function TranscriptsContent({
 
         {transcripts.length < MAX_TRANSCRIPTS && (
           <details
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="panel"
             open={Boolean(jobId) || undefined}
           >
-            <summary className="cursor-pointer text-sm font-bold text-ink-800">
+            <summary className="cursor-pointer text-sm font-semibold text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
@@ -162,7 +149,7 @@ async function TranscriptsContent({
 
       <div className="space-y-4">
         {insights.recurringGaps.length > 0 && (
-          <Card title="Your answers keep missing">
+          <Card title="What answers keep missing">
             <ul className="space-y-2" data-testid="recurring-gaps">
               {insights.recurringGaps.map((g) => (
                 <li key={g.gap} className="flex items-baseline justify-between gap-3">
@@ -215,7 +202,7 @@ async function TranscriptsContent({
 
 function Card({
   title,
-  className = "bg-white",
+  className = "",
   children,
 }: {
   title: string;
@@ -223,8 +210,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
+    <section className={`panel ${className}`}>
+      <h2 className="mb-4 text-sm font-semibold text-ink-800">{title}</h2>
       {children}
     </section>
   );
