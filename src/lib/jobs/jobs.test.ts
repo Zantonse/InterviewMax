@@ -155,6 +155,14 @@ describe("titleFromPosting", () => {
     ).toBe("Senior Solutions Engineer");
   });
 
+  it("takes an opening line that names the role, even with a full stop", () => {
+    expect(
+      titleFromPosting(
+        "Northbeam Data — Principal Sales Engineer, Enterprise.\nWe're looking for a Principal Sales Engineer to lead technical evaluations for our largest prospects across the enterprise segment.",
+      ),
+    ).toBe("Northbeam Data — Principal Sales Engineer, Enterprise");
+  });
+
   it("falls back when no line looks like a title", () => {
     expect(titleFromPosting("You will run technical discovery and demos for enterprise customers.")).toBe(
       "Untitled job",

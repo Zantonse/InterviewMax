@@ -141,6 +141,11 @@ async function observe(page: Page): Promise<Observation> {
       const style = getComputedStyle(el);
       if (rect.width === 0 || rect.height === 0 || style.visibility === "hidden" || style.display === "none") continue;
       if ((el as HTMLButtonElement).disabled) continue;
+      // Controls inside a closed <details> (the story's ⋯ menu) keep a size but can't be seen or
+      // clicked; they showed up as unlabeled buttons and run 33's Marcus clicked one 10 times.
+      const closed = el.closest("details:not([open])");
+      if (closed && el.tagName.toLowerCase() !== "summary") continue;
+      if (typeof el.checkVisibility === "function" && !el.checkVisibility()) continue;
       if (el instanceof HTMLAnchorElement && el.origin !== location.origin) continue;
       const tag = el.tagName.toLowerCase();
       const type = (el.getAttribute("type") ?? "").toLowerCase();
