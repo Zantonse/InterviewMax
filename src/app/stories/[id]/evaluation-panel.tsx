@@ -27,12 +27,6 @@ import {
   type StoryLevel,
 } from "@/lib/stories/levels";
 
-const LEVEL_STYLES: Record<StoryLevel, string> = {
-  1: "bg-amber-100 text-amber-900",
-  2: "bg-emerald-100 text-emerald-900",
-  3: "bg-emerald-700 text-white",
-};
-
 // About me and tough questions keep their tiers underneath and show them as the same three levels
 // (displayLevel in levels.ts). The legend, in words that match how the tier is worked out (tierFor
 // in grading.ts).
@@ -45,9 +39,9 @@ const TIER_MEANINGS: Record<Tier, string> = {
 };
 
 const THINKING_STYLES: Record<ThinkingLevel, string> = {
-  shown: "bg-emerald-100 text-emerald-900",
-  partly: "bg-amber-100 text-amber-900",
-  missing: "bg-amber-100 text-amber-900",
+  shown: "text-emerald-700",
+  partly: "text-amber-800",
+  missing: "text-amber-800",
 };
 
 // "Show your thinking" under Actions: never part of the score or the tier, but a behavioral story
@@ -56,13 +50,13 @@ function ThinkingNote({ thinking, levels }: { thinking: ThinkingFeedback; levels
   const label = THINKING_LEVELS.find((l) => l.id === thinking.level)?.label;
   return (
     <div
-      className="mt-1 flex flex-col gap-1 rounded-xl bg-white p-2.5 ring-1 ring-black/5"
+      className="mt-1 flex flex-col gap-1 border-l-2 border-ink-100 pl-3"
       data-testid="thinking"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-slate-800">Show your thinking</span>
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${THINKING_STYLES[thinking.level]}`}
+          className={`text-xs font-semibold ${THINKING_STYLES[thinking.level]}`}
         >
           {label}
         </span>
@@ -81,9 +75,70 @@ function ThinkingNote({ thinking, levels }: { thinking: ThinkingFeedback; levels
   );
 }
 
-// The story's grade, in its own column beside the story. Coaching order: the tier, what works and
-// the next fix first, then the score and reasoning on each criterion and the quick checks, which
-// are open by default and fold away.
+// The coach's read, first in the margin beside the story: the grader's one-line read of how it
+// lands, or where grading stands. What to fix sits on the story itself, beside each paragraph.
+export function CoachRead({
+  content,
+  storyType,
+  grading,
+  disabled,
+  onGrade,
+}: {
+  content: StoryContent;
+  storyType: StoryType | undefined;
+  grading: boolean;
+  disabled: boolean;
+  onGrade: () => void;
+}) {
+  const grade = gradeIsCurrent(content) ? content.grade : undefined;
+  const stale = Boolean(content.draft && content.grade && !grade);
+  if (grading) {
+    return (
+      <p role="status" aria-busy="true" className="flex items-center gap-2 text-sm text-slate-600">
+        <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-accent-700" />
+        Grading the story against each criterion…
+      </p>
+    );
+  }
+  if (!grade) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-slate-700">
+          {stale ? "The story changed since it was graded." : "This story hasn't been graded yet."}
+        </p>
+        <button type="button" onClick={onGrade} disabled={disabled} className="btn-primary">
+          {stale ? "Grade it again" : "Grade it"}
+        </button>
+      </div>
+    );
+  }
+  const levels = usesLevels(storyType, content);
+  return (
+    <div data-testid="coach-read">
+      <h2 className="text-sm font-semibold text-slate-900">Coach&apos;s read</h2>
+      {grade.summary && (
+        <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-slate-800">{grade.summary}</p>
+      )}
+      {/* Stories without levels have no level step; their fixes are listed here. */}
+      {!levels && grade.fixes.length > 0 && (
+        <div className="mt-3" data-testid="fixes">
+          <p className="text-sm font-semibold text-slate-900">
+            {grade.tier === "strong" ? "To polish it" : "To fix next"}
+          </p>
+          <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-sm text-slate-700">
+            {grade.fixes.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Under the story: the grade in full, folded to one line. The level, the score out of 100 and the
+// quick checks, then each criterion with the grader's reasoning, the fit with the user's jobs and
+// what already works.
 export function EvaluationPanel({
   className = "",
   content,
@@ -99,12 +154,11 @@ export function EvaluationPanel({
   disabled: boolean;
   onGrade: () => void;
 }) {
-  // The part scores are one tap away: the level and what to fix next lead (design review, Nov 16).
   const [open, setOpen] = useState(false);
   const bodyId = useId();
   const criteria = gradingCriteria(storyType);
   const grade = gradeIsCurrent(content) ? content.grade : undefined;
-  const stale = Boolean(content.draft && content.grade && !grade);
+  if (!content.draft) return null;
   // Behavioral stories climb the real levels (see levels.ts); other stories show their tier as one.
   const level = grade && usesLevels(storyType, content) ? levelForGrade(grade) : undefined;
   const shown = grade ? displayLevel(grade, storyType, content) : undefined;
@@ -113,328 +167,219 @@ export function EvaluationPanel({
       ? levelScore(grade)
       : scoreOutOf100(grade.criteria, grade.tier)
     : undefined;
+  const checks = grade ? shownChecks(grade) : [];
+  const passing = checks.filter((r) => r.result?.pass).length;
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6 ${className}`}
-      aria-label="Evaluation criteria"
+      className={`border-t border-ink-100 pt-8 ${className}`}
+      aria-label="Score and checks"
       data-testid="evaluation"
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={bodyId}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-base font-semibold text-slate-900">How it lands</span>
-          {shown !== undefined && (
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <h2 className="text-lg font-semibold text-slate-900">Score and checks</h2>
+        {grade && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={bodyId}
+            className="text-sm font-medium text-ink-700 hover:text-ink-900 hover:underline"
+          >
+            {open ? "Hide the details" : "Show the details"}
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-slate-600">
+        {grading ? (
+          "Grading…"
+        ) : !grade ? (
+          "Not graded yet."
+        ) : (
+          <>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[shown]}`}
+              className="font-medium text-slate-900"
               data-testid={level !== undefined ? "level-pill" : "tier"}
             >
               Level {shown} of {TOP_LEVEL}
             </span>
-          )}
-        </span>
-        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-ink-800">
-          {open ? "Hide part scores" : "See part scores"}
-          <svg
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-            className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </span>
-      </button>
-
-      {/* Always shown: where the story stands and what to do next. */}
-      <div className="mt-3">
-        {grading ? (
-          <p role="status" className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-ink-600" />
-            Grading your story against each criterion…
-          </p>
-        ) : !content.draft ? (
-          <p className="text-sm text-slate-600">
-            Once your story is written, I&apos;ll grade it on each of these criteria and tell you
-            what to fix first.
-          </p>
-        ) : !grade ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-600">
-              {stale
-                ? "The story changed since it was graded."
-                : "This story hasn't been graded yet."}
-            </p>
-            <button
-              type="button"
-              onClick={onGrade}
-              disabled={disabled}
-              className="rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
-            >
-              {stale ? "Grade it again" : "Grade my story"}
-            </button>
-          </div>
-        ) : (
-          <Summary grade={grade} level={level} />
+            {score !== undefined && (
+              <>
+                {" · "}
+                <span data-testid="score-total">
+                  <span className="font-mono tabular-nums text-slate-900">{score}</span> out of 100
+                </span>
+              </>
+            )}
+            {checks.length > 0 && ` · ${passing} of ${checks.length} quick checks pass`}
+          </>
         )}
-      </div>
+      </p>
 
-      <div id={bodyId} hidden={!open} className="mt-5 flex flex-col gap-6">
+      {grade && (
         <div
-          className="rounded-2xl p-4 ring-1 ring-ink-800/15 sm:p-5"
-          data-testid="score-section"
-          aria-label="Score"
-          role="group"
+          id={bodyId}
+          hidden={!open}
+          className="mt-8 grid grid-cols-1 gap-x-14 gap-y-10 lg:grid-cols-2"
         >
-          <ScoreHeadline score={score} levels={level !== undefined} />
-          <h3 className="mt-4 text-sm font-semibold text-slate-700">
-            Criteria
-          </h3>
-          <ul className="mt-2 flex flex-col gap-1" data-testid="criteria" data-stagger>
-            {criteria.map((c) => {
-              const scored = grade?.criteria.find((s) => s.id === c.id);
-              // Thin or missing criteria open by default: they hold the next fix. The rest are
-              // one line each, a bar and a word, and open to the grader's reasoning.
-              const weak = scored !== undefined && scored.score <= 2;
-              const thinking = c.id === "actions" ? grade?.thinking : undefined;
-              const needsThinking = level !== undefined && thinking && thinking.level !== "shown";
-              return (
-                <li key={c.id} data-testid={`criterion-${c.id}`}>
-                  <details
-                    className="group rounded-xl open:bg-slate-50"
-                    open={weak || Boolean(needsThinking)}
-                  >
-                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-2 py-1.5 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-                      <span className="flex items-center gap-1.5 font-medium text-slate-800">
-                        <span
-                          aria-hidden="true"
-                          className="text-xs text-slate-500 transition-transform group-open:rotate-90"
-                        >
-                          ▶
-                        </span>
-                        {c.label}
+          <div className="flex flex-col gap-8">
+            <div data-testid="score-section" aria-label="Score" role="group">
+              <h3 className="text-sm font-semibold text-slate-900">Criteria</h3>
+              <ul className="mt-2 divide-y divide-ink-100" data-testid="criteria">
+                {criteria.map((c) => {
+                  const scored = grade.criteria.find((s) => s.id === c.id);
+                  const weak = scored !== undefined && scored.score <= 2;
+                  const thinking = c.id === "actions" ? grade.thinking : undefined;
+                  const needsThinking =
+                    level !== undefined && thinking && thinking.level !== "shown";
+                  return (
+                    <li key={c.id} data-testid={`criterion-${c.id}`}>
+                      <details className="group py-1" open={weak || Boolean(needsThinking)}>
+                        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1.5 [&::-webkit-details-marker]:hidden">
+                          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                            <span
+                              aria-hidden="true"
+                              className="text-xs text-slate-500 transition-transform group-open:rotate-90"
+                            >
+                              ▶
+                            </span>
+                            {c.label}
+                          </span>
+                          {scored && <ScoreBar score={scored.score} />}
+                        </summary>
+                        <div className="flex flex-col gap-1.5 pb-3 pl-5">
+                          <p className="text-xs text-slate-600">{c.question}</p>
+                          {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
+                          {scored?.improve && (
+                            <p className="text-sm text-slate-900">
+                              <span className="font-semibold">To raise it: </span>
+                              {scored.improve}
+                            </p>
+                          )}
+                          {thinking && (
+                            <ThinkingNote thinking={thinking} levels={level !== undefined} />
+                          )}
+                        </div>
+                      </details>
+                    </li>
+                  );
+                })}
+              </ul>
+              <details className="mt-3 text-xs text-slate-600">
+                <summary className="cursor-pointer font-medium hover:text-ink-800">
+                  How the score is worked out
+                </summary>
+                <p className="mt-1">
+                  Averaged from the criteria: Missing is 25, Thin 50, Solid 75, Strong 100. The
+                  level decides how far the story has come, and caps this number: up to 69 at Level
+                  1, 89 at Level 2.
+                </p>
+              </details>
+            </div>
+            <Legend grade={grade} level={level} />
+          </div>
+
+          <div className="flex flex-col gap-8">
+            {grade.strengths.length > 0 && (
+              <div data-testid="strengths">
+                <h3 className="text-sm font-semibold text-slate-900">What already works</h3>
+                <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-800">
+                  {grade.strengths.map((f, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span aria-hidden="true" className="font-semibold text-emerald-700">
+                        ✓
                       </span>
-                      {scored && <ScoreBar score={scored.score} />}
-                    </summary>
-                    <div className="flex flex-col gap-1.5 px-2 pb-2.5 pl-6">
-                      <p className="text-xs text-slate-600">{c.question}</p>
-                      {scored?.note && <p className="text-sm text-slate-700">{scored.note}</p>}
-                      {scored?.improve && (
-                        <p className="text-sm text-ink-900">
-                          <span className="font-semibold">To raise it: </span>
-                          {scored.improve}
-                        </p>
-                      )}
-                      {thinking && <ThinkingNote thinking={thinking} levels={level !== undefined} />}
-                    </div>
-                  </details>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {grade && <ContentFit content={grade.content} />}
-
-        <QuickChecks grade={grade} />
-
-        {grade?.bankRole && (
-          <div>
-            <h3 className="text-sm font-semibold text-slate-700">Its job in your story bank</h3>
-            <p className="mt-1 text-sm text-slate-700">
-              <span className="font-semibold">
-                {grade.bankRole.role[0]?.toUpperCase()}
-                {grade.bankRole.role.slice(1)}
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <QuickChecks grade={grade} />
+            <ContentFit content={grade.content} />
+            {grade.bankRole && (
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Its job in your story bank</h3>
+                <p className="mt-1 text-sm text-slate-700">
+                  <span className="font-semibold">
+                    {grade.bankRole.role[0]?.toUpperCase()}
+                    {grade.bankRole.role.slice(1)}
+                  </span>
+                  {grade.bankRole.note && (
+                    <span className="text-slate-600">. {grade.bankRole.note}</span>
+                  )}
+                </p>
+              </div>
+            )}
+            {grade.flags.length > 0 && (
+              <div className="text-sm text-slate-600" data-testid="grade-flags">
+                <p className="font-semibold text-slate-700">
+                  The quick checks and the grader disagree
+                </p>
+                <ul className="mt-1 list-disc pl-5">
+                  {grade.flags.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+              <span>
+                {level !== undefined
+                  ? "Level 3 needs every criterion solid or better, every quick check passing, and your thinking shown."
+                  : "The top level needs every criterion solid or better and every quick check passing."}
               </span>
-              {grade.bankRole.note && (
-                <span className="text-slate-600">. {grade.bankRole.note}</span>
-              )}
+              <button
+                type="button"
+                onClick={onGrade}
+                disabled={disabled}
+                className="font-medium text-ink-700 hover:underline disabled:opacity-50"
+              >
+                Grade again
+              </button>
             </p>
           </div>
-        )}
-
-        {grade && grade.flags.length > 0 && (
-          <div
-            className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600"
-            data-testid="grade-flags"
-          >
-            <p className="font-semibold text-slate-700">The quick checks and the grader disagree</p>
-            <ul className="mt-1 list-disc pl-5">
-              {grade.flags.map((f, i) => (
-                <li key={i}>{f}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {grade && (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-            <span>
-              {level !== undefined
-                ? "Level 3 needs every criterion solid or better, every quick check passing, and your thinking shown."
-                : "Strong needs every criterion solid or better and every quick check passing."}
-            </span>
-            <button
-              type="button"
-              onClick={onGrade}
-              disabled={disabled}
-              className="font-medium text-ink-800 hover:underline disabled:opacity-50"
-            >
-              Grade again
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
 
-function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
+// What the levels mean, in words that match how they're worked out.
+function Legend({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
   const current = TIERS.findIndex((t) => t.id === grade.tier);
   return (
-    <div className="flex flex-col gap-3">
-      {level !== undefined ? (
-        <>
-          <details className="text-sm text-slate-600" data-testid="level-legend">
-            <summary className="cursor-pointer font-medium text-ink-800">
-              What the levels mean
-            </summary>
-            <ul className="mt-1 flex flex-col gap-1">
-              {LEVELS.map((l) => (
-                <li key={l.level}>
-                  <span className="font-semibold text-slate-800">
-                    Level {l.level}, {l.name.toLowerCase()}:
-                  </span>{" "}
-                  {l.hears}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-1">
-              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
-              with why it got that score.
-            </p>
-          </details>
-        </>
-      ) : (
-        <>
-          <details className="text-sm text-slate-600" data-testid="tier-legend">
-            <summary className="cursor-pointer font-medium text-ink-800">
-              What the levels mean
-            </summary>
-            <ul className="mt-1 flex flex-col gap-1">
-              {TIERS.map((t, i) => (
-                <li key={t.id} aria-current={i === current ? "step" : undefined}>
-                  <span className="font-semibold text-slate-800">Level {i + 1}:</span>{" "}
-                  {TIER_MEANINGS[t.id]}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-1">
-              Each criterion below is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()},
-              with why it got that score.
-            </p>
-          </details>
-        </>
-      )}
-      {grade.summary && <p className="text-slate-800">{grade.summary}</p>}
-      {grade.strengths.length > 0 && (
-        <div data-testid="strengths">
-          <p className="text-sm font-semibold text-slate-700">What&apos;s working:</p>
-          <ul className="mt-1 flex flex-col gap-1 text-slate-800">
-            {grade.strengths.map((f, i) => (
-              <li key={i} className="flex gap-2">
-                <span aria-hidden="true" className="font-semibold text-emerald-700">
-                  ✓
-                </span>
-                <span>{f}</span>
+    <details className="text-sm text-slate-600" data-testid={level !== undefined ? "level-legend" : "tier-legend"}>
+      <summary className="cursor-pointer font-medium text-ink-700 hover:text-ink-900">
+        What the levels mean
+      </summary>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {level !== undefined
+          ? LEVELS.map((l) => (
+              <li key={l.level}>
+                <span className="font-semibold text-slate-800">
+                  Level {l.level}, {l.name.toLowerCase()}:
+                </span>{" "}
+                {l.hears}
+              </li>
+            ))
+          : TIERS.map((t, i) => (
+              <li key={t.id} aria-current={i === current ? "step" : undefined}>
+                <span className="font-semibold text-slate-800">Level {i + 1}:</span>{" "}
+                {TIER_MEANINGS[t.id]}
               </li>
             ))}
-          </ul>
-        </div>
-      )}
-      {grade.fixes.length > 0 ? (
-        <div data-testid="fixes" className="rounded-xl bg-amber-50 p-3">
-          <p className="text-sm font-semibold text-amber-900">
-            {(level !== undefined ? level === TOP_LEVEL : grade.tier === "strong")
-              ? "To polish it further:"
-              : "What to fix next:"}
-          </p>
-          <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-slate-800">
-            {grade.fixes.map((f, i) => (
-              <li key={i}>{f}</li>
-            ))}
-          </ol>
-        </div>
-      ) : (
-        (level === undefined || level === TOP_LEVEL) && (
-          <p className="text-sm text-slate-700">Nothing pressing to fix.</p>
-        )
-      )}
-    </div>
+      </ul>
+      <p className="mt-2">
+        Each criterion is scored {Object.values(SCORE_LABELS).join(", ").toLowerCase()}, with why it
+        got that score.
+      </p>
+    </details>
   );
 }
 
-// The headline of the score section: the score out of 100 (scoreOutOf100 in grading.ts) as a ring,
-// with how it's worked out one tap away, so it isn't read as a pass mark.
-function ScoreHeadline({ score, levels }: { score: number | undefined; levels: boolean }) {
-  // Periwinkle at every value: the level is the grade, so the ring shouldn't read as a pass or fail.
-  const tone = score === undefined ? "#e2e8f0" : "#8392f7";
-  return (
-    <div className="flex items-center gap-4">
-      <div
-        className="grid h-20 w-20 shrink-0 place-items-center rounded-full transition-[background] duration-500"
-        style={{
-          background: `conic-gradient(${tone} 0 ${score ?? 0}%, #f1f5f9 ${score ?? 0}% 100%)`,
-        }}
-        role="presentation"
-      >
-        <div className="grid h-[3.9rem] w-[3.9rem] place-items-center rounded-full bg-white">
-          {score === undefined ? (
-            <span className="text-xs text-slate-500">–</span>
-          ) : (
-            <span className="text-2xl font-semibold tabular-nums text-slate-900">{score}</span>
-          )}
-        </div>
-      </div>
-      <div className="min-w-0" data-testid="score-total">
-        <h3 className="text-base font-semibold text-slate-900">
-          Score{" "}
-          {score === undefined ? (
-            <span className="text-sm font-normal text-slate-600">Not graded yet</span>
-          ) : (
-            <span className="sr-only">
-              {score} / 100
-            </span>
-          )}
-        </h3>
-        {score !== undefined && <p className="text-sm text-slate-600">out of 100</p>}
-        <details className="mt-1 text-xs text-slate-600">
-          <summary className="cursor-pointer list-none font-medium hover:text-ink-800 [&::-webkit-details-marker]:hidden">
-            ⓘ How it&apos;s worked out
-          </summary>
-          <p className="mt-1">
-            Averaged from the criteria below: Missing is 25, Thin 50, Solid 75, Strong 100.{" "}
-            {levels
-              ? "The level decides how far the story has come, and caps this number: up to 69 at Level 1, 89 at Level 2."
-              : "The level decides how far the answer has come, and caps this number: up to 69 at Level 1, 89 at Level 2."}
-          </p>
-        </details>
-      </div>
-    </div>
-  );
-}
-
-// The quick checks as one line when they all pass, opening to the list. Any that fail are shown.
-function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
+// The quick checks that apply to this grade, with their results.
+function shownChecks(grade: StoryGrade | undefined) {
   const shown = CHECKS.filter(
     // Some checks apply to one format only ("A few key figures" is for About me), and "In your
     // own words" only to drafts written since it was measured.
@@ -442,7 +387,12 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
       (k.id !== "focus" && k.id !== "own_words") ||
       (grade ? grade.checks.some((c) => c.id === k.id) : k.id === "focus"),
   );
-  const results = shown.map((k) => ({ k, result: grade?.checks.find((c) => c.id === k.id) }));
+  return shown.map((k) => ({ k, result: grade?.checks.find((c) => c.id === k.id) }));
+}
+
+// The quick checks as one line when they all pass, opening to the list. Any that fail are shown.
+function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
+  const results = shownChecks(grade);
   const passing = results.filter((r) => r.result?.pass).length;
   const failing = results.filter((r) => r.result && !r.result.pass).length;
   return (
@@ -528,9 +478,9 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 const FIT_LABELS: Record<FitLevel, { label: string; style: string }> = {
-  strong: { label: "Strong fit", style: "bg-emerald-700 text-white" },
-  partial: { label: "Partial fit", style: "bg-emerald-100 text-emerald-900" },
-  weak: { label: "Weak fit", style: "bg-amber-100 text-amber-900" },
+  strong: { label: "Strong fit", style: "text-emerald-700" },
+  partial: { label: "Partial fit", style: "text-slate-700" },
+  weak: { label: "Weak fit", style: "text-amber-800" },
 };
 
 const LEVEL_LABELS: Record<LevelMatch, string> = {
@@ -563,7 +513,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
   // line still says how the story fits, so the detail is there only for those who want it.
   return (
     <details className="group" data-testid="content-fit">
-      <summary className="flex cursor-pointer list-none flex-col gap-0.5 rounded-2xl bg-slate-50 px-3 py-2.5 ring-1 ring-black/5 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none flex-col gap-0.5 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2">
           <span
             aria-hidden="true"
@@ -585,7 +535,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
       </summary>
       <div className="mt-3 flex flex-col gap-3">
         {content.jobs.map((job) => (
-          <div key={job.jobId} className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3">
+          <div key={job.jobId} className="flex flex-col gap-2 border-l-2 border-ink-100 pl-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-slate-800">
                 {job.title}
@@ -594,7 +544,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
                 )}
               </span>
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
+                className={`text-xs font-semibold ${FIT_LABELS[job.fit].style}`}
               >
                 {FIT_LABELS[job.fit].label}
               </span>

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
@@ -18,10 +17,7 @@ export default function NewStoryOfTypePage(props: PageProps<"/stories/new/[type]
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
-        <Link href="/stories/new" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Pick a different story
-        </Link>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-9">
         <Suspense fallback={<BuilderSkeleton />}>
           <NewStoryLoader {...props} />
         </Suspense>

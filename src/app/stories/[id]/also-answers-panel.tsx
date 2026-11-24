@@ -49,7 +49,7 @@ export function AlsoAnswersPanel({
       disabled={disabled || pending}
       className={
         primary
-          ? "rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+          ? "btn-primary"
           : "text-sm font-medium text-ink-800 hover:underline disabled:opacity-50"
       }
       data-testid="also-answers-find"
@@ -60,15 +60,10 @@ export function AlsoAnswersPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
-        pending ? "opacity-60" : ""
-      }`}
+      className={`transition ${pending ? "opacity-60" : ""}`}
       aria-label="Other questions this story answers"
       data-testid="also-answers"
     >
-      <p className="text-sm font-semibold text-ink-800">
-        Other questions this story answers
-      </p>
       {current ? (
         <>
           {content.asked && (
@@ -84,7 +79,11 @@ export function AlsoAnswersPanel({
               No other question fits it well as written. It&apos;s focused, and that&apos;s fine.
             </p>
           ) : (
-            <ul className="mt-3 flex flex-col gap-2" data-testid="also-answers-list" data-stagger>
+            <ul
+              className="mt-3 divide-y divide-ink-100 border-y border-ink-100"
+              data-testid="also-answers-list"
+              data-stagger
+            >
               {also.questions.map((q) => (
                 <Pick key={q.question} pick={q} />
               ))}
@@ -121,7 +120,7 @@ export function AlsoAnswersPanel({
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -133,20 +132,15 @@ function Pick({ pick }: { pick: AlsoAnswer }) {
   const fit = fitOf(pick.fit);
   const theme = pick.theme ? getTheme(pick.theme)?.label : undefined;
   return (
-    <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-      <p className="font-semibold text-slate-900">{pick.question}</p>
-      <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
-        <span className={`rounded-full px-2 py-0.5 font-medium ring-1 ${fit.style}`}>{fit.label}</span>
-        {sourceLabels(pick.sources).map((label) => (
-          <span key={label} className="rounded-full bg-ink-50 px-2 py-0.5 font-medium text-ink-800">
-            {label}
-          </span>
+    <li className="py-3">
+      <p className="font-words text-[1.0625rem] leading-snug text-slate-900">{pick.question}</p>
+      <p className="mt-1 text-xs text-slate-500">
+        <span className={`font-medium ${pick.fit === "strong" ? "text-emerald-700" : "text-amber-800"}`}>
+          {fit.label}
+        </span>
+        {[...sourceLabels(pick.sources), ...(theme ? [theme] : [])].map((label) => (
+          <span key={label}> · {label}</span>
         ))}
-        {theme && (
-          <span className="rounded-full bg-white px-2 py-0.5 text-slate-600 ring-1 ring-black/5">
-            {theme}
-          </span>
-        )}
       </p>
       <p className="mt-2 text-sm text-slate-700">
         <span className="font-semibold text-slate-900">Lead with: </span>

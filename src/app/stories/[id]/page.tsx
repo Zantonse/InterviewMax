@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
@@ -17,10 +16,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
-        <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
-          ← Back to your prep
-        </Link>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-9">
         <Suspense fallback={<BuilderSkeleton />}>
           <StoryLoader params={params} />
         </Suspense>
@@ -49,7 +45,7 @@ function CoachSharing({ storyId, shared }: { storyId: string; shared: boolean })
   return (
     <form
       action={shareWithCoach}
-      className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-sm text-slate-700"
+      className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink-100 pb-4 text-sm text-slate-700"
       data-testid="coach-sharing"
     >
       <input type="hidden" name="storyId" value={storyId} />
@@ -59,7 +55,7 @@ function CoachSharing({ storyId, shared }: { storyId: string; shared: boolean })
           ? "Promotion story, shared with your coach."
           : "Promotion story: private to you. Your coach can't read it."}
       </span>
-      <button type="submit" className="font-semibold text-ink-800 hover:underline">
+      <button type="submit" className="link">
         {shared ? "Make it private again" : "Share with my coach"}
       </button>
     </form>

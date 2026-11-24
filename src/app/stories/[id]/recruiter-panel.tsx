@@ -53,13 +53,10 @@ export function RecruiterPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
-        pending ? "opacity-60" : ""
-      }`}
+      className={`transition ${pending ? "opacity-60" : ""}`}
       aria-label="Recruiter version"
       data-testid="recruiter-version"
     >
-      <p className="text-sm font-semibold uppercase tracking-wide text-ink-800">Recruiter version</p>
       {current ? (
         <Made
           version={version}
@@ -89,7 +86,7 @@ export function RecruiterPanel({
               type="button"
               onClick={make}
               disabled={disabled || pending}
-              className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+              className="btn-primary"
               data-testid="recruiter-make"
             >
               {pending
@@ -103,7 +100,7 @@ export function RecruiterPanel({
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -146,14 +143,14 @@ function Made({
           </span>
           <CopyButton
             text={text}
-            className="rounded-full px-3 py-1 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
+            className="btn-secondary"
           />
         </div>
         <ol className="mt-3 flex flex-col gap-3" data-testid="recruiter-lines" data-stagger>
           {LINES.map((line, i) =>
             version[line.key] ? (
               <li key={line.key} className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold text-slate-500">
                   {i + 1}. {line.label}
                 </span>
                 <p
@@ -178,7 +175,7 @@ function Made({
           )}
         </ol>
         {version.untracedNumbers.length > 0 && (
-          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
             These figures aren&apos;t in your answers:{" "}
             <strong>{version.untracedNumbers.join(", ")}</strong>. Don&apos;t say them unless
             they&apos;re real; make it again to drop them.
@@ -187,7 +184,7 @@ function Made({
       </div>
 
       <ul
-        className="grid gap-2 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2"
+        className="grid gap-2 rounded-md bg-ink-50 p-4 text-sm sm:grid-cols-2"
         data-testid="recruiter-checks"
       >
         {checks.map((c) => (
@@ -209,14 +206,12 @@ function Made({
           <p className="mt-1 text-sm text-slate-600">
             End with &ldquo;happy to go deeper on that&rdquo;. These are for the next round.
           </p>
-          <ul className="mt-2 flex flex-wrap gap-2" data-testid="recruiter-save-for">
+          <ul
+            className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-slate-700 marker:text-ink-300"
+            data-testid="recruiter-save-for"
+          >
             {version.saveFor.map((s) => (
-              <li
-                key={s}
-                className="rounded-full bg-slate-50 px-3 py-1 text-sm text-slate-700 ring-1 ring-black/5"
-              >
-                {s}
-              </li>
+              <li key={s}>{s}</li>
             ))}
           </ul>
         </div>
@@ -227,7 +222,7 @@ function Made({
           type="button"
           onClick={onMake}
           disabled={disabled}
-          className="rounded-xl px-4 py-2 font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50 disabled:opacity-50"
+          className="btn-secondary"
           data-testid="recruiter-again"
         >
           {pending ? "Making it again…" : "Make it again"}

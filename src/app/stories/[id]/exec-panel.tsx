@@ -55,13 +55,10 @@ export function ExecPanel({
 
   return (
     <section
-      className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition sm:p-6 ${
-        pending ? "opacity-60" : ""
-      }`}
+      className={`transition ${pending ? "opacity-60" : ""}`}
       aria-label="Exec version"
       data-testid="exec-version"
     >
-      <p className="text-sm font-semibold text-ink-800">Exec version</p>
       {current ? (
         <Made
           exec={exec}
@@ -91,7 +88,7 @@ export function ExecPanel({
               type="button"
               onClick={make}
               disabled={disabled || pending}
-              className="rounded-xl bg-ink-800 px-4 py-2 font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+              className="btn-primary"
               data-testid="exec-make"
             >
               {pending ? "Making the exec version…" : exec ? "Make it again" : "Make the exec version"}
@@ -101,7 +98,7 @@ export function ExecPanel({
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -149,7 +146,7 @@ function Made({
           </span>
           <CopyButton
             text={text}
-            className="rounded-full px-3 py-1 font-medium text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50"
+            className="btn-secondary"
           />
         </div>
         <ol className="mt-3 flex flex-col gap-3" data-testid="exec-lines" data-stagger>
@@ -181,7 +178,7 @@ function Made({
           )}
         </ol>
         {exec.untracedNumbers.length > 0 && (
-          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
             These figures aren&apos;t in your answers:{" "}
             <strong>{exec.untracedNumbers.join(", ")}</strong>. Don&apos;t say them unless
             they&apos;re real; make it again to drop them.
@@ -189,7 +186,7 @@ function Made({
         )}
       </div>
 
-      <ul className="grid gap-2 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2" data-testid="exec-checks">
+      <ul className="grid gap-2 rounded-md bg-ink-50 p-4 text-sm sm:grid-cols-2" data-testid="exec-checks">
         {checks.map((c) => (
           <li key={c.id} className="flex flex-col">
             <span className="flex items-center gap-2 font-semibold text-slate-800">
@@ -211,7 +208,7 @@ function Made({
           </p>
           <ul className="mt-3 flex flex-col gap-2" data-testid="exec-asks">
             {exec.ifAsked.map((a) => (
-              <li key={a.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+              <li key={a.question} className="rounded-md bg-ink-50 px-4 py-3">
                 <p className="font-semibold text-slate-900">&ldquo;{a.question}&rdquo;</p>
                 {a.answer ? (
                   <p className="mt-1 text-sm text-slate-700">{a.answer}</p>
@@ -227,7 +224,7 @@ function Made({
       )}
 
       {habits.length > 0 && (
-        <div className="rounded-2xl bg-amber-50 p-4" data-testid="exec-habits">
+        <div className="rounded-md bg-amber-50 p-4" data-testid="exec-habits">
           <h3 className="text-sm font-semibold text-amber-950">Habits to drop out loud</h3>
           <p className="mt-1 text-sm text-amber-900">
             Your written story says{" "}
@@ -248,7 +245,7 @@ function Made({
           type="button"
           onClick={onMake}
           disabled={disabled}
-          className="rounded-xl px-4 py-2 font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50 disabled:opacity-50"
+          className="btn-secondary"
           data-testid="exec-again"
         >
           {pending ? "Making it again…" : "Make it again"}
