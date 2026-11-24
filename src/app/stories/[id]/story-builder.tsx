@@ -76,6 +76,7 @@ import { AnswerLimit } from "@/components/answer-limit";
 import { analysisIsCurrent } from "@/lib/analysis/content";
 import { WhyLead, whyNotes } from "./analysis-view";
 import { applyInsert, type Insert } from "@/lib/stories/insert";
+import { looksLikeQuestion } from "@/lib/stories/question-match";
 import { quickLine, quickPicked, quickStartRows } from "@/lib/stories/quick-start";
 import {
   type Situation,
@@ -211,6 +212,7 @@ export function StoryBuilder({
   const running = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
+  const [tookQuestion, setTookQuestion] = useState(false);
   const [, startTransition] = useTransition();
   // Text a memory jogger adds to (or, tapped again, takes out of) the answer box; `n` makes each
   // tap count.
@@ -338,6 +340,9 @@ export function StoryBuilder({
 
   function submitCore(id: string, answer: string) {
     setEditing(null);
+    // An interview question typed as the opening answer becomes the story's question (saveAnswer);
+    // say so, and the box clears for the story itself.
+    setTookQuestion(id === "start" && storyType?.format !== "intro" && looksLikeQuestion(answer));
     run([{ busy: "saving", action: () => saveAnswer(sid(), id, answer) }]);
   }
 
@@ -490,7 +495,10 @@ export function StoryBuilder({
             <span>{storyType?.label ?? "Story"}</span>
           </nav>
           <div className="flex shrink-0 items-center gap-3">
-            <ViewTabs view={view} onChange={setView} />
+            <ViewTabs
+              view={view}
+              onChange={(v) => (v === view && v === "build" ? pointToSend() : setView(v))}
+            />
             {menu && (
               <details className="relative" data-testid="story-menu">
                 <summary
@@ -574,7 +582,9 @@ export function StoryBuilder({
                 intro={
                   storyType?.format === "intro" && coreAnswered === 0 && !content.linkedin
                     ? `${questions.length} short questions. Answer in plain notes, typed or spoken; the answer is written from your words.`
-                    : undefined
+                    : tookQuestion && currentCore === "start" && content.asked
+                      ? "Got it, that's the question you'll be asked. Now tell the story you'd answer it with: what happened, your part, and how it ended."
+                      : undefined
                 }
                 eyebrow={
                   questions.length === 1
@@ -641,7 +651,7 @@ export function StoryBuilder({
                   </button>
                 )}
                 <Composer
-                  key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}`}
+                  key={`core-${currentCore}-${inferredNow ? "inferred" : seedNow ? "seed" : "blank"}-${content.asked?.length ?? 0}`}
                   size="lg"
                   initial={inferredNow?.text ?? (seedNow ? `${seedNow.moment}. ` : "")}
                   draftKey={inferredNow ? undefined : `${draftScope}:core-${currentCore}`}
@@ -971,11 +981,24 @@ export function StoryBuilder({
 }
 
 const VIEWS = [
-  { id: "build", label: "Build" },
+  // "Your answers", not "Build" or "Questions": simulated users kept tapping "Build" as if it sent
+  // their answer (run 32), then "Questions" as if it let them pick a different question (run 34).
+  { id: "build", label: "Your answers" },
   { id: "story", label: "Story and score" },
 ] as const;
 
 type View = (typeof VIEWS)[number]["id"];
+
+// Tapping the Your answers tab while already on it does nothing a person can see, so show them the
+// way to send what they've typed: scroll to the open question's send button and focus it.
+function pointToSend() {
+  const button = document.querySelector<HTMLButtonElement>(
+    '[data-testid="question-block"] button[type="submit"]',
+  );
+  if (!button) return;
+  button.scrollIntoView({ block: "center", behavior: "smooth" });
+  button.focus({ preventScroll: true });
+}
 
 type Step = { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> };
 
@@ -1821,7 +1844,13 @@ function Composer({
               Cancel
             </button>
           )}
-          <button type="submit" disabled={!canSubmit} className="btn-next ml-1">
+          {/* The send button for the open question is the biggest thing under the answer box, so
+              it reads as the way to send (personas kept looking elsewhere, run 32). */}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={`btn-next ml-1 ${size === "lg" ? "min-h-11 px-6 text-base" : ""}`}
+          >
             {disabled ? "Saving…" : submitLabel}
           </button>
         </div>
@@ -2322,9 +2351,9 @@ function StoryView({
               disabled={disabled}
               aria-busy={busy === "probing"}
               className="btn-secondary"
-              title="Questions that make it stronger. They open on the Build tab."
+              title="Questions that make it stronger. They open on the Your answers tab."
             >
-              {/* The questions appear on the Build tab; until then this is the only sign on this
+              {/* The questions appear on the Your answers tab; until then this is the only sign on this
                   tab that anything is happening (round 27 personas read it as dead). */}
               {busy === "probing" ? "Finding more questions…" : "Ask me more"}
             </button>

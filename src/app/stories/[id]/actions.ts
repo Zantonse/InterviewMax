@@ -28,6 +28,7 @@ import {
   type StoryContent,
 } from "@/lib/stories/content";
 import { getStory, listStories, updateStory } from "@/lib/stories/data";
+import { looksLikeQuestion } from "@/lib/stories/question-match";
 import { skillsMap, weakSkillsInstructions, weakestSkills } from "@/lib/stories/skills";
 import {
   TOP_LEVEL,
@@ -72,6 +73,17 @@ export async function saveAnswer(
     // Earlier answers to the old scripted questions can still be edited.
     const questions = answerableQuestions(getStoryType(story.storyType));
     if (!questions.some((q) => q.id === questionId)) return fail("Unknown question.");
+    // The interview question typed where the story should start: keep it as the story's question
+    // (the opening prompt then asks for the story behind it) instead of drafting from a question.
+    if (
+      questionId === "start" &&
+      getStoryType(story.storyType)?.format !== "intro" &&
+      looksLikeQuestion(text)
+    ) {
+      const content = { ...story.content, asked: text.trim() };
+      await updateStory(storyId, { content });
+      return { ok: true, content, title: story.title };
+    }
     const content = {
       ...story.content,
       answers: { ...story.content.answers, [questionId]: text },

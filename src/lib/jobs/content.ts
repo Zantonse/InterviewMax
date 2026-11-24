@@ -40,11 +40,24 @@ const ENTRY_RE =
 // posting's first short line that isn't a section heading.
 const HEADING_RE = /^(about( the| this)? (job|role|us|company)|job description|description|overview|summary)\b/i;
 
+// A short line ending in a full stop is usually a sentence ("You will run demos."), but a posting
+// often opens "Acme — Principal Sales Engineer, Enterprise." That line still names the role, so it
+// counts when it has a role word and doesn't read like a sentence. (Simulated users, run 33: the
+// job came out as "Untitled job" and the persona couldn't find it in the job pickers.)
+const ROLE_RE =
+  /\b(engineer|manager|designer|developer|lead|director|analyst|scientist|architect|consultant|specialist|officer|head|president|representative|executive|administrator|coordinator|strategist|researcher|associate|intern)\b/i;
+const SENTENCE_START_RE = /^(you|we|our|the|this|in|as|join|at)\b/i;
+
 export function titleFromPosting(description: string): string {
-  const line = description
+  const lines = description
     .split("\n")
     .map((l) => l.replace(/^[-•*]\s*/, "").trim())
-    .find((l) => l.length >= 3 && l.length <= 80 && !HEADING_RE.test(l) && !/[.:]$/.test(l));
+    .filter((l) => l.length >= 3 && !HEADING_RE.test(l));
+  const line =
+    lines.find((l) => l.length <= 80 && !/[.:]$/.test(l)) ??
+    lines
+      .map((l) => l.replace(/\.$/, "").trim())
+      .find((l) => l.length <= 80 && !/[.:]/.test(l) && ROLE_RE.test(l) && !SENTENCE_START_RE.test(l));
   return line ?? "Untitled job";
 }
 
