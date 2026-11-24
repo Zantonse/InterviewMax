@@ -174,7 +174,11 @@ export async function savePersonaSession(
     request.cookies,
     response.cookies,
     {
-      user: filterDefaultIdTokenClaims(tokens.claims),
+      // Persona mailboxes don't exist, so Auth0 never marks them verified, and the app's sign-in
+      // gate (getAuth0User in src/lib/auth.ts) sends unverified sessions to /login?error=unverified.
+      // That gate guards claim_profile's link-by-email; resetPersonaAccount has already linked this
+      // persona by its Auth0 subject, so the session can count the email as verified.
+      user: { ...filterDefaultIdTokenClaims(tokens.claims), email_verified: true },
       tokenSet: {
         accessToken: tokens.accessToken,
         idToken: tokens.idToken,
