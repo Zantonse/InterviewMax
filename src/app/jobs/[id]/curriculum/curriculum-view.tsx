@@ -171,7 +171,9 @@ function TopicCard({
       <div>
         <h3 className="font-semibold text-slate-900">{topic.name}</h3>
         <p className="mt-1 text-xs text-slate-600">
-          {topic.quote ? (
+          {topic.core ? (
+            "A core topic for your field: interviewers expect it at most jobs like this"
+          ) : topic.quote ? (
             <>
               From the posting: <q className="italic">{topic.quote}</q>
             </>

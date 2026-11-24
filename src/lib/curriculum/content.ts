@@ -43,6 +43,8 @@ export type ConfidenceId = (typeof CONFIDENCE)[number]["id"];
 export const MIN_TOPICS = 8;
 export const MAX_TOPICS = 16;
 export const MAX_BASICS = 4;
+// A saved curriculum holds the model's topics plus up to 12 core topics for the user's field.
+export const MAX_SAVED_TOPICS = MAX_TOPICS + 12;
 const MAX_NAME = 80;
 const MAX_LINE = 300;
 
@@ -60,6 +62,8 @@ export type CurriculumTopic = {
   // A question to check yourself with.
   check: string;
   confidence?: ConfidenceId;
+  // A hand-written core topic for the user's field (field-core.ts), not from the posting.
+  core?: boolean;
 };
 
 export type Curriculum = {
@@ -95,14 +99,14 @@ export function newTopicId(): string {
 }
 
 // Validates topics from the model, the browser or jsonb: known areas, trimmed text, no repeated
-// names, at most MAX_TOPICS. Missing ids get new ones.
-export function parseTopics(raw: unknown): CurriculumTopic[] {
+// names, at most `max` (MAX_TOPICS from the model). Missing ids get new ones.
+export function parseTopics(raw: unknown, max = MAX_SAVED_TOPICS): CurriculumTopic[] {
   if (!Array.isArray(raw)) return [];
   const names = new Set<string>();
   const ids = new Set<string>();
   const topics: CurriculumTopic[] = [];
   for (const t of raw) {
-    if (topics.length >= MAX_TOPICS) break;
+    if (topics.length >= max) break;
     if (!isRecord(t) || !isArea(t.area)) continue;
     const name = line(t.name, MAX_NAME);
     const key = topicKey(name);
@@ -126,6 +130,7 @@ export function parseTopics(raw: unknown): CurriculumTopic[] {
       askedAs: line(t.askedAs),
       check: line(t.check),
       ...(isConfidence(t.confidence) ? { confidence: t.confidence } : {}),
+      ...(t.core === true ? { core: true } : {}),
     });
   }
   return topics;

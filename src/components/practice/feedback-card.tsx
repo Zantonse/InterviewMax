@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FieldPitfalls } from "@/components/field-pitfalls";
 import {
   CLOSENESS_LABELS,
   LAYER_LABELS,
@@ -132,6 +133,8 @@ export function FeedbackCard({
           </ul>
         </div>
       )}
+
+      <FieldPitfalls pitfalls={feedback.pitfalls} />
 
       {feedback.followUpsNote && (
         <p className="mt-4 text-sm text-slate-700">

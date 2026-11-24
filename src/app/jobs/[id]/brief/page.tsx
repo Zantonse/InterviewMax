@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { buildBrief } from "@/lib/brief/brief";
+import { getUserFieldSafely } from "@/lib/field/data";
 import { getJob } from "@/lib/jobs/data";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { daysUntil, todayIn } from "@/lib/prep/plan";
@@ -31,15 +32,22 @@ export default function BriefPage({ params }: PageProps<"/jobs/[id]/brief">) {
 
 async function Content({ params }: { params: PageProps<"/jobs/[id]/brief">["params"] }) {
   const { id } = await params;
-  const [job, stories, numbers, requestHeaders] = await Promise.all([
+  const [job, stories, numbers, requestHeaders, field] = await Promise.all([
     getJob(id),
     listStories(),
     getNumbersChecklistSafely(),
     headers(),
+    getUserFieldSafely(),
   ]);
   if (!job) notFound();
   await trackEvent("brief_opened");
-  const brief = buildBrief({ job, stories, numbers, stage: await stageForJob(job) });
+  const brief = buildBrief({
+    job,
+    stories,
+    numbers,
+    stage: await stageForJob(job),
+    field: field.id,
+  });
   const today = todayIn(requestHeaders.get("x-vercel-ip-timezone"));
   const days =
     job.interviewDate && daysUntil(job.interviewDate, today) >= 0

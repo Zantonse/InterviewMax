@@ -1,5 +1,6 @@
 import type { AudienceId } from "@/lib/ask/content";
 import { ROUNDS, isRound, type RoundId } from "@/lib/bank/content";
+import type { FieldId } from "@/lib/field/fields";
 import type { QuestionThemeId } from "@/lib/questions/themes";
 import type { ToughQuestionId } from "@/lib/tough/questions";
 
@@ -23,6 +24,10 @@ export type StageGuide = {
   audiences: AudienceId[];
   // Tough questions that come up at this stage, most likely first.
   tough: ToughQuestionId[];
+  // True for rounds built on case and skills questions: the brief points to the job's case panel.
+  cases?: boolean;
+  // Extra tips for one field, shown after the general ones.
+  fieldTips?: Partial<Record<FieldId, string[]>>;
 };
 
 export const STAGE_GUIDES: Record<RoundId, StageGuide> = {
@@ -75,6 +80,55 @@ export const STAGE_GUIDES: Record<RoundId, StageGuide> = {
     questions: 8,
     audiences: ["hiring_manager", "peer"],
     tough: ["weakness", "failure", "ai_at_work", "why_leaving"],
+  },
+  technical: {
+    id: "technical",
+    label: "Technical or skills",
+    checks:
+      "Whether you can actually do the work: the tools, the methods and the judgment behind them, tested on your own projects.",
+    tips: [
+      "Ground every answer in something you built or ran. Interviewers now skip textbook questions and ask about your own work.",
+      "Say what you'd check first and why, out loud, before you get to the answer.",
+      "Name the trade-off: what you chose, what you gave up, and when you'd choose differently.",
+      "Expect quick follow-ups on the details. \"I haven't used that, here's how I'd find out\" beats a guess.",
+    ],
+    themes: ["ownership", "failure", "ambiguity", "impact"],
+    questions: 4,
+    audiences: ["peer", "hiring_manager"],
+    tough: ["ai_at_work"],
+    cases: true,
+    fieldTips: {
+      data_governance: [
+        "Expect the tools (a catalog such as Collibra, Purview or Unity Catalog), the rules (GDPR, CCPA, the EU AI Act) and how you monitor quality. Say which you've used and what was hard about it.",
+        "Keep the terms straight: governance decides and holds people accountable, management builds and runs the systems; a policy says what and why, a standard is the measurable rule, a procedure is who does what, when.",
+        "For quality, name the dimensions that mattered for that use (completeness, accuracy, timeliness…) and whether you checked tables at rest or the pipeline in motion.",
+        "Technical seats may include hands-on SQL: joins across tables, and spotting a join that silently multiplies rows.",
+      ],
+    },
+  },
+  case: {
+    id: "case",
+    label: "Case or design",
+    checks:
+      "How you reason through a messy, realistic problem: the questions you ask, the trade-offs you weigh and how you land on a plan.",
+    tips: [
+      "Ask two or three questions before you answer: who uses it, what's at risk, what limits you have.",
+      "Say your plan in one line, then walk through it in steps.",
+      "Name the trade-off you're making and what would change your mind.",
+      "End with how you'd know it worked: the measure and a first milestone.",
+    ],
+    themes: ["ambiguity", "prioritization", "impact"],
+    questions: 3,
+    audiences: ["hiring_manager", "peer"],
+    tough: [],
+    cases: true,
+    fieldTips: {
+      data_governance: [
+        "Common cases: design an inventory of the company's AI models, reconcile two sources that disagree, or fix duplicate master records with a small team.",
+        "Cover who owns each decision, the rule you'd set, how you'd measure it, and the AI angle where it fits (bias testing, where the data came from, human oversight).",
+        "Tie the plan to the business: what the bad data costs today, and the number you'd move first.",
+      ],
+    },
   },
   panel: {
     id: "panel",
@@ -133,6 +187,12 @@ export const STAGE_GUIDES: Record<RoundId, StageGuide> = {
     tough: [],
   },
 };
+
+// A stage's tips, with the user's field's own after the general ones.
+export function stageTips(stage: RoundId, field?: FieldId | null): string[] {
+  const guide = STAGE_GUIDES[stage];
+  return [...guide.tips, ...((field && guide.fieldTips?.[field]) || [])];
+}
 
 // The stages the user can pick, in the order they usually happen.
 export const STAGES = ROUNDS.map((r) => STAGE_GUIDES[r.id]);

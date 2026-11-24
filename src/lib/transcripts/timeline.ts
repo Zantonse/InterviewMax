@@ -55,13 +55,18 @@ export const MAX_TIMELINE_QUESTIONS = 6;
 export const MAX_INTERVIEWERS = 4;
 const MAX_PREPARE = 3;
 
-// Where each round sits in a typical process. "Another round" has no fixed place.
+// Where each round sits in a typical process. "Another round" has no fixed place. Technical and
+// case rounds fall between the hiring manager and the panel, and many processes skip them, so
+// they're never guessed as the next round.
 const ORDER: Partial<Record<RoundId, number>> = {
   recruiter: 0,
   hiring_manager: 1,
+  technical: 1.5,
+  case: 1.5,
   panel: 2,
   final: 3,
 };
+const NEXT_GUESSES: RoundId[] = ["recruiter", "hiring_manager", "panel", "final"];
 
 // Words in an interview's title or summary that say which round it was. Most specific first.
 const ROUND_HINTS: [RoundId, RegExp][] = [
@@ -71,6 +76,15 @@ const ROUND_HINTS: [RoundId, RegExp][] = [
   [
     "recruiter",
     /\b(recruit\w*|phone screen|screening call|talent acquisition|HR screen|intro call)\b/i,
+  ],
+  // Checked last so existing guesses don't change; only clear round names count.
+  [
+    "case",
+    /\b(case (study|interview|round)|design (exercise|challenge|round)|system design|whiteboard)\b/i,
+  ],
+  [
+    "technical",
+    /\b(technical (screen|round|interview|assessment)|tech screen|coding (round|interview|test)|sql (test|round|screen)|take-?home|skills? (test|assessment|round))\b/i,
   ],
 ];
 
@@ -159,7 +173,7 @@ function nextRound(steps: TimelineStep[], transcripts: TimelineTranscript[]): Ne
   const nextId =
     furthest === null
       ? null
-      : (Object.entries(ORDER).find(([, n]) => n === furthest + 1)?.[0] as RoundId | undefined);
+      : NEXT_GUESSES.find((id) => ORDER[id]! > furthest);
 
   // Weak answers before partly landed ones; later rounds first, since they're the freshest.
   const prepare: NextRound["prepare"] = [];

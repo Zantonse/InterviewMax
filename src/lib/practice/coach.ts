@@ -1,6 +1,7 @@
 import "server-only";
 import { generateForStep, type Step } from "@/lib/ai";
 import type { ChatMessage } from "@/lib/ai/types";
+import { parsePitfalls, type PitfallHit } from "@/lib/field/pitfalls";
 import {
   type PracticeFeedback,
   checkNewFacts,
@@ -49,7 +50,7 @@ export async function giveFeedback(ctx: PracticeContext, theme: string): Promise
     feedbackSystem(ctx),
     feedbackMessages(ctx, { timing, numbersLeftOut: leftOut, limitSeconds }),
   );
-  const { layers, result: reached, resultNote, ...parsed } = parseFeedback(
+  const { layers, result: reached, resultNote, pitfalls, ...parsed } = parseFeedback(
     result.text,
     Boolean(ctx.reference),
     { followUps: followUpCount(ctx), screen },
@@ -57,6 +58,7 @@ export async function giveFeedback(ctx: PracticeContext, theme: string): Promise
   return {
     ...parsed,
     ...(layers.length ? { layers } : {}),
+    ...withPitfalls(pitfalls, `${ctx.question}\n${spoken}\n${ctx.reference?.script ?? ""}`),
     ...(limitSeconds
       ? {
           screen: {
@@ -75,6 +77,12 @@ export async function giveFeedback(ctx: PracticeContext, theme: string): Promise
     model: result.model,
     givenAt: new Date().toISOString(),
   };
+}
+
+// A field mistake's note may only use figures from the question, what they said or their story.
+function withPitfalls(hits: PitfallHit[], source: string): { pitfalls?: PitfallHit[] } {
+  const kept = parsePitfalls(hits, source);
+  return kept.length ? { pitfalls: kept } : {};
 }
 
 async function call(step: Step, system: string, messages: ChatMessage[]) {

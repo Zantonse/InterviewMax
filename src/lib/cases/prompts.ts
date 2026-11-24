@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { parsePitfalls } from "@/lib/field/pitfalls";
 import { isRecord } from "@/lib/jobs/content";
 import { untracedNumbers } from "@/lib/stories/numbers";
 import { extractJson } from "@/lib/stories/prompts";
@@ -73,10 +74,12 @@ export function parseCasePracticeReply(
   const summary = str(json.summary);
   const followUp = str(json.followUp);
   if (!summary && missing.length === 0) throw new Error("The feedback came back empty. Try again.");
+  const pitfalls = parsePitfalls(json.pitfalls, source);
   return {
     summary: traced(summary) ? summary : "",
     covered: [...new Set(covered)],
     missing,
     followUp: traced(followUp) ? followUp : "",
+    ...(pitfalls.length ? { pitfalls } : {}),
   };
 }

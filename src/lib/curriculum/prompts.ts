@@ -33,6 +33,7 @@ ${REPORTS_HEDGE_RULE}
 - check: one question the candidate can ask themselves to test whether they really know it.
 - Match the level: for senior and leadership roles, stress strategy, trade-offs and leading others; for earlier-career roles, the fundamentals and how the work is done.
 - summary: two or three plain sentences on what this job is and what it will be judged on, from the posting.
+- When the message lists topics already on the list (core topics for the candidate's field), don't repeat them or cover the same ground under another name: return 6 to 12 other topics, the ones this posting adds.
 
 Reply with JSON only, no other text:
 {"summary": "…", "topics": [{"area": "one of ${AREAS.map((a) => a.id).join(", ")}", "name": "…", "quote": "…", "basics": ["…"], "askedAs": "…", "check": "…"}]}`;
@@ -47,8 +48,10 @@ export function curriculumMessages(input: {
   // What the read of the user's jobs says this job's interviewers will look for.
   focus: string[];
   reports: string;
+  // Names of the core topics for the user's field, already on the list.
+  core?: string[];
 }): ChatMessage[] {
-  const { job, focus, reports } = input;
+  const { job, focus, reports, core = [] } = input;
   const level = levelLabel(job.level);
   const lines = [
     `## The job: ${job.title}${job.company ? ` at ${job.company}` : ""}${level ? ` (${level})` : ""}`,
@@ -62,6 +65,9 @@ export function curriculumMessages(input: {
   }
   if (reports.trim()) {
     lines.push("", `## ${REPORTS_HEADING}\n${reports.trim()}`);
+  }
+  if (core.length > 0) {
+    lines.push("", `## Already on the list (don't repeat)\n${core.map((c) => `- ${c}`).join("\n")}`);
   }
   return [
     {
@@ -78,7 +84,7 @@ export function parseCurriculumReply(
 ): { summary: string; topics: CurriculumTopic[] } {
   const json = extractJson(text);
   if (!isRecord(json)) throw new Error("The curriculum came back in an unexpected format.");
-  const topics = parseTopics(json.topics).map((t) => ({
+  const topics = parseTopics(json.topics, MAX_TOPICS).map((t) => ({
     ...withConfidence(t, undefined),
     quote: t.quote && quoteIsIn(t.quote, posting) ? t.quote : "",
   }));

@@ -1,3 +1,4 @@
+import type { PitfallHit } from "@/lib/field/pitfalls";
 import type { TranscriptAnalysis } from "@/lib/transcripts/content";
 import { toughForAsked } from "@/lib/tough/questions";
 
@@ -176,4 +177,6 @@ export type CaseFeedback = {
   missing: { step: string; tip: string }[];
   // The push an interviewer would likely make next.
   followUp: string;
+  // Mistakes interviewers in the user's field cut people for, when the answer made one.
+  pitfalls?: PitfallHit[];
 };

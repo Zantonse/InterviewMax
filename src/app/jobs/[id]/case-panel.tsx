@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useState, useTransition, type ReactNode } from "react";
 import { AiNotice } from "@/components/ai-notice";
+import { FieldPitfalls } from "@/components/field-pitfalls";
 import { AnswerLimit } from "@/components/answer-limit";
 import { MicButton } from "@/components/mic-button";
 import {
@@ -174,6 +175,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
                   ))}
                 </ul>
               )}
+              <FieldPitfalls pitfalls={feedback.pitfalls} />
               {feedback.followUp && (
                 <p className="mt-3 text-sm text-slate-700">
                   <span className="font-semibold text-slate-900">Expect them to push with: </span>

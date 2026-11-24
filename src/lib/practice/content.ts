@@ -1,3 +1,4 @@
+import type { PitfallHit } from "@/lib/field/pitfalls";
 import type { LikelyQuestion } from "@/lib/questions/content";
 import { coverageFor } from "@/lib/questions/coverage";
 import { gradeIsCurrent, type StoryContent } from "@/lib/stories/content";
@@ -147,6 +148,9 @@ export type PracticeFeedback = {
   missing: string[];
   // How the follow-ups went.
   followUpsNote: string;
+  // Mistakes interviewers in the user's field cut people for, when the answer made one. Missing
+  // for fields without a list and on feedback given before field mistakes existed.
+  pitfalls?: PitfallHit[];
   // One per follow-up, in order: did the answer hold up under it. Missing on feedback given before
   // follow-up drills, and in AI screen rounds (no follow-ups).
   layers?: LayerFeedback[];
