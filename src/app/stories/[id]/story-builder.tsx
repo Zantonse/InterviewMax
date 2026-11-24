@@ -490,7 +490,10 @@ export function StoryBuilder({
             <span>{storyType?.label ?? "Story"}</span>
           </nav>
           <div className="flex shrink-0 items-center gap-3">
-            <ViewTabs view={view} onChange={setView} />
+            <ViewTabs
+              view={view}
+              onChange={(v) => (v === view && v === "build" ? pointToSend() : setView(v))}
+            />
             {menu && (
               <details className="relative" data-testid="story-menu">
                 <summary
@@ -971,11 +974,24 @@ export function StoryBuilder({
 }
 
 const VIEWS = [
-  { id: "build", label: "Build" },
+  // "Questions", not "Build": simulated users (run 32, 2026-11-24) kept tapping "Build" as if it
+  // sent their answer, and their answers never went in.
+  { id: "build", label: "Questions" },
   { id: "story", label: "Story and score" },
 ] as const;
 
 type View = (typeof VIEWS)[number]["id"];
+
+// Tapping the Questions tab while already on it does nothing a person can see, so show them the
+// way to send what they've typed: scroll to the open question's send button and focus it.
+function pointToSend() {
+  const button = document.querySelector<HTMLButtonElement>(
+    '[data-testid="question-block"] button[type="submit"]',
+  );
+  if (!button) return;
+  button.scrollIntoView({ block: "center", behavior: "smooth" });
+  button.focus({ preventScroll: true });
+}
 
 type Step = { busy: Exclude<Busy, null>; action: () => Promise<BuilderResult> };
 
@@ -1821,7 +1837,13 @@ function Composer({
               Cancel
             </button>
           )}
-          <button type="submit" disabled={!canSubmit} className="btn-next ml-1">
+          {/* The send button for the open question is the biggest thing under the answer box, so
+              it reads as the way to send (personas kept looking elsewhere, run 32). */}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={`btn-next ml-1 ${size === "lg" ? "min-h-11 px-6 text-base" : ""}`}
+          >
             {disabled ? "Saving…" : submitLabel}
           </button>
         </div>
@@ -2322,9 +2344,9 @@ function StoryView({
               disabled={disabled}
               aria-busy={busy === "probing"}
               className="btn-secondary"
-              title="Questions that make it stronger. They open on the Build tab."
+              title="Questions that make it stronger. They open on the Questions tab."
             >
-              {/* The questions appear on the Build tab; until then this is the only sign on this
+              {/* The questions appear on the Questions tab; until then this is the only sign on this
                   tab that anything is happening (round 27 personas read it as dead). */}
               {busy === "probing" ? "Finding more questions…" : "Ask me more"}
             </button>
