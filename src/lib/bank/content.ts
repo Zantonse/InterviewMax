@@ -11,6 +11,8 @@ import { findNumbers } from "@/lib/stories/numbers";
 export const ROUNDS = [
   { id: "recruiter", label: "Recruiter screen" },
   { id: "hiring_manager", label: "Hiring manager" },
+  { id: "technical", label: "Technical or skills" },
+  { id: "case", label: "Case or design" },
   { id: "panel", label: "Panel or loop" },
   { id: "final", label: "Final round" },
   { id: "other", label: "Another round" },

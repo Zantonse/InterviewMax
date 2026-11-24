@@ -22,7 +22,14 @@ export type QuestionSource = "common" | "posting" | "report" | "transcript";
 
 // The interview stages a likely question is asked at (the same ids as ROUNDS in bank/content.ts,
 // without "other"). A recruiter screen asks a few; the hiring manager most.
-export const QUESTION_STAGES = ["recruiter", "hiring_manager", "panel", "final"] as const;
+export const QUESTION_STAGES = [
+  "recruiter",
+  "hiring_manager",
+  "technical",
+  "case",
+  "panel",
+  "final",
+] as const;
 export type QuestionStage = (typeof QUESTION_STAGES)[number];
 
 export type LikelyQuestion = {

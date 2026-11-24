@@ -48,6 +48,21 @@ describe("guessing the round", () => {
     expect(guessRound("Panel with 3 directors")).toBe("panel");
     expect(guessRound("Final round with the VP")).toBe("final");
     expect(guessRound("Chat with Adam")).toBeNull();
+    expect(guessRound("SQL screen with the data team")).toBe("technical");
+    expect(guessRound("Take-home review")).toBe("technical");
+    expect(guessRound("Case study: duplicate customer records")).toBe("case");
+    // A summary that only mentions technical topics keeps its old guess.
+    expect(guessRound("Hiring manager - talked technical architecture")).toBe("hiring_manager");
+  });
+
+  it("never guesses a technical or case round as next, and moves on to the panel after one", () => {
+    const tl = buildTimeline(JOB, [
+      t({ id: "hm", round: "hiring_manager" }),
+      t({ id: "tech", round: "technical", createdAt: "2026-10-05T00:00:00Z" }),
+    ]);
+    expect(tl.steps.map((s) => s.transcriptId)).toEqual(["hm", "tech"]);
+    expect(tl.next.id).toBe("panel");
+    expect(buildTimeline(JOB, [t({ round: "hiring_manager" })]).next.id).toBe("panel");
   });
 });
 

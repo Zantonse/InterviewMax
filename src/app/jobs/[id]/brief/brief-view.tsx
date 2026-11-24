@@ -92,6 +92,15 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                 <li key={t}>{t}</li>
               ))}
             </ul>
+            {brief.stage.cases && (
+              <p className="mt-3 text-sm text-slate-700 print:hidden">
+                Most of this round is case and skills questions.{" "}
+                <Link href={`/jobs/${job.id}#cases`} className="font-semibold text-ink-800 underline">
+                  Practice them with their frames
+                </Link>
+                .
+              </p>
+            )}
             <p className="mt-3 text-sm text-slate-600 print:hidden">
               {brief.stage.guessed
                 ? "Guessed from your past interviews here. "

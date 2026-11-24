@@ -12,7 +12,8 @@ import {
   getStoryType,
 } from "@/lib/stories/story-types";
 import type { RoundId } from "@/lib/bank/content";
-import { STAGE_GUIDES, orderForStage } from "@/lib/stages/stages";
+import type { FieldId } from "@/lib/field/fields";
+import { STAGE_GUIDES, orderForStage, stageTips } from "@/lib/stages/stages";
 import {
   AI_ANSWER_ID,
   getToughQuestion,
@@ -95,6 +96,8 @@ export type BriefStage = {
   guessed: boolean;
   checks: string;
   tips: string[];
+  // A case or skills round: the brief points to the job's case and technical questions.
+  cases: boolean;
 };
 
 // Interview day glance (design comparison 2026-11-17, pattern 4): each written story once, with
@@ -129,6 +132,8 @@ export function buildBrief(input: {
   numbers: NumbersChecklist | null;
   // The stage to shape it for: its questions, tough answers and questions to ask come first.
   stage?: { id: RoundId; guessed: boolean } | null;
+  // The user's field, for the stage's field tips.
+  field?: FieldId | null;
 }): Brief {
   const { job, stories } = input;
   const stageId = input.stage?.id ?? null;
@@ -151,7 +156,8 @@ export function buildBrief(input: {
             label: guide.label,
             guessed: Boolean(input.stage?.guessed),
             checks: guide.checks,
-            tips: guide.tips,
+            tips: stageTips(guide.id, input.field),
+            cases: Boolean(guide.cases),
           }
         : null,
     intro: introFor(job.id, stories),

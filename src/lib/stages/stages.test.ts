@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderForStage, questionsForStage, stageFor, STAGES } from "./stages";
+import { orderForStage, questionsForStage, stageFor, stageTips, STAGES, STAGE_GUIDES } from "./stages";
 
 const q = (theme: string) => ({ theme, question: theme });
 
@@ -60,6 +60,8 @@ it("lists every stage in the usual order", () => {
   expect(STAGES.map((s) => s.id)).toEqual([
     "recruiter",
     "hiring_manager",
+    "technical",
+    "case",
     "panel",
     "final",
     "other",
@@ -95,5 +97,25 @@ describe("stage tags from predict", () => {
   it("places an untagged default question in a tagged list by its theme", () => {
     const withAi = [...items, { theme: "ai_use", question: "AI?" }];
     expect(questionsForStage(withAi, "recruiter").map((x) => x.theme)).toContain("ai_use");
+  });
+});
+
+describe("technical and case rounds", () => {
+  it("sit between the hiring manager and the panel, pointing to case questions", () => {
+    const ids = STAGES.map((s) => s.id);
+    expect(ids.indexOf("technical")).toBe(ids.indexOf("hiring_manager") + 1);
+    expect(ids.indexOf("case")).toBe(ids.indexOf("panel") - 1);
+    expect(STAGE_GUIDES.technical.cases).toBe(true);
+    expect(STAGE_GUIDES.case.cases).toBe(true);
+    expect(STAGE_GUIDES.recruiter.cases).toBeUndefined();
+  });
+
+  it("add data governance tips after the general ones, for that field only", () => {
+    const general = stageTips("technical");
+    const dg = stageTips("technical", "data_governance");
+    expect(dg.slice(0, general.length)).toEqual(general);
+    expect(dg.join(" ")).toMatch(/Collibra/);
+    expect(stageTips("technical", "product_design")).toEqual(general);
+    expect(stageTips("case", "data_governance").join(" ")).toMatch(/inventory of the company's AI models/);
   });
 });
