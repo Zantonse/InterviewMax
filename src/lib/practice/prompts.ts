@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/ai/types";
+import { parsePitfalls, type PitfallHit } from "@/lib/field/pitfalls";
 import { extractJson } from "@/lib/stories/prompts";
 import {
   type Closeness,
@@ -223,6 +224,8 @@ export type ParsedFeedback = {
   result?: ScreenResult;
   resultNote?: string;
   newFacts: NewFact[];
+  // Numbers in notes are checked against what they said in coach.ts.
+  pitfalls: PitfallHit[];
 };
 
 const CLOSENESS: readonly Closeness[] = ["close", "partly", "drifted", "no_story"];
@@ -247,6 +250,7 @@ export function parseFeedback(
     followUpsNote:
       typeof raw.followUpsNote === "string" ? raw.followUpsNote.trim().slice(0, 400) : "",
     layers: parseLayers(raw.layers).slice(0, followUps),
+    pitfalls: parsePitfalls(raw.pitfalls),
     ...(screen
       ? {
           result: parseScreenResult(raw.result),
