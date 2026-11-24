@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canUseCurriculum } from "./access";
 import {
+  MAX_BASICS,
   MAX_TOPICS,
   byArea,
   carryConfidence,
@@ -10,6 +11,7 @@ import {
   withConfidence,
   type CurriculumTopic,
 } from "./content";
+import { coreTopicsFor } from "./field-core";
 import { curriculumMessages, parseCurriculumReply } from "./prompts";
 
 const topic = (name: string, extra: Partial<CurriculumTopic> = {}): CurriculumTopic => ({
@@ -57,7 +59,7 @@ describe("parseTopics", () => {
       name: `Topic ${i}`,
       basics: ["x"],
     }));
-    expect(parseTopics(many)).toHaveLength(MAX_TOPICS);
+    expect(parseTopics(many, MAX_TOPICS)).toHaveLength(MAX_TOPICS);
   });
 
   it("reads nothing from an empty or broken value", () => {
@@ -148,5 +150,45 @@ describe("access", () => {
     expect(canUseCurriculum("Coach@example.com")).toBe(true);
     expect(canUseCurriculum("tester@example.com")).toBe(false);
     expect(canUseCurriculum(null)).toBe(false);
+  });
+});
+
+describe("core topics for a field", () => {
+  it("gives data governance its topics by level, marked core, with stable ids", () => {
+    const all = coreTopicsFor("data_governance", null);
+    expect(all.length).toBe(12);
+    expect(all.every((t) => t.core && t.quote === "" && t.basics.length <= MAX_BASICS)).toBe(true);
+    expect(new Set(all.map((t) => t.id)).size).toBe(all.length);
+    const entry = coreTopicsFor("data_governance", "entry").map((t) => t.name);
+    const lead = coreTopicsFor("data_governance", "principal").map((t) => t.name);
+    expect(entry).toContain("SQL for governance checks");
+    expect(entry).not.toContain("Operating model");
+    expect(lead).toContain("Funding and measuring the program");
+    expect(lead).not.toContain("Settling a definition dispute");
+    expect(coreTopicsFor("product_design", "senior")).toEqual([]);
+    expect(coreTopicsFor(null, null)).toEqual([]);
+  });
+
+  it("survive a save and read, beyond the model's own cap", () => {
+    const core = coreTopicsFor("data_governance", null);
+    const fromModel = Array.from({ length: MAX_TOPICS }, (_, i) => ({
+      area: "skills",
+      name: `Topic ${i}`,
+      basics: ["x"],
+    }));
+    const read = parseTopics([...core, ...fromModel]);
+    expect(read).toHaveLength(core.length + MAX_TOPICS);
+    expect(read[0].core).toBe(true);
+    expect(read.at(-1)!.core).toBeUndefined();
+  });
+
+  it("tells the model which topics are already on the list", () => {
+    const [msg] = curriculumMessages({
+      job: { title: "Data Governance Lead", company: null, level: "senior", description: "Own the catalog." },
+      focus: [],
+      reports: "",
+      core: ["Governance vs. management"],
+    });
+    expect(String(msg.content)).toMatch(/Already on the list \(don't repeat\)\n- Governance vs. management/);
   });
 });
