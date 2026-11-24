@@ -13,8 +13,8 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-ink-800">{title}</h2>
+    <section className="panel">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-800">{title}</h2>
       {note && <p className="mt-1 text-sm text-slate-500">{note}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -54,9 +54,9 @@ export function AdminTabs({
 
 export function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+    <div className="rounded-2xl bg-white p-5 ring-1 ring-ink-100">
       <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
       {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
     </div>
   );

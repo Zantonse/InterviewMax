@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { ConfidencePips } from "@/components/practice/confidence-bar";
 import { removePractice } from "@/app/practice/actions";
 import { StartPracticeForm } from "@/app/practice/start-form";
@@ -27,7 +26,7 @@ export default function JobPracticePage({ params }: PageProps<"/jobs/[id]/practi
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <Content params={params} />
         </Suspense>
@@ -63,40 +62,32 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
         ← {job.title}
         {job.company ? ` at ${job.company}` : ""}
       </Link>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
         Practice out loud
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">
-        A written story can still fall flat when it&apos;s said. Answer this job&apos;s likely
-        questions out loud, take the follow-ups a real interviewer would ask, and see what to fix.
+        Answer this job&apos;s likely questions out loud, take the follow-ups an interviewer would
+        ask, and see what to fix.
       </p>
-      <PageGuide
-        id="practice"
-        steps={[
-          "Tap Talk and answer each question as you would in the room. Typing works too.",
-          "The interviewer drills two or three follow-ups deep: tell me more, why that, what would you do differently.",
-          "Feedback on each answer: how close it stayed to your story, where it got thinner under the follow-ups, and your time.",
-        ]}
-      />
 
       {!job.likelyQuestions ? (
-        <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+        <section className="mt-6 panel">
           <p className="text-slate-700">
             First, predict this job&apos;s likely questions. Practice uses them.
           </p>
           <Link
             href={`/jobs/${job.id}#questions`}
-            className="mt-3 inline-block font-semibold text-ink-800 hover:underline"
+            className="mt-3 inline-block link"
           >
-            See the likely questions →
+            See the likely questions
           </Link>
         </section>
       ) : (
         <section
-          className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="mt-6 panel"
           data-testid="practice-start"
         >
-          <h2 className="text-sm font-bold text-ink-800">
+          <h2 className="text-sm font-semibold text-ink-800">
             This round: {round.length} questions
             {stage && STAGE_GUIDES[stage.id].themes.length > 0
               ? ` for the ${STAGE_GUIDES[stage.id].label.toLowerCase()}`
@@ -108,9 +99,9 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
           </p>
           <ol className="mt-4 space-y-2">
             {round.map((q, i) => (
-              <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-                <p className="font-semibold text-slate-900">
-                  <span className="mr-2 text-ink-800">{i + 1}.</span>
+              <li key={q.question} className="rounded-2xl bg-ink-50 px-4 py-3">
+                <p className="font-words text-lg leading-snug text-slate-900">
+                  <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{i + 1}.</span>
                   {q.question}
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
@@ -128,7 +119,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
               <>
                 <Link
                   href={`/practice/${inProgress.id}`}
-                  className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
+                  className="rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950"
                 >
                   Carry on with your round
                 </Link>
@@ -147,10 +138,10 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
 
       {job.likelyQuestions && (
         <section
-          className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="mt-4 panel"
           data-testid="screen-start"
         >
-          <h2 className="text-sm font-bold text-ink-800">
+          <h2 className="text-sm font-semibold text-ink-800">
             Practice an AI screen
           </h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -179,8 +170,8 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
       )}
 
       {sessions.length > 0 && (
-        <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <h2 className="text-sm font-bold text-ink-800">Your rounds</h2>
+        <section className="mt-4 panel">
+          <h2 className="text-sm font-semibold text-ink-800">Rounds</h2>
           <ul className="mt-3 divide-y divide-slate-100" data-testid="practice-rounds">
             {sessions.map((s) => {
               const answered = s.items.filter((i) => i.feedback).length;

@@ -22,13 +22,13 @@ export function FinishLineBar({
     : `${line.written} of ${line.goal} core stories`;
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
-      aria-label="Your core stories"
+      className="panel"
+      aria-label="Core stories"
       data-testid="finish-line"
       data-written={line.written}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
         {!done && <span className="text-sm text-slate-600">{MINUTES_PER_STORY} each</span>}
       </div>
       <ol className="mt-3 flex gap-1.5" aria-hidden>
@@ -73,7 +73,7 @@ export function FinishLineBar({
           ) : (
             <Link
               href={next.href}
-              className="rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300"
+              className="rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink-950"
               data-testid="finish-next"
             >
               Build today&apos;s story: {next.label}

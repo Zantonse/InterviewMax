@@ -47,7 +47,7 @@ export function ToughDrill({
 
   return (
     <div className="mt-5 border-t border-slate-200 pt-4" data-testid="tough-drill">
-      <h3 className="text-sm font-bold text-ink-800">Drill the follow-ups</h3>
+      <h3 className="text-sm font-semibold text-ink-800">Drill the follow-ups</h3>
       {!drill ? (
         <>
           <p className="mt-1 text-sm text-slate-600">
@@ -69,16 +69,16 @@ export function ToughDrill({
           <ol className="mt-3 space-y-3" aria-live="polite">
             {drill.turns.map((t, i) => (
               <li key={i} className="space-y-2">
-                <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-ink-50 px-4 py-3 font-medium text-slate-900">
+                <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-ink-50 px-4 py-3 font-words text-slate-900">
                   {i > 0 && (
-                    <span className="block text-xs font-bold text-ink-700">
+                    <span className="block font-sans text-xs font-semibold text-ink-700">
                       Follow-up {i}
                     </span>
                   )}
                   {t.question}
                 </p>
                 {t.answer && (
-                  <p className="ml-auto max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 text-slate-800">
+                  <p className="ml-auto max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 font-words text-slate-800">
                     {t.answer}
                   </p>
                 )}

@@ -58,7 +58,7 @@ export async function findMoments(
     if (best.moments.length >= 4) break;
   }
   if (!best || best.moments.length === 0) {
-    throw new Error("I couldn't find moments I could point to in what you've written. Try again.");
+    throw new Error("No moments to point to were found in what you've written. Try again.");
   }
 
   const saved: StoryFinder = {

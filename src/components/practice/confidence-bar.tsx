@@ -26,11 +26,11 @@ export function ConfidenceBar({
   const shown = picked ?? value;
   return (
     <section
-      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="panel"
       data-testid="confidence-bar"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-bold text-ink-800">How did that feel?</h2>
+        <h2 className="text-sm font-semibold text-ink-800">How did that feel?</h2>
         <span className="text-sm font-semibold text-slate-900" aria-live="polite">
           {shown ? CONFIDENCE_LABELS[shown] : ""}
         </span>

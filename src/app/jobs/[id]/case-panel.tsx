@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition, type ReactNode } from "react";
 import { AiNotice } from "@/components/ai-notice";
 import { AnswerLimit } from "@/components/answer-limit";
 import { MicButton } from "@/components/mic-button";
@@ -86,37 +86,24 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
   const stepLabel = (id: string) => frame.steps.find((s) => s.id === id)?.label ?? id;
 
   return (
-    <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5" data-testid="case-item">
-      <p className="font-semibold text-slate-900">{q.question}</p>
-      <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
-        <span className="rounded-full bg-ink-50 px-2 py-0.5 font-semibold text-ink-900">{frame.label}</span>
-        {q.transcriptId && (
-          <Link
-            href={`/transcripts/${q.transcriptId}`}
-            className="rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200 hover:underline"
-          >
-            {q.here ? "Asked you here" : "Asked you elsewhere"}: {q.transcriptTitle}
-          </Link>
-        )}
-        {q.starter && (
-          <span className="rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200">
-            Common in your field
-          </span>
-        )}
-        {q.landed && LANDED_LABELS[q.landed] && (
-          <span className="rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-slate-200">
-            Last time: {LANDED_LABELS[q.landed]}
-          </span>
-        )}
+    <li className="rounded-2xl bg-ink-50 px-4 py-3" data-testid="case-item">
+      <p className="font-words text-lg leading-snug text-slate-900">{q.question}</p>
+      <p className="mt-1 text-sm text-slate-600" data-testid="case-facts">
+        {caseFacts(q, frame.label).map((fact, i) => (
+          <Fragment key={i}>
+            {i > 0 && " · "}
+            {fact}
+          </Fragment>
+        ))}
       </p>
       {q.note && <p className="mt-2 text-sm text-slate-600">{q.note}</p>}
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-2 text-sm font-semibold text-ink-800 hover:underline"
+          className="mt-2 text-sm link"
         >
-          Practice this one →
+          Practice this one
         </button>
       ) : (
         <div className="mt-3 space-y-3">
@@ -176,7 +163,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
           <AiNotice purpose="give feedback on your practice answer" />
           {error && <p className="text-sm text-red-700">{error}</p>}
           {feedback && (
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5" data-testid="case-feedback">
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100" data-testid="case-feedback">
               {feedback.summary && <p className="text-slate-800">{feedback.summary}</p>}
               {feedback.missing.length > 0 && (
                 <ul className="mt-2 space-y-1 text-sm text-slate-700">
@@ -200,4 +187,20 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
       )}
     </li>
   );
+}
+
+// The facts about a question in one plain line under it: its kind, where you were asked it, and
+// how it landed last time.
+function caseFacts(q: CaseQuestion, kind: string): ReactNode[] {
+  const facts: ReactNode[] = [kind];
+  if (q.transcriptId) {
+    facts.push(
+      <Link key="asked" href={`/transcripts/${q.transcriptId}`} className="link">
+        {q.here ? "Asked you here" : "Asked you elsewhere"}: {q.transcriptTitle}
+      </Link>,
+    );
+  }
+  if (q.starter) facts.push("Common in your field");
+  if (q.landed && LANDED_LABELS[q.landed]) facts.push(`Last time: ${LANDED_LABELS[q.landed].toLowerCase()}`);
+  return facts;
 }

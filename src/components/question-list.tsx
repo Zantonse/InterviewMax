@@ -28,9 +28,9 @@ export function QuestionList({
       {questions.slice(0, limit).map((q, i) => {
         const coverage = coverageFor(q.theme, stories, q.question);
         return (
-          <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-            <p className="font-semibold text-slate-900">
-              <span className="mr-2 text-ink-800">{i + 1}.</span>
+          <li key={q.question} className="rounded-2xl bg-ink-50 px-4 py-3">
+            <p className="font-words text-lg leading-snug text-slate-900">
+              <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{i + 1}.</span>
               {q.question}
             </p>
             {!compact && (
@@ -50,9 +50,9 @@ export function QuestionList({
                   {coverage?.kind === "story" ? (
                     <Link
                       href={`/stories/${coverage.storyId}`}
-                      className="font-medium text-ink-800 hover:underline"
+                      className="link"
                     >
-                      {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
+                      {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
                     </Link>
                   ) : null}
                   {coverage?.kind === "story" && coverage.emphasize && (
@@ -66,19 +66,19 @@ export function QuestionList({
                         type="submit"
                         name="storyType"
                         value={coverage.storyType}
-                        className="font-medium text-ink-800 hover:underline"
+                        className="link"
                       >
-                        Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+                        Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo;
                       </button>
                     </form>
                   ) : null}
                   {aiAnswerHref && q.theme === AI_USE_QUESTION.theme && (
                     <Link
                       href={aiAnswerHref}
-                      className="mt-1 block font-medium text-ink-800 hover:underline"
+                      className="mt-1 block link"
                       data-testid="ai-answer-link"
                     >
-                      Asked as &ldquo;How do you use AI?&rdquo;: your short answer →
+                      Asked as &ldquo;How do you use AI?&rdquo;: your short answer
                     </Link>
                   )}
                 </div>
@@ -121,8 +121,8 @@ export function AskedRecently({
         {questions.map((q) => {
           const coverage = q.theme ? coverageFor(q.theme, stories, q.question) : undefined;
           return (
-            <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-              <p className="font-semibold text-slate-900">{q.question}</p>
+            <li key={q.question} className="rounded-2xl bg-ink-50 px-4 py-3">
+              <p className="font-words text-lg leading-snug text-slate-900">{q.question}</p>
               <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
                 {q.theme && <Tag>{getTheme(q.theme)?.label}</Tag>}
                 <Tag tone="accent">{askedLabel(q)}</Tag>
@@ -130,9 +130,9 @@ export function AskedRecently({
               {coverage?.kind === "story" ? (
                 <Link
                   href={`/stories/${coverage.storyId}`}
-                  className="mt-2 inline-block text-sm font-medium text-ink-800 hover:underline"
+                  className="mt-2 inline-block text-sm link"
                 >
-                  {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title} →
+                  {coverage.drafted ? "Answer with" : "In progress"}: {coverage.title}
                 </Link>
               ) : null}
               {coverage?.kind === "story" && coverage.emphasize && (
@@ -145,9 +145,9 @@ export function AskedRecently({
                     type="submit"
                     name="storyType"
                     value={coverage.storyType}
-                    className="font-medium text-ink-800 hover:underline"
+                    className="link"
                   >
-                    Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo; →
+                    Build &ldquo;{getStoryType(coverage.storyType)?.label}&rdquo;
                   </button>
                 </form>
               ) : null}

@@ -24,20 +24,20 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
         ← {job.title}
         {job.company ? ` at ${job.company}` : ""}
       </Link>
-      <p className="mt-3 text-xs font-bold text-ink-700 print:mt-0">
+      <p className="mt-3 text-xs font-semibold text-ink-700 print:mt-0">
         Pre-interview brief{brief.stage ? ` · ${brief.stage.label}` : ""}
         {days !== null ? ` · interview ${whenLabel(days)}` : ""}
       </p>
-      <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl print:text-xl">
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 print:text-xl">
         {job.title}
-        {job.company && <span className="font-bold text-slate-600"> at {job.company}</span>}
+        {job.company && <span className="font-semibold text-slate-600"> at {job.company}</span>}
       </h1>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 print:hidden">
         {brief.questions.length > 0 || brief.intro ? (
           <Link
             href={`/jobs/${job.id}/warm-up`}
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950"
             data-testid="start-warm-up"
           >
             Start the one-minute warm-up
@@ -51,24 +51,34 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
 
       <div className="mt-6 space-y-4 print:mt-3 print:space-y-3" data-testid="brief">
         {brief.glance.length > 0 && (
-          <Section title="Your stories at a glance" testId="brief-glance">
+          <Section title="Stories at a glance" testId="brief-glance">
             <ul className="grid gap-3 sm:grid-cols-2">
               {brief.glance.map((g) => (
+                // The same index card as the story bank on home: the title over the red line,
+                // then the line with the number to remember. Side by side, the red lines line up.
                 <li
                   key={g.storyId}
-                  className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 print:p-2"
+                  className="flex min-w-0 flex-col rounded-[10px] border border-ink-200 bg-white sm:row-span-2 sm:grid sm:grid-rows-subgrid"
                 >
-                  <Link href={g.href} className="text-lg font-bold text-slate-900 hover:underline print:text-sm">
+                  <Link
+                    href={g.href}
+                    className="block border-b border-rose-200 px-4 pt-3.5 pb-3 font-words text-lg leading-snug font-semibold text-slate-900 hover:underline print:px-2 print:pt-2 print:pb-1.5 print:text-sm"
+                  >
                     {g.title}
                   </Link>
-                  {g.number && (
-                    <p className="text-sm font-semibold text-emerald-800 print:text-xs" data-testid="glance-number">
-                      {g.number}
+                  <div className="flex flex-1 flex-col gap-1.5 px-4 pt-3 pb-3.5 sm:pt-0 print:px-2 print:pb-2">
+                    {g.number && (
+                      <p
+                        className="font-words text-[0.9375rem] leading-snug text-slate-900 print:text-xs"
+                        data-testid="glance-number"
+                      >
+                        {g.number}
+                      </p>
+                    )}
+                    <p className="text-sm text-slate-600 print:text-xs">
+                      Answers: {g.answers.join(" · ")}
                     </p>
-                  )}
-                  <p className="text-sm text-slate-600 print:text-xs">
-                    Answers: {g.answers.join(" · ")}
-                  </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -236,11 +246,11 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                   <li key={t.id}>
                     <Link
                       href={t.href}
-                      className="font-semibold text-slate-900 hover:underline print:no-underline"
+                      className="font-words text-slate-900 hover:underline print:no-underline"
                     >
                       {t.question}
                     </Link>
-                    <p className="mt-0.5 text-slate-700">{t.answer}</p>
+                    <p className="mt-0.5 font-words text-slate-700">{t.answer}</p>
                   </li>
                 ))}
               </ul>
@@ -252,9 +262,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
               <div className="space-y-3 print:space-y-2">
                 {brief.ask.groups.map((g) => (
                   <div key={g.audience}>
-                    <p className="text-xs font-semibold text-slate-600">
-                      {g.label}
-                    </p>
+                    <p className="text-xs font-semibold text-slate-600">{g.label}</p>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-800">
                       {g.questions.map((q) => (
                         <li key={q}>{q}</li>
@@ -315,12 +323,10 @@ function Section({
 }) {
   return (
     <section
-      className="break-inside-avoid rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 print:rounded-none print:p-0 print:shadow-none print:ring-0"
+      className="break-inside-avoid panel print:rounded-none print:p-0 print:shadow-none print:ring-0"
       data-testid={testId}
     >
-      <h2 className="mb-3 text-sm print:text-xs font-bold text-ink-800 print:mb-1">
-        {title}
-      </h2>
+      <h2 className="mb-3 text-sm print:text-xs font-semibold text-ink-800 print:mb-1">{title}</h2>
       {children}
     </section>
   );
@@ -329,8 +335,8 @@ function Section({
 function QuestionRow({ q, n }: { q: BriefQuestion; n: number }) {
   return (
     <li className="break-inside-avoid">
-      <p className="font-semibold text-slate-900">
-        <span className="mr-2 text-ink-800">{n}.</span>
+      <p className="font-words text-lg leading-snug text-slate-900">
+        <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{n}.</span>
         {q.question}
       </p>
       <div className="mt-0.5 pl-6 text-sm print:text-xs">
@@ -352,9 +358,9 @@ function QuestionRow({ q, n }: { q: BriefQuestion; n: number }) {
               type="submit"
               name="storyType"
               value={q.buildType}
-              className="font-medium text-ink-800 hover:underline print:hidden"
+              className="link print:hidden"
             >
-              Build &ldquo;{getStoryType(q.buildType)?.label}&rdquo; →
+              Build &ldquo;{getStoryType(q.buildType)?.label}&rdquo;
             </button>
           </form>
         ) : null}

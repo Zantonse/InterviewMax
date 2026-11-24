@@ -1,81 +1,144 @@
-"use client";
+import { clock, countWords, spokenSeconds } from "@/lib/stories/spoken";
 
-import { useState } from "react";
+// The promise in one picture (design review 2026-11-23, fix 8): how most people answer the question
+// on the left, then the same story on the talk track the app draws, with the time each part starts
+// at, the figures underlined in the coach's pen and what the coach's questions added beside it.
 
-// The promise in one picture: a rambling answer that flips into the story InterviewMax helps build.
+// A figure in the story, underlined like the numbers in a user's own story.
+type Piece = string | { figure: string };
+
+const RAMBLE =
+  "So, my manager and I didn’t really agree on the onboarding project, and it was kind of a mess, and I pushed back a bit, and in the end it went pretty well, customers liked it…";
+
+const PARTS: { id: string; label: string; added: string; text: Piece[] }[] = [
+  {
+    id: "principle",
+    label: "Principle",
+    added: "how you think",
+    text: ["When a team is slow, I look at the handoffs before I ask for more people."],
+  },
+  {
+    id: "situation",
+    label: "Context",
+    added: "the stakes",
+    text: [
+      "Our ",
+      { figure: "40" },
+      " enterprise accounts took ",
+      { figure: "9 weeks" },
+      " to go live, two were about to churn, and my manager wanted four more onboarding hires.",
+    ],
+  },
+  {
+    id: "actions",
+    label: "Action",
+    added: "what you did",
+    text: [
+      "I asked for two weeks to try another way. I mapped every handoff, showed that ",
+      { figure: "6" },
+      " of our ",
+      { figure: "14" },
+      " setup steps did the real work, and we cut the other ",
+      { figure: "8" },
+      ".",
+    ],
+  },
+  {
+    id: "result",
+    label: "Result",
+    added: "the number",
+    text: [
+      "Go-live dropped to ",
+      { figure: "3 weeks" },
+      " with no new hires, and both accounts renewed.",
+    ],
+  },
+  {
+    id: "reflection",
+    label: "Learning",
+    added: "the lesson",
+    text: [
+      "We settled it with a map instead of opinions. Now I bring the evidence to the first conversation.",
+    ],
+  },
+];
+
+const plain = (pieces: Piece[]) =>
+  pieces.map((p) => (typeof p === "string" ? p : p.figure)).join("");
+
+// Each part's start, counted the way the story page counts it.
+function track() {
+  let words = 0;
+  const rows = PARTS.map((part) => {
+    const start = spokenSeconds(words);
+    words += countWords(plain(part.text));
+    return { ...part, start };
+  });
+  return { rows, seconds: spokenSeconds(words) };
+}
+
 export function BeforeAfter() {
-  const [after, setAfter] = useState(false);
-
+  const { rows, seconds } = track();
   return (
-    <div>
-      <div
-        role="group"
-        aria-label="Show the answer before or after InterviewMax"
-        className="inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200"
-      >
-        {[false, true].map((value) => (
-          <button
-            key={String(value)}
-            type="button"
-            aria-pressed={after === value}
-            onClick={() => setAfter(value)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
-              after === value ? "bg-ink-900 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {value ? "After" : "Before"}
-          </button>
-        ))}
-      </div>
+    <div data-testid="before-after">
+      <figure>
+        <figcaption className="flex items-baseline justify-between gap-4 text-sm text-slate-600">
+          <span>How most people answer</span>
+          <span className="font-mono text-xs tabular-nums">0:48 and counting</span>
+        </figcaption>
+        <blockquote className="mt-3 font-words text-xl leading-relaxed text-slate-600 italic">
+          &ldquo;{RAMBLE}&rdquo;
+        </blockquote>
+      </figure>
 
-      <div className="mt-3 grid [&>*]:col-start-1 [&>*]:row-start-1">
-        <figure
-          inert={after}
-          className={`rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 transition duration-300 ${
-            after ? "pointer-events-none scale-95 opacity-0" : "opacity-100"
-          }`}
-        >
-          <figcaption className="text-xs font-semibold text-slate-600">Before</figcaption>
-          <blockquote className="mt-2 text-lg text-slate-600 italic">
-            &ldquo;So, there was this onboarding project, and it was kind of a mess, and I helped
-            out a lot with fixing things, and in the end it went pretty well, customers liked
-            it&hellip;&rdquo;
-          </blockquote>
-          <button
-            type="button"
-            onClick={() => setAfter(true)}
-            className="mt-4 text-sm font-semibold text-accent-700 hover:text-accent-900"
-          >
-            Turn it into a story <span aria-hidden>→</span>
-          </button>
-        </figure>
-        <figure
-          inert={!after}
-          className={`rounded-2xl bg-ink-900 p-5 text-white shadow-lg transition duration-300 ${
-            after ? "opacity-100" : "pointer-events-none scale-95 opacity-0"
-          }`}
-        >
-          <figcaption className="text-xs font-semibold text-accent-300">After</figcaption>
-          <blockquote className="mt-2 space-y-2 text-[15px] leading-relaxed">
-            <p>
-              <span className="font-semibold">Context.</span> 40 enterprise accounts were
-              taking 9 weeks to go live, and two were threatening to churn.
-            </p>
-            <p>
-              <span className="font-semibold">Action.</span> I mapped every handoff, cut the
-              setup steps from 14 to 6 and ran weekly check-ins with each account.
-            </p>
-            <p>
-              <span className="font-semibold">Result.</span> Go-live dropped to 3 weeks and both
-              accounts renewed.
-            </p>
-            <p>
-              <span className="font-semibold">Learning.</span> Slow starts hide in handoffs, so now
-              I map them before I ask for more people.
-            </p>
-          </blockquote>
-        </figure>
-      </div>
+      <figure className="mt-10">
+        <figcaption className="flex items-baseline justify-between gap-4 text-sm text-slate-600">
+          <span>The same story, built in InterviewMax</span>
+          <span className="font-mono text-xs tabular-nums">{clock(seconds)}</span>
+        </figcaption>
+        <ol className="mt-5">
+          {rows.map((row, i) => (
+            <li
+              key={row.id}
+              className="grid grid-cols-[3.75rem_0.75rem_minmax(0,1fr)] gap-x-3 sm:grid-cols-[3.75rem_0.75rem_minmax(0,1fr)_6.5rem] sm:gap-x-4"
+            >
+              <p className="pt-1 text-right leading-tight">
+                <span className="block font-mono text-sm tabular-nums text-ink-700">
+                  {clock(row.start)}
+                </span>
+                <span className="mt-1 block text-xs text-ink-500">{row.label}</span>
+              </p>
+              <span aria-hidden="true" className="relative flex justify-center">
+                <span
+                  className={`absolute w-px bg-ink-200 ${i === 0 ? "top-3" : "top-0"} ${
+                    i === rows.length - 1 ? "h-3" : "bottom-0"
+                  }`}
+                />
+                <span className="relative mt-2 size-2.5 rounded-full border border-ink-400 bg-white" />
+              </span>
+              <p
+                className={`pb-6 font-words text-lg leading-[1.6] text-slate-900 ${
+                  row.id === "principle" ? "italic" : ""
+                }`}
+              >
+                <span className="sr-only">{row.label}: </span>
+                {row.text.map((piece, j) =>
+                  typeof piece === "string" ? (
+                    piece
+                  ) : (
+                    <span key={j} className="pen-figure">
+                      {piece.figure}
+                    </span>
+                  ),
+                )}
+              </p>
+              <p className="col-start-3 -mt-4 pb-6 text-sm text-accent-700 sm:col-start-auto sm:mt-0 sm:pt-1.5">
+                + {row.added}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </figure>
     </div>
   );
 }

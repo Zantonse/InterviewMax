@@ -50,7 +50,7 @@ export function ExampleLadder({
               }`}
               data-testid={`example-level-${l}`}
             >
-              <span className="font-bold">Level {l}</span>
+              <span className="font-semibold">Level {l}</span>
               <span className={`hidden max-w-full truncate sm:block ${on ? "text-ink-50" : "text-slate-600"}`}>
                 {LEVEL_NAMES[l]}
               </span>
@@ -58,7 +58,7 @@ export function ExampleLadder({
           );
         })}
       </div>
-      <p className="rounded-2xl bg-white p-4 text-[0.95rem] leading-relaxed text-slate-800 ring-1 ring-slate-200">
+      <p className="rounded-2xl bg-white p-4 font-words text-lg leading-relaxed text-slate-800 ring-1 ring-ink-100">
         {sentences.map((s, i) => (
           <Sentence key={`${level}-${i}`} sentence={s} />
         ))}
@@ -71,10 +71,10 @@ export function ExampleLadder({
         <button
           type="button"
           onClick={() => setLevel((level + 1) as StoryLevel)}
-          className="self-start text-sm font-semibold text-ink-800 hover:underline"
+          className="self-start text-sm link"
           data-testid="example-next"
         >
-          See it at Level {level + 1} →
+          See it at Level {level + 1}
         </button>
       )}
     </div>
@@ -89,7 +89,7 @@ function Sentence({ sentence }: { sentence: ExampleSentence }) {
         className="animate-enter rounded bg-accent-100 px-0.5 text-slate-900 [box-decoration-break:clone]"
         data-adds={sentence.adds}
       >
-        <span className="mr-1 inline-block rounded-full bg-accent-400 px-1.5 text-xs font-bold text-ink-950 align-[0.1em]">
+        <span className="mr-1 inline-block rounded-full bg-accent-400 px-1.5 text-xs font-semibold text-ink-950 align-[0.1em]">
           + {sentence.adds}
         </span>
         {sentence.text}

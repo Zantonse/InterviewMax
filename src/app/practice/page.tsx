@@ -20,8 +20,8 @@ export default function PracticePage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <main className="page page-read">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Practice out loud
         </h1>
         <p className="mt-2 text-slate-600">
@@ -54,7 +54,7 @@ async function Content() {
   return (
     <>
       {!job ? (
-        <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+        <section className="mt-6 panel">
           <p className="text-slate-700">
             Practice asks a job&apos;s likely questions, so it starts with a job you&apos;re going
             for.
@@ -65,10 +65,10 @@ async function Content() {
         </section>
       ) : (
         <section
-          className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+          className="mt-6 panel"
           data-testid="practice-hub-start"
         >
-          <h2 className="text-lg font-bold text-slate-900">{folderLabel(job)}</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{folderLabel(job)}</h2>
           <p className="mt-1 text-sm text-slate-600">
             {days !== null && days >= 0
               ? `Interview ${whenLabel(days)}. `
@@ -95,9 +95,9 @@ async function Content() {
             {job.likelyQuestions && (
               <Link
                 href={`/jobs/${job.id}/practice`}
-                className="self-center text-sm font-semibold text-ink-800 hover:underline"
+                className="self-center text-sm link"
               >
-                See the questions first →
+                See the questions first
               </Link>
             )}
           </div>
@@ -123,9 +123,9 @@ async function Content() {
 
       <section
         id="past-rounds"
-        className="mt-4 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+        className="mt-4 scroll-mt-20 panel"
       >
-        <h2 className="text-lg font-bold text-slate-900">Past rounds</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Past rounds</h2>
         {sessions.length === 0 ? (
           <p className="mt-2 text-sm text-slate-600">
             No rounds yet. Your first one shows up here with its feedback.

@@ -103,7 +103,7 @@ export function ResumePanel({
         <div className={`flex flex-col gap-5 ${building ? "opacity-60" : ""}`}>
           {set.summary ? (
             <div className="rounded-2xl bg-ink-50 px-4 py-3 ring-1 ring-ink-800/15">
-              <h3 className="text-xs font-bold text-ink-800">Summary</h3>
+              <h3 className="text-xs font-semibold text-ink-800">Summary</h3>
               <p className="mt-1 text-slate-900" data-testid="resume-summary">
                 {set.summary}
               </p>
@@ -168,7 +168,7 @@ export function ResumePanel({
           ))}
 
           {unpicked.length > 0 && (
-            <details className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+            <details className="rounded-2xl bg-ink-50 px-4 py-3">
               <summary className="cursor-pointer text-sm font-semibold text-slate-700">
                 Left out for this job ({unpicked.length})
               </summary>
@@ -258,7 +258,7 @@ function BulletRow({
   const fit = FITS.find((f) => f.id === b.fit);
   return (
     <li
-      className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5"
+      className="rounded-2xl bg-ink-50 px-4 py-3"
       data-testid="resume-bullet"
     >
       <p className="font-medium text-slate-900">• {b.text}</p>

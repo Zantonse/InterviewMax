@@ -45,8 +45,8 @@ export function StepDots({ label, steps }: { label: string; steps: GuideStep[] }
         {steps.filter((s) => s.done).length} of {steps.length} steps
       </span>
       {next && (
-        <a href={next.href} className="font-semibold text-ink-800 hover:underline">
-          Next: {next.label} →
+        <a href={next.href} className="link">
+          Next: {next.label}
         </a>
       )}
     </nav>

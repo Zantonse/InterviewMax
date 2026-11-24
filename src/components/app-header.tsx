@@ -21,8 +21,8 @@ import { switchMode } from "@/app/promotion/actions";
 type NavItem = { href: string; label: string; icon: NavIconName; exact?: boolean };
 
 const TOP: readonly NavItem[] = [
-  { href: "/", label: "Your prep", icon: "home", exact: true },
-  { href: "/profile", label: "Your profile", icon: "user" },
+  { href: "/", label: "Prep", icon: "home", exact: true },
+  { href: "/profile", label: "Profile", icon: "user" },
 ];
 
 // Grouped by what you do (design review 2026-11-16, fix 6): Stories holds what you write, Practice
@@ -39,10 +39,10 @@ const LIBRARY: readonly NavItem[] = [
 
 // PromotionMax (beta): the same stories, aimed at the next level instead of a new job.
 const PROMOTION_NAV: readonly NavItem[] = [
-  { href: "/promotion", label: "Your promotion", icon: "stairs", exact: true },
+  { href: "/promotion", label: "Promotion", icon: "stairs", exact: true },
   { href: "/promotion/packet", label: "Promotion packet", icon: "doc" },
   { href: "/questions", label: "Question library", icon: "book" },
-  { href: "/numbers", label: "Your numbers", icon: "chart" },
+  { href: "/numbers", label: "Numbers", icon: "chart" },
 ];
 
 const RECENT_STORIES = 6;
@@ -61,7 +61,7 @@ export function AppHeader() {
         <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-4 nav-collapsed:px-0 nav-collapsed:justify-center">
           <Link
             href="/"
-            className="text-lg font-extrabold tracking-tight text-white"
+            className="text-lg font-semibold tracking-tight text-white"
             aria-label="InterviewMax home"
           >
             <span className="nav-collapsed:hidden">
@@ -175,7 +175,7 @@ function StoriesGroup({ numbers = false }: { numbers?: boolean }) {
             </NavLink>
           </li>
           <li>
-            <NavLink href="/numbers" label="Your numbers" compact>
+            <NavLink href="/numbers" label="Numbers" compact>
               <NavIcon name="chart" />
             </NavLink>
           </li>
@@ -232,7 +232,7 @@ async function ModeSwitch() {
         data-testid="mode-promotion"
       >
         Promotion
-        <span className="rounded-full bg-accent-400/90 px-1.5 text-xs font-bold text-ink-950">
+        <span className="rounded-full px-1.5 text-xs font-medium text-ink-300 ring-1 ring-white/25">
           Beta
         </span>
       </button>
@@ -303,13 +303,13 @@ async function RecentStories() {
     <>
       {shown.map((story) => (
         <li key={story.id} className="nav-collapsed:hidden" data-testid="nav-story">
-          <NavLink href={storyHref(story)} label={story.title || "Untitled story"} compact />
+          <NavLink href={storyHref(story)} label={story.title || "Untitled story"} compact wrap />
         </li>
       ))}
       {stories.length > shown.length && (
         <li className="nav-collapsed:hidden">
           <Link href="/" className="block px-3 py-1.5 text-sm text-ink-300 hover:text-white">
-            All {stories.length} stories →
+            All {stories.length} stories
           </Link>
         </li>
       )}

@@ -25,8 +25,8 @@ export default function AdminAnalyticsPage({ searchParams }: PageProps<"/admin/a
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Admin</h1>
+      <main className="page">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Admin</h1>
         <AdminTabs current="analytics" />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <AnalyticsContent searchParams={searchParams} />

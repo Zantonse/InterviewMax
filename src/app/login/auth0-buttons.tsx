@@ -75,7 +75,7 @@ export function Auth0Buttons() {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-accent-400 px-4 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+          className="rounded-xl bg-ink-900 px-4 py-3 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
         >
           {opening === "email" ? "Sending your code…" : "Email me a sign-in code"}
         </button>
@@ -138,7 +138,7 @@ function LastUsedDot() {
 
 function LastUsed() {
   return (
-    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-900">
+    <span className="rounded-full bg-ink-50 px-2 py-0.5 text-xs font-medium text-ink-700 ring-1 ring-ink-100">
       Last used
     </span>
   );

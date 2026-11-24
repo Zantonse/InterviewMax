@@ -108,7 +108,7 @@ export async function readPostingScreenshots(files: File[]): Promise<FetchedPost
   const found = parsePostingScreenshot(result.text);
   if (!found || found.description.length < MIN_DESCRIPTION_LENGTH) {
     throw new Error(
-      "I couldn't read a job posting in that screenshot. Make sure the posting's text is on screen and try again, or paste it below.",
+      "No job posting could be read in that screenshot. Make sure the posting's text is on screen and try again, or paste it below.",
     );
   }
   return found;

@@ -270,7 +270,7 @@ export function AddJobForm({
                   maxLength={MAX_DESCRIPTION_LENGTH}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Paste everything: the responsibilities and requirements are what I read."
+                  placeholder="Paste everything. The responsibilities and requirements matter most."
                   className={INPUT}
                 />
               </label>
@@ -310,7 +310,7 @@ export function AddJobForm({
                 maxLength={MAX_TITLE_LENGTH}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="I'll take it from the posting"
+                placeholder="Taken from the posting"
                 className={INPUT}
               />
             </label>
@@ -421,7 +421,7 @@ export function AddJobForm({
           </div>
           {!roleOf && (
             <p className="text-xs text-slate-600">
-              With a date, I&apos;ll plan your prep day by day. You can add or change it later.
+              With a date, prep is planned day by day. You can add or change it later.
             </p>
           )}
           {state?.error && <ErrorLine>{state.error}</ErrorLine>}
@@ -537,9 +537,8 @@ export function PredictForm({
         </summary>
         <label className="mt-2 block text-sm text-slate-600" htmlFor={id}>
           Paste what people say they were asked at this company or for this role, from Glassdoor,
-          Blind, Reddit or a friend, or notes from someone who knows the team or interviewer. I&apos;ll
-          put the questions they say were asked on the list, and use the rest to shape it. Guesses
-          stay guesses.
+          Blind, Reddit or a friend, or notes from someone who knows the team or interviewer. Questions
+          they say were asked go on the list, and the rest shapes it. Guesses stay guesses.
           <textarea
             onKeyDown={submitOnSendKey}
             id={id}

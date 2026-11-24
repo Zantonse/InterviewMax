@@ -21,9 +21,9 @@ export function GuidelineSection({ guideline }: { guideline: Guideline }) {
   const [editing, setEditing] = useState(false);
   if (editing) return <GuidelineEditor guideline={guideline} onDone={() => setEditing(false)} />;
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+    <section className="panel">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-lg font-bold text-slate-900">{guideline.title}</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{guideline.title}</h2>
         <button type="button" onClick={() => setEditing(true)} className={SECONDARY}>
           Edit
         </button>

@@ -7,7 +7,7 @@ export function SkillsMap({ map }: { map: SkillStatus[] }) {
   return (
     <section aria-labelledby="skills-heading" data-testid="skills-map">
       <p id="skills-heading" className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-3xl font-extrabold text-slate-900" data-testid="skills-learned">
+        <span className="text-3xl font-semibold text-slate-900" data-testid="skills-learned">
           {learned} of {map.length}
         </span>
         <span className="text-slate-600">story skills learned</span>

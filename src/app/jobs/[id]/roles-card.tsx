@@ -13,11 +13,11 @@ export function RolesCard({ job }: { job: TargetJob }) {
   return (
     <section
       id="roles"
-      className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      className="scroll-mt-20 panel"
       data-testid="job-roles"
     >
-      <h2 className="mb-2 text-sm font-bold text-ink-800">
-        Your roles at {company}
+      <h2 className="mb-2 text-sm font-semibold text-ink-800">
+        Roles at {company}
       </h2>
       <p className="mb-4 text-sm text-slate-600">
         One interview process, one prep. Your questions and stories aim at the main role, so
@@ -36,7 +36,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
         {job.otherRoles.map((r) => (
           <li
             key={r.id}
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-ink-50 px-4 py-3"
           >
             <span className="font-semibold text-slate-900">{r.title}</span>
             {levelLabel(r.level) && (
@@ -68,7 +68,7 @@ export function RolesCard({ job }: { job: TargetJob }) {
         ))}
       </ul>
 
-      <h3 className="mt-6 text-sm font-bold text-slate-900">How the roles differ</h3>
+      <h3 className="mt-6 text-sm font-semibold text-slate-900">How the roles differ</h3>
       <div className="mt-2 space-y-4">
         {job.otherRoles.map((r) => {
           const diff = roleDifference(r.description, job.description);

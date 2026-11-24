@@ -21,7 +21,7 @@ import { clearLadder } from "./actions";
 import { BetaBadge } from "./beta-badge";
 import { LadderForm, LevelsForm, RedactionsForm } from "./forms";
 
-export const metadata: Metadata = { title: "Your promotion · PromotionMax" };
+export const metadata: Metadata = { title: "Promotion · PromotionMax" };
 
 // Reading a pasted ladder is a model call.
 export const maxDuration = 120;
@@ -30,7 +30,7 @@ export default function PromotionPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="page page-read">
         <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <PromotionHome />
         </Suspense>
@@ -60,8 +60,8 @@ async function PromotionHome() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-          Your promotion
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Promotion
         </h1>
         <BetaBadge />
       </div>
@@ -131,7 +131,7 @@ async function PromotionHome() {
         )}
       </Section>
 
-      <Section title="3 · Your promotion packet">
+      <Section title="3 · Promotion packet">
         <p className="text-sm text-slate-600">
           A self-review draft, a short summary for your manager and talking points, written only
           from your stories. Every figure is checked against the story it came from.
@@ -141,11 +141,11 @@ async function PromotionHome() {
           className="mt-3 inline-block rounded-xl bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900"
           data-testid="packet-link"
         >
-          {plan.packet ? "Open your packet →" : "Build your packet →"}
+          {plan.packet ? "Open your packet" : "Build your packet"}
         </Link>
       </Section>
 
-      <Section title="Your career ladder (optional)">
+      <Section title="Career ladder (optional)">
         <p className="text-sm text-slate-600">
           Paste the expectations for your level and the next. Its dimensions replace the generic
           ones above, each with the ladder&apos;s own words for what{" "}
@@ -239,7 +239,7 @@ function Section({
   return (
     <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
         {aside}
       </div>
       <div className="mt-2">{children}</div>

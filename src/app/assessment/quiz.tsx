@@ -62,7 +62,7 @@ export function Quiz({
       data-testid="assessment-quiz"
     >
       <div className="flex items-center justify-between gap-4">
-        <p className="flex items-center gap-2 text-xs font-bold text-ink-700">
+        <p className="flex items-center gap-2 text-xs font-semibold text-ink-700">
           {step + 1} of {QUESTIONS.length}
           <span className="flex gap-1" aria-hidden>
             {QUESTIONS.map((q, i) => (
@@ -88,7 +88,7 @@ export function Quiz({
       </div>
 
       <fieldset className="mt-4" disabled={saving}>
-        <legend className="text-xl font-bold text-slate-900">{question.question}</legend>
+        <legend className="text-xl font-semibold text-slate-900">{question.question}</legend>
         <div className="mt-5 grid gap-2">
           {question.options.map((option) => (
             <button

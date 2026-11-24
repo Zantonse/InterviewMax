@@ -12,6 +12,8 @@ import {
   SHAPE_INTRO_DAYS,
   todayIn,
   planHeading,
+  interviewHeadline,
+  dateLabel,
   whenLabel,
 } from "./plan";
 
@@ -300,5 +302,18 @@ describe("jobsToShapeIntroFor", () => {
       TODAY,
     );
     expect(order.map((o) => o.days)).toEqual([0, 7]);
+  });
+});
+
+describe("home headline", () => {
+  it("says which interview and when", () => {
+    expect(interviewHeadline("Northwind Health", 6)).toBe("Northwind Health interview in 6 days");
+    expect(interviewHeadline("Okta", 1)).toBe("Okta interview tomorrow");
+    expect(interviewHeadline("Okta", 0)).toBe("Okta interview today");
+  });
+
+  it("writes dates the way people say them", () => {
+    expect(dateLabel("2026-11-23")).toBe("Monday, November 23");
+    expect(dateLabel("2026-11-29", "short")).toBe("Sunday, Nov 29");
   });
 });

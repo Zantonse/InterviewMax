@@ -16,12 +16,12 @@ export function PolicyPage({
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-ink-950/20 bg-ink-900 px-4 py-3 sm:px-6">
-        <Link href="/" className="text-lg font-extrabold tracking-tight text-white">
+        <Link href="/" className="text-lg font-semibold tracking-tight text-white">
           Interview<span className="text-accent-400">Max</span>
         </Link>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{title}</h1>
         {dated && <p className="mt-2 text-sm text-slate-600">Last updated {POLICY_UPDATED}</p>}
         <div className="policy mt-8 space-y-8 text-slate-700">{children}</div>
         <nav className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-200 pt-6 text-sm">
@@ -43,7 +43,7 @@ export function PolicyPage({
 export function PolicySection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+      <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
       <div className="mt-3 space-y-3 leading-relaxed">{children}</div>
     </section>
   );

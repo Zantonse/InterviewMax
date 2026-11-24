@@ -32,7 +32,7 @@ export default function AdminUserPage({ params }: PageProps<"/admin/users/[id]">
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page">
         <Link href="/admin" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to admin
         </Link>
@@ -66,7 +66,7 @@ async function UserContent({ params }: { params: PageProps<"/admin/users/[id]">[
 
   return (
     <>
-      <h1 className="mt-3 break-words text-3xl font-extrabold tracking-tight text-slate-900">
+      <h1 className="mt-3 break-words text-3xl font-semibold tracking-tight text-slate-900">
         {user.email || "(no email)"}
       </h1>
       <p className="mt-2 text-slate-600">

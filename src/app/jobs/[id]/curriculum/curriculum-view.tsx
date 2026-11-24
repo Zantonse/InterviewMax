@@ -59,7 +59,7 @@ export function CurriculumView({
 
   if (!hasPosting) {
     return (
-      <p className="mt-6 rounded-3xl bg-amber-50 p-6 text-slate-700 ring-1 ring-black/5">
+      <p className="mt-6 rounded-3xl bg-amber-50 p-6 text-slate-700">
         This job has no posting text yet. Add the posting to the job and come back: the curriculum
         is built from it.
       </p>
@@ -68,7 +68,7 @@ export function CurriculumView({
 
   if (!curriculum) {
     return (
-      <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+      <section className="mt-6 panel">
         <p className="text-slate-700">
           We&apos;ll read the posting and list the topics to know, the ones it stresses first.
           Anything the posting doesn&apos;t name is marked as usual for the role.
@@ -99,15 +99,15 @@ export function CurriculumView({
       data-testid="curriculum"
     >
       {curriculum.summary && (
-        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <h2 className="mb-2 text-sm font-bold text-ink-800">
+        <section className="panel">
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">
             The job in short
           </h2>
           <p className="text-slate-700">{curriculum.summary}</p>
         </section>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-black/5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-ink-100 py-3">
         <p className="min-w-0 flex-1 text-sm text-slate-600" data-testid="curriculum-progress">
           <span className="font-semibold text-slate-900">
             {known} of {curriculum.topics.length} known.
@@ -135,14 +135,14 @@ export function CurriculumView({
       {error && <p className="text-sm text-red-700">{error}</p>}
 
       {areas.length === 0 && (
-        <p className="rounded-3xl bg-white p-6 text-slate-700 shadow-sm ring-1 ring-black/5">
+        <p className="panel text-slate-700">
           Every topic is marked as known.
         </p>
       )}
 
       {areas.map((area) => (
         <section key={area.id}>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900">
             {area.label} <span className="text-sm font-normal text-slate-600">· {area.hint}</span>
           </h2>
           <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -165,7 +165,7 @@ function TopicCard({
 }) {
   return (
     <li
-      className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
+      className="flex flex-col gap-3 rounded-3xl bg-white p-5 ring-1 ring-ink-100"
       data-testid="curriculum-topic"
     >
       <div>
