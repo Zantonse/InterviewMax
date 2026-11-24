@@ -27,7 +27,7 @@ export function StoryPlan({
         return (
           <li
             key={type.id}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5"
+            className="flex items-center justify-between gap-3 rounded-2xl bg-ink-50 px-4 py-3"
           >
             <span className="min-w-0">
               <span className="block font-semibold text-slate-900">

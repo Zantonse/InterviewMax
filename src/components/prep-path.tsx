@@ -82,7 +82,7 @@ export async function PrepPath() {
         <Link
           href={step ? step.href : `/jobs/${job.id}/brief`}
           aria-current="step"
-          className="w-full shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-center text-sm font-semibold text-ink-950 transition hover:bg-accent-300 sm:w-auto"
+          className="w-full shrink-0 rounded-xl bg-ink-900 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-ink-950 sm:w-auto"
         >
           {step ? "Continue" : "Open your brief"}
         </Link>
@@ -170,7 +170,7 @@ function FirstJob() {
       className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8"
       data-testid="first-job"
     >
-      <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
         Start with a job you&apos;re going for
       </h2>
       <p className="mt-2 max-w-2xl text-slate-600">

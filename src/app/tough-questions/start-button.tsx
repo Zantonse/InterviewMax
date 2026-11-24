@@ -23,11 +23,11 @@ export function StartToughButton({
       name="question"
       value={id}
       disabled={pending}
-      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:translate-y-0 disabled:opacity-70"
+      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left ring-1 ring-ink-100 transition hover:-translate-y-0.5 hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:translate-y-0 disabled:opacity-70"
       data-testid={`tough-${id}`}
     >
       <span className="flex items-start justify-between gap-3">
-        <span className="font-bold text-slate-900 group-hover:text-ink-900">{label}</span>
+        <span className="font-semibold text-slate-900 group-hover:text-ink-900">{label}</span>
         {status !== "new" && (
           <span
             className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${

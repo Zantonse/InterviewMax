@@ -26,7 +26,7 @@ export function StartPracticeForm({
         className={
           secondary
             ? "rounded-xl px-4 py-2.5 font-semibold text-ink-800 ring-1 ring-ink-800/20 transition hover:bg-ink-50 disabled:opacity-60"
-            : "rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+            : "rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
         }
         data-testid={mode === "screen" ? "start-screen" : "start-practice"}
       >

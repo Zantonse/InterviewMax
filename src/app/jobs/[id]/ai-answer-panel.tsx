@@ -64,7 +64,7 @@ export function AiAnswerPanel({
       {!forJob ? (
         <>
           {general && (
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-black/5">
+            <div className="rounded-2xl bg-ink-50 p-4">
               <p className="text-xs font-semibold text-slate-600">
                 Your general answer
               </p>
@@ -118,7 +118,7 @@ export function AiAnswerPanel({
           className={
             forJob
               ? "rounded-xl px-4 py-2 text-sm font-semibold text-ink-800 ring-1 ring-ink-800/20 hover:bg-ink-50 disabled:opacity-60"
-              : "rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+              : "rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
           }
           data-testid="write-ai-answer"
         >

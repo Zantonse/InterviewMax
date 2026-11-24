@@ -193,7 +193,7 @@ export function LevelCard({
               <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
                 <span
                   aria-hidden="true"
-                  className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-bold"
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-semibold"
                 >
                   ↗
                 </span>
@@ -231,7 +231,7 @@ function MoveOn({
 }) {
   return (
     <div className="mt-4" data-testid="level-move-on">
-      <p className="font-bold text-slate-900">This story is ready to use.</p>
+      <p className="font-semibold text-slate-900">This story is ready to use.</p>
       <p className="mt-1 text-sm text-slate-700">
         You&apos;ve answered what I had to ask, and I won&apos;t ask it again. Level 2 holds up in an
         interview. Your next story will help you more than another pass on this one.
@@ -239,7 +239,7 @@ function MoveOn({
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link
           href="/stories/new"
-          className="rounded-xl bg-accent-400 px-4 py-2 text-sm font-semibold text-ink-950 hover:bg-accent-300"
+          className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-950"
         >
           Build your next story
         </Link>
@@ -313,12 +313,12 @@ export function Staircase({
             }`}
           >
             {current && (
-              <span className="animate-pop absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-400 px-2.5 py-1 text-xs font-bold text-ink-950 shadow-sm after:absolute after:left-1/2 after:top-full after:-ml-1 after:border-4 after:border-transparent after:border-t-accent-400">
+              <span className="animate-pop absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-400 px-2.5 py-1 text-xs font-semibold text-ink-950 shadow-sm after:absolute after:left-1/2 after:top-full after:-ml-1 after:border-4 after:border-transparent after:border-t-accent-400">
                 Your story
               </span>
             )}
             <span
-              className={`text-xs font-bold ${done ? "text-white/70" : "text-slate-500"}`}
+              className={`text-xs font-semibold ${done ? "text-white/70" : "text-slate-500"}`}
             >
               Level {l.level}
             </span>
@@ -354,7 +354,7 @@ function Info({
       <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-ink-800 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden="true"
-          className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-bold"
+          className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-xs font-semibold"
         >
           i
         </span>
@@ -389,7 +389,7 @@ function LevelUpResult({
       role="status"
     >
       <div className="flex items-start justify-between gap-3">
-        <p className={`font-bold ${climbed ? "text-emerald-900" : "text-amber-900"}`}>
+        <p className={`font-semibold ${climbed ? "text-emerald-900" : "text-amber-900"}`}>
           {climbed
             ? `You reached Level ${reached}: ${info.name}`
             : reached >= 2
@@ -448,7 +448,7 @@ function BeforeAfter({
   return (
     <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-black/5" data-testid="before-after">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold text-slate-600">
+        <p className="text-xs font-semibold text-slate-600">
           What changed, Level {from} to {reached}
         </p>
         <p className="flex gap-2 text-xs text-slate-600" aria-hidden="true">
@@ -462,7 +462,7 @@ function BeforeAfter({
         <div className="mt-2 flex flex-col gap-3 text-sm leading-relaxed" data-stagger>
           {changed.map(({ part, pieces }) => (
             <div key={part.id}>
-              <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200">
+              <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
                 {part.label}
               </span>
               <p className="text-slate-700">
@@ -523,7 +523,7 @@ function PrimaryButton({
       aria-busy={busy}
       className={`rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
         accent
-          ? "bg-accent-400 text-ink-950 hover:bg-accent-300"
+          ? "bg-ink-900 text-white hover:bg-ink-950"
           : "bg-ink-800 text-white hover:bg-ink-900"
       }`}
     >
@@ -625,7 +625,7 @@ function SpotGate({
     <>
       {header(false)}
       <div className="mt-4 rounded-2xl bg-ink-50 p-4 ring-1 ring-ink-800/10" data-testid="spot-it">
-        <p className="text-sm font-bold text-ink-900">
+        <p className="text-sm font-semibold text-ink-900">
           {missed
             ? "Not quite. Try once more."
             : `Before I show you: what's missing for Level ${target}?`}

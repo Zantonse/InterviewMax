@@ -56,7 +56,7 @@ export function TellingPanel({
       aria-label="How to tell it"
       data-testid="how-to-tell-it"
     >
-      <p className="text-sm font-bold text-ink-800">How to tell it</p>
+      <p className="text-sm font-semibold text-ink-800">How to tell it</p>
       {current ? (
         <Coached
           telling={telling}
@@ -138,7 +138,7 @@ function Coached({
       <Checks draft={telling.draftChecks} told={toldChecks} />
 
       <div>
-        <h3 className="font-bold text-slate-900">1. Pick your opening line</h3>
+        <h3 className="font-semibold text-slate-900">1. Pick your opening line</h3>
         <p className="mt-1 text-sm text-slate-600">
           Lead with the result or the stakes, so they know why to listen.
         </p>
@@ -160,7 +160,7 @@ function Coached({
                 }`}
                 data-testid={`hook-${i}`}
               >
-                <span className="mr-2 text-xs font-bold text-ink-700">
+                <span className="mr-2 text-xs font-semibold text-ink-700">
                   {picked ? "✓ Your opener" : `Option ${i + 1}`}
                 </span>
                 <span className="block font-medium">{h}</span>
@@ -172,7 +172,7 @@ function Coached({
 
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-bold text-slate-900">2. Say it out loud</h3>
+          <h3 className="font-semibold text-slate-900">2. Say it out loud</h3>
           <div
             role="tablist"
             aria-label="Length"
@@ -272,14 +272,14 @@ function Line({
 }) {
   return (
     <li className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
+      <span className="flex items-center gap-2 text-xs font-semibold text-slate-600">
         {pause && <PauseMark />}
         {label}
       </span>
       <p className="text-lg leading-relaxed text-slate-800">
         {withEmphasis(text, emphasize).map((piece, i) =>
           piece.emphasis ? (
-            <strong key={i} className="font-bold text-slate-950">
+            <strong key={i} className="font-semibold text-slate-950">
               {piece.text}
             </strong>
           ) : (
@@ -300,7 +300,7 @@ function PauseMark() {
   return (
     <span
       aria-label="pause"
-      className="inline-flex items-center rounded-md bg-ink-100 px-1.5 py-0.5 text-xs font-bold text-ink-800"
+      className="inline-flex items-center rounded-md bg-ink-100 px-1.5 py-0.5 text-xs font-semibold text-ink-800"
       data-testid="pause-mark"
     >
       ‖
@@ -312,7 +312,7 @@ function PauseMark() {
 function Checks({ draft, told }: { draft: TellingCheck[]; told: TellingCheck[] }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-4" data-testid="telling-checks">
-      <h3 className="text-sm font-bold text-slate-900">Written to be read vs. told out loud</h3>
+      <h3 className="text-sm font-semibold text-slate-900">Written to be read vs. told out loud</h3>
       <ul className="mt-2 flex flex-col gap-2 text-sm">
         {told.map((t) => {
           const before = draft.find((d) => d.id === t.id);
@@ -356,7 +356,7 @@ function Detail({
   if ("quote" in detail) {
     return (
       <div className="rounded-2xl bg-ink-50 p-4" data-testid="vivid-detail">
-        <h3 className="text-sm font-bold text-slate-900">The detail that makes it stick</h3>
+        <h3 className="text-sm font-semibold text-slate-900">The detail that makes it stick</h3>
         <p className="mt-1 text-slate-800">&ldquo;{detail.quote}&rdquo;</p>
         <p className="mt-1 text-sm text-slate-600">From your answers. Slow down when you get here.</p>
       </div>
@@ -364,7 +364,7 @@ function Detail({
   }
   return (
     <div className="rounded-2xl bg-amber-50 p-4" data-testid="vivid-detail">
-      <h3 className="text-sm font-bold text-amber-950">One vivid detail would make this stick</h3>
+      <h3 className="text-sm font-semibold text-amber-950">One vivid detail would make this stick</h3>
       <p className="mt-1 text-amber-950">{detail.ask}</p>
       <p className="mb-3 mt-1 text-sm text-amber-900">
         I won&apos;t make one up. Tell me and I&apos;ll work it in.

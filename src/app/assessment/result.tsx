@@ -8,7 +8,7 @@ import { type Answers, gradeJourney } from "@/lib/assessment/journey";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
 
 const PRIMARY =
-  "inline-block rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60";
+  "inline-block rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60";
 
 // The journey grade, the biggest gaps, and the one step to take next, with that step right here so
 // it's one tap (or, for a job, one paste) away.
@@ -28,9 +28,9 @@ export function JourneyResult({
   return (
     <div className="mt-6 grid grid-cols-1 items-start gap-4 md:grid-cols-5" data-testid="journey-result">
       <section className="rounded-3xl bg-ink-800 p-6 text-white shadow-sm md:col-span-2">
-        <h2 className="text-sm font-bold opacity-80">Journey grade</h2>
+        <h2 className="text-sm font-semibold opacity-80">Journey grade</h2>
         <p className="mt-3 flex items-baseline gap-2">
-          <span className="text-5xl font-extrabold" data-testid="journey-score">
+          <span className="text-5xl font-semibold" data-testid="journey-score">
             {grade.score}
           </span>
           <span className="text-ink-100">/ 100</span>
@@ -42,7 +42,7 @@ export function JourneyResult({
             <ol className="mt-2 space-y-2">
               {grade.gaps.map((gap, i) => (
                 <li key={gap.id} className="flex gap-3">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-bold">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-semibold">
                     {i + 1}
                   </span>
                   <span>
@@ -74,7 +74,7 @@ export function JourneyResult({
 
       {/* On phones the step to take comes first; the grade follows. */}
       <section className="order-first rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8 md:order-none md:col-span-3">
-        <p className="text-xs font-bold text-ink-700">Start here</p>
+        <p className="text-xs font-semibold text-ink-700">Start here</p>
         {grade.urgent && (
           <p className="mt-1 text-sm text-slate-600">
             Your next interview is days away, so this starts with what can be ready in time.
@@ -144,7 +144,7 @@ function NextStep({ id, questionsJobId }: { id: string; questionsJobId?: string 
 
 function Heading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{children}</h2>
+    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{children}</h2>
   );
 }
 

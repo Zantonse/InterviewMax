@@ -25,7 +25,7 @@ export default function QuestionsPage() {
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Question library
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">

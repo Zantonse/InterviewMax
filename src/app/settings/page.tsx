@@ -26,7 +26,7 @@ export default function SettingsPage() {
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Settings
         </h1>
 
@@ -35,7 +35,7 @@ export default function SettingsPage() {
           className="mt-8 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
           aria-labelledby="field-heading"
         >
-          <h2 id="field-heading" className="text-xl font-bold text-slate-900">
+          <h2 id="field-heading" className="text-xl font-semibold text-slate-900">
             Your field
           </h2>
           <p className="mt-2 text-slate-600">
@@ -52,7 +52,7 @@ export default function SettingsPage() {
           className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
           aria-labelledby="coaching-style-heading"
         >
-          <h2 id="coaching-style-heading" className="text-xl font-bold text-slate-900">
+          <h2 id="coaching-style-heading" className="text-xl font-semibold text-slate-900">
             Coaching style
           </h2>
           <p className="mt-2 text-slate-600">
@@ -69,7 +69,7 @@ export default function SettingsPage() {
           className="mt-6 scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
           aria-labelledby="exec-mode-heading"
         >
-          <h2 id="exec-mode-heading" className="text-xl font-bold text-slate-900">
+          <h2 id="exec-mode-heading" className="text-xl font-semibold text-slate-900">
             Exec mode
           </h2>
           <p className="mt-2 text-slate-600">
@@ -82,7 +82,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-xl font-bold text-slate-900">Your data</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Your data</h2>
           <p className="mt-2 text-slate-600">
             What you add stays private to you. Parts of it go to AI models to build and grade your
             stories, only through providers that don&apos;t train on it. Nothing is sold or used
@@ -95,7 +95,7 @@ export default function SettingsPage() {
           className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-red-200"
           aria-labelledby="delete-heading"
         >
-          <h2 id="delete-heading" className="text-xl font-bold text-slate-900">
+          <h2 id="delete-heading" className="text-xl font-semibold text-slate-900">
             Delete your account
           </h2>
           <Suspense fallback={<p className="mt-2 h-12 animate-pulse rounded-xl bg-slate-100" />}>

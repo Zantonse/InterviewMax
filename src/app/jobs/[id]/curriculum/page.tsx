@@ -42,7 +42,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/curriculum">[
         ← {job.title}
       </Link>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Curriculum
         </h1>
         <BetaBadge />

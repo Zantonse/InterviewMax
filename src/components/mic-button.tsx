@@ -349,7 +349,7 @@ export function MicButton({
           onClick={start}
           disabled={disabled || phase !== "idle"}
           title="Talk instead of typing. An AI model writes down what you say; the recording isn't kept."
-          className="inline-flex items-center gap-1.5 rounded-xl bg-accent-100 px-3 py-2 font-semibold text-accent-900 ring-1 ring-accent-300 hover:bg-accent-200 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 font-semibold text-ink-800 ring-1 ring-ink-800/30 hover:bg-ink-50 disabled:opacity-50"
         >
           <MicIcon />
           <span key={phase} className="animate-swap">

@@ -31,7 +31,7 @@ export function PageGuide({ id, steps }: { id: string; steps: React.ReactNode[] 
       <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-ink-800 hover:underline [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden
-          className="flex size-4 items-center justify-center rounded-full bg-ink-800 text-xs font-bold text-white"
+          className="flex size-4 items-center justify-center rounded-full bg-ink-800 text-xs font-semibold text-white"
         >
           ?
         </span>
@@ -43,7 +43,7 @@ export function PageGuide({ id, steps }: { id: string; steps: React.ReactNode[] 
       <ol className="mt-3 grid gap-2 rounded-2xl bg-white/80 p-4 text-sm text-slate-700 ring-1 ring-ink-800/10 sm:grid-cols-3 sm:gap-4">
         {steps.map((step, i) => (
           <li key={i} className="flex gap-2.5">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent-400 text-xs font-bold text-ink-950">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent-400 text-xs font-semibold text-ink-950">
               {i + 1}
             </span>
             <span>{step}</span>

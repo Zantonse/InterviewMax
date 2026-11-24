@@ -48,7 +48,7 @@ export function FeedbackCard({
       className="rounded-2xl bg-white p-5 ring-1 ring-ink-800/15"
       data-testid="practice-feedback"
     >
-      <h3 className="text-xs font-bold text-ink-800">Feedback</h3>
+      <h3 className="text-xs font-semibold text-ink-800">Feedback</h3>
       <p className="mt-2 font-semibold text-slate-900">{feedback.summary}</p>
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -173,7 +173,7 @@ export function FeedbackCard({
           </p>
           <ul className="mt-2 space-y-2">
             {feedback.newFacts.map((f, i) => (
-              <li key={i} className="rounded-lg bg-white p-3 text-sm ring-1 ring-black/5">
+              <li key={i} className="rounded-lg bg-white p-3 text-sm ring-1 ring-ink-100">
                 <p className="text-slate-900">{f.fact}</p>
                 <p className="mt-1 text-xs text-slate-600">You said: &ldquo;{f.quote}&rdquo;</p>
                 <div className="mt-2">

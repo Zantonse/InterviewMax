@@ -27,10 +27,10 @@ export function InterviewTimeline({
   return (
     <section
       id="timeline"
-      className="scroll-mt-20 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      className="scroll-mt-20 panel"
       data-testid="job-timeline"
     >
-      <h2 className="mb-2 text-sm font-bold text-ink-800">
+      <h2 className="mb-2 text-sm font-semibold text-ink-800">
         Interview timeline
       </h2>
       {steps.length === 0 ? (
@@ -56,11 +56,11 @@ export function InterviewTimeline({
               <li key={s.transcriptId} className="relative" data-testid="timeline-step">
                 <span
                   aria-hidden
-                  className="absolute -left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-ink-800 text-xs font-bold text-white"
+                  className="absolute -left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-ink-800 text-xs font-semibold text-white"
                 >
                   {i + 1}
                 </span>
-                <p className="text-xs font-bold text-slate-600">
+                <p className="text-xs font-semibold text-slate-600">
                   {s.roundLabel}
                   {s.guessed && <span className="font-normal normal-case"> (guessed)</span>}
                 </p>
@@ -106,7 +106,7 @@ export function InterviewTimeline({
             <li className="relative" data-testid="timeline-next">
               <span
                 aria-hidden
-                className={`absolute -left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                className={`absolute -left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
                   finished
                     ? "bg-emerald-600 text-white"
                     : "bg-white text-ink-800 ring-2 ring-ink-800/30"
@@ -118,7 +118,7 @@ export function InterviewTimeline({
                 <p className="font-semibold text-slate-900">Finished: {finished}</p>
               ) : (
                 <>
-                  <p className="text-xs font-bold text-slate-600">
+                  <p className="text-xs font-semibold text-slate-600">
                     Next{next.label ? `: likely the ${next.label.toLowerCase()}` : ""}
                   </p>
                   {next.prepare.length > 0 ? (

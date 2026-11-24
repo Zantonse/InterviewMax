@@ -24,20 +24,20 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
         ← {job.title}
         {job.company ? ` at ${job.company}` : ""}
       </Link>
-      <p className="mt-3 text-xs font-bold text-ink-700 print:mt-0">
+      <p className="mt-3 text-xs font-semibold text-ink-700 print:mt-0">
         Pre-interview brief{brief.stage ? ` · ${brief.stage.label}` : ""}
         {days !== null ? ` · interview ${whenLabel(days)}` : ""}
       </p>
-      <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl print:text-xl">
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 print:text-xl">
         {job.title}
-        {job.company && <span className="font-bold text-slate-600"> at {job.company}</span>}
+        {job.company && <span className="font-semibold text-slate-600"> at {job.company}</span>}
       </h1>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 print:hidden">
         {brief.questions.length > 0 || brief.intro ? (
           <Link
             href={`/jobs/${job.id}/warm-up`}
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950"
             data-testid="start-warm-up"
           >
             Start the one-minute warm-up
@@ -58,7 +58,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                   key={g.storyId}
                   className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 print:p-2"
                 >
-                  <Link href={g.href} className="text-lg font-bold text-slate-900 hover:underline print:text-sm">
+                  <Link href={g.href} className="text-lg font-semibold text-slate-900 hover:underline print:text-sm">
                     {g.title}
                   </Link>
                   {g.number && (
@@ -236,11 +236,11 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
                   <li key={t.id}>
                     <Link
                       href={t.href}
-                      className="font-semibold text-slate-900 hover:underline print:no-underline"
+                      className="font-words text-slate-900 hover:underline print:no-underline"
                     >
                       {t.question}
                     </Link>
-                    <p className="mt-0.5 text-slate-700">{t.answer}</p>
+                    <p className="mt-0.5 font-words text-slate-700">{t.answer}</p>
                   </li>
                 ))}
               </ul>
@@ -315,10 +315,10 @@ function Section({
 }) {
   return (
     <section
-      className="break-inside-avoid rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 print:rounded-none print:p-0 print:shadow-none print:ring-0"
+      className="break-inside-avoid panel print:rounded-none print:p-0 print:shadow-none print:ring-0"
       data-testid={testId}
     >
-      <h2 className="mb-3 text-sm print:text-xs font-bold text-ink-800 print:mb-1">
+      <h2 className="mb-3 text-sm print:text-xs font-semibold text-ink-800 print:mb-1">
         {title}
       </h2>
       {children}
@@ -329,8 +329,8 @@ function Section({
 function QuestionRow({ q, n }: { q: BriefQuestion; n: number }) {
   return (
     <li className="break-inside-avoid">
-      <p className="font-semibold text-slate-900">
-        <span className="mr-2 text-ink-800">{n}.</span>
+      <p className="font-words text-lg leading-snug text-slate-900">
+        <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{n}.</span>
         {q.question}
       </p>
       <div className="mt-0.5 pl-6 text-sm print:text-xs">

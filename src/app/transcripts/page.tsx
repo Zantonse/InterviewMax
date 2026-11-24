@@ -27,7 +27,7 @@ export default function TranscriptsPage({ searchParams }: PageProps<"/transcript
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Your past interviews
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -111,10 +111,10 @@ async function TranscriptsContent({
               <li key={t.id}>
                 <Link
                   href={`/transcripts/${t.id}`}
-                  className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
+                  className="block rounded-3xl bg-white p-5 ring-1 ring-ink-100 transition hover:ring-ink-700/40"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-lg font-bold text-slate-900">
+                    <span className="text-lg font-semibold text-slate-900">
                       {t.title}
                       {t.company && !t.title.includes(t.company) && (
                         <span className="font-normal text-slate-600"> at {t.company}</span>
@@ -147,10 +147,10 @@ async function TranscriptsContent({
 
         {transcripts.length < MAX_TRANSCRIPTS && (
           <details
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+            className="panel"
             open={Boolean(jobId) || undefined}
           >
-            <summary className="cursor-pointer text-sm font-bold text-ink-800">
+            <summary className="cursor-pointer text-sm font-semibold text-ink-800">
               Add another interview
             </summary>
             <div className="mt-4">
@@ -215,7 +215,7 @@ async function TranscriptsContent({
 
 function Card({
   title,
-  className = "bg-white",
+  className = "",
   children,
 }: {
   title: string;
@@ -223,8 +223,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
+    <section className={`panel ${className}`}>
+      <h2 className="mb-4 text-sm font-semibold text-ink-800">{title}</h2>
       {children}
     </section>
   );

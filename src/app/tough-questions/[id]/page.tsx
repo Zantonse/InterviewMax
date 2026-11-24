@@ -56,7 +56,7 @@ async function ToughLoader({ params }: { params: PageProps<"/tough-questions/[id
         initialContent={story.content}
         jobs={jobs.map((j) => ({ id: j.id, label: j.company ? `${j.title}, ${j.company}` : j.title }))}
       />
-      <details className="mt-8 max-w-xl rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      <details className="mt-8 max-w-xl panel">
         <summary className="cursor-pointer text-sm font-semibold text-slate-700">
           Start this one over
         </summary>

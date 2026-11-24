@@ -66,7 +66,7 @@ export function AlsoAnswersPanel({
       aria-label="Other questions this story answers"
       data-testid="also-answers"
     >
-      <p className="text-sm font-bold text-ink-800">
+      <p className="text-sm font-semibold text-ink-800">
         Other questions this story answers
       </p>
       {current ? (

@@ -70,10 +70,10 @@ export function ToughCoach({
   return (
     <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
       <section
-        className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+        className="panel"
         data-testid="tough-situation"
       >
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{question.label}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{question.label}</h1>
         <p className="mt-1 text-slate-600">{question.approach}</p>
         <p className="mt-3 rounded-xl bg-ink-50 p-3 text-sm text-ink-900">
           {question.coachNote ??
@@ -153,7 +153,7 @@ export function ToughCoach({
             type="button"
             onClick={() => run("write", () => writeTough(storyId, answers, jobId || null))}
             disabled={busy || missing.length > 0}
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
             data-testid="write-tough"
           >
             {pending && action === "write"
@@ -190,10 +190,10 @@ export function ToughCoach({
       </section>
 
       <section
-        className="h-fit rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6 lg:sticky lg:top-6"
+        className="h-fit panel lg:sticky lg:top-6"
         data-testid="tough-answer"
       >
-        <h2 className="text-sm font-bold text-ink-800">Your answer</h2>
+        <h2 className="text-sm font-semibold text-ink-800">Your answer</h2>
         {!draft ? (
           <p className="mt-2 text-slate-600">
             Once you&apos;ve answered the questions, your answer appears here, about{" "}

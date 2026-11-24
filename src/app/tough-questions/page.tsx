@@ -17,7 +17,7 @@ export default function ToughQuestionsPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Tough questions
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">

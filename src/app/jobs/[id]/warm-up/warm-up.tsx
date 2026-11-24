@@ -67,7 +67,7 @@ export function WarmUp({
       <div className="mt-6 flex flex-1 flex-col">
         {done ? (
           <div className="rounded-3xl bg-white p-6 text-center sm:p-10" data-testid="warm-up-done">
-            <p className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <p className="text-3xl font-semibold tracking-tight text-slate-900">
               You&apos;re ready.
             </p>
             <p className="mt-3 text-slate-600">
@@ -113,7 +113,7 @@ export function WarmUp({
           <button
             type="button"
             onClick={next}
-            className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white hover:bg-ink-950"
             data-testid="warm-up-next"
           >
             {index === cards.length - 1 ? "Done" : "Next"}
@@ -127,13 +127,13 @@ export function WarmUp({
 function Card({ card }: { card: WarmUpCard }) {
   const [open, setOpen] = useState(false);
   const shell = "rounded-3xl bg-white p-6 shadow-sm sm:p-8";
-  const label = "text-xs font-bold text-ink-700";
+  const label = "text-xs font-semibold text-ink-700";
 
   if (card.kind === "stage") {
     return (
       <div className={shell} data-testid="warm-up-card" data-kind="stage">
         <p className={label}>{card.stage.label}</p>
-        <p className="mt-3 text-xl font-bold tracking-tight text-slate-900">{card.stage.checks}</p>
+        <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900">{card.stage.checks}</p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-lg leading-relaxed text-slate-800">
           {card.stage.tips.map((t) => (
             <li key={t}>{t}</li>
@@ -169,7 +169,7 @@ function Card({ card }: { card: WarmUpCard }) {
           {card.numbers.map((n) => (
             <div key={n.id}>
               <dt className="text-slate-600">{n.label}</dt>
-              <dd className="text-2xl font-bold text-slate-900">{n.value}</dd>
+              <dd className="text-2xl font-semibold text-slate-900">{n.value}</dd>
             </div>
           ))}
         </dl>
@@ -182,7 +182,7 @@ function Card({ card }: { card: WarmUpCard }) {
   return (
     <div className={shell} data-testid="warm-up-card" data-kind="question">
       <p className={label}>Question {index + 1}</p>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{question.question}</p>
+      <p className="mt-3 font-words text-2xl leading-snug text-slate-900">{question.question}</p>
       {story ? (
         <div className="mt-5 rounded-2xl bg-ink-50 p-4">
           <p className="font-semibold text-ink-900">

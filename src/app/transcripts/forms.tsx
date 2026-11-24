@@ -134,7 +134,7 @@ function ShareFields() {
   const [share, setShare] = useState(false);
   const id = useId();
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+    <div className="rounded-2xl bg-ink-50 px-4 py-3">
       <label className="flex items-start gap-2 text-sm text-slate-800" htmlFor={`${id}-share`}>
         <input
           id={`${id}-share`}

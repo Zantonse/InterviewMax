@@ -47,7 +47,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
         >
           ← Practice for {job.title}
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           AI screen practice
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -68,7 +68,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
       >
         ← Practice for {job.title}
       </Link>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
         Practice out loud
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">

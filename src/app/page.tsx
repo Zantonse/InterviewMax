@@ -28,7 +28,7 @@ export default function HomePage() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {/* "Build a story" is in the sidebar (the phone menu on small screens); the plan's Continue is
             the one main button here. */}
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           Your interview prep
         </h1>
 
@@ -134,7 +134,7 @@ async function FocusJob({ jobs, stories }: { jobs: TargetJob[]; stories: StoryRe
             <ReadinessRing ready={readiness.ready} total={readiness.total} days={upcoming} />
           )}
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-semibold text-slate-900">
               <Link href={`/jobs/${job.id}`} className="hover:text-ink-800 hover:underline">
                 {name}
               </Link>
@@ -234,7 +234,7 @@ function Card({
 }) {
   return (
     <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="truncate text-lg font-bold">{title}</h2>
+      <h2 className="truncate text-lg font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );

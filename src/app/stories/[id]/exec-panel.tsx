@@ -61,7 +61,7 @@ export function ExecPanel({
       aria-label="Exec version"
       data-testid="exec-version"
     >
-      <p className="text-sm font-bold text-ink-800">Exec version</p>
+      <p className="text-sm font-semibold text-ink-800">Exec version</p>
       {current ? (
         <Made
           exec={exec}
@@ -156,7 +156,7 @@ function Made({
           {LINES.map((line, i) =>
             exec[line.key] ? (
               <li key={line.key} className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-slate-600">
+                <span className="text-xs font-semibold text-slate-600">
                   {i + 1}. {line.label}
                 </span>
                 <p
@@ -168,7 +168,7 @@ function Made({
                 >
                   {withEmphasis(exec[line.key], line.emphasize).map((piece, j) =>
                     piece.emphasis ? (
-                      <strong key={j} className="font-bold text-slate-950">
+                      <strong key={j} className="font-semibold text-slate-950">
                         {piece.text}
                       </strong>
                     ) : (
@@ -205,7 +205,7 @@ function Made({
 
       {exec.ifAsked.length > 0 && (
         <div>
-          <h3 className="font-bold text-slate-900">If they ask for more</h3>
+          <h3 className="font-semibold text-slate-900">If they ask for more</h3>
           <p className="mt-1 text-sm text-slate-600">
             Hold these back. Execs ask for the detail they care about; have it ready in a sentence.
           </p>
@@ -228,7 +228,7 @@ function Made({
 
       {habits.length > 0 && (
         <div className="rounded-2xl bg-amber-50 p-4" data-testid="exec-habits">
-          <h3 className="text-sm font-bold text-amber-950">Habits to drop out loud</h3>
+          <h3 className="text-sm font-semibold text-amber-950">Habits to drop out loud</h3>
           <p className="mt-1 text-sm text-amber-900">
             Your written story says{" "}
             {habits.map((h, i) => (

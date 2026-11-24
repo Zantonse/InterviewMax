@@ -86,8 +86,8 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
   const stepLabel = (id: string) => frame.steps.find((s) => s.id === id)?.label ?? id;
 
   return (
-    <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5" data-testid="case-item">
-      <p className="font-semibold text-slate-900">{q.question}</p>
+    <li className="rounded-2xl bg-ink-50 px-4 py-3" data-testid="case-item">
+      <p className="font-words text-lg leading-snug text-slate-900">{q.question}</p>
       <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
         <span className="rounded-full bg-ink-50 px-2 py-0.5 font-semibold text-ink-900">{frame.label}</span>
         {q.transcriptId && (
@@ -176,7 +176,7 @@ function CaseItem({ jobId, q }: { jobId: string; q: CaseQuestion }) {
           <AiNotice purpose="give feedback on your practice answer" />
           {error && <p className="text-sm text-red-700">{error}</p>}
           {feedback && (
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5" data-testid="case-feedback">
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100" data-testid="case-feedback">
               {feedback.summary && <p className="text-slate-800">{feedback.summary}</p>}
               {feedback.missing.length > 0 && (
                 <ul className="mt-2 space-y-1 text-sm text-slate-700">

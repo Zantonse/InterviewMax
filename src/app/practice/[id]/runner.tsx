@@ -88,9 +88,9 @@ export function PracticeRunner({
     <div className="mt-6 space-y-4">
       <Progress items={items} view={view} onOpen={setView} disabled={busy !== null} />
 
-      <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
+      <section className="panel">
         <p className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-bold text-ink-800">
+          <span className="font-semibold text-ink-800">
             Question {view + 1} of {items.length}
           </span>
           <span className="rounded-full bg-ink-50 px-2 py-0.5 font-semibold text-ink-900">
@@ -122,11 +122,11 @@ export function PracticeRunner({
               <div className="flex items-start gap-2">
                 <p
                   className={`max-w-[90%] rounded-2xl rounded-tl-sm px-4 py-3 text-slate-900 ${
-                    i === 0 ? "bg-ink-50 text-lg font-semibold" : "bg-ink-50 font-medium"
+                    i === 0 ? "bg-ink-50 font-words text-lg" : "bg-ink-50 font-words"
                   }`}
                 >
                   {i > 0 && (
-                    <span className="block text-xs font-bold text-ink-700">
+                    <span className="block font-sans text-xs font-semibold text-ink-700">
                       Follow-up {i}
                     </span>
                   )}
@@ -136,14 +136,14 @@ export function PracticeRunner({
               </div>
               {t.answer && (
                 <div className="flex justify-end">
-                  <p className="max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 text-slate-800">
+                  <p className="max-w-[90%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 font-words text-slate-800">
                     <SpokenAnswer
                       text={t.answer}
                       spoken={Boolean(t.seconds) && Boolean(t.talkSeconds)}
                       audio={recordings[`${view}:${i}`]}
                     />
                     {t.seconds ? (
-                      <span className="mt-1 block text-right text-xs text-slate-600">
+                      <span className="mt-1 block text-right font-mono text-xs tabular-nums text-slate-600">
                         {formatDuration(t.seconds)}
                       </span>
                     ) : null}
@@ -252,7 +252,7 @@ export function PracticeRunner({
           <button
             type="button"
             onClick={next}
-            className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950"
             data-testid="practice-next"
           >
             {currentItemIndex(items) < 0 ? "See how the round went" : "Next question"}
@@ -289,7 +289,7 @@ function Progress({
               onClick={() => onOpen(i)}
               aria-current={i === view ? "step" : undefined}
               title={it.question}
-              className={`flex size-8 items-center justify-center rounded-full text-sm font-bold transition ${
+              className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold transition ${
                 i === view
                   ? "bg-accent-400 text-ink-950"
                   : done
@@ -322,10 +322,10 @@ function Summary({
   const thin = thinSpots(items);
   return (
     <section
-      className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="mt-6 panel"
       data-testid="practice-summary"
     >
-      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+      <h2 className="text-xl font-semibold tracking-tight text-slate-900">
         Round done: {answered.length} of {items.length} answered
       </h2>
       <p className="mt-1 text-sm text-slate-600">
@@ -371,7 +371,7 @@ function Summary({
             <button
               type="button"
               onClick={() => onOpen(i)}
-              className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-black/5 hover:bg-slate-100"
+              className="w-full rounded-2xl bg-ink-50 px-4 py-3 text-left hover:bg-slate-100"
             >
               <span className="block font-semibold text-slate-900">
                 {i + 1}. {it.question}

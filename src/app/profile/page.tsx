@@ -58,7 +58,7 @@ export default function ProfilePage() {
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Your interviewee profile
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -114,7 +114,7 @@ async function ProfileContent() {
         {result.jobs.length > 0 ? (
           <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="profile-jobs">
             {result.jobs.map((job) => (
-              <li key={job.jobId} className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
+              <li key={job.jobId} className="min-w-0 rounded-2xl bg-ink-50 px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/jobs/${job.jobId}`} className="min-w-0 font-semibold text-slate-900 hover:text-ink-800">
                     <span className="block truncate">{job.title}</span>
@@ -397,8 +397,8 @@ function ReadinessPill({ label }: { label: ReadinessLabel }) {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl bg-white p-6 text-slate-900 shadow-sm ring-1 ring-black/5">
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+    <section className="panel text-slate-900">
+      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );

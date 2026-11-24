@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
+/* A white page (design review 2026-11-23): blocks don't need a card to stand out on it. */
 :root {
-  --background: #f5f6f9;
+  --background: #ffffff;
   --foreground: #0f172a;
 }
 
@@ -10,13 +11,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Words said in an interview: stories, answers, interview questions. Nothing else. */
+  --font-words: var(--font-literata), Georgia, "Times New Roman", serif;
 }
 
-/* The brand: graphite ("ink") for the sidebar and dark cards, periwinkle ("accent") for highlights.
-   Button rule (design review 2026-11-16, fix 5):
-   - periwinkle (btn-next): the one next step on a screen. At most one per screen.
-   - graphite (btn-primary): other actions that do something (save, start, add).
-   - outline (btn-secondary): secondary choices beside them ("Show me", "Skip", "Change").
+/* The brand: graphite ("ink") for text, buttons and the sidebar; periwinkle ("accent") is the
+   coach's pen (design review 2026-11-23): marks on the user's own text, where you are, focus and
+   links. It doesn't fill buttons, chips or backgrounds.
+   Button rule (design review 2026-11-16, fix 5, now in graphite):
+   - btn-next: the one next step on a screen. At most one per screen.
+   - btn-primary: other actions that do something (save, start, add).
+   - btn-secondary (outline): secondary choices beside them ("Show me", "Skip", "Change").
    Green is kept for "strong" and passing checks. Amber is only for what to fix in the user's own
    work; notices ("not read yet", "interview soon") stay neutral. */
 @theme {
@@ -43,6 +48,59 @@
   --color-accent-800: #4450a5;
   --color-accent-900: #3a4583;
   --color-accent-950: #23294d;
+
+  /* Two corner sizes (design review 2026-11-23): 8px for controls, 10px for objects (a story, a job,
+     a dialog). rounded-lg and rounded-xl are 8px; rounded-2xl and rounded-3xl are 10px. */
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.625rem;
+
+  /* No shadows at rest. Menus and dialogs that float over the page keep shadow-md and up. */
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+
+  /* One type scale (design review 2026-11-23, fix 2): 13, 14, 15 (sidebar), 17, 19, 24, 30 and 36px.
+     text-base stays 16px for text boxes, because smaller makes iPhones zoom in. Nothing is under 13px. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.25 / 0.8125);
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.1875rem;
+  --text-xl--line-height: 1.45;
+}
+
+/* A section of a page: its heading and content, set off by space and one rule instead of a card
+   (design review 2026-11-23, fix 1). Cards are kept for objects you can pick up or open. */
+@utility panel {
+  border-top: 1px solid var(--color-ink-100);
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* A link in the coach's pen. */
+@utility link {
+  font-weight: 500;
+  color: var(--color-accent-700);
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-accent-300);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  &:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* The coach's mark on the user's own text: a highlight, or an underline under a number. */
+@utility pen-mark {
+  background-color: var(--color-accent-100);
+  border-radius: 2px;
+}
+@utility pen-figure {
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-accent-400);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The sidebar shrinks to icons on wide screens when collapsed (see components/nav-shell.tsx). */
@@ -205,17 +263,17 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-xl);
-  background-color: var(--color-accent-400);
+  background-color: var(--color-ink-900);
   padding: 0.5rem 1rem;
   font-size: var(--text-sm);
   line-height: var(--text-sm--line-height);
   font-weight: 600;
-  color: var(--color-ink-950);
+  color: white;
   &:hover:not(:disabled) {
-    background-color: var(--color-accent-300);
+    background-color: var(--color-ink-950);
   }
   &:disabled {
-    background-color: var(--color-accent-100);
+    background-color: var(--color-ink-200);
     color: var(--color-ink-600);
   }
 }

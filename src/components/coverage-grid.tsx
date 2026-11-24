@@ -40,7 +40,7 @@ export function CoverageGrid({ stories, jobs }: { stories: StoryRecord[]; jobs: 
   return (
     <section aria-labelledby="coverage-heading" data-testid="coverage-grid">
       <p id="coverage-heading" className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-4xl font-extrabold" data-testid="coverage-count">
+        <span className="text-4xl font-semibold" data-testid="coverage-count">
           {covered} of {themes.length}
         </span>
         <span className="text-ink-100">question themes covered</span>
@@ -219,7 +219,7 @@ function ThemeCountList({ counts }: { counts: ThemeCount[] }) {
               <span className="ml-auto shrink-0 text-right text-sm text-ink-100 sm:ml-0 sm:w-28">
                 {c.written > 0 ? (
                   <>
-                    <span className="font-bold text-white">{c.written}</span>{" "}
+                    <span className="font-semibold text-white">{c.written}</span>{" "}
                     {c.written === 1 ? "story" : "stories"}
                     {level && <span className="sr-only">, best at Level {level}</span>}
                   </>

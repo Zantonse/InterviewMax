@@ -107,7 +107,7 @@ export default function WelcomePage() {
         <section className="bg-ink-900 text-white">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-10 pb-16 sm:px-6 sm:pt-16 sm:pb-24 lg:grid-cols-2">
             <div>
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
                 Behavioral interview stories that land.
               </h1>
               <p className="mt-4 max-w-xl text-lg text-ink-100">
@@ -115,13 +115,13 @@ export default function WelcomePage() {
                 at the jobs you&apos;re going for. One story at a time, so it never feels like
                 homework.
               </p>
-              <p className="mt-4 text-xl font-bold text-accent-300" data-testid="home-not-a-script">
+              <p className="mt-4 text-xl font-semibold text-accent-300" data-testid="home-not-a-script">
                 Not a script. Your story, ready for follow-ups.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/login"
-                  className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
+                  className="rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950"
                 >
                   Get started
                 </Link>
@@ -148,7 +148,7 @@ export default function WelcomePage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6" aria-labelledby="problem">
-          <h2 id="problem" className="max-w-3xl text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 id="problem" className="max-w-3xl text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             Most people know which questions are coming, and still walk in with rambling stories
             that have no numbers.
           </h2>
@@ -158,7 +158,7 @@ export default function WelcomePage() {
                 key={p.big}
                 className="border-white/10 p-6 not-last:border-b sm:p-7 sm:odd:border-r lg:border-b-0 lg:not-last:border-r"
               >
-                <p className="text-2xl font-extrabold tracking-tight text-accent-300 sm:text-3xl">
+                <p className="text-2xl font-semibold tracking-tight text-accent-300 sm:text-3xl">
                   {p.big}
                 </p>
                 <p className="mt-2 text-ink-100">{p.body}</p>
@@ -198,7 +198,7 @@ export default function WelcomePage() {
             <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
               <div>
                 <p className="text-sm font-semibold text-accent-700">From rambling to ready</p>
-                <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   The same story, before and after
                 </h3>
                 <p className="mt-3 text-lg text-slate-600">
@@ -213,13 +213,13 @@ export default function WelcomePage() {
 
         <section className="bg-accent-50" aria-labelledby="how">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-            <h2 id="how" className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 id="how" className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               How it works
             </h2>
             <ol className="mt-8 grid gap-4 md:grid-cols-3">
               {STEPS.map((step, i) => (
                 <li key={step.title} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-accent-200">
-                  <span className="flex size-10 items-center justify-center rounded-full bg-accent-400 text-lg font-extrabold text-ink-950">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-accent-400 text-lg font-semibold text-ink-950">
                     {i + 1}
                   </span>
                   <p className="mt-3 text-lg font-semibold text-slate-900">{step.title}</p>
@@ -231,7 +231,7 @@ export default function WelcomePage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="features">
-          <h2 id="features" className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 id="features" className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             Everything you need for the behavioral round
           </h2>
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -243,7 +243,7 @@ export default function WelcomePage() {
                 >
                   <div className="p-6 sm:p-7">
                     <FeatureIcon name={f.icon} onDark />
-                    <p className="mt-4 text-xl font-bold">{f.title}</p>
+                    <p className="mt-4 text-xl font-semibold">{f.title}</p>
                     <p className="mt-1 max-w-md text-ink-100">{f.body}</p>
                   </div>
                   <Image
@@ -269,7 +269,7 @@ export default function WelcomePage() {
         <section className="bg-white" aria-labelledby="faq">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_2fr] lg:gap-14">
             <div>
-              <h2 id="faq" className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              <h2 id="faq" className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                 Questions people ask
               </h2>
               <p className="mt-3 text-slate-600">
@@ -301,13 +301,13 @@ export default function WelcomePage() {
 
         <section className="bg-ink-900 text-white">
           <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Build your first story today.
             </h2>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               <Link
                 href="/login"
-                className="rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300"
+                className="rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950"
               >
                 Get started
               </Link>
@@ -380,7 +380,7 @@ function Showcase({
     <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
       <div className={flip ? "lg:order-2" : ""}>
         <p className="text-sm font-semibold text-accent-700">{eyebrow}</p>
-        <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           {title}
         </h3>
         <p className="mt-3 text-lg text-slate-600">{body}</p>

@@ -441,7 +441,7 @@ export function StoryBuilder({
   return (
     <>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:mt-3 sm:gap-y-2">
-        <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
           {storyType?.label ?? "Your story"}
         </h1>
         <p className="whitespace-nowrap text-xs text-slate-600 sm:text-sm" data-testid="progress">
@@ -491,7 +491,7 @@ export function StoryBuilder({
                 <li className="animate-enter" data-testid="example-story" data-help={help}>
                   {help === "full" ? (
                     <div className="rounded-2xl bg-ink-50 p-4 ring-1 ring-ink-800/10">
-                      <p className="mb-3 text-sm font-bold text-ink-800">
+                      <p className="mb-3 text-sm font-semibold text-ink-800">
                         First, see one story climb from Level 1 to Level 3
                       </p>
                       <ExampleLadder field={field} />
@@ -1106,7 +1106,7 @@ function AnswerChecklist({
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
       data-testid="answer-checklist"
     >
-      <h2 className="text-xs font-bold text-ink-800">
+      <h2 className="text-xs font-semibold text-ink-800">
         Your answers so far
       </h2>
       <ul className="mt-3 flex flex-col gap-2 text-sm">
@@ -1425,7 +1425,7 @@ function QuickStart({
       className="flex max-w-[90%] flex-col gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
       data-testid="quick-start"
     >
-      <p className="text-xs font-bold text-ink-800">Quick start: tap what fits</p>
+      <p className="text-xs font-semibold text-ink-800">Quick start: tap what fits</p>
       {rows.map((row) => {
         const picked = quickPicked(row, answerText);
         return (
@@ -1558,7 +1558,7 @@ function DraftSoFar({
         className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
         data-testid="draft-so-far"
       >
-        <h2 className="text-xs font-bold text-ink-800">How this works</h2>
+        <h2 className="text-xs font-semibold text-ink-800">How this works</h2>
         <ol className="mt-3 flex flex-col gap-2 text-sm">
           {steps.map((step, i) => (
             <li key={step} className="flex items-center gap-2">
@@ -1605,7 +1605,7 @@ function DraftSoFar({
       data-testid="draft-so-far"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-xs font-bold text-ink-800">
+        <h2 className="text-xs font-semibold text-ink-800">
           {rough ? "Your story so far" : "Your story"}
         </h2>
         {showLevel && (
@@ -2014,7 +2014,7 @@ function Composer({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-xl bg-accent-400 px-5 py-2 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:bg-accent-100 disabled:text-ink-600"
+          className="rounded-xl bg-ink-900 px-5 py-2 font-semibold text-white transition hover:bg-ink-950 disabled:bg-ink-200 disabled:text-ink-600"
         >
           {disabled ? "Saving…" : submitLabel}
         </button>
@@ -2052,7 +2052,7 @@ function MoreWithStory({
         className="flex w-full items-center justify-between gap-3 rounded-3xl bg-white px-5 py-4 text-left shadow-sm ring-1 ring-black/5 hover:bg-ink-50 sm:px-6"
       >
         <span className="min-w-0">
-          <span className="block font-bold text-slate-900">More with this story</span>
+          <span className="block font-semibold text-slate-900">More with this story</span>
           <span className="block text-sm text-slate-600">{labels.join(" · ")}</span>
         </span>
         <span aria-hidden className={`text-ink-800 transition ${open ? "rotate-90" : ""}`}>
@@ -2326,9 +2326,9 @@ function StoryPanel({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-600">Your story</p>
+          <p className="text-sm font-semibold text-slate-600">Your story</p>
           <h2
-            className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900"
+            className="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
             data-testid="story-title"
           >
             {draft ? title : (storyTypeLabel ?? title)}
@@ -2405,7 +2405,7 @@ function StoryPanel({
             const notes = notesForPart(content, storyType, parts, part);
             return (
               <div key={part.id} data-testid={`part-${part.id}`}>
-                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <span
                     className={`h-2 w-2 rounded-full ${notes.length ? "bg-ink-300" : "bg-slate-200"}`}
                   />

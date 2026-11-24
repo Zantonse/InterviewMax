@@ -61,7 +61,7 @@ export function AppHeader() {
         <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-4 nav-collapsed:px-0 nav-collapsed:justify-center">
           <Link
             href="/"
-            className="text-lg font-extrabold tracking-tight text-white"
+            className="text-lg font-semibold tracking-tight text-white"
             aria-label="InterviewMax home"
           >
             <span className="nav-collapsed:hidden">
@@ -232,7 +232,7 @@ async function ModeSwitch() {
         data-testid="mode-promotion"
       >
         Promotion
-        <span className="rounded-full bg-accent-400/90 px-1.5 text-xs font-bold text-ink-950">
+        <span className="rounded-full px-1.5 text-xs font-medium text-ink-300 ring-1 ring-white/25">
           Beta
         </span>
       </button>

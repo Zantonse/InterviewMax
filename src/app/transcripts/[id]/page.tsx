@@ -97,10 +97,10 @@ async function TranscriptContent({
 
   return (
     <>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
         {transcript.title}
         {transcript.company && !transcript.title.includes(transcript.company) && (
-          <span className="font-bold text-slate-600"> at {transcript.company}</span>
+          <span className="font-semibold text-slate-600"> at {transcript.company}</span>
         )}
       </h1>
       {analysis?.summary && <p className="mt-2 max-w-2xl text-slate-600">{analysis.summary}</p>}
@@ -122,8 +122,8 @@ async function TranscriptContent({
         <div className="space-y-4 lg:col-span-2">
           <ProfileMovesCard moves={moves} />
           {analysis ? (
-            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-2 text-sm font-bold text-ink-800">
+            <section className="panel">
+              <h2 className="mb-2 text-sm font-semibold text-ink-800">
                 What they asked, and how it landed
               </h2>
               <p className="mb-4 text-sm text-slate-600">
@@ -138,7 +138,7 @@ async function TranscriptContent({
               </ol>
             </section>
           ) : (
-            <section className="rounded-3xl bg-amber-50 p-6 ring-1 ring-black/5">
+            <section className="rounded-3xl bg-amber-50 p-6">
               <p className="mb-4 text-slate-700">
                 I haven&apos;t reviewed this interview yet, or the last try didn&apos;t finish.
               </p>
@@ -147,11 +147,11 @@ async function TranscriptContent({
           )}
           {turns.length > 0 && (
             <details
-              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+              className="panel"
               data-testid="who-said-what"
             >
               <summary className="cursor-pointer">
-                <span className="text-sm font-bold text-ink-800">
+                <span className="text-sm font-semibold text-ink-800">
                   Who said what
                 </span>
                 <span className="mt-1 block text-sm text-slate-600">
@@ -162,8 +162,8 @@ async function TranscriptContent({
               <SpeakerTurnsEditor transcriptId={transcript.id} turns={turns} />
             </details>
           )}
-          <details className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-            <summary className="cursor-pointer text-sm font-bold text-ink-800">
+          <details className="panel">
+            <summary className="cursor-pointer text-sm font-semibold text-ink-800">
               The transcript
             </summary>
             <p className="mt-4 whitespace-pre-line text-slate-700">{transcript.transcript}</p>
@@ -172,8 +172,8 @@ async function TranscriptContent({
 
         <div className="space-y-4">
           {analysis && analysis.lookingFor.length > 0 && (
-            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <h2 className="mb-4 text-sm font-bold text-ink-800">
+            <section className="panel">
+              <h2 className="mb-4 text-sm font-semibold text-ink-800">
                 What this interviewer looked for
               </h2>
               <ul className="space-y-3" data-testid="looking-for">
@@ -188,7 +188,7 @@ async function TranscriptContent({
           )}
           {sure && <SurenessCard sure={sure} />}
           {analysis && (
-            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+            <section className="panel">
               <p className="mb-4 text-sm text-slate-600">
                 {analysis.dropped > 0
                   ? `I left out ${analysis.dropped} ${analysis.dropped === 1 ? "point" : "points"} I couldn't quote from the transcript.`
@@ -227,9 +227,9 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
   // Screening questions (salary, why you're looking) aren't behavioral, but have a coach of their own.
   const tough = q.theme ? undefined : toughForAsked(q.question);
   return (
-    <li className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-      <p className="font-semibold text-slate-900">
-        <span className="mr-2 text-ink-800">{n}.</span>
+    <li className="rounded-2xl bg-ink-50 px-4 py-3">
+      <p className="font-words text-lg leading-snug text-slate-900">
+        <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{n}.</span>
         {q.question}
       </p>
       <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
@@ -301,7 +301,7 @@ function AskedItem({ q, n, stories }: { q: AskedQuestion; n: number; stories: St
 function LandedLegend() {
   const scale = (["strong", "mixed", "weak"] as const).map((id) => LANDED_STYLES[id]);
   return (
-    <details className="mb-4 rounded-2xl bg-slate-50 p-3 text-sm ring-1 ring-black/5" open>
+    <details className="mb-4 rounded-2xl bg-ink-50 p-3 text-sm" open>
       <summary className="cursor-pointer font-semibold text-slate-800">
         How each answer is rated
       </summary>
@@ -365,8 +365,8 @@ function SharedQuestions({
   shared: MySharedQuestion[];
 }) {
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="shared-questions">
-      <h2 className="mb-2 text-sm font-bold text-ink-800">
+    <section className="panel" data-testid="shared-questions">
+      <h2 className="mb-2 text-sm font-semibold text-ink-800">
         Question bank
       </h2>
       {!sharing ? (
@@ -394,8 +394,8 @@ function SharedQuestions({
           ) : (
             <ul className="space-y-2">
               {shared.map((q) => (
-                <li key={q.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm ring-1 ring-black/5">
-                  <p className="text-slate-800">{q.question}</p>
+                <li key={q.id} className="rounded-xl bg-ink-50 px-3 py-2 text-sm">
+                  <p className="font-words text-slate-800">{q.question}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${SHARED_STATUS[q.status].className}`}>
                       {SHARED_STATUS[q.status].label}
@@ -427,8 +427,8 @@ function SharedQuestions({
 // How sure you sounded, counted in your own words (see sure.ts).
 function SurenessCard({ sure }: { sure: Sureness }) {
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5" data-testid="sureness">
-      <h2 className="mb-2 text-sm font-bold text-ink-800">How sure you sounded</h2>
+    <section className="panel" data-testid="sureness">
+      <h2 className="mb-2 text-sm font-semibold text-ink-800">How sure you sounded</h2>
       <p className="text-sm text-slate-700">
         {sure.hedgeCount === 0
           ? "No hedges in your answers. You stated what you did."

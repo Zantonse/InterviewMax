@@ -128,7 +128,7 @@ export function EvaluationPanel({
         className="flex w-full items-center justify-between gap-3 text-left"
       >
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-base font-bold text-slate-900">How it lands</span>
+          <span className="text-base font-semibold text-slate-900">How it lands</span>
           {shown !== undefined && (
             <span
               className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${LEVEL_STYLES[shown]}`}
@@ -196,7 +196,7 @@ export function EvaluationPanel({
           role="group"
         >
           <ScoreHeadline score={score} levels={level !== undefined} />
-          <h3 className="mt-4 text-sm font-bold text-slate-700">
+          <h3 className="mt-4 text-sm font-semibold text-slate-700">
             Criteria
           </h3>
           <ul className="mt-2 flex flex-col gap-1" data-testid="criteria" data-stagger>
@@ -249,7 +249,7 @@ export function EvaluationPanel({
 
         {grade?.bankRole && (
           <div>
-            <h3 className="text-sm font-bold text-slate-700">Its job in your story bank</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Its job in your story bank</h3>
             <p className="mt-1 text-sm text-slate-700">
               <span className="font-semibold">
                 {grade.bankRole.role[0]?.toUpperCase()}
@@ -352,7 +352,7 @@ function Summary({ grade, level }: { grade: StoryGrade; level?: StoryLevel }) {
           <ul className="mt-1 flex flex-col gap-1 text-slate-800">
             {grade.strengths.map((f, i) => (
               <li key={i} className="flex gap-2">
-                <span aria-hidden="true" className="font-bold text-emerald-700">
+                <span aria-hidden="true" className="font-semibold text-emerald-700">
                   ✓
                 </span>
                 <span>{f}</span>
@@ -401,12 +401,12 @@ function ScoreHeadline({ score, levels }: { score: number | undefined; levels: b
           {score === undefined ? (
             <span className="text-xs text-slate-500">–</span>
           ) : (
-            <span className="text-2xl font-bold tabular-nums text-slate-900">{score}</span>
+            <span className="text-2xl font-semibold tabular-nums text-slate-900">{score}</span>
           )}
         </div>
       </div>
       <div className="min-w-0" data-testid="score-total">
-        <h3 className="text-base font-bold text-slate-900">
+        <h3 className="text-base font-semibold text-slate-900">
           Score{" "}
           {score === undefined ? (
             <span className="text-sm font-normal text-slate-600">Not graded yet</span>
@@ -448,7 +448,7 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
   return (
     <details className="group" open={!grade || failing > 0}>
       <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
-        <h3 className="text-sm font-bold text-slate-700">Quick checks</h3>
+        <h3 className="text-sm font-semibold text-slate-700">Quick checks</h3>
         {grade && (
           <span className="flex items-center gap-1.5 text-sm text-slate-600">
             <span className="flex gap-0.5" aria-hidden="true">
@@ -474,7 +474,7 @@ function QuickChecks({ grade }: { grade: StoryGrade | undefined }) {
           <li key={k.id} className="flex gap-2 text-sm">
             <span
               aria-hidden="true"
-              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                 !result
                   ? "bg-slate-100 text-slate-500"
                   : result.pass
@@ -545,7 +545,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
   if (!content || content.jobs.length === 0) {
     return (
       <div data-testid="content-fit">
-        <h3 className="text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+        <h3 className="text-sm font-semibold text-slate-700">Fit with your target jobs</h3>
         <p className="mt-1 text-sm text-slate-600">
           {content
             ? "Couldn't check this story against your target jobs this time. Grade it again to retry."
@@ -571,7 +571,7 @@ function ContentFit({ content }: { content: ContentCheck | undefined }) {
           >
             ▶
           </span>
-          <h3 className="flex-1 text-sm font-bold text-slate-700">Fit with your target jobs</h3>
+          <h3 className="flex-1 text-sm font-semibold text-slate-700">Fit with your target jobs</h3>
           <span className="shrink-0 text-sm font-medium text-ink-800 group-open:hidden">
             Show details
           </span>
@@ -676,7 +676,7 @@ function FitList({
       <ul className="mt-0.5 flex flex-col gap-0.5 text-slate-700">
         {items.map((item, i) => (
           <li key={i} className="flex gap-2">
-            <span aria-hidden="true" className={`font-bold ${markClass}`}>
+            <span aria-hidden="true" className={`font-semibold ${markClass}`}>
               {mark}
             </span>
             <span>{item}</span>

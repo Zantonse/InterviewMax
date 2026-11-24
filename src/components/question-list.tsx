@@ -28,9 +28,9 @@ export function QuestionList({
       {questions.slice(0, limit).map((q, i) => {
         const coverage = coverageFor(q.theme, stories, q.question);
         return (
-          <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-            <p className="font-semibold text-slate-900">
-              <span className="mr-2 text-ink-800">{i + 1}.</span>
+          <li key={q.question} className="rounded-2xl bg-ink-50 px-4 py-3">
+            <p className="font-words text-lg leading-snug text-slate-900">
+              <span className="mr-2 font-sans text-sm tabular-nums text-ink-500">{i + 1}.</span>
               {q.question}
             </p>
             {!compact && (
@@ -121,8 +121,8 @@ export function AskedRecently({
         {questions.map((q) => {
           const coverage = q.theme ? coverageFor(q.theme, stories, q.question) : undefined;
           return (
-            <li key={q.question} className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-black/5">
-              <p className="font-semibold text-slate-900">{q.question}</p>
+            <li key={q.question} className="rounded-2xl bg-ink-50 px-4 py-3">
+              <p className="font-words text-lg leading-snug text-slate-900">{q.question}</p>
               <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
                 {q.theme && <Tag>{getTheme(q.theme)?.label}</Tag>}
                 <Tag tone="accent">{askedLabel(q)}</Tag>

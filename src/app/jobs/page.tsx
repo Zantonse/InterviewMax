@@ -29,12 +29,12 @@ export default function JobsPage({
           ← Back to your prep
         </Link>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
             Your target jobs
           </h1>
           <Link
             href="/jobs/new"
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 transition hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white transition hover:bg-ink-950"
             data-testid="add-job-link"
           >
             + Add a target job
@@ -129,7 +129,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<{ finished?
           <details
             id="finished-jobs"
             open={params.finished === "1"}
-            className="group rounded-3xl bg-slate-50 p-5 ring-1 ring-black/5"
+            className="group rounded-3xl bg-ink-50 p-5"
             data-testid="finished-jobs"
           >
             <summary className="cursor-pointer list-none font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
@@ -193,10 +193,10 @@ function JobRow({ job, read }: { job: TargetJob; read: JobRead | undefined }) {
     <li>
       <Link
         href={`/jobs/${job.id}`}
-        className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:ring-ink-700/40"
+        className="block rounded-3xl bg-white p-5 ring-1 ring-ink-100 transition hover:ring-ink-700/40"
       >
         <span className="flex flex-wrap items-baseline justify-between gap-2">
-          <span className="text-lg font-bold text-slate-900">
+          <span className="text-lg font-semibold text-slate-900">
             {job.title}
             {job.company && (
               <span className="font-normal text-slate-600"> at {job.company}</span>
@@ -262,7 +262,7 @@ function ResumeCard({ resume }: { resume: Awaited<ReturnType<typeof getJobsPrep>
 
 function Card({
   title,
-  className = "bg-white",
+  className = "",
   children,
 }: {
   title: string;
@@ -270,8 +270,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-3xl p-6 shadow-sm ring-1 ring-black/5 ${className}`}>
-      <h2 className="mb-4 text-sm font-bold text-ink-800">{title}</h2>
+    <section className={`panel ${className}`}>
+      <h2 className="mb-4 text-sm font-semibold text-ink-800">{title}</h2>
       {children}
     </section>
   );

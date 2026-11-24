@@ -41,19 +41,19 @@ export function RecapCard({ recap }: { recap: Recap }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <article
-        className="w-full max-w-sm animate-enter overflow-hidden rounded-[2rem] bg-gradient-to-b from-accent-100 via-white to-ink-50 p-7 shadow-lg ring-1 ring-black/5"
+        className="w-full max-w-sm animate-enter overflow-hidden rounded-[2rem] bg-gradient-to-b from-accent-100 via-white to-ink-50 p-7 shadow-lg"
         data-testid="recap-card"
       >
-        <p className="text-center text-sm font-bold tracking-tight text-ink-800">InterviewMax</p>
+        <p className="text-center text-sm font-semibold tracking-tight text-ink-800">InterviewMax</p>
         <p className="mt-1 text-center text-xs text-slate-600">My prep so far</p>
         <div className="mt-6 flex items-center gap-4">
           <span
-            className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-ink-800 text-2xl font-extrabold text-white"
+            className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-ink-800 text-2xl font-semibold text-white"
             aria-hidden="true"
           >
             {recap.name[0]}
           </span>
-          <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900" data-testid="recap-name">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-slate-900" data-testid="recap-name">
             {recap.name}
           </h2>
         </div>
@@ -62,7 +62,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
           {recap.stats.map((s) => (
             <div key={s.label}>
               <dt className="sr-only">{s.label}</dt>
-              <dd className="text-4xl font-extrabold text-slate-900">{s.value}</dd>
+              <dd className="text-4xl font-semibold text-slate-900">{s.value}</dd>
               <dd className="mt-0.5 text-xs leading-tight text-slate-600" aria-hidden="true">
                 {s.label}
               </dd>
@@ -71,7 +71,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
         </dl>
         {recap.best && (
           <div className="mt-6 border-t border-slate-200 pt-4">
-            <p className="text-xs font-bold text-slate-600">Best story</p>
+            <p className="text-xs font-semibold text-slate-600">Best story</p>
             <p className="mt-1 flex items-center justify-between gap-3">
               <span className="truncate font-semibold text-slate-900">{recap.best.title}</span>
               <span className="flex shrink-0 items-center gap-1.5 text-sm text-slate-600">

@@ -59,7 +59,7 @@ export function RecruiterPanel({
       aria-label="Recruiter version"
       data-testid="recruiter-version"
     >
-      <p className="text-sm font-bold uppercase tracking-wide text-ink-800">Recruiter version</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-ink-800">Recruiter version</p>
       {current ? (
         <Made
           version={version}
@@ -153,7 +153,7 @@ function Made({
           {LINES.map((line, i) =>
             version[line.key] ? (
               <li key={line.key} className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {i + 1}. {line.label}
                 </span>
                 <p
@@ -165,7 +165,7 @@ function Made({
                 >
                   {withEmphasis(version[line.key], line.emphasize).map((piece, j) =>
                     piece.emphasis ? (
-                      <strong key={j} className="font-bold text-slate-950">
+                      <strong key={j} className="font-semibold text-slate-950">
                         {piece.text}
                       </strong>
                     ) : (
@@ -205,7 +205,7 @@ function Made({
 
       {version.saveFor.length > 0 && (
         <div>
-          <h3 className="font-bold text-slate-900">Save for the hiring manager</h3>
+          <h3 className="font-semibold text-slate-900">Save for the hiring manager</h3>
           <p className="mt-1 text-sm text-slate-600">
             End with &ldquo;happy to go deeper on that&rdquo;. These are for the next round.
           </p>

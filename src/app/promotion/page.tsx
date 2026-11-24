@@ -60,7 +60,7 @@ async function PromotionHome() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           Your promotion
         </h1>
         <BetaBadge />
@@ -239,7 +239,7 @@ function Section({
   return (
     <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
         {aside}
       </div>
       <div className="mt-2">{children}</div>

@@ -41,7 +41,7 @@ async function Packet() {
   return (
     <>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           Promotion packet
         </h1>
         <BetaBadge />
@@ -130,7 +130,7 @@ async function Packet() {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-bold text-slate-600">{title}</h2>
+      <h2 className="text-sm font-semibold text-slate-600">{title}</h2>
       <div className="mt-3 space-y-4">{children}</div>
     </section>
   );

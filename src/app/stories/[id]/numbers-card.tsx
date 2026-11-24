@@ -12,7 +12,7 @@ export function NumbersCard({ role, numbers }: { role: string | null; numbers: S
         className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
         data-testid="story-numbers"
       >
-        <h2 className="text-xs font-bold text-ink-800">Your numbers</h2>
+        <h2 className="text-xs font-semibold text-ink-800">Your numbers</h2>
         <p className="mt-2 text-sm text-slate-600">
           Stories land harder with numbers. See which ones interviewers expect for your role.
         </p>
@@ -32,7 +32,7 @@ export function NumbersCard({ role, numbers }: { role: string | null; numbers: S
       className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5"
       data-testid="story-numbers"
     >
-      <h2 className="text-xs font-bold text-ink-800">
+      <h2 className="text-xs font-semibold text-ink-800">
         Numbers for this story
       </h2>
       <ul className="mt-3 flex flex-col gap-2 text-sm">

@@ -13,7 +13,7 @@ export default function ContinuePage({ searchParams }: PageProps<"/auth/continue
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
         <p className="text-sm font-semibold text-ink-700">InterviewMax</p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
           One more click
         </h1>
         <p className="mt-2 text-slate-600">Confirm it&apos;s you and we&apos;ll sign you in.</p>

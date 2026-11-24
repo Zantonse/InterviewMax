@@ -30,10 +30,10 @@ export function MomentButton({
       name="moment"
       value={id}
       disabled={pending}
-      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:translate-y-0 disabled:opacity-70"
+      className="group flex h-full w-full flex-col rounded-3xl bg-white p-5 text-left ring-1 ring-ink-100 transition hover:-translate-y-0.5 hover:ring-ink-700/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-700 disabled:translate-y-0 disabled:opacity-70"
       data-testid={`moment-${id}`}
     >
-      <span className="font-bold text-slate-900 group-hover:text-ink-900">{moment}</span>
+      <span className="font-semibold text-slate-900 group-hover:text-ink-900">{moment}</span>
       {question && <span className="mt-0.5 text-slate-700">{capitalize(question)}</span>}
       <span className="mt-2 line-clamp-2 text-sm text-slate-600">
         From {sourceLabel}: &ldquo;{quote}&rdquo;
@@ -89,7 +89,7 @@ export function AutoFind({ reading }: { reading: string }) {
   }, []);
 
   return (
-    <section className="mt-8 max-w-2xl rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+    <section className="mt-8 max-w-2xl panel">
       {error ? (
         <>
           <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">

@@ -127,7 +127,7 @@ function TailorLinks({
       }`}
       data-testid="tailor-links"
     >
-      <h2 className="text-sm font-bold text-ink-800">
+      <h2 className="text-sm font-semibold text-ink-800">
         {soon !== null
           ? `Your ${company} interview is ${whenLabel(soon)}`
           : "Next: make it company-first for each job"}
@@ -186,7 +186,7 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
       className="rounded-3xl bg-ink-50 p-5 ring-1 ring-ink-800/10 sm:p-6"
       data-testid="next-up"
     >
-      <h2 className="text-sm font-bold text-ink-800">What&apos;s next</h2>
+      <h2 className="text-sm font-semibold text-ink-800">What&apos;s next</h2>
       {next ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p className="min-w-0 text-slate-700">
@@ -226,7 +226,7 @@ function NextUp({ hasPlan, next }: { hasPlan: boolean; next: NextStory | undefin
 }
 
 const NEXT_BUTTON =
-  "inline-block shrink-0 rounded-xl bg-accent-400 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-accent-300";
+  "inline-block shrink-0 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink-950";
 
 export function BuilderSkeleton() {
   return (

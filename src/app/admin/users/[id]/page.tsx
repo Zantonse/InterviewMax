@@ -66,7 +66,7 @@ async function UserContent({ params }: { params: PageProps<"/admin/users/[id]">[
 
   return (
     <>
-      <h1 className="mt-3 break-words text-3xl font-extrabold tracking-tight text-slate-900">
+      <h1 className="mt-3 break-words text-3xl font-semibold tracking-tight text-slate-900">
         {user.email || "(no email)"}
       </h1>
       <p className="mt-2 text-slate-600">

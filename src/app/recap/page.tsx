@@ -17,7 +17,7 @@ export default function RecapPage() {
         <Link href="/" className="text-sm font-medium text-ink-800 hover:underline">
           ← Back to your prep
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Your prep so far
         </h1>
         <Suspense fallback={<div className="mx-auto mt-8 h-[32rem] max-w-sm animate-pulse rounded-[2rem] bg-white/80" />}>
@@ -33,7 +33,7 @@ async function Content() {
   const recap = buildRecap(stories, sessions);
   if (!recap) {
     return (
-      <p className="mt-6 rounded-2xl bg-white p-6 text-slate-600 shadow-sm ring-1 ring-black/5">
+      <p className="mt-6 panel text-slate-600">
         Your recap appears once you&apos;ve written your first behavioral story.{" "}
         <Link href="/" className="font-semibold text-ink-800 hover:underline">
           Build one →

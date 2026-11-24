@@ -114,16 +114,16 @@ function ScreenQuestion({
       className="rounded-3xl bg-slate-900 p-5 text-white shadow-sm sm:p-6"
       data-testid="screen-question"
     >
-      <p className="text-xl font-semibold sm:text-2xl">{item.question}</p>
+      <p className="font-words text-xl leading-snug sm:text-2xl">{item.question}</p>
       {!answering ? (
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <p className="tabular-nums text-slate-300" data-testid="screen-think">
-            Thinking time: <span className="font-bold text-white">{Math.max(0, thinkLeft)} sec</span>
+            Thinking time: <span className="font-semibold text-white">{Math.max(0, thinkLeft)} sec</span>
           </p>
           <button
             type="button"
             onClick={() => setStartedAt(Date.now())}
-            className="rounded-xl bg-accent-400 px-4 py-2.5 font-semibold text-ink-950 hover:bg-accent-300"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 font-semibold text-white hover:bg-ink-950"
           >
             Start answering
           </button>
@@ -144,7 +144,7 @@ function ScreenQuestion({
           >
             {answerLeft > 0 ? (
               <>
-                Time left: <span className="font-bold text-white">{formatDuration(answerLeft)}</span>{" "}
+                Time left: <span className="font-semibold text-white">{formatDuration(answerLeft)}</span>{" "}
                 of {formatDuration(limit)}
               </>
             ) : (
@@ -202,10 +202,10 @@ function ScreenSummary({
 
   return (
     <section
-      className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6"
+      className="mt-6 panel"
       data-testid="screen-summary"
     >
-      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Screen done</h2>
+      <h2 className="text-xl font-semibold tracking-tight text-slate-900">Screen done</h2>
       {waiting.length > 0 ? (
         <>
           <p className="mt-1 text-sm text-slate-600">
@@ -216,7 +216,7 @@ function ScreenSummary({
             type="button"
             onClick={getFeedback}
             disabled={working !== null}
-            className="mt-4 rounded-xl bg-accent-400 px-5 py-3 font-semibold text-ink-950 transition hover:bg-accent-300 disabled:opacity-60"
+            className="mt-4 rounded-xl bg-ink-900 px-5 py-3 font-semibold text-white transition hover:bg-ink-950 disabled:opacity-60"
             data-testid="screen-get-feedback"
           >
             {working !== null
@@ -238,7 +238,7 @@ function ScreenSummary({
       <ol className="mt-4 space-y-2">
         {items.map((it, i) => (
           <li key={i}>
-            <details className="rounded-2xl bg-slate-50 ring-1 ring-black/5">
+            <details className="rounded-2xl bg-ink-50">
               <summary className="cursor-pointer px-4 py-3">
                 <span className="font-semibold text-slate-900">
                   {i + 1}. {it.question}
