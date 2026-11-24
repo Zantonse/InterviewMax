@@ -30,7 +30,7 @@ export default function PromotionPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="page page-read">
         <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <PromotionHome />
         </Suspense>

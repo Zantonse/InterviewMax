@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { type TargetJob, listJobs } from "@/lib/jobs/data";
 import {
   type NumbersChecklist,
@@ -29,23 +28,14 @@ export default function NumbersPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Numbers
         </h1>
         <p className="mt-2 text-slate-600">
-          Strong stories have numbers in them. These are the ones interviewers expect for your role,
-          and where to find each. Fill in what you can; your stories use them, and none is ever made
-          up.
+          The figures interviewers expect for your role and where to find each. Your stories use
+          them, and none is ever made up.
         </p>
-        <PageGuide
-          id="numbers"
-          steps={[
-            "Confirm your role to see the numbers interviewers expect from it.",
-            "Fill them in one at a time. Skip any you don't know; rough is fine if you say “about”.",
-            "Your stories use them, and the builder shows which ones each story needs.",
-          ]}
-        />
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <NumbersContent />
         </Suspense>

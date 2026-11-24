@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { ConfidencePips } from "@/components/practice/confidence-bar";
 import { removePractice } from "@/app/practice/actions";
 import { StartPracticeForm } from "@/app/practice/start-form";
@@ -27,7 +26,7 @@ export default function JobPracticePage({ params }: PageProps<"/jobs/[id]/practi
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <Content params={params} />
         </Suspense>
@@ -67,17 +66,9 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
         Practice out loud
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">
-        A written story can still fall flat when it&apos;s said. Answer this job&apos;s likely
-        questions out loud, take the follow-ups a real interviewer would ask, and see what to fix.
+        Answer this job&apos;s likely questions out loud, take the follow-ups an interviewer would
+        ask, and see what to fix.
       </p>
-      <PageGuide
-        id="practice"
-        steps={[
-          "Tap Talk and answer each question as you would in the room. Typing works too.",
-          "The interviewer drills two or three follow-ups deep: tell me more, why that, what would you do differently.",
-          "Feedback on each answer: how close it stayed to your story, where it got thinner under the follow-ups, and your time.",
-        ]}
-      />
 
       {!job.likelyQuestions ? (
         <section className="mt-6 panel">

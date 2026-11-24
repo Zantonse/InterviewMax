@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { InterviewProfileCard } from "@/components/interview-profile";
 import { StoryPlan } from "@/components/story-plan";
 import { listJobs } from "@/lib/jobs/data";
@@ -23,23 +22,14 @@ export default function TranscriptsPage({ searchParams }: PageProps<"/transcript
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Past interviews
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          Upload transcripts of interviews you&apos;ve had. Each review shows what the interviewer
-          asked and probed for and how your answers landed, with a quote for every point, and
-          sharpens your likely questions and stories.
+          Add a transcript to see what each interviewer probed for and how your answers landed, with
+          a quote for every point.
         </p>
-        <PageGuide
-          id="transcripts"
-          steps={[
-            "Upload or paste a transcript, and pick the target job it was for if there is one.",
-            "It's reviewed: each question asked, what they probed for, and how your answer landed.",
-            "Build the stories under “Stories to work on”, then predict that job's questions again.",
-          ]}
-        />
         <Suspense fallback={<div className="mt-8 h-64 animate-pulse rounded-3xl bg-white/80" />}>
           <TranscriptsContent searchParams={searchParams} />
         </Suspense>

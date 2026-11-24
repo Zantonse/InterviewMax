@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageGuide } from "@/components/page-guide";
 import { hasDraft } from "@/lib/stories/content";
 import { listStories } from "@/lib/stories/data";
 import { TOUGH_QUESTIONS, toughStoryType } from "@/lib/tough/questions";
@@ -16,23 +15,14 @@ export default function ToughQuestionsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Tough questions
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
-          The questions people dread most are often the short ones, and almost every interview now
-          asks how you use AI. Prepare a true, brief answer for each, so you can say it calmly and
-          move on to why you want the role.
+          A short, true answer to each question people dread, including how you use AI, to say
+          calmly and move on.
         </p>
-        <PageGuide
-          id="tough-questions"
-          steps={[
-            "Pick a question you're worried about.",
-            "Say what really happened, in plain words. Only what you say goes in the answer.",
-            "Get a short answer to edit and say out loud, 20 to 40 seconds (about a minute for AI). It's saved with your stories.",
-          ]}
-        />
         <Suspense fallback={<div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/80" />}>
           <QuestionCards />
         </Suspense>

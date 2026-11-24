@@ -19,7 +19,7 @@ export default function PacketPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="page page-read">
         <Link href="/promotion" className="text-sm font-medium text-ink-800 hover:underline">
           ← Promotion
         </Link>

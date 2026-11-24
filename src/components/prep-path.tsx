@@ -8,9 +8,10 @@ import { getJobsPrep, listJobs } from "@/lib/jobs/data";
 import { checklistItems, filledCount, hasEnoughNumbers } from "@/lib/numbers/checklist";
 import { getNumbersChecklistSafely } from "@/lib/numbers/data";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
-import { buildPlan, focusJob, planHeading, todayIn } from "@/lib/prep/plan";
+import { buildPlan, focusJob, todayIn, type Plan } from "@/lib/prep/plan";
 import { listStories } from "@/lib/stories/data";
 import { REQUIRED_STORY_TYPE_ID } from "@/lib/stories/story-types";
+import { PlanToggle } from "./plan-toggle";
 
 // How many of the stories the user's jobs need most count toward the story plan step.
 const PLAN_SIZE = 4;
@@ -21,10 +22,11 @@ const ASSESSMENT_WHEN: Record<string, string> = {
   later: "more than 2 weeks away",
 };
 
-// Where the user is on their prep plan (PRD: "Always show position" and "Time-boxed prep plan"),
-// shown on the home page as one bar: the next step and a button to it, with the plan's steps as
-// dots. The interview date on the nearest job sizes the plan (see src/lib/prep/plan.ts). Before the
-// first job, it's a single step instead: paste a job and see its likely questions.
+// Today's step on home (PRD: "Always show position" and "Time-boxed prep plan"; design review
+// 2026-11-23, fix 6): the one shaded block on the page, with the step, why it matters and a
+// Continue button, and the whole plan one tap away. The interview date on the nearest job sizes the
+// plan (see src/lib/prep/plan.ts). Before the first job, it's a single step instead: paste a job and
+// see its likely questions.
 export async function PrepPath() {
   let loaded: Awaited<ReturnType<typeof loadPlan>>;
   try {
@@ -41,141 +43,121 @@ export async function PrepPath() {
   // With no interview in view, a finished path steps aside; with one, it says you're ready.
   if (current < 0 && plan.basis === "none") return null;
   const step = current >= 0 ? steps[current] : null;
-  const heading =
-    plan.basis === "date" && plan.days !== null
-      ? planHeading(plan.days, job.company)
-      : plan.basis === "assessment" && nextInterview
-        ? `Your plan for an interview ${ASSESSMENT_WHEN[nextInterview]}`
-        : "Your next step";
+  const forWhen =
+    plan.basis === "assessment" && nextInterview
+      ? `For an interview ${ASSESSMENT_WHEN[nextInterview]}`
+      : null;
 
   return (
-    <nav
-      aria-label="Your prep plan"
-      className="mt-5 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-ink-700/30"
+    <section
+      aria-label="Today's step"
+      className="mt-8 rounded-[10px] bg-ink-50 px-5 py-5 sm:px-6"
       data-testid="prep-path"
       data-horizon={plan.horizon ?? "none"}
     >
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="min-w-0 flex-1 basis-64">
-          <h2 className="text-sm font-semibold text-ink-700" data-testid="plan-heading">
-            {heading}
-          </h2>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold text-slate-900">
-            <span data-testid="plan-step">
-              {step ? `Step ${current + 1} of ${steps.length} · ${step.label}` : "You're ready"}
-            </span>
-            <span className="flex gap-1" aria-hidden>
-              {steps.map((s, i) => (
-                <span
-                  key={s.id}
-                  className={`size-2 rounded-full ${
-                    s.done ? "bg-ink-800" : i === current ? "bg-accent-400" : "bg-ink-100"
-                  }`}
-                />
-              ))}
-            </span>
-          </p>
-          <p className="mt-0.5 text-sm text-slate-600">
-            {step ? step.detail : "Read your brief and do the one-minute warm-up."}
-          </p>
-        </div>
-        <Link
-          href={step ? step.href : `/jobs/${job.id}/brief`}
-          aria-current="step"
-          className="w-full shrink-0 rounded-xl bg-ink-900 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-ink-950 sm:w-auto"
-        >
-          {step ? "Continue" : "Open your brief"}
-        </Link>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        {plan.basis !== "date" && (
-          <Link
-            href={`/jobs/${job.id}#interview-date`}
-            className="font-semibold text-ink-800 hover:underline"
-            data-testid="set-interview-date"
-          >
-            {plan.basis === "assessment" ? "Set the date" : "Interview booked? Add the date"} →
-          </Link>
-        )}
-        {step && plan.horizon === "crunch" && (
-          <Link
-            href={`/jobs/${job.id}/brief`}
-            className="font-semibold text-ink-800 hover:underline"
-            data-testid="plan-brief"
-          >
-            Your pre-interview brief →
-          </Link>
-        )}
-        {journey !== undefined && !plan.horizon && (
-          <JourneyLink journey={journey} />
-        )}
-        {plan.horizon && (
-          <details className="group w-full" data-testid="whole-plan">
-            <summary className="cursor-pointer font-semibold text-ink-800 hover:underline">
-              See the whole plan
-            </summary>
-            <ol className="mt-2 space-y-1">
-              {steps.map((s) => (
-                <li key={s.id} className="flex items-baseline gap-2">
-                  <span aria-hidden className={s.done ? "text-ink-800" : "text-slate-500"}>
-                    {s.done ? "✓" : "○"}
-                  </span>
-                  <Link
-                    href={s.href}
-                    className={
-                      s.done ? "text-slate-600 line-through" : "text-slate-800 hover:underline"
-                    }
-                  >
-                    {s.label}
-                  </Link>
-                  <span className="text-slate-600">· {s.detail}</span>
-                </li>
-              ))}
-              {plan.later.map((s) => (
-                <li key={s.id} className="flex items-baseline gap-2 text-slate-500">
-                  <span aria-hidden>○</span>
-                  <span>{s.label}</span>
-                  <span>· coming soon</span>
-                </li>
-              ))}
-            </ol>
-            {journey !== undefined && (
-              <p className="mt-2">
-                <JourneyLink journey={journey} />
-              </p>
+      <PlanToggle
+        step={
+          <>
+            <p className="text-sm text-slate-600" data-testid="plan-heading">
+              <span className="font-semibold text-slate-900">Today</span>
+              {step && <span className="ml-2">Step {current + 1} of {steps.length}</span>}
+              {forWhen && <span className="ml-2">· {forWhen}</span>}
+            </p>
+            <p className="mt-1.5 text-xl font-semibold text-slate-900" data-testid="plan-step">
+              {step ? step.label : "You're ready"}
+            </p>
+            <p className="mt-1 text-slate-600">
+              {step ? step.detail : "Read your brief and do the one-minute warm-up."}
+            </p>
+          </>
+        }
+        actions={
+          <>
+            {step && plan.horizon === "crunch" && (
+              <Link href={`/jobs/${job.id}/brief`} className="link text-sm" data-testid="plan-brief">
+                Pre-interview brief
+              </Link>
             )}
-          </details>
-        )}
-      </div>
-    </nav>
+            <Link
+              href={step ? step.href : `/jobs/${job.id}/brief`}
+              aria-current="step"
+              className="btn-next"
+            >
+              {step ? "Continue" : "Open the brief"}
+            </Link>
+          </>
+        }
+        plan={
+          steps.length > 1 || journey !== undefined ? (
+            <WholePlan plan={plan} current={current} journey={journey} />
+          ) : undefined
+        }
+      />
+    </section>
   );
 }
 
-// The journey check sits inside the plan (design review 2026-11-16, fix 4): one less line on home.
-function JourneyLink({ journey }: { journey: string | null }) {
+function WholePlan({
+  plan,
+  current,
+  journey,
+}: {
+  plan: Plan;
+  current: number;
+  journey: string | null | undefined;
+}) {
   return (
-    <Link
-      href="/assessment"
-      className="font-semibold text-ink-800 hover:underline"
-      data-testid="journey-link"
-    >
-      {journey ? `Journey check: ${journey}` : "Take the 1-minute journey check"} →
-    </Link>
+    <>
+      <ol className="space-y-2 text-sm">
+        {plan.steps.map((s, i) => (
+          <li key={s.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2">
+            <span aria-hidden className="font-mono text-xs leading-5 text-slate-500">
+              {s.done ? "✓" : i + 1}
+            </span>
+            <span>
+              <Link
+                href={s.href}
+                className={
+                  s.done
+                    ? "text-slate-500 line-through"
+                    : i === current
+                      ? "font-medium text-slate-900 hover:underline"
+                      : "text-slate-800 hover:underline"
+                }
+              >
+                {s.label}
+              </Link>
+              <span className="text-slate-600"> · {s.detail}</span>
+            </span>
+          </li>
+        ))}
+        {plan.later.map((s) => (
+          <li key={s.id} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2 text-slate-500">
+            <span aria-hidden>○</span>
+            <span>{s.label} · coming soon</span>
+          </li>
+        ))}
+      </ol>
+      {journey !== undefined && (
+        <p className="mt-3 text-sm">
+          <Link href="/assessment" className="link" data-testid="journey-link">
+            {journey ? `Journey check: ${journey}` : "Take the 1-minute journey check"}
+          </Link>
+        </p>
+      )}
+    </>
   );
 }
 
 function FirstJob() {
   return (
-    <section
-      className="mt-5 rounded-3xl bg-white p-6 shadow-sm ring-2 ring-ink-700/40 sm:p-8"
-      data-testid="first-job"
-    >
+    <section className="mt-8 max-w-2xl" data-testid="first-job">
       <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
         Start with a job you&apos;re going for
       </h2>
-      <p className="mt-2 max-w-2xl text-slate-600">
-        Paste the posting or a link, and I&apos;ll show the questions they&apos;re most likely to
-        ask. No resume needed.
+      <p className="mt-2 text-slate-600">
+        Paste the posting or a link to see the questions they&apos;re most likely to ask. No resume
+        needed.
       </p>
       <div className="mt-6">
         <AddJobForm submitLabel="Show my likely questions" />

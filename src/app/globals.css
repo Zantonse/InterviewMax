@@ -69,6 +69,34 @@
   --text-xl--line-height: 1.45;
 }
 
+/* The page itself (design review 2026-11-23, fix 9): every signed-in page shares one width, left
+   edge and top margin, so moving between pages doesn't shift the title. A reading page (settings,
+   numbers, the brief) keeps its text to a column of about 65 characters inside the same frame. */
+@utility page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-6xl);
+  flex: 1 1 0%;
+  padding: 1.5rem 1rem 3rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-top: 2.25rem;
+  }
+}
+
+@utility page-read {
+  & > * {
+    max-width: var(--container-3xl);
+  }
+  @media print {
+    & > * {
+      max-width: none;
+    }
+  }
+}
+
 /* A section of a page: its heading and content, set off by space and one rule instead of a card
    (design review 2026-11-23, fix 1). Cards are kept for objects you can pick up or open. */
 @utility panel {

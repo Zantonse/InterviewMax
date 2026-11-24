@@ -13,7 +13,7 @@ export default function RecapPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 *:max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="page page-read">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Prep so far
         </h1>

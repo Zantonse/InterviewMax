@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { formatGuide } from "@/lib/analysis/structure";
 import type { StoryDraft } from "@/lib/stories/content";
 import { storyParts, type StoryPart, type StoryType } from "@/lib/stories/story-types";
+import { clock, countWords, spokenSeconds } from "@/lib/stories/spoken";
 import type { DiffPiece } from "@/lib/stories/word-diff";
 
 // The story as a script on a talk track (design review 2026-11-23, fixes 3 and 4): down the left,
@@ -11,24 +12,8 @@ import type { DiffPiece } from "@/lib/stories/word-diff";
 // word to the end. It replaces the paragraph tints, the coloured length bar and its legend, so the
 // story is set in plain type and the time it takes to say is still a picture. Plain code, no model.
 
-// At an interview pace of about 150 words a minute.
-const WORDS_PER_MINUTE = 150;
-
-export function countWords(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
-}
-
-// Rounded to 5 seconds: nobody times an answer closer than that.
-export function spokenSeconds(words: number): number {
-  return Math.round(((words / WORDS_PER_MINUTE) * 60) / 5) * 5;
-}
-
-// 0:00, 1:05, 12:30.
-export function clock(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
+// The spoken-time count is shared with home (src/lib/stories/spoken.ts).
+export { clock, countWords, spokenSeconds };
 
 // Part names on the track, short enough for its narrow column: the principle's own label ("How I
 // think about it") and the "Tell me about yourself" parts are too long for it.
@@ -416,15 +401,4 @@ export function DraftTrack({
 }
 
 // The level as a small three-step meter, for the line under a story's title.
-export function LevelMeter({ level }: { level: number }) {
-  return (
-    <span className="inline-flex gap-0.5" aria-hidden="true">
-      {[1, 2, 3].map((n) => (
-        <span
-          key={n}
-          className={`h-1 w-3.5 rounded-full ${n <= level ? "bg-ink-900" : "bg-ink-200"}`}
-        />
-      ))}
-    </span>
-  );
-}
+export { LevelMeter } from "@/components/level-meter";

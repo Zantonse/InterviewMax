@@ -18,7 +18,7 @@ export default function ToughAnswerPage({ params }: PageProps<"/tough-questions/
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
+      <main className="page">
         <Link href="/tough-questions" className="text-sm font-medium text-ink-800 hover:underline">
           ← Tough questions
         </Link>

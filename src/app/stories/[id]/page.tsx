@@ -16,7 +16,7 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-9">
+      <main className="page">
         <Suspense fallback={<BuilderSkeleton />}>
           <StoryLoader params={params} />
         </Suspense>

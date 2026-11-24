@@ -19,7 +19,7 @@ export default function AssessmentPage({ searchParams }: PageProps<"/assessment"
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="page">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
           Journey check
         </h1>
