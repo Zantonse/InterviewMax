@@ -2,21 +2,18 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
-import { startStory } from "@/app/stories/new/actions";
 import { AppHeader } from "@/components/app-header";
-import { LevelMeter } from "@/components/level-meter";
 import { PrepPath } from "@/components/prep-path";
+import { nextFirst, QuestionTable } from "@/components/question-table";
 import { SectionHead } from "@/components/section-head";
 import { StoryBank } from "@/components/story-bank";
 import { shouldStartWithAssessment } from "@/lib/assessment/data";
 import { roundLabel } from "@/lib/bank/content";
 import { listJobs, type TargetJob } from "@/lib/jobs/data";
-import { questionReadiness, READY_LEVEL, type QuestionReadiness } from "@/lib/jobs/readiness";
+import { questionReadiness, READY_LEVEL } from "@/lib/jobs/readiness";
 import { dateLabel, daysUntil, focusJob, interviewHeadline, todayIn } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
-import { clock, storySeconds } from "@/lib/stories/spoken";
-import { getStoryType } from "@/lib/stories/story-types";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
 
@@ -154,8 +151,8 @@ function Header({ today, job }: { today: string; job: TargetJob | null }) {
   );
 }
 
-// The focus job's likely questions as a table: the question as it'd be asked, the story that
-// answers it, its level and spoken time, and the one thing to do. The next one to work on first.
+// The focus job's likely questions as a table (see components/question-table.tsx), the next one to
+// work on first; the job page has the rest.
 function LikelyQuestions({ job, stories }: { job: TargetJob; stories: StoryRecord[] }) {
   const readiness = questionReadiness(job.likelyQuestions?.questions, stories);
   if (readiness.total === 0) {
@@ -171,14 +168,6 @@ function LikelyQuestions({ job, stories }: { job: TargetJob; stories: StoryRecor
       </section>
     );
   }
-  const next =
-    readiness.rows.find((r) => r.kind === "build") ??
-    readiness.rows.find((r) => r.kind === "story" && r.level < READY_LEVEL);
-  const rows = [...(next ? [next] : []), ...readiness.rows.filter((r) => r !== next)].slice(
-    0,
-    QUESTIONS_SHOWN,
-  );
-  const byId = new Map(stories.map((s) => [s.id, s]));
   return (
     <section className="mt-12" aria-labelledby="likely-heading" data-testid="focus-job">
       <SectionHead
@@ -195,71 +184,12 @@ function LikelyQuestions({ job, stories }: { job: TargetJob; stories: StoryRecor
           </Link>
         }
       />
-      <ul className="divide-y divide-ink-100" data-testid="focus-questions">
-        {rows.map((row) => (
-          <QuestionRow
-            key={row.question}
-            row={row}
-            story={row.kind === "story" ? byId.get(row.storyId) : undefined}
-          />
-        ))}
-      </ul>
+      <QuestionTable
+        rows={nextFirst(readiness.rows).slice(0, QUESTIONS_SHOWN)}
+        stories={stories}
+        testId="focus-questions"
+      />
     </section>
-  );
-}
-
-function QuestionRow({ row, story }: { row: QuestionReadiness; story: StoryRecord | undefined }) {
-  const draft = story?.content.draft;
-  const seconds = draft ? storySeconds(draft.parts, getStoryType(story?.storyType)) : null;
-  return (
-    <li className="grid gap-x-6 gap-y-1.5 py-3.5 md:grid-cols-[minmax(0,1fr)_15rem_6.5rem_3rem_7rem] md:items-baseline">
-      <p className="font-words text-[1.0625rem] leading-snug text-slate-900">{row.question}</p>
-      {row.kind === "story" ? (
-        <>
-          <Link
-            href={`/stories/${row.storyId}`}
-            className="text-sm text-slate-800 underline decoration-ink-200 underline-offset-2 hover:decoration-current"
-          >
-            {row.title}
-          </Link>
-          {/* One line on a phone; three columns from md up. */}
-          <span className="flex flex-wrap items-center gap-x-5 gap-y-1 md:contents">
-            <span className="flex items-center gap-1.5 text-sm text-slate-600">
-              {row.level > 0 ? (
-                <>
-                  <LevelMeter level={row.level} />
-                  Level {row.level}
-                </>
-              ) : (
-                "Not written"
-              )}
-            </span>
-            <span className="font-mono text-sm tabular-nums text-slate-600 md:text-right">
-              {seconds ? clock(seconds) : ""}
-            </span>
-            <span className="text-sm md:text-right">
-              {row.level < READY_LEVEL && (
-                <Link href={`/stories/${row.storyId}`} className="link">
-                  {row.level === 0 ? "Finish it" : `To Level ${READY_LEVEL}`}
-                </Link>
-              )}
-            </span>
-          </span>
-        </>
-      ) : (
-        <>
-          <span className="flex flex-wrap items-center gap-x-5 gap-y-1 md:contents">
-            <span className="text-sm text-slate-500 md:col-span-3">No story yet</span>
-            <form action={startStory} className="text-sm md:text-right">
-              <input type="hidden" name="asked" value={row.question} />
-              <button type="submit" name="storyType" value={row.storyType} className="link">
-                Build a story
-              </button>
-            </form>
-          </span>
-        </>
-      )}
-    </li>
   );
 }
 

@@ -178,6 +178,7 @@ async function JobContent({ params }: { params: PageProps<"/jobs/[id]">["params"
             ready={readiness.ready}
             total={readiness.total}
             days={daysLeft !== null && daysLeft >= 0 ? daysLeft : null}
+            stories={stories}
           />
           <div
             className="flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-ink-100 py-3"

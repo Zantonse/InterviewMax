@@ -54,21 +54,31 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
           <Section title="Stories at a glance" testId="brief-glance">
             <ul className="grid gap-3 sm:grid-cols-2">
               {brief.glance.map((g) => (
+                // The same index card as the story bank on home: the title over the red line,
+                // then the line with the number to remember. Side by side, the red lines line up.
                 <li
                   key={g.storyId}
-                  className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 print:p-2"
+                  className="flex min-w-0 flex-col rounded-[10px] border border-ink-200 bg-white sm:row-span-2 sm:grid sm:grid-rows-subgrid"
                 >
-                  <Link href={g.href} className="text-lg font-semibold text-slate-900 hover:underline print:text-sm">
+                  <Link
+                    href={g.href}
+                    className="block border-b border-rose-200 px-4 pt-3.5 pb-3 font-words text-lg leading-snug font-semibold text-slate-900 hover:underline print:px-2 print:pt-2 print:pb-1.5 print:text-sm"
+                  >
                     {g.title}
                   </Link>
-                  {g.number && (
-                    <p className="text-sm font-semibold text-emerald-800 print:text-xs" data-testid="glance-number">
-                      {g.number}
+                  <div className="flex flex-1 flex-col gap-1.5 px-4 pt-3 pb-3.5 sm:pt-0 print:px-2 print:pb-2">
+                    {g.number && (
+                      <p
+                        className="font-words text-[0.9375rem] leading-snug text-slate-900 print:text-xs"
+                        data-testid="glance-number"
+                      >
+                        {g.number}
+                      </p>
+                    )}
+                    <p className="text-sm text-slate-600 print:text-xs">
+                      Answers: {g.answers.join(" · ")}
                     </p>
-                  )}
-                  <p className="text-sm text-slate-600 print:text-xs">
-                    Answers: {g.answers.join(" · ")}
-                  </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -252,9 +262,7 @@ export function BriefView({ brief, days }: { brief: Brief; days: number | null }
               <div className="space-y-3 print:space-y-2">
                 {brief.ask.groups.map((g) => (
                   <div key={g.audience}>
-                    <p className="text-xs font-semibold text-slate-600">
-                      {g.label}
-                    </p>
+                    <p className="text-xs font-semibold text-slate-600">{g.label}</p>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-800">
                       {g.questions.map((q) => (
                         <li key={q}>{q}</li>
@@ -318,9 +326,7 @@ function Section({
       className="break-inside-avoid panel print:rounded-none print:p-0 print:shadow-none print:ring-0"
       data-testid={testId}
     >
-      <h2 className="mb-3 text-sm print:text-xs font-semibold text-ink-800 print:mb-1">
-        {title}
-      </h2>
+      <h2 className="mb-3 text-sm print:text-xs font-semibold text-ink-800 print:mb-1">{title}</h2>
       {children}
     </section>
   );
