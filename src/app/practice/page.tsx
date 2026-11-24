@@ -8,6 +8,7 @@ import { listJobs } from "@/lib/jobs/data";
 import { folderLabel } from "@/lib/jobs/folder";
 import { openJobs } from "@/lib/jobs/outcome";
 import { currentItemIndex, isScreenRound } from "@/lib/practice/content";
+import { isBossRound } from "@/lib/quest/boss";
 import { listPracticeSessionsSafely } from "@/lib/practice/data";
 import { daysUntil, focusJob, todayIn, whenLabel } from "@/lib/prep/plan";
 
@@ -145,7 +146,7 @@ async function Content() {
                   </Link>
                   <span className="min-w-0 text-sm text-slate-600">
                     {names.get(s.targetJobId) ?? "A removed job"} ·{" "}
-                    {isScreenRound(s.items) ? "AI screen · " : ""}
+                    {isScreenRound(s.items) ? "AI screen · " : isBossRound(s.items) ? "Boss round · " : ""}
                     {answered} of {s.items.length} answered{open ? " · in progress" : ""}
                   </span>
                 </li>

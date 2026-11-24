@@ -13,6 +13,9 @@ import { listJobs, type TargetJob } from "@/lib/jobs/data";
 import { questionReadiness, READY_LEVEL } from "@/lib/jobs/readiness";
 import { dateLabel, daysUntil, focusJob, interviewHeadline, todayIn } from "@/lib/prep/plan";
 import { getAppMode } from "@/lib/promotion/data";
+import { listPracticeSessionsSafely } from "@/lib/practice/data";
+import { rankFor } from "@/lib/quest/xp";
+import { questState } from "@/lib/quest/state";
 import { listStories, type StoryRecord } from "@/lib/stories/data";
 import { gapLabel, summarizeTranscripts } from "@/lib/transcripts/content";
 import { listTranscripts, type Transcript } from "@/lib/transcripts/data";
@@ -76,6 +79,11 @@ async function Home() {
             Your stories couldn&apos;t be loaded right now. Try again in a minute.
           </p>
         ))}
+      {stories && !empty && (
+        <Suspense fallback={null}>
+          <QuestLine stories={stories} />
+        </Suspense>
+      )}
       {!empty && (
         <Suspense fallback={null}>
           <PastInterviews />
@@ -190,6 +198,36 @@ function LikelyQuestions({ job, stories }: { job: TargetJob; stories: StoryRecor
         testId="focus-questions"
       />
     </section>
+  );
+}
+
+// Story Quest in one line near the end: rank and XP, linking to the section. On phones this is the
+// way in (the bottom tab bar is full); the sidebar links to it too.
+async function QuestLine({ stories }: { stories: StoryRecord[] }) {
+  const [sessions, transcripts] = await Promise.all([
+    listPracticeSessionsSafely(),
+    listTranscripts().catch((err) => {
+      unstable_rethrow(err);
+      return [] as Transcript[];
+    }),
+  ]);
+  const { xp } = questState({ stories, sessions, transcripts });
+  const rank = rankFor(xp.total);
+  return (
+    <p className="mt-12 border-t border-ink-200 pt-5 text-slate-600" data-testid="quest-home-card">
+      <span className="mr-3 font-semibold text-slate-900">Story Quest</span>
+      {rank.name}, <span className="tabular-nums">{xp.total.toLocaleString("en-US")} XP</span>
+      {rank.nextAt !== null && (
+        <>
+          {" "}
+          · {(rank.nextAt - xp.total).toLocaleString("en-US")} to {rank.nextName}
+        </>
+      )}
+      .{" "}
+      <Link href="/quest" className="link">
+        Open
+      </Link>
+    </p>
   );
 }
 

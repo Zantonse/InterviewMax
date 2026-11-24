@@ -34,6 +34,7 @@ import { answersTranscript } from "@/lib/stories/prompts";
 import { REQUIRED_STORY_TYPE_ID, getStoryType } from "@/lib/stories/story-types";
 import { tailoredText } from "@/lib/stories/tailored";
 import { trackEvent } from "@/lib/usage/track";
+import { bossQuestions, bossState } from "@/lib/quest/boss";
 
 export type PracticeResult =
   | { ok: true; items: PracticeItem[]; finishedAt: string | null }
@@ -72,6 +73,34 @@ export async function startPractice(_prev: StartState, formData: FormData): Prom
     unstable_rethrow(err);
     console.error("Practice: starting a round failed", err);
     return { error: err instanceof Error ? err.message : "The practice round couldn't start." };
+  }
+  redirect(`/practice/${id}`);
+}
+
+// Story Quest's boss round: the job's top likely questions in one round with follow-ups. Only once
+// each has a story ready to use (bossState), checked again here.
+export async function startBossRound(formData: FormData): Promise<void> {
+  let id: string;
+  try {
+    const job = await getJob(String(formData.get("jobId") ?? ""));
+    if (!job?.likelyQuestions) redirect("/quest");
+    const [stories, earlier] = await Promise.all([
+      listStories(),
+      listPracticeSessionsSafely(job.id),
+    ]);
+    const state = bossState(job, stories, earlier);
+    if (state.inProgressId) redirect(`/practice/${state.inProgressId}`);
+    if (!state.unlocked) redirect("/quest");
+    const questions = bossQuestions(job.likelyQuestions.questions);
+    const items = pickQuestions(questions, stories, questions.length, latestConfidence(earlier)).map(
+      (i) => ({ ...i, boss: true }),
+    );
+    id = await insertPracticeSession({ targetJobId: job.id, items });
+    await trackEvent("practice_started");
+  } catch (err) {
+    unstable_rethrow(err);
+    console.error("Practice: starting a boss round failed", err);
+    redirect("/quest");
   }
   redirect(`/practice/${id}`);
 }

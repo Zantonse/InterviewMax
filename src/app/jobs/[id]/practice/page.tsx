@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { isBossRound } from "@/lib/quest/boss";
 import { ConfidencePips } from "@/components/practice/confidence-bar";
 import { removePractice } from "@/app/practice/actions";
 import { StartPracticeForm } from "@/app/practice/start-form";
@@ -188,7 +189,7 @@ async function Content({ params }: { params: PageProps<"/jobs/[id]/practice">["p
                     })}
                   </Link>
                   <span className="text-sm text-slate-600">
-                    {isScreenRound(s.items) ? "AI screen · " : ""}
+                    {isScreenRound(s.items) ? "AI screen · " : isBossRound(s.items) ? "Boss round · " : ""}
                     {answered} of {s.items.length} answered{open ? " · in progress" : ""}
                   </span>
                   <form action={removePractice} className="ml-auto">

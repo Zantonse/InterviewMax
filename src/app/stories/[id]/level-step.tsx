@@ -1,5 +1,6 @@
 "use client";
 
+import { xpForClimb } from "@/lib/quest/xp";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gradeIsCurrent, pendingFollowUps, type StoryContent } from "@/lib/stories/content";
@@ -305,6 +306,17 @@ function Result({
             ? "The rewrite used your answers. A second story will help you more than another pass on this one."
             : "The rewrite used your answers, but a few things still hold it back."}
       </p>
+      {climbed && (
+        <p className="mt-1 text-sm text-slate-700" data-testid="level-up-xp">
+          <span className="font-mono font-medium text-slate-900 tabular-nums">
+            +{xpForClimb(from, reached)} XP
+          </span>{" "}
+          in{" "}
+          <Link href="/quest" className="link">
+            Story Quest
+          </Link>
+        </p>
+      )}
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <button
           type="button"

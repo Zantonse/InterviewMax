@@ -175,6 +175,9 @@ export type PracticeItem = {
   probeDone?: boolean;
   // AI screen round: no follow-ups, timed, feedback only once every question is answered.
   screen?: boolean;
+  // Story Quest boss round (src/lib/quest/boss.ts): a job's top likely questions, in a normal round
+  // with follow-ups, started once each has a story ready to use.
+  boss?: boolean;
   feedback?: PracticeFeedback;
   skipped?: boolean;
   // How the answer felt to the user, tapped on a five-step bar after the feedback (1 shaky to 5
@@ -509,6 +512,7 @@ export function parseItems(raw: unknown): PracticeItem[] {
       ...(typeof r.storyTitle === "string" ? { storyTitle: r.storyTitle } : {}),
       ...(r.probeDone === true ? { probeDone: true } : {}),
       ...(r.screen === true ? { screen: true } : {}),
+      ...(r.boss === true ? { boss: true } : {}),
       ...(r.skipped === true ? { skipped: true } : {}),
     };
     const confidence = parseConfidence(r.confidence);

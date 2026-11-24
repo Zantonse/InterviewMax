@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { getJob } from "@/lib/jobs/data";
 import { isScreenRound } from "@/lib/practice/content";
+import { isBossRound } from "@/lib/quest/boss";
 import { getPracticeSession } from "@/lib/practice/data";
 import { getStory } from "@/lib/stories/data";
 import { tellingIsCurrent } from "@/lib/telling/content";
@@ -38,6 +39,7 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
     openersFor(session.items.flatMap((item) => (item.storyId ? [item.storyId] : []))),
   ]);
   if (!job) notFound();
+  const boss = isBossRound(session.items);
   if (isScreenRound(session.items)) {
     return (
       <>
@@ -69,12 +71,14 @@ async function PracticeContent({ params }: { params: PageProps<"/practice/[id]">
         ← Practice for {job.title}
       </Link>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
-        Practice out loud
+        {boss ? "Boss round" : "Practice out loud"}
       </h1>
       <p className="mt-2 max-w-2xl text-slate-600">
         {job.title}
-        {job.company ? ` at ${job.company}` : ""}. Answer each question as you would in the room;
-        the interviewer drills two or three follow-ups into the weakest part.
+        {job.company ? ` at ${job.company}` : ""}.{" "}
+        {boss
+          ? "Story Quest: this job's top likely questions, one after another, as you'd answer them in the room. The interviewer follows up on each. Finish all of them for 300 XP."
+          : "Answer each question as you would in the room; the interviewer drills two or three follow-ups into the weakest part."}
       </p>
       <PracticeRunner sessionId={session.id} jobId={job.id} initialItems={session.items} openers={openers} />
     </>
